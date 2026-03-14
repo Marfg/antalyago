@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Go Oyunu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --wood:       #d4a84b;
+      --wood-dark:  #b8861a;
+      --wood-light: #f0d080;
+      --ink:        #1a1008;
+      --paper:      #fdf6e3;
+      --paper-dark: #f0e6c8;
+      --stone-b:    #1e1e1e;
+      --stone-w:    #f5f5f0;
+      --shadow:     rgba(80, 40, 0, 0.18);
+      --red-accent: #c0392b;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--paper);
+      background-image:
+        radial-gradient(ellipse at 20% 10%, rgba(212,168,75,0.13) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 90%, rgba(184,134,26,0.10) 0%, transparent 55%);
+      font-family: 'Noto Sans', sans-serif;
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    /* ── HEADER ── */
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      animation: fadeDown 0.7s ease both;
+    }
+
+    .logo-stones {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .stone {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: inset -2px -2px 4px rgba(0,0,0,0.35), inset 1px 1px 3px rgba(255,255,255,0.4);
+    }
+    .stone.b { background: radial-gradient(circle at 35% 30%, #555, #111); }
+    .stone.w { background: radial-gradient(circle at 35% 30%, #fff, #d0d0c8); border: 1px solid #bbb; }
+
+    h1 {
+      font-family: 'Noto Serif', serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+
+    h1 span {
+      color: var(--wood-dark);
+    }
+
+    .subtitle {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: #7a6040;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    /* ── BOARD GRID DECORATION ── */
+    .board-deco {
+      position: fixed;
+      opacity: 0.04;
+      pointer-events: none;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-image:
+        repeating-linear-gradient(0deg,   #7a5020 0, #7a5020 1px, transparent 1px, transparent 40px),
+        repeating-linear-gradient(90deg,  #7a5020 0, #7a5020 1px, transparent 1px, transparent 40px);
+      z-index: 0;
+    }
+
+    /* ── CARD CONTAINER ── */
+    .cards {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      z-index: 1;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+
+    /* ── CARD ── */
+    .card {
+      position: relative;
+      width: 280px;
+      background: var(--paper);
+      border: 2px solid var(--wood);
+      border-radius: 4px;
+      padding: 2.5rem 2rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      box-shadow: 4px 4px 0 var(--wood-dark), 0 8px 24px var(--shadow);
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 5px;
+      border: 1px solid rgba(180,130,30,0.25);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    .card:hover {
+      transform: translate(-3px, -3px);
+      box-shadow: 7px 7px 0 var(--wood-dark), 0 12px 32px var(--shadow);
+      border-color: var(--wood-dark);
+    }
+
+    .card:active {
+      transform: translate(1px, 1px);
+      box-shadow: 2px 2px 0 var(--wood-dark);
+    }
+
+    .card-icon {
+      width: 72px; height: 72px;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Etüd icon — 9x9 mini goban */
+    .mini-board {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(5, 1fr);
+      gap: 2px;
+      width: 64px; height: 64px;
+      background: var(--wood-light);
+      border: 2px solid var(--wood-dark);
+      padding: 6px;
+      border-radius: 2px;
+    }
+
+    .mini-cell {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .mini-cell::before, .mini-cell::after {
+      content: '';
+      position: absolute;
+      background: var(--wood-dark);
+    }
+
+    .mini-cell::before { width: 100%; height: 1px; top: 50%; }
+    .mini-cell::after  { width: 1px; height: 100%; left: 50%; }
+
+    .mini-stone {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      position: relative;
+      z-index: 1;
+    }
+
+    .mini-stone.b { background: radial-gradient(circle at 35% 30%, #555, #111); box-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    .mini-stone.w { background: radial-gradient(circle at 35% 30%, #fff, #ccc); box-shadow: 0 1px 2px rgba(0,0,0,0.3); border: 0.5px solid #aaa; }
+
+    /* Live icon */
+    .live-icon {
+      width: 64px; height: 64px;
+      border: 2px solid var(--wood-dark);
+      border-radius: 50%;
+      background: var(--paper-dark);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+      overflow: visible;
+    }
+
+    .live-icon .pulse-ring {
+      position: absolute;
+      width: 80px; height: 80px;
+      border: 2px solid var(--wood);
+      border-radius: 50%;
+      animation: pulse 2s ease-out infinite;
+      opacity: 0;
+    }
+
+    .live-icon .pulse-ring:nth-child(2) { animation-delay: 0.6s; }
+
+    .live-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #e74c3c, #900);
+      box-shadow: 0 0 8px rgba(192,57,43,0.5);
+    }
+
+    .card-title {
+      font-family: 'Noto Serif', serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      color: var(--ink);
+    }
+
+    .card-desc {
+      font-size: 0.82rem;
+      color: #7a6040;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-btn {
+      display: inline-block;
+      padding: 0.55rem 1.6rem;
+      background: var(--wood);
+      color: var(--ink);
+      font-family: 'Noto Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      border: 1.5px solid var(--wood-dark);
+      border-radius: 2px;
+      text-transform: uppercase;
+      transition: background 0.15s;
+      margin-top: auto;
+    }
+
+    .card:hover .card-btn {
+      background: var(--wood-dark);
+      color: #fff;
+    }
+
+    /* ── BADGE ── */
+    .badge {
+      position: absolute;
+      top: -10px; right: 14px;
+      background: var(--red-accent);
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 2px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      margin-top: 3.5rem;
+      font-size: 0.75rem;
+      color: #a08050;
+      text-align: center;
+      z-index: 1;
+      animation: fadeUp 0.7s 0.4s ease both;
+      letter-spacing: 0.05em;
+    }
+
+    footer a { color: var(--wood-dark); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── DIVIDER ── */
+    .divider {
+      width: 120px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--wood), transparent);
+      margin: 0.75rem auto 0;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%   { transform: scale(0.8); opacity: 0.7; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 620px) {
+      .cards { gap: 1.5rem; }
+      .card  { width: 260px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="board-deco"></div>
+
+  <header>
+    <div class="logo-stones">
+      <span class="stone b"></span>
+      <span class="stone w"></span>
+      <span class="stone b"></span>
+      <span class="stone w"></span>
+      <span class="stone b"></span>
+    </div>
+    <h1>围棋 &nbsp;<span>·</span>&nbsp; Go</h1>
+    <p class="subtitle">Antrenman ve Canlı Maç Platformu</p>
+    <div class="divider"></div>
+  </header>
+
+  <div class="cards">
+
+    <!-- ETÜD KARTI -->
+    <a class="card" href="etud.html">
+      <div class="card-icon">
+        <div class="mini-board">
+          <!-- 5x5 mini goban, bazı hücreler taşlı -->
+          <div class="mini-cell"><div class="mini-stone b"></div></div>
+          <div class="mini-cell"></div>
+          <div class="mini-cell"><div class="mini-stone w"></div></div>
+          <div class="mini-cell"></div>
+          <div class="mini-cell"></div>
+
+          <div class="mini-cell"></div>
+          <div class="mini-cell"><div class="mini-stone w"></div></div>
+          <div class="mini-cell"></div>
+          <div class="mini-cell"><div class="mini-stone b"></div></div>
+          <div class="mini-cell"></div>
+
+          <div class="mini-cell"><div class="mini-stone w"></div></div>
+          <div class="mini-cell"></div>
+          <div class="mini-cell"><div class="mini-stone b"></div></div>
+          <div class="mini-cell"></div>
+          <div class="mini-cell"><div class="mini-stone w"></div></div>
+
+          <div class="mini-cell"></div>
+          <div class="mini-cell"><div class="mini-stone b"></div></div>
+          <div class="mini-cell"></div>
+          <div class="mini-cell"></div>
+          <div class="mini-cell"><div class="mini-stone b"></div></div>
+
+          <div class="mini-cell"></div>
+          <div class="mini-cell"></div>
+          <div class="mini-cell"><div class="mini-stone w"></div></div>
+          <div class="mini-cell"><div class="mini-stone b"></div></div>
+          <div class="mini-cell"></div>
+        </div>
+      </div>
+      <h2 class="card-title">Etüd</h2>
+      <p class="card-desc">
+        KataGo yapay zekasına karşı antrenman yap.<br/>
+        Seviyeni seç, hamleleri analiz et.
+      </p>
+      <span class="card-btn">Antrenmana Başla</span>
+    </a>
+
+    <!-- CANLI MAÇ KARTI -->
+    <a class="card" href="canli.html">
+      <span class="badge">OGS</span>
+      <div class="card-icon">
+        <div class="live-icon">
+          <div class="pulse-ring"></div>
+          <div class="pulse-ring"></div>
+          <div class="live-dot"></div>
+        </div>
+      </div>
+      <h2 class="card-title">Canlı Maç</h2>
+      <p class="card-desc">
+        OGS hesabınla bağlan, gerçek<br/>
+        rakiplerle canlı maç oyna.
+      </p>
+      <span class="card-btn">Maça Katıl</span>
+    </a>
+
+  </div>
+
+  <footer>
+    <p>Powered by <a href="https://online-go.com" target="_blank">OGS API</a> &amp; <a href="https://github.com/online-go/goban" target="_blank">Goban.js</a> &amp; <a href="https://github.com/lightvector/KataGo" target="_blank">KataGo WASM</a></p>
+    <p style="margin-top:0.4rem;">GitHub Pages · Statik Uygulama</p>
+  </footer>
+
+</body>
+</html>
