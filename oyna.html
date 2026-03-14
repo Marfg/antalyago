@@ -170,6 +170,12 @@
     }
     .room-card:hover { transform:translate(-2px,-2px); box-shadow:5px 5px 0 var(--wood-dark); }
     .room-card:active { transform:translate(1px,1px); box-shadow:1px 1px 0 var(--wood-dark); }
+    .delete-room-btn {
+      background:transparent; border:none; cursor:pointer;
+      font-size:.85rem; padding:.1rem .25rem; border-radius:3px;
+      transition:background .15s; line-height:1;
+    }
+    .delete-room-btn:hover { background:rgba(192,57,43,.15); }
 
     .room-card-header { display:flex; align-items:center; justify-content:space-between; }
     .room-name  { font-family:'Noto Serif',serif; font-size:1rem; font-weight:700; }
@@ -583,6 +589,7 @@
       <div class="game-btns" id="game-btns">
         <button class="btn" onclick="sendPass()"   id="btn-pass"   disabled>Pas Geç</button>
         <button class="btn danger" onclick="sendResign()" id="btn-resign" disabled>Teslim Ol</button>
+        <button class="btn danger" onclick="closeRoom()" id="btn-close" style="display:none">🗑 Odayı Kapat</button>
       </div>
     </div>
 
@@ -682,13 +689,13 @@
    Web Uygulaması Ekle → firebaseConfig'i kopyala
 ═══════════════════════════════════════════════════════ */
 const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyAYubkOIyhXttWy8dYx8oW3hhAWf3_OB-0",
-  authDomain:        "antalya-go.firebaseapp.com",
-  databaseURL:       "https://antalya-go-default-rtdb.firebaseio.com",
-  projectId:         "antalya-go",
+  apiKey:            "BURAYA_API_KEY",
+  authDomain:        "BURAYA_AUTH_DOMAIN",
+  databaseURL:       "BURAYA_DATABASE_URL",
+  projectId:         "BURAYA_PROJECT_ID",
   storageBucket:     "BURAYA_STORAGE_BUCKET",
-  messagingSenderId: "49502438270",
-  appId:             "1:149502438270:web:bf378450dc413f185d212f",
+  messagingSenderId: "BURAYA_MESSAGING_SENDER_ID",
+  appId:             "BURAYA_APP_ID",
 };
 
 /* ═══════════════════════════════════════════════════════
@@ -817,13 +824,17 @@ function renderLobby(rooms) {
     const badgeText = isFinished ? 'Bitti' :
                       isPlaying  ? 'Oyunda' : 'Katılabilir';
 
+    const isOwner = ME && r.black?.uid === ME.uid;
     const card = document.createElement('div');
     card.className = 'room-card';
     card.onclick = () => joinRoom(r.id);
     card.innerHTML = `
       <div class="room-card-header">
         <div class="room-name">${esc(r.name||'İsimsiz Oda')}</div>
-        <div class="room-badge ${badge}">${badgeText}</div>
+        <div style="display:flex;align-items:center;gap:.4rem">
+          <div class="room-badge ${badge}">${badgeText}</div>
+          ${isOwner ? `<button class="delete-room-btn" data-id="${r.id}" title="Odayı Sil">🗑</button>` : ''}
+        </div>
       </div>
       <div class="room-players">
         <div class="player-slot">
@@ -844,6 +855,16 @@ function renderLobby(rooms) {
       </div>
       ${specCount ? `<div class="room-spectators">👁 ${specCount} izleyici</div>` : ''}
     `;
+    // Çöp butonu click — kart tıklamasını engelle
+    const delBtn = card.querySelector('.delete-room-btn');
+    if(delBtn){
+      delBtn.onclick = async (e) => {
+        e.stopPropagation();
+        if(!confirm('Bu odayı silmek istediğinize emin misiniz?')) return;
+        await deleteRoom(delBtn.dataset.id);
+        showToast('Oda silindi.');
+      };
+    }
     grid.appendChild(card);
   });
 }
@@ -947,6 +968,9 @@ function setupGameScreen(room, roomId) {
   const canPlay = MY_COLOR !== 'spectator';
   document.getElementById('btn-pass').disabled   = !canPlay;
   document.getElementById('btn-resign').disabled = !canPlay;
+  // Odayı Kapat butonu sadece oda sahibine (siyah = kurucu)
+  const isOwner = room.black?.uid === ME?.uid;
+  document.getElementById('btn-close').style.display = isOwner ? 'block' : 'none';
 
   // Saatler
   if (room.timeLimit > 0) {
@@ -1247,6 +1271,8 @@ function showGameOver(result){
   document.getElementById('over-sub').textContent=result;
   document.getElementById('btn-pass').disabled=true;
   document.getElementById('btn-resign').disabled=true;
+  // Oyun bitince 10 saniye sonra odayı otomatik sil
+  setTimeout(() => deleteRoom(ROOM_ID), 10000);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1301,6 +1327,30 @@ function leaveGame(){
   cleanupGameListeners();
   ROOM=null;ROOM_ID=null;MY_COLOR=null;
   showLobby();
+}
+
+async function deleteRoom(roomId){
+  if(!roomId) return;
+  try {
+    await db.ref(`rooms/${roomId}`).remove();
+  } catch(e) { console.warn('Oda silinemedi:', e); }
+}
+
+async function closeRoom(){
+  if(!ROOM_ID||!ME) return;
+  const snap = await db.ref(`rooms/${ROOM_ID}`).get();
+  if(!snap.exists()) return;
+  const room = snap.val();
+  // Sadece oda sahibi silebilir (siyah oyuncu = oda kurucusu)
+  if(room.black?.uid !== ME.uid) {
+    showToast('Sadece oda sahibi odayı kapatabilir.'); return;
+  }
+  if(!confirm('Odayı kapatmak istediğinize emin misiniz?')) return;
+  await deleteRoom(ROOM_ID);
+  cleanupGameListeners();
+  ROOM=null;ROOM_ID=null;MY_COLOR=null;
+  showLobby();
+  showToast('Oda kapatıldı.');
 }
 
 function copyLink(){
