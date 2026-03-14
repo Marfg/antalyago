@@ -2,31 +2,41 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Antalya Go</title>
+    <title>Antalya Go Projesi</title>
     <script src="https://cdn.jsdelivr.net/npm/wgo@2.3.1/wgo.min.js"></script>
     <style>
-        body { background: #e0e0e0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        #goban { width: 450px; height: 450px; background: #f3c27b; border: 5px solid #4a3000; cursor: crosshair; }
-        #msg { font-family: sans-serif; font-weight: bold; margin-bottom: 10px; }
+        body { background: #f4f1ea; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
+        #goban { width: 450px; height: 450px; background: #deb887; border: 5px solid #5d4037; margin-top: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .info { margin-top: 15px; font-weight: bold; font-size: 1.2em; color: #2c3e50; }
     </style>
 </head>
 <body>
-    <div id="msg">Tahta Hazır (Tıklayarak Taş Koy)</div>
+    <h1>Antalya Go Topluluğu</h1>
     <div id="goban"></div>
+    <div id="status" class="info">Başlatılıyor...</div>
 
     <script>
-        // Sayfa yüklendiğinde çalış
         window.onload = function() {
+            // WGo'nun yüklendiğinden %100 emin olalım
             if (typeof WGo !== "undefined") {
-                var board = new WGo.Board(document.getElementById("goban"), { width: 450, size: 19 });
-                var color = WGo.B;
+                var board = new WGo.Board(document.getElementById("goban"), {
+                    width: 450,
+                    size: 19
+                });
+                
+                // Tengen'e bir taş koyalım (9,9)
+                board.addObject({x: 9, y: 9, c: WGo.B});
+                document.getElementById("status").innerText = "Tahta Hazır! Ortadaki taş Tengen.";
+                
+                // Tıklama ile taş ekleme
+                var turn = WGo.W; // Sırada beyaz var
                 board.addEventListener("click", function(x, y) {
-                    board.addObject({x: x, y: y, c: color});
-                    color = -color;
-                    document.getElementById("msg").innerText = "Sıra: " + (color == WGo.B ? "Siyah" : "Beyaz");
+                    board.addObject({x: x, y: y, c: turn});
+                    turn = (turn === WGo.B) ? WGo.W : WGo.B;
+                    document.getElementById("status").innerText = "Sıra: " + (turn === WGo.B ? "Siyah" : "Beyaz");
                 });
             } else {
-                document.getElementById("msg").innerText = "Hata: Kütüphane yüklenemedi!";
+                document.getElementById("status").innerText = "Hata: Kütüphane hala yüklenemedi. Lütfen internet bağlantınızı kontrol edin.";
             }
         };
     </script>
