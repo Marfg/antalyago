@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Etüd – KataNet Antrenman</title>
+  <title>Etüd – Antrenman</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Noto+Sans:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
@@ -516,7 +516,7 @@ async function loadModel() {
 
     prog(95,'Warmup çalışıyor…');
     await warmup();
-    prog(100,'KataNet hazır ✓');
+    prog(100,'Hazır ✓');
     setTimeout(onModelReady, 350);
 
   } catch(err) {
@@ -548,7 +548,7 @@ function onModelReady() {
   document.getElementById('sdot').className    = 'status-dot ready';
   document.getElementById('slabel').textContent = 'KataNet Hazır';
   document.getElementById('start-btn').disabled = false;
-  document.getElementById('engine-badge').textContent = 'KataGo · TF.js ✓';
+  document.getElementById('engine-badge').textContent = 'AntalyaGO ✓';
 }
 
 function onModelFail() {
