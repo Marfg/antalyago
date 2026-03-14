@@ -111,7 +111,7 @@
     .prob-item {
       padding:.45rem .6rem; border:1px solid var(--border); border-radius:var(--r);
       background:var(--paper); cursor:pointer; transition:all .12s;
-      display:flex; align-items:center; justify-content:space-between; gap:.4rem;
+      display:flex; align-items:flex-start; gap:.4rem;
     }
     .prob-item:hover  { background:var(--paper-dark); border-color:var(--wood-dark); }
     .prob-item.active { background:var(--wood-light); border-color:var(--wood-dark); font-weight:600; }
@@ -675,9 +675,13 @@ function renderProblemList() {
       (solved.has(p.id) ? ' solved' : '');
     el.dataset.id = p.id;
     el.innerHTML = `
-      <span class="prob-name">${p.title}</span>
-      <span class="type-badge ${p.type}" style="font-size:.58rem">${typeLabel(p.type)}</span>
-      <span class="level-badge ${p.level}" style="font-size:.58rem">${levelLabel(p.level)}</span>
+      <div style="display:flex;flex-direction:column;gap:.2rem;width:100%">
+        <span class="prob-name">${p.title}</span>
+        <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+          <span class="type-badge ${p.type}" style="font-size:.58rem">${typeLabel(p.type)}</span>
+          <span class="level-badge ${p.level}" style="font-size:.58rem">${levelLabel(p.level)}</span>
+        </div>
+      </div>
     `;
     el.onclick = () => loadProblem(p);
     list.appendChild(el);
