@@ -2,49 +2,35 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Antalya Go Projesi</title>
+    <title>Antalya Go - WGo Denemesi</title>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/wgo/2.3.1/wgo.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/wgo@2.3.1/wgo.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/wgo@2.3.1/wgo.player.css">
+
     <style>
-        body { 
-            font-family: sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            background-color: #f4f1ea; 
-        }
-        /* Tahtanın çerçevesi */
-        #goban-container { 
-            width: 500px; 
-            height: 500px; 
-            margin-top: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        #status { font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #444; }
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #fdf6e3; }
+        #goban-box { margin-top: 20px; border: 4px solid #5d4037; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        #status { font-size: 24px; margin-top: 20px; color: #268bd2; }
     </style>
 </head>
 <body>
 
     <h1>Antalya Go Topluluğu</h1>
-    <div id="status">Kütüphane Bekleniyor...</div>
-
-    <div id="goban-container">
-        <div id="my-goban" style="width: 500px; height: 500px;"></div>
+    <div id="goban-box">
+        <div id="board-element"></div>
     </div>
+    <div id="status">Yükleniyor...</div>
 
     <script>
-        // Sayfa yüklendiğinde değil, WGo kütüphanesi hazır olduğunda çalışması için bir kontrol
-        function initializeGo() {
+        // Kütüphane yüklenene kadar bekleyelim
+        function start() {
             if (typeof WGo !== "undefined") {
-                console.log("WGo Başarıyla Yüklendi");
-                
-                var turn = WGo.B;
-                var board = new WGo.Board(document.getElementById("my-goban"), {
+                var board = new WGo.Board(document.getElementById("board-element"), {
                     width: 500,
                     size: 19
                 });
-
+                
+                var turn = WGo.B;
                 document.getElementById("status").innerText = "Sıra Siyah'ta";
 
                 board.addEventListener("click", function(x, y) {
@@ -53,15 +39,10 @@
                     document.getElementById("status").innerText = "Sıra: " + (turn === WGo.B ? "Siyah" : "Beyaz");
                 });
             } else {
-                // Eğer yüklenmediyse yarım saniye sonra tekrar dene
-                console.log("WGo henüz hazır değil, tekrar deneniyor...");
-                setTimeout(initializeGo, 500);
+                setTimeout(start, 100); // 100ms sonra tekrar dene
             }
         }
-
-        // Başlat
-        initializeGo();
+        start();
     </script>
-
 </body>
 </html>
