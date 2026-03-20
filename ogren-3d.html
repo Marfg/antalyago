@@ -603,6 +603,33 @@ function drawLiberties(step) {
   });
 }
 
+/* Ko yasak noktası — kırmızı yanıp sönen çarpı */
+function drawKoPoint({x, y}) {
+  const Y   = -BOARD_H/2 - .3;
+  const ARM = CELL * 0.30;
+  const pulse = .6 + .4*Math.sin(hlTime*2.8);
+  const wx = -HALF + x*CELL;
+  const wz = -HALF + y*CELL;
+  const p  = project(wx, Y, wz);
+  if(p.scale < 0.15) return;
+
+  const pL = project(wx-ARM, Y, wz);
+  const pR = project(wx+ARM, Y, wz);
+  const pU = project(wx, Y, wz-ARM);
+  const pD = project(wx, Y, wz+ARM);
+
+  ctx.save();
+  ctx.globalAlpha = 0.85 * pulse;
+  ctx.strokeStyle = '#e03030';
+  ctx.lineWidth   = Math.max(1, 2.2 * p.scale);
+  ctx.lineCap     = 'round';
+  ctx.beginPath(); ctx.moveTo(pL.sx, pL.sy); ctx.lineTo(pR.sx, pR.sy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pU.sx, pU.sy); ctx.lineTo(pD.sx, pD.sy); ctx.stroke();
+  ctx.beginPath(); ctx.arc(p.sx, p.sy, 2.5*p.scale, 0, Math.PI*2);
+  ctx.fillStyle = '#e03030'; ctx.fill();
+  ctx.restore();
+}
+
 /* Highlight rings — target intersections */
 let hlTime = 0;
 function drawHighlights(step) {
@@ -715,6 +742,7 @@ function render() {
 
   if(CUR_STEP_DATA && !CUR_STEP_DATA.auto) drawHighlights(CUR_STEP_DATA);
   if(CUR_STEP_DATA) drawLiberties(CUR_STEP_DATA);
+  if(koPoint) drawKoPoint(koPoint);
 
   /* Yasak hamle işaretleri */
   if(CUR_STEP_DATA && CUR_STEP_DATA.forbidden) {
@@ -899,7 +927,7 @@ const CURRICULUM = [
     ]},
 
     { id:'l5', title:'Ko Kuralı', steps:[
-      { text:`<p><span class="term">Ko</span> — aynı pozisyonun sonsuza tekrar etmesini önleyen kuraldır.</p><p>Siyah beyazı yakalar — ama beyaz <strong>hemen geri alamaz</strong>, çünkü tahta önceki pozisyona döner.</p>`, board:[{color:'B',x:4,y:3},{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'W',x:4,y:4},{color:'W',x:3,y:5},{color:'W',x:5,y:5},{color:'W',x:4,y:6}], moves:[{color:'B',x:4,y:5,capture:[{x:4,y:4}]}], size:9, camera:CAM.center, fb:{t:'Siyah yakaladı — beyaz hemen aynı noktaya dönemez. Bu Ko!',c:'info'} },
+      { text:`<p><span class="term">Ko</span> — aynı pozisyonun sonsuza tekrar etmesini önleyen kuraldır.</p><p>Siyah beyazı yakalar — ama beyaz <strong>hemen geri alamaz</strong>, çünkü tahta önceki pozisyona döner.</p>`, board:[{color:'B',x:4,y:3},{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'W',x:4,y:4},{color:'W',x:3,y:5},{color:'W',x:5,y:5},{color:'W',x:4,y:6}], moves:[{color:'B',x:4,y:5,capture:[{x:4,y:4}]}], moveSpeed:1.4, koPoint:{x:4,y:4}, size:9, camera:CAM.center, fb:{t:'Siyah yakaladı — beyaz hemen aynı noktaya dönemez. Bu Ko!',c:'info'} },
       { text:`<p>Ko savaşında oyuncular <strong>"ko tehdidi"</strong> yaparlar — tahtanın başka yerinde önemli bir hamle.</p><div class="highlight-box">Ko, Go'nun en dramatik stratejik kavramlarından biridir.</div>`, board:[{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'B',x:4,y:3},{color:'W',x:4,y:5},{color:'W',x:3,y:5},{color:'W',x:5,y:5}], auto:true, size:9, fb:{t:'Ko pozisyonunu iyi tanıyın — sıkça karşılaşacaksınız.',c:'info'} },
     ]},
 
@@ -967,6 +995,7 @@ const ALL_LESSONS   = CURRICULUM.flatMap(c=>c.lessons);
 const TOTAL_LESSONS = ALL_LESSONS.length;
 let doneLessons = new Set(JSON.parse(localStorage.getItem('go_done_3d')||'[]'));
 let CUR_LESSON = null, CUR_STEP = 0, stepDone = false, CUR_STEP_DATA = null;
+let koPoint = null;
 
 function loadLesson(lesson) {
   CUR_LESSON=lesson; CUR_STEP=0;
@@ -977,7 +1006,7 @@ function loadStep(idx) {
   const step = CUR_LESSON.steps[idx];
   if(!step) return;
   CUR_STEP=idx; CUR_STEP_DATA=step; stepDone=false;
-  ghostActive=false; rotateMode=false;
+  ghostActive=false; rotateMode=false; koPoint=null;
 
   const chap = CURRICULUM.find(c=>c.lessons.some(l=>l.id===CUR_LESSON.id));
   document.getElementById('chapter-tag').textContent   = chap?.title||'';
@@ -1011,23 +1040,27 @@ function loadStep(idx) {
     document.getElementById('rotate-toggle').style.display='block';
   }
 
-  if(step.moves?.length) playMoves(step.moves);
+  if(step.moves?.length) playMoves(step.moves, step);
 
   updateNextBtn(step);
 }
 
-function playMoves(moves) {
+function playMoves(moves, step) {
+  const sp = step?.moveSpeed || 1;
   let i = 0;
   function next() {
-    if(i >= moves.length) return;
+    if(i >= moves.length) {
+      if(step?.koPoint) koPoint = step.koPoint;
+      return;
+    }
     const mv = moves[i++];
     game.seed(mv.x, mv.y, mv.color);
     setTimeout(() => {
       if(mv.capture) mv.capture.forEach(c => game.removeStone(c.x, c.y));
-      setTimeout(next, 2400);
-    }, 1200);
+      setTimeout(next, 2400 * sp);
+    }, 1200 * sp);
   }
-  setTimeout(next, 1200);
+  setTimeout(next, 1200 * sp);
 }
 
 function onClick3D(gx,gz) {
