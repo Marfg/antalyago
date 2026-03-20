@@ -878,7 +878,7 @@ const CURRICULUM = [
   { id:'c1', title:'Temel Kurallar', lessons:[
 
     { id:'l1', title:'Tahta ve Taşlar', steps:[
-      { text:`<p>Go, <strong>19×19'luk</strong> bir tahta üzerinde oynanan iki kişilik bir strateji oyunudur. Yeni başlayanlar için <strong>9×9</strong> daha uygundur.</p><p>İki oyuncu vardır: biri <strong>siyah</strong>, diğeri <strong>beyaz</strong>. <em>Siyah her zaman önce oynar.</em></p>`, board:[], auto:true, boardSelector:true, size:9, camera:CAM.overview, fb:{t:'Tahta boyutunu seçerek farkı inceleyin.',c:'info'} },
+      { text:`<p>Go, <strong>19×19'luk</strong> bir tahta üzerinde oynanan iki kişilik bir strateji oyunudur. <strong>9×9</strong> tahta başlangıç için daha uygundur.</p><p>Sıralı bir hamle oyunudur, <strong>siyah</strong> önce oynar.</p>`, board:[], auto:true, boardSelector:true, size:9, camera:CAM.overview, fb:{t:'Tahta boyutunu seçerek farkı inceleyin.',c:'info'} },
       { text:`<p>Taşlar karelerin içine değil, <strong>çizgilerin kesişim noktalarına</strong> yerleştirilir.</p><p>Aşağıdaki tahtaya herhangi bir noktaya tıklayarak <strong>siyah taş koy.</strong></p>`, board:[], answers:'any', turn:'black', size:9, fb:{t:'Herhangi bir noktaya tıkla!',c:'info'}, fb_ok:'Mükemmel! Taşı doğru noktaya koydun.' },
       { text:`<p>Taşlar bir kez konulduktan sonra <strong>hareket ettirilemez</strong> — sadece yakalanarak kaldırılabilir.</p><div class="highlight-box">Go'da taşlar hareket etmez, sadece eklenir veya kaldırılır.</div>`, board:[{color:'W',x:4,y:4}], auto:true, size:9, fb:{t:'Bu beyaz taş artık o noktada sabit.',c:'info'} },
     ]},
@@ -956,8 +956,8 @@ const CURRICULUM = [
     ]},
 
     { id:'l15', title:'Son Oyun (Yose)', steps:[
-      { text:`<p><span class="term">Yose</span> — oyunun son aşaması. Sınırlar netleşir, her hamle doğrudan puana dönüşür.</p>`, board:[{color:'B',x:0,y:0},{color:'B',x:1,y:0},{color:'B',x:2,y:0},{color:'B',x:0,y:1},{color:'B',x:0,y:2},{color:'B',x:0,y:3},{color:'W',x:5,y:5},{color:'W',x:6,y:5},{color:'W',x:7,y:5},{color:'W',x:8,y:5},{color:'W',x:8,y:6},{color:'W',x:8,y:7},{color:'W',x:8,y:8}], auto:true, size:9, camera:CAM.high, fb:{t:'Sınırları tamamlamak son oyunun özüdür.',c:'info'} },
-      { text:`<p>Önem sırası:<ol><li><strong>Sente endgame</strong> — cevap gerektiren hamleler</li><li><strong>Büyük gote</strong> — en yüksek puanlı serbest hamleler</li><li><strong>Küçük gote</strong> — ince detay hamleler</li></ol></p><div class="highlight-box">🎉 Tebrikler! Temel Go bilgisini tamamladın. Artık oynayabilirsin!</div>`, board:[], auto:true, size:9, fb:{t:'Go öğrenme yolculuğun başlıyor!',c:'info'} },
+      { text:`<p><span class="term">Yose</span> — oyunun son aşaması. Sınırlar netleşir, her hamle doğrudan puana dönüşür.</p>`, board:[{color:'B',x:0,y:0},{color:'B',x:1,y:0},{color:'B',x:2,y:0},{color:'B',x:0,y:1},{color:'B',x:0,y:2},{color:'B',x:0,y:3},{color:'W',x:5,y:5},{color:'W',x:6,y:5},{color:'W',x:7,y:5},{color:'W',x:8,y:5},{color:'W',x:8,y:6},{color:'W',x:8,y:7},{color:'W',x:8,y:8}], auto:true, size:9, camera:CAM.high, fb:{t:'Oyun sonunda sayılan puanlar kazanan oyuncuyu belirler.',c:'info'} },
+      { text:`<p>Önem sırası:<ol><li><strong>Sente endgame</strong> — cevap gerektiren hamleler</li><li><strong>Büyük gote</strong> — en yüksek puanlı serbest hamleler</li><li><strong>Küçük gote</strong> — ince detay hamleler</li></ol></p>`, board:[], auto:true, size:9, fb:{t:'Go öğrenme yolculuğun başlıyor!',c:'info'} },
     ]},
   ]},
 ];
