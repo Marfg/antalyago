@@ -286,7 +286,7 @@ const CURRICULUM = [
       { text:`<p>Yatay veya dikey olarak birbirine bağlı taşlar <strong>grup</strong> oluşturur. Grubun özgürlüğü tüm taşlarının boş komşularının toplamıdır.</p>`, board:[{color:'B',x:3,y:4},{color:'B',x:4,y:4},{color:'B',x:5,y:4}], markers:[{x:3,y:3},{x:2,y:4},{x:3,y:5},{x:4,y:3},{x:4,y:5},{x:5,y:3},{x:6,y:4},{x:5,y:5}], auto:true, size:9, fb:{t:'Bu üç taş bir grup — birlikte 8 nefes noktası var.',c:'info'} },
     ]},
 
-    { id:'l3', title:'Taş Yakalama', steps:[
+    { id:'l3', title:'Taş Alma', steps:[
       { text:`<p>Bir taşın <strong>tüm nefes noktaları doldurulursa</strong>, o taş yakalanır ve tahtadan kalkar.</p><p>Beyaz taşın tek boş noktası var — oraya siyah taş koyarak beyazı yakala! <strong>E6 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}], answer:{x:4,y:5}, turn:'black', size:9, fb:{t:'Beyaz taşın son nefes noktasına tıkla!',c:'info'}, fb_ok:'Yakaladın! Beyaz taş tahtadan kalkar.', fb_err:'Beyaz taşın çevresindeki boş noktayı bul.', capture:[{x:4,y:4}] },
       { text:`<p>Bir <strong>grubu</strong> yakalamak için grubun tüm nefes noktalarıni doldurman gerekir.</p><p>İki beyaz taşın son nefes noktasını doldur — <strong>D5 noktasına tıkla.</strong></p>`, board:[{color:'W',x:3,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:3},{color:'B',x:4,y:4}], answer:{x:3,y:4}, turn:'black', size:9, fb:{t:'İki beyaz taşın son boş noktasını bul.',c:'info'}, fb_ok:'Grubu yakaladın! İkisi birden kalkar.', fb_err:'Beyaz grubun son nefes noktasını bul.', capture:[{x:3,y:3},{x:4,y:3}] },
       { text:`<p>Bir örnek daha! Siyah taşlar beyaz grubu neredeyse tamamen sarmış.</p><p>Beyaz grubun <strong>tek özgürlüğü</strong> kaldı — oraya siyah taş koy ve grubu yakala.</p><p><strong>D5 noktasına tıkla.</strong></p>`,
@@ -304,7 +304,7 @@ const CURRICULUM = [
       { text:`<p>Yakalanan taşlar <strong>esir</strong> sayılır ve oyun sonunda skora eklenir.</p><div class="highlight">Ne kadar çok taş yakalarsan skor avantajın o kadar artar.</div>`, board:[{color:'B',x:2,y:2},{color:'B',x:6,y:6}], auto:true, size:9, fb:{t:'Her yakalanan taş 1 puan kazandırır.',c:'info'} },
     ]},
 
-    { id:'l4', title:'Öz-Yakalama Yasak', steps:[
+    { id:'l4', title:'Yasak Hamleler', steps:[
       { text:`<p>Kendi taşını nefessiz bırakacak bir hamle <strong>yapamazsın</strong> — bu <span class="term">öz-yakalama</span> yasağıdır.</p><p>Beyaz taşların sardığı orta noktaya siyah taş konamaaz — anında nefessiz kalır.</p>`, board:[{color:'W',x:3,y:3},{color:'W',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}], auto:true, size:9, fb:{t:'E4 noktasına taş koymak yasak — öz-yakalama!',c:'info'} },
       { text:`<p><strong>İstisna:</strong> O noktaya koyduğunda rakip taşı <em>yakalıyorsan</em> hamle geçerlidir. Yakalama, öz-yakalama yasağından önce gelir.</p><p>Beyazı yakala — <strong>E5 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:3},{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'B',x:4,y:2}], answer:{x:4,y:4}, turn:'black', size:9, fb:{t:'Beyazı yakalayan hamle geçerli!',c:'info'}, fb_ok:'Doğru! Yakalama hamlesi öz-yakalama sayılmaz.', fb_err:'Beyaz taşın altındaki noktayı bul.', capture:[{x:4,y:3}] },
     ]},
