@@ -1,0 +1,12 @@
+{
+  "adim": 2,
+  "aciklama": "Yakalama istisnası — E5'e tıkla",
+  "board": [
+    {"color": "W", "x": 4, "y": 3},
+    {"color": "B", "x": 3, "y": 3},
+    {"color": "B", "x": 5, "y": 3},
+    {"color": "B", "x": 4, "y": 2}
+  ],
+  "answer": {"x": 4, "y": 4},
+  "capture": [{"x": 4, "y": 3}]
+}

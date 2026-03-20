@@ -1,0 +1,11 @@
+{
+  "adim": 2,
+  "aciklama": "Aynı pozisyon — D4'e tıkla",
+  "board": [
+    {"color": "W", "x": 2, "y": 3}, {"color": "W", "x": 4, "y": 3},
+    {"color": "B", "x": 2, "y": 2}, {"color": "B", "x": 3, "y": 2}, {"color": "B", "x": 4, "y": 2},
+    {"color": "B", "x": 1, "y": 3}, {"color": "B", "x": 2, "y": 4}, {"color": "B", "x": 4, "y": 4}
+  ],
+  "answer": {"x": 3, "y": 3},
+  "turn": "black"
+}

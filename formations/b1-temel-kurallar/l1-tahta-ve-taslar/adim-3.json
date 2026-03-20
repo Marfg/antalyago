@@ -1,0 +1,7 @@
+{
+  "adim": 3,
+  "aciklama": "Ortada tek beyaz taş — hareket etmezlik kuralı",
+  "board": [
+    {"color": "W", "x": 4, "y": 4}
+  ]
+}

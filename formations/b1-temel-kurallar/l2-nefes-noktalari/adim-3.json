@@ -1,0 +1,9 @@
+{
+  "adim": 3,
+  "aciklama": "Yatay üçlü siyah grup — 8 ortak nefes noktası",
+  "board": [
+    {"color": "B", "x": 3, "y": 4},
+    {"color": "B", "x": 4, "y": 4},
+    {"color": "B", "x": 5, "y": 4}
+  ]
+}

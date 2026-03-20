@@ -1,0 +1,11 @@
+{
+  "adim": 1,
+  "aciklama": "Yose — sınırlar belirginleşmiş, son hamleler",
+  "board": [
+    {"color": "B", "x": 0, "y": 0}, {"color": "B", "x": 1, "y": 0}, {"color": "B", "x": 2, "y": 0},
+    {"color": "B", "x": 0, "y": 1}, {"color": "B", "x": 0, "y": 2}, {"color": "B", "x": 0, "y": 3},
+    {"color": "W", "x": 5, "y": 5}, {"color": "W", "x": 6, "y": 5}, {"color": "W", "x": 7, "y": 5},
+    {"color": "W", "x": 8, "y": 5}, {"color": "W", "x": 8, "y": 6}, {"color": "W", "x": 8, "y": 7},
+    {"color": "W", "x": 8, "y": 8}
+  ]
+}

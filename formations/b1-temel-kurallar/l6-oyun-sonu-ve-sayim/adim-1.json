@@ -1,0 +1,12 @@
+{
+  "adim": 1,
+  "aciklama": "Siyah sol üstte, beyaz sağ altta bölge sardı",
+  "board": [
+    {"color": "B", "x": 1, "y": 1}, {"color": "B", "x": 2, "y": 1}, {"color": "B", "x": 3, "y": 1},
+    {"color": "B", "x": 1, "y": 2}, {"color": "B", "x": 3, "y": 2},
+    {"color": "B", "x": 1, "y": 3}, {"color": "B", "x": 2, "y": 3}, {"color": "B", "x": 3, "y": 3},
+    {"color": "W", "x": 5, "y": 5}, {"color": "W", "x": 6, "y": 5}, {"color": "W", "x": 7, "y": 5},
+    {"color": "W", "x": 5, "y": 6}, {"color": "W", "x": 7, "y": 6},
+    {"color": "W", "x": 5, "y": 7}, {"color": "W", "x": 6, "y": 7}, {"color": "W", "x": 7, "y": 7}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "adim": 3,
+  "aciklama": "İki ayrı siyah taş — esir kavramı",
+  "board": [
+    {"color": "B", "x": 2, "y": 2},
+    {"color": "B", "x": 6, "y": 6}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "adim": 3,
+  "aciklama": "Dört köşe açılış dengesi",
+  "board": [
+    {"color": "B", "x": 2, "y": 2}, {"color": "W", "x": 6, "y": 2},
+    {"color": "B", "x": 6, "y": 6}, {"color": "W", "x": 2, "y": 6}
+  ]
+}

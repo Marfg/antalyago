@@ -1,0 +1,11 @@
+{
+  "adim": 1,
+  "aciklama": "4 beyaz taş ortayı sarar — yasak nokta E4",
+  "board": [
+    {"color": "W", "x": 3, "y": 3},
+    {"color": "W", "x": 5, "y": 3},
+    {"color": "W", "x": 4, "y": 2},
+    {"color": "W", "x": 4, "y": 4}
+  ],
+  "forbidden": [{"x": 4, "y": 3}]
+}

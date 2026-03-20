@@ -1,0 +1,10 @@
+{
+  "adim": 2,
+  "aciklama": "İki siyah taş arasında boşluk — D4'e bağla",
+  "board": [
+    {"color": "B", "x": 3, "y": 3}, {"color": "B", "x": 3, "y": 5},
+    {"color": "W", "x": 2, "y": 4}, {"color": "W", "x": 4, "y": 4}
+  ],
+  "answer": {"x": 3, "y": 4},
+  "turn": "black"
+}

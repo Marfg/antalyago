@@ -1,0 +1,8 @@
+{
+  "adim": 2,
+  "aciklama": "Köşede siyah (2 nefes), kenarda beyaz (3 nefes)",
+  "board": [
+    {"color": "B", "x": 0, "y": 0},
+    {"color": "W", "x": 8, "y": 4}
+  ]
+}

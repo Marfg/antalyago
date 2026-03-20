@@ -1,0 +1,11 @@
+{
+  "adim": 1,
+  "aciklama": "Beyaz kaçmaya çalışıyor — F6'ya siyah koy, tüm çıkışları kapat",
+  "board": [
+    {"color": "W", "x": 4, "y": 4},
+    {"color": "B", "x": 3, "y": 3}, {"color": "B", "x": 5, "y": 3},
+    {"color": "B", "x": 6, "y": 4}, {"color": "B", "x": 6, "y": 5}
+  ],
+  "answer": {"x": 5, "y": 5},
+  "turn": "black"
+}

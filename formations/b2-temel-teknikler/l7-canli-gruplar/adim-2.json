@@ -1,0 +1,9 @@
+{
+  "adim": 2,
+  "aciklama": "Tek gözlü siyah grup — sahte göz örneği",
+  "board": [
+    {"color": "B", "x": 2, "y": 2}, {"color": "B", "x": 3, "y": 2}, {"color": "B", "x": 4, "y": 2},
+    {"color": "B", "x": 2, "y": 3}, {"color": "B", "x": 4, "y": 3},
+    {"color": "B", "x": 2, "y": 4}, {"color": "B", "x": 3, "y": 4}, {"color": "B", "x": 4, "y": 4}
+  ]
+}

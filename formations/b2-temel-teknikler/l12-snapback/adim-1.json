@@ -1,0 +1,12 @@
+{
+  "adim": 1,
+  "aciklama": "Snapback — siyah grubun içinde beyaz taş, E7'ye tıkla",
+  "board": [
+    {"color": "B", "x": 3, "y": 3}, {"color": "B", "x": 4, "y": 3}, {"color": "B", "x": 5, "y": 3},
+    {"color": "B", "x": 3, "y": 4}, {"color": "B", "x": 5, "y": 4},
+    {"color": "B", "x": 3, "y": 5}, {"color": "B", "x": 4, "y": 5},
+    {"color": "W", "x": 4, "y": 4}
+  ],
+  "answer": {"x": 4, "y": 6},
+  "turn": "black"
+}

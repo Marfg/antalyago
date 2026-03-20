@@ -1,0 +1,10 @@
+{
+  "adim": 1,
+  "aciklama": "İki taraf bölge oluşturuyor — orta oyun örneği",
+  "board": [
+    {"color": "B", "x": 2, "y": 2}, {"color": "B", "x": 3, "y": 2},
+    {"color": "W", "x": 6, "y": 2}, {"color": "W", "x": 6, "y": 3},
+    {"color": "B", "x": 4, "y": 6}, {"color": "B", "x": 5, "y": 6},
+    {"color": "W", "x": 2, "y": 6}, {"color": "W", "x": 2, "y": 5}
+  ]
+}

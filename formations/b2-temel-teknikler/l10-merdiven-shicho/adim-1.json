@@ -1,0 +1,8 @@
+{
+  "adim": 1,
+  "aciklama": "Merdiven başlangıcı — beyaz ortada, iki siyah çevresinde",
+  "board": [
+    {"color": "W", "x": 4, "y": 4},
+    {"color": "B", "x": 3, "y": 4}, {"color": "B", "x": 4, "y": 3}
+  ]
+}
