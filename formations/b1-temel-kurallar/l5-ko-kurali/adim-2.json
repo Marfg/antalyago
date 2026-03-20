@@ -12,7 +12,7 @@
   ],
   "initialKoIndicator": {"x": 4, "y": 4, "color": "red"},
   "moves": [
-    {"color": "W", "x": 2, "y": 6, "indicatorAfter": {"x": 4, "y": 4, "color": "green"}},
+    {"color": "W", "x": 6, "y": 2, "indicatorAfter": {"x": 4, "y": 4, "color": "green"}},
     {"color": "B", "x": 2, "y": 2, "indicatorAfter": {"x": 4, "y": 4, "color": "green"}},
     {"color": "W", "x": 4, "y": 4, "capture": [{"x": 4, "y": 5}], "indicatorAfter": null}
   ]
