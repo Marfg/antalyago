@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Go Öğren 3D – Antalya GO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&family=Noto+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --gold:   #c8a84b;
+      --gold2:  #e0c060;
+      --dark:   #08080e;
+      --glass:  rgba(10,10,18,.88);
+      --gborder:rgba(200,168,75,.22);
+      --text:   #e8e4de;
+      --muted:  rgba(232,228,222,.45);
+      --green:  #3ecf80;
+      --red:    #e05050;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { background: var(--dark); overflow: hidden; font-family: 'Noto Sans', sans-serif; color: var(--text); }
+
+    /* ── CANVAS ── */
+    #c { position: fixed; inset: 0; z-index: 0; display: block; }
+
+    /* ── TOPBAR ── */
+    #topbar {
+      position: fixed; top: 0; left: 0; right: 0; height: 46px; z-index: 30;
+      background: var(--glass); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--gborder);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1rem; gap: 1rem;
+    }
+    .tb-left { display: flex; align-items: center; gap: .7rem; }
+    .back-btn {
+      color: var(--gold); font-size: 11px; letter-spacing: .07em;
+      text-decoration: none; padding: 5px 12px; border: 1px solid var(--gborder);
+      border-radius: 6px; transition: all .18s;
+    }
+    .back-btn:hover { background: var(--gold); color: var(--dark); }
+    .page-title { font-family: 'Noto Serif', serif; font-size: 1rem; font-weight: 700; letter-spacing: .06em; }
+    .prog-wrap { display: flex; align-items: center; gap: .6rem; }
+    .prog-text { font-size: 11px; color: var(--muted); font-weight: 600; }
+    .prog-track { width: 120px; height: 5px; background: rgba(200,168,75,.12); border: 1px solid var(--gborder); border-radius: 3px; overflow: hidden; }
+    .prog-fill  { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2)); border-radius: 3px; transition: width .5s; }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      position: fixed; top: 46px; left: 0; bottom: 0; width: 218px; z-index: 20;
+      background: var(--glass); backdrop-filter: blur(16px);
+      border-right: 1px solid var(--gborder); overflow-y: auto;
+      transition: transform .3s ease;
+    }
+    #sidebar.collapsed { transform: translateX(-218px); }
+    .sb-header {
+      padding: .7rem 1rem; border-bottom: 1px solid var(--gborder);
+      font-size: .7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .12em; color: var(--gold);
+    }
+    .chapter { border-bottom: 1px solid var(--gborder); }
+    .ch-title {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .55rem 1rem; font-size: .75rem; font-weight: 700;
+      cursor: pointer; user-select: none; transition: background .12s;
+      background: rgba(200,168,75,.04);
+    }
+    .ch-title:hover { background: rgba(200,168,75,.10); }
+    .ch-left { display: flex; align-items: center; gap: .45rem; }
+    .ch-num {
+      width: 18px; height: 18px; border-radius: 50%; background: var(--gold);
+      color: var(--dark); font-size: .6rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ch-arrow { font-size: .6rem; color: var(--muted); transition: transform .2s; }
+    .ch-title.open .ch-arrow { transform: rotate(90deg); }
+    .lesson-list { display: none; flex-direction: column; }
+    .lesson-list.open { display: flex; }
+    .lesson-item {
+      display: flex; align-items: center; gap: .4rem;
+      padding: .42rem .9rem .42rem 1.3rem;
+      font-size: .72rem; cursor: pointer; transition: background .12s;
+      color: var(--muted); border-left: 2px solid transparent;
+    }
+    .lesson-item:hover { background: rgba(200,168,75,.07); color: var(--text); }
+    .lesson-item.active { background: rgba(200,168,75,.13); color: var(--text); font-weight: 600; border-left-color: var(--gold); }
+    .lesson-item.done { color: rgba(62,207,128,.7); }
+    .li-check { display: none; font-size: .62rem; }
+    .lesson-item.done .li-check { display: inline; }
+    .li-num { font-size: .6rem; color: var(--muted); min-width: 22px; }
+    #sidebar::-webkit-scrollbar { width: 3px; }
+    #sidebar::-webkit-scrollbar-thumb { background: var(--gborder); border-radius: 3px; }
+
+    /* ── SIDEBAR TOGGLE ── */
+    #sb-toggle {
+      position: fixed; top: 56px; left: 218px; z-index: 25;
+      width: 18px; height: 36px; background: var(--glass);
+      border: 1px solid var(--gborder); border-left: none;
+      border-radius: 0 6px 6px 0; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: var(--gold); transition: left .3s;
+    }
+    #sb-toggle.collapsed { left: 0; }
+
+    /* ── LESSON PANEL ── */
+    #lesson-panel {
+      position: fixed; top: 46px; right: 0; width: 330px; bottom: 60px; z-index: 20;
+      background: var(--glass); backdrop-filter: blur(16px);
+      border-left: 1px solid var(--gborder);
+      overflow-y: auto; padding: 1.4rem 1.3rem;
+      display: flex; flex-direction: column; gap: .85rem;
+    }
+    #lesson-panel::-webkit-scrollbar { width: 3px; }
+    #lesson-panel::-webkit-scrollbar-thumb { background: var(--gborder); border-radius: 3px; }
+    .ch-tag { font-size: .62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+    #lesson-title { font-family: 'Noto Serif', serif; font-size: 1.22rem; font-weight: 700; line-height: 1.25; }
+    .step-dots { display: flex; gap: .35rem; align-items: center; }
+    .sdot { width: 7px; height: 7px; border-radius: 50%; background: var(--gborder); cursor: pointer; transition: all .25s; }
+    .sdot.active { background: var(--gold); transform: scale(1.35); }
+    .sdot.done   { background: rgba(62,207,128,.6); }
+    #lesson-body { font-size: .86rem; line-height: 1.8; color: rgba(232,228,222,.85); flex: 1; }
+    #lesson-body p { margin-bottom: .7rem; }
+    #lesson-body p:last-child { margin-bottom: 0; }
+    #lesson-body strong { color: var(--text); font-weight: 700; }
+    #lesson-body em { font-style: italic; color: var(--gold); }
+    #lesson-body ul, #lesson-body ol { margin: .3rem 0 .7rem 1.2rem; line-height: 2; font-size: .83rem; }
+    .highlight-box {
+      background: rgba(200,168,75,.08); border-left: 2px solid var(--gold);
+      padding: .5rem .8rem; border-radius: 0 4px 4px 0;
+      margin: .4rem 0; font-size: .82rem; line-height: 1.6;
+    }
+    .term {
+      display: inline-block; background: rgba(200,168,75,.12);
+      border: 1px solid var(--gborder); border-radius: 2px;
+      padding: .02rem .3rem; font-family: monospace; font-size: .78rem; color: var(--gold); font-weight: 600;
+    }
+
+    /* ── FEEDBACK BOX ── */
+    #feedback {
+      border-radius: 5px; padding: .5rem .8rem;
+      font-size: .78rem; font-weight: 600; line-height: 1.5;
+      display: flex; align-items: center; gap: .45rem;
+      background: rgba(200,168,75,.08); border: 1px solid var(--gborder); color: var(--muted);
+      transition: all .22s;
+    }
+    #feedback.correct { background: rgba(62,207,128,.1);  border-color: var(--green); color: var(--green); }
+    #feedback.wrong   { background: rgba(224,80,80,.1);   border-color: var(--red);   color: var(--red); }
+    #feedback.info    { background: rgba(200,168,75,.08); border-color: var(--gborder); color: var(--muted); }
+    .fb-icon { font-size: 1rem; flex-shrink: 0; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+    .shake { animation: shake .3s ease; }
+
+    /* ── NAV BAR ── */
+    #nav-bar {
+      position: fixed; bottom: 0; right: 0; width: 330px; height: 56px; z-index: 25;
+      background: var(--glass); backdrop-filter: blur(16px);
+      border-top: 1px solid var(--gborder); border-left: 1px solid var(--gborder);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1rem;
+    }
+    .nav-btn {
+      display: flex; align-items: center; gap: .35rem;
+      padding: .4rem .95rem; border: 1px solid var(--gborder); border-radius: 5px;
+      background: transparent; font-family: 'Noto Sans', sans-serif;
+      font-size: .78rem; font-weight: 600; cursor: pointer; color: var(--text); transition: all .15s;
+    }
+    .nav-btn.primary { background: rgba(200,168,75,.18); border-color: var(--gold); color: var(--gold); }
+    .nav-btn.primary:hover { background: var(--gold); color: var(--dark); }
+    .nav-btn:hover:not(.primary) { background: rgba(200,168,75,.08); border-color: var(--gold); }
+    .nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+    #step-counter { font-size: .7rem; color: var(--muted); font-family: monospace; }
+
+    /* ── ROTATE TOGGLE ── */
+    #rotate-toggle {
+      position: fixed; bottom: 68px; left: 228px; z-index: 25;
+      background: var(--glass); border: 1px solid var(--gborder);
+      color: var(--muted); padding: 6px 10px; border-radius: 6px;
+      cursor: pointer; font-size: 11px; letter-spacing: .05em;
+      backdrop-filter: blur(12px); transition: all .2s;
+      display: none;
+    }
+    #rotate-toggle.active { color: var(--gold); border-color: var(--gold); background: rgba(200,168,75,.12); }
+
+    /* ── FEEDBACK FLASH OVERLAY ── */
+    #flash {
+      position: fixed; inset: 0; z-index: 5; pointer-events: none;
+      opacity: 0; transition: opacity .4s;
+    }
+
+    /* ── COMPLETE SCREEN ── */
+    #complete-screen {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(8,8,14,.94);
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 1.2rem; text-align: center; padding: 2rem;
+    }
+    #complete-screen.show { display: flex; }
+    .comp-icon  { font-size: 3.5rem; }
+    .comp-title { font-family: 'Noto Serif', serif; font-size: 1.8rem; font-weight: 700; color: var(--gold); }
+    .comp-sub   { font-size: .9rem; color: var(--muted); max-width: 340px; line-height: 1.7; }
+
+    /* ── HINT ── */
+    #hint {
+      position: fixed; bottom: 18px; left: 228px; z-index: 10;
+      color: rgba(232,228,222,.16); font-size: 10px; letter-spacing: .12em;
+      text-transform: uppercase; pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+      #sidebar  { display: none; }
+      #sb-toggle { display: none; }
+      #lesson-panel, #nav-bar { width: 100%; left: 0; }
+      #rotate-toggle { left: 10px; }
+      #hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Complete screen -->
+<div id="complete-screen">
+  <div class="comp-icon">🎉</div>
+  <div class="comp-title">Tebrikler!</div>
+  <div class="comp-sub" id="complete-msg">Bölümü tamamladın!</div>
+  <button class="nav-btn primary" onclick="closeComplete()" style="margin-top:.5rem">Devam Et →</button>
+</div>
+
+<!-- Canvas (3D board) -->
+<canvas id="c"></canvas>
+
+<!-- Feedback flash overlay -->
+<div id="flash"></div>
+
+<!-- Topbar -->
+<div id="topbar">
+  <div class="tb-left">
+    <a class="back-btn" href="index.html">← Ana Sayfa</a>
+    <span class="page-title">Go Öğren 3D</span>
+  </div>
+  <div class="prog-wrap">
+    <span class="prog-text" id="prog-text">0 / 0</span>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- Sidebar toggle -->
+<button id="sb-toggle" onclick="toggleSidebar()">◀</button>
+
+<!-- Sidebar -->
+<div id="sidebar">
+  <div class="sb-header">Müfredat</div>
+  <div id="curriculum"></div>
+</div>
+
+<!-- Lesson panel -->
+<div id="lesson-panel">
+  <div class="ch-tag"  id="chapter-tag"></div>
+  <div id="lesson-title">Ders Seç</div>
+  <div class="step-dots" id="step-dots"></div>
+  <div id="lesson-body"><p>Sol panelden bir ders seçin.</p></div>
+  <div id="feedback" class="info">
+    <span class="fb-icon">💡</span>
+    <span id="fb-text">Bir ders seçin.</span>
+  </div>
+</div>
+
+<!-- Nav bar -->
+<div id="nav-bar">
+  <button class="nav-btn" id="btn-prev" onclick="prevStep()" disabled>← Geri</button>
+  <span id="step-counter"></span>
+  <button class="nav-btn primary" id="btn-next" onclick="nextStep()" disabled>İleri →</button>
+</div>
+
+<!-- Rotate toggle (click mode) -->
+<button id="rotate-toggle" onclick="toggleRotate()">⟳ Döndür</button>
+
+<!-- Hint -->
+<div id="hint" id="hint">Sol tık · Hamle &nbsp;·&nbsp; Sürükle · Döndür &nbsp;·&nbsp; Tekerlek · Yaklaştır</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   3D ENGINE
+═══════════════════════════════════════════════════════ */
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+let W, H;
+function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+resize(); window.addEventListener('resize', resize);
+
+let camYaw = 0.50, camPitch = 0.88, camDist = 500;
+let camTarget = null, camStart = null, camLerpT = 1;
+const CAM_DUR = 0.65;
+
+function project(x, y, z) {
+  const rx  =  x*Math.cos(camYaw)   + z*Math.sin(camYaw);
+  const rz  = -x*Math.sin(camYaw)   + z*Math.cos(camYaw);
+  const ry2 =  y*Math.cos(camPitch) - rz*Math.sin(camPitch);
+  const rz2 =  y*Math.sin(camPitch) + rz*Math.cos(camPitch);
+  const fov = 700, sc = fov / Math.max(fov + rz2, 1) * (camDist/500);
+  return { sx: W/2 + rx*sc, sy: H/2 + ry2*sc, scale: sc, z: rz2 };
+}
+
+const SIZE = 9, CELL = 48, HALF = (SIZE-1)*CELL/2, BOARD_H = 14;
+const STONE_R = 20, ASPECT_3D = 0.36, ANIM_DUR = 0.20;
+
+function stoneRadii(p, mul) {
+  mul = mul || 1;
+  const rx = STONE_R * p.scale * mul;
+  const sp = Math.sin(camPitch), cp = Math.cos(camPitch);
+  return { rx, ry: rx * Math.sqrt(sp*sp + ASPECT_3D*ASPECT_3D*cp*cp) };
+}
+
+function easeOutBack(t) {
+  const c1=1.70158, c3=c1+1;
+  return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2);
+}
+function easeInOutCubic(t) { return t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
+function lerp(a,b,t) { return a+(b-a)*t; }
+
+/* Wood texture */
+const woodCv = document.createElement('canvas');
+woodCv.width = woodCv.height = 512;
+(function(){
+  const wc = woodCv.getContext('2d');
+  const g  = wc.createLinearGradient(0,0,512,0);
+  g.addColorStop(0,'#c8a84a'); g.addColorStop(.15,'#d4b050');
+  g.addColorStop(.38,'#c2a040'); g.addColorStop(.6,'#caa848');
+  g.addColorStop(.82,'#be9c3a'); g.addColorStop(1,'#c8a444');
+  wc.fillStyle=g; wc.fillRect(0,0,512,512);
+  wc.globalAlpha=0.055;
+  for(let i=0;i<120;i++){
+    const y=Math.random()*512, dk=i%7===0;
+    wc.strokeStyle=dk?'#5a2e00':'#e8d060'; wc.lineWidth=dk?Math.random()*1.2+.4:Math.random()*.8+.2;
+    wc.beginPath(); wc.moveTo(0,y+(Math.random()-.5)*4);
+    wc.bezierCurveTo(128,y+(Math.random()-.5)*3,384,y+(Math.random()-.5)*3,512,y+(Math.random()-.5)*4);
+    wc.stroke();
+  }
+  wc.globalAlpha=.10;
+  const vig=wc.createLinearGradient(0,0,512,512);
+  vig.addColorStop(0,'#3a1c00'); vig.addColorStop(.5,'transparent'); vig.addColorStop(1,'#3a1c00');
+  wc.fillStyle=vig; wc.fillRect(0,0,512,512);
+  wc.globalAlpha=1;
+})();
+const woodPat = ctx.createPattern(woodCv,'repeat');
+
+/* Game state */
+const game = {
+  grid:   Array.from({length:SIZE},()=>Array(SIZE).fill(null)),
+  turn:   'black',
+  stones: [],
+
+  reset() {
+    this.grid   = Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+    this.turn   = 'black'; this.stones = [];
+  },
+
+  seed(gx, gz, colorChar) {
+    if(gx<0||gz<0||gx>=SIZE||gz>=SIZE) return;
+    if(this.grid[gz][gx]) return;
+    const isB = (colorChar==='B'||colorChar==='black');
+    const col  = isB ? 'black' : 'white';
+    const wx=-HALF+gx*CELL, wz=-HALF+gz*CELL;
+    const wy=-(BOARD_H/2)-STONE_R*ASPECT_3D-1;
+    this.grid[gz][gx] = col;
+    this.stones.push({ gx,gz,color:col,wx,wy,wz, t:0,done:false,
+      pts:makeParticles(wx,wy,wz,isB), showPts:false,
+      removing:false, removeT:0 });
+  },
+
+  place(gx, gz) {
+    this.seed(gx, gz, this.turn);
+    this.turn = this.turn==='black' ? 'white' : 'black';
+  },
+
+  removeStone(gx, gz) {
+    this.grid[gz][gx] = null;
+    const s = this.stones.find(s=>s.gx===gx&&s.gz===gz&&!s.removing);
+    if(s) { s.removing=true; s.removeT=0; }
+  },
+};
+
+function makeParticles(wx,wy,wz,isBlack) {
+  const ps=[];
+  for(let i=0;i<14;i++){
+    const a=Math.PI*2*i/14+Math.random()*.5, v=1.2+Math.random()*1.8;
+    ps.push({ x:wx,y:wy,z:wz, vx:Math.cos(a)*v*CELL*.09, vy:-(2.5+Math.random()*3)*CELL*.09, vz:Math.sin(a)*v*CELL*.09,
+      life:1, r:2+Math.random()*2, col:isBlack?[160,175,200]:[255,240,170] });
+  }
+  return ps;
+}
+
+const G = 2200;
+function updateAnimations(dt) {
+  /* Camera lerp */
+  if(camLerpT<1&&camTarget) {
+    camLerpT = Math.min(1, camLerpT+dt/CAM_DUR);
+    const t = easeInOutCubic(camLerpT);
+    camYaw   = lerp(camStart.yaw,  camTarget.yaw,  t);
+    camPitch = lerp(camStart.pitch,camTarget.pitch, t);
+    camDist  = lerp(camStart.dist, camTarget.dist,  t);
+  }
+  /* Stones */
+  for(let i=game.stones.length-1;i>=0;i--) {
+    const s = game.stones[i];
+    if(s.removing) {
+      s.removeT = Math.min(1,(s.removeT||0)+dt/.25);
+      if(s.removeT>=1) game.stones.splice(i,1);
+      continue;
+    }
+    if(s.showPts) {
+      for(const p of s.pts) {
+        if(p.life<=0) continue;
+        p.life-=dt*2; p.vy+=G*.2*dt;
+        p.x+=p.vx*dt; p.y+=p.vy*dt; p.z+=p.vz*dt;
+        p.vx*=.97; p.vz*=.97;
+      }
+    }
+    if(s.done) continue;
+    s.t += dt/ANIM_DUR;
+    if(s.t>=1) { s.t=1; s.done=true; s.showPts=true; }
+  }
+}
+
+/* Board drawing */
+function drawFace(corners,fill,stroke) {
+  const pts=corners.map(([x,y,z])=>project(x,y,z));
+  ctx.beginPath(); pts.forEach((p,i)=>i===0?ctx.moveTo(p.sx,p.sy):ctx.lineTo(p.sx,p.sy));
+  ctx.closePath(); ctx.fillStyle=fill; ctx.fill();
+  ctx.strokeStyle=stroke||fill; ctx.lineWidth=1; ctx.stroke();
+}
+
+function drawBoard() {
+  const bh=BOARD_H/2, bw=HALF+CELL*.82;
+  drawFace([[-bw,-bh,-bw],[-bw,-bh,bw],[-bw,bh,bw],[-bw,bh,-bw]],'#7a4e0e','#5e3a08');
+  drawFace([[-bw,-bh,bw],[bw,-bh,bw],[bw,bh,bw],[-bw,bh,bw]],'#8a5a12','#6a4408');
+  drawFace([[bw,-bh,-bw],[bw,-bh,bw],[bw,bh,bw],[bw,bh,-bw]],'#966014','#724808');
+  const top=[[-bw,-bh,-bw],[bw,-bh,-bw],[bw,-bh,bw],[-bw,-bh,bw]];
+  const tpts=top.map(([x,y,z])=>project(x,y,z));
+  ctx.save(); ctx.beginPath();
+  tpts.forEach((p,i)=>i===0?ctx.moveTo(p.sx,p.sy):ctx.lineTo(p.sx,p.sy));
+  ctx.closePath(); ctx.clip();
+  ctx.fillStyle=woodPat; ctx.globalAlpha=.96; ctx.fill();
+  ctx.globalAlpha=.06; ctx.fillStyle='#2a1200'; ctx.fill();
+  ctx.globalAlpha=1; ctx.strokeStyle='#6a4008'; ctx.lineWidth=1.6; ctx.stroke();
+  ctx.restore();
+}
+
+function drawGrid() {
+  const Y=-BOARD_H/2-.4, LTRS='ABCDEFGHJ';
+  const corners=[[-HALF,Y,-HALF],[HALF,Y,-HALF],[HALF,Y,HALF],[-HALF,Y,HALF]];
+  ctx.strokeStyle='rgba(55,24,0,.92)'; ctx.lineWidth=1.9;
+  for(let i=0;i<4;i++){
+    const a=project(...corners[i]), b=project(...corners[(i+1)%4]);
+    ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke();
+  }
+  ctx.strokeStyle='rgba(55,24,0,.68)'; ctx.lineWidth=.8;
+  for(let i=1;i<SIZE-1;i++){
+    const p=-HALF+i*CELL;
+    const a=project(p,Y,-HALF),b=project(p,Y,HALF); ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke();
+    const c=project(-HALF,Y,p),d=project(HALF,Y,p); ctx.beginPath(); ctx.moveTo(c.sx,c.sy); ctx.lineTo(d.sx,d.sy); ctx.stroke();
+  }
+  [[2,2],[6,2],[4,4],[2,6],[6,6]].forEach(([sx,sz])=>{
+    const p=project(-HALF+sx*CELL,Y,-HALF+sz*CELL);
+    ctx.beginPath(); ctx.arc(p.sx,p.sy,3.8*p.scale,0,Math.PI*2);
+    ctx.fillStyle='rgba(48,20,0,.88)'; ctx.fill();
+  });
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(let i=0;i<SIZE;i++){
+    const pos=-HALF+i*CELL;
+    const lb=project(pos,Y,HALF+CELL*.72), nl=project(-HALF-CELL*.72,Y,pos);
+    const fs=Math.round(9*lb.scale); if(fs<6) continue;
+    ctx.font=`bold ${fs}px monospace`; ctx.fillStyle='rgba(75,36,6,.78)';
+    ctx.fillText(LTRS[i],lb.sx,lb.sy); ctx.fillText(String(SIZE-i),nl.sx,nl.sy);
+  }
+}
+
+/* Highlight rings — target intersections */
+let hlTime = 0;
+function drawHighlights(step) {
+  if(!step) return;
+  const targets=[];
+  if(step.answer) targets.push(step.answer);
+  else if(Array.isArray(step.answers)) targets.push(...step.answers);
+  if(!targets.length) return;
+
+  const Y   = -BOARD_H/2 - .3;
+  const sp  = Math.abs(Math.sin(camPitch));
+  const pulse = .55 + .45*Math.sin(hlTime*3.5);
+
+  for(const t of targets) {
+    const p  = project(-HALF+t.x*CELL, Y, -HALF+t.y*CELL);
+    const rx = STONE_R*p.scale*1.55;
+    const ry = rx*sp;
+    if(rx<4) continue;
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(200,168,75,${.55*pulse})`;
+    ctx.lineWidth=2*p.scale; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx*1.28,ry*1.28,0,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(200,168,75,${.20*pulse})`;
+    ctx.lineWidth=1*p.scale; ctx.stroke();
+  }
+}
+
+/* Stone drawing */
+function drawStone(wx,wy,wz,color,alpha,mul) {
+  alpha = alpha!==undefined ? alpha : 1;
+  mul   = mul!==undefined   ? mul   : 1;
+  const p = project(wx,wy,wz);
+  const {rx,ry} = stoneRadii(p,mul);
+  if(rx<3) return;
+  const isB = color==='black';
+  ctx.save(); ctx.globalAlpha=alpha;
+
+  if(mul>=.85){
+    const ps=project(wx,-BOARD_H/2-.5,wz);
+    const sha=.42*Math.min(1,mul);
+    const sg=ctx.createRadialGradient(ps.sx+rx*.1,ps.sy+ry*.12,0,ps.sx+rx*.1,ps.sy+ry*.12,rx);
+    sg.addColorStop(0,`rgba(0,0,0,${sha})`); sg.addColorStop(.65,`rgba(0,0,0,${sha*.5})`); sg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.ellipse(ps.sx+rx*.1,ps.sy+ry*.12,rx,ry*.48,0,0,Math.PI*2);
+    ctx.fillStyle=sg; ctx.fill();
+  }
+
+  if(isB) {
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2);
+    const g=ctx.createRadialGradient(p.sx-rx*.18,p.sy-ry*.25,rx*.03,p.sx+rx*.08,p.sy+ry*.08,rx*1.05);
+    g.addColorStop(0,'#4e5c70'); g.addColorStop(.12,'#22283a'); g.addColorStop(.45,'#0c0e18'); g.addColorStop(.82,'#07080e'); g.addColorStop(1,'#050508');
+    ctx.fillStyle=g; ctx.fill();
+    const eg=ctx.createRadialGradient(p.sx,p.sy,rx*.55,p.sx,p.sy,rx*1.02);
+    eg.addColorStop(0,'rgba(0,0,0,0)'); eg.addColorStop(1,'rgba(0,0,0,.42)');
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2); ctx.fillStyle=eg; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2);
+    ctx.strokeStyle='#181c28'; ctx.lineWidth=rx*.045; ctx.stroke();
+    const hg=ctx.createRadialGradient(p.sx-rx*.24,p.sy-ry*.32,0,p.sx-rx*.24,p.sy-ry*.32,rx*.30);
+    hg.addColorStop(0,'rgba(210,225,255,.42)'); hg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.beginPath(); ctx.ellipse(p.sx-rx*.24,p.sy-ry*.32,rx*.30,ry*.22,-.28,0,Math.PI*2);
+    ctx.fillStyle=hg; ctx.fill();
+  } else {
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2); ctx.clip();
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2);
+    const base=ctx.createRadialGradient(p.sx,p.sy,0,p.sx,p.sy,rx);
+    base.addColorStop(0,'#f8f4ec'); base.addColorStop(.42,'#f2ece0'); base.addColorStop(.78,'#e6dfd2'); base.addColorStop(1,'#d8d0c2');
+    ctx.fillStyle=base; ctx.fill();
+    const clouds=[{dx:-.06,dy:-.05,rr:.45,a:.07},{dx:.15,dy:.10,rr:.34,a:.055},{dx:-.16,dy:.16,rr:.28,a:.045},{dx:.05,dy:-.18,rr:.32,a:.038},{dx:-.03,dy:.04,rr:.58,a:.028},{dx:.20,dy:-.07,rr:.24,a:.042}];
+    for(const cl of clouds){
+      const cx=p.sx+rx*cl.dx,cy=p.sy+ry*cl.dy,cr=rx*cl.rr;
+      const cg=ctx.createRadialGradient(cx,cy,0,cx,cy,cr);
+      cg.addColorStop(0,`rgba(255,252,246,${cl.a})`); cg.addColorStop(1,'rgba(255,252,246,0)');
+      ctx.beginPath(); ctx.ellipse(cx,cy,cr,cr*.68,cl.dx*.6,0,Math.PI*2); ctx.fillStyle=cg; ctx.fill();
+    }
+    const ed=ctx.createRadialGradient(p.sx,p.sy,rx*.50,p.sx,p.sy,rx);
+    ed.addColorStop(0,'rgba(0,0,0,0)'); ed.addColorStop(.72,'rgba(35,25,10,.05)'); ed.addColorStop(.90,'rgba(35,25,10,.16)'); ed.addColorStop(1,'rgba(35,25,10,.32)');
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2); ctx.fillStyle=ed; ctx.fill();
+    const gh=ctx.createRadialGradient(p.sx,p.sy,rx*.80,p.sx,p.sy,rx);
+    gh.addColorStop(0,'rgba(130,160,135,0)'); gh.addColorStop(.65,'rgba(130,160,135,.055)'); gh.addColorStop(1,'rgba(110,148,118,.14)');
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2); ctx.fillStyle=gh; ctx.fill();
+    const ml=ctx.createRadialGradient(p.sx-rx*.05,p.sy-ry*.08,0,p.sx-rx*.05,p.sy-ry*.08,rx*.85);
+    ml.addColorStop(0,'rgba(255,253,248,.15)'); ml.addColorStop(.5,'rgba(255,253,248,.05)'); ml.addColorStop(1,'rgba(255,253,248,0)');
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2); ctx.fillStyle=ml; ctx.fill();
+    ctx.restore();
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2);
+    ctx.strokeStyle='rgba(90,72,45,.50)'; ctx.lineWidth=rx*.042; ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawParticles(ps) {
+  for(const p of ps){
+    if(p.life<=0) continue;
+    const pr=project(p.x,p.y,p.z), r=p.r*pr.scale*p.life;
+    if(r<.3) continue;
+    const [r0,g0,b0]=p.col;
+    ctx.beginPath(); ctx.arc(pr.sx,pr.sy,r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${r0},${g0},${b0},${p.life*.7})`; ctx.fill();
+  }
+}
+
+let ghostGrid=null, ghostActive=false;
+
+function render() {
+  const bg=ctx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.5,Math.max(W,H)*.75);
+  bg.addColorStop(0,'#141420'); bg.addColorStop(1,'#060608');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  drawBoard(); drawGrid();
+
+  if(CUR_STEP_DATA && !CUR_STEP_DATA.auto) drawHighlights(CUR_STEP_DATA);
+
+  if(ghostActive&&ghostGrid){
+    const {gx,gz}=ghostGrid;
+    if(!game.grid[gz][gx]){
+      const wy=-(BOARD_H/2)-STONE_R*ASPECT_3D-1;
+      drawStone(-HALF+gx*CELL,wy,-HALF+gz*CELL,game.turn,.26,1);
+    }
+  }
+
+  const sorted=[...game.stones].sort((a,b)=>project(a.wx,a.wy,a.wz).z-project(b.wx,b.wy,b.wz).z);
+  for(const s of sorted){
+    const al = s.removing ? Math.max(0,1-s.removeT) : 1;
+    const sc = s.done ? 1 : easeOutBack(Math.min(s.t,1));
+    if(al>0) drawStone(s.wx,s.wy,s.wz,s.color,al,sc);
+    if(s.showPts&&al>0) drawParticles(s.pts);
+  }
+}
+
+/* Hit detection */
+function screenToGrid(mx,my) {
+  const BY=-BOARD_H/2; let best=null,bestD=Infinity,bestSc=1;
+  for(let gz=0;gz<SIZE;gz++) for(let gx=0;gx<SIZE;gx++){
+    const p=project(-HALF+gx*CELL,BY,-HALF+gz*CELL);
+    const d=Math.hypot(mx-p.sx,my-p.sy);
+    if(d<bestD){bestD=d;best={gx,gz};bestSc=p.scale;}
+  }
+  return bestD<CELL*.55*bestSc?best:null;
+}
+
+/* Camera animation trigger */
+function animateCamera(preset) {
+  camStart = {yaw:camYaw,pitch:camPitch,dist:camDist};
+  camTarget = {...preset}; camLerpT=0;
+}
+
+const CAM = {
+  overview: {yaw:.50,pitch:.88,dist:500},
+  high:     {yaw:.50,pitch:1.15,dist:470},
+  top:      {yaw:.50,pitch:1.45,dist:440},
+  corner_tl:{yaw:.85,pitch:.95,dist:420},
+  corner_tr:{yaw:.15,pitch:.95,dist:420},
+  center:   {yaw:.50,pitch:1.08,dist:460},
+};
+
+/* Mouse */
+let isDrag=false,dragFrom={x:0,y:0},lastM={x:0,y:0},rotateMode=false;
+
+canvas.addEventListener('mousedown',e=>{
+  dragFrom={x:e.clientX,y:e.clientY}; lastM={x:e.clientX,y:e.clientY}; isDrag=false;
+});
+canvas.addEventListener('mousemove',e=>{
+  const dx=e.clientX-lastM.x,dy=e.clientY-lastM.y;
+  if(e.buttons===1&&Math.hypot(e.clientX-dragFrom.x,e.clientY-dragFrom.y)>4){
+    if(!CUR_STEP_DATA||CUR_STEP_DATA.auto||rotateMode) {
+      isDrag=true; camYaw+=dx*.007; camPitch+=dy*.007;
+      camPitch=Math.max(.08,Math.min(1.48,camPitch));
+    }
+  }
+  lastM={x:e.clientX,y:e.clientY};
+  ghostGrid = isDrag ? null : screenToGrid(e.clientX,e.clientY);
+});
+canvas.addEventListener('click',e=>{
+  if(isDrag) return;
+  if(CUR_STEP_DATA&&!CUR_STEP_DATA.auto&&!rotateMode){
+    const g=screenToGrid(e.clientX,e.clientY);
+    if(g) onClick3D(g.gx,g.gz);
+  }
+});
+canvas.addEventListener('wheel',e=>{
+  camDist=Math.max(180,Math.min(960,camDist+e.deltaY*.5));
+},{passive:true});
+
+function toggleRotate() {
+  rotateMode = !rotateMode;
+  const btn=document.getElementById('rotate-toggle');
+  btn.classList.toggle('active',rotateMode);
+  btn.textContent = rotateMode ? '✕ Hamle Modu' : '⟳ Döndür';
+}
+
+window.toggleSidebar = function() {
+  const sb=document.getElementById('sidebar'), t=document.getElementById('sb-toggle');
+  sb.classList.toggle('collapsed');
+  t.classList.toggle('collapsed');
+  t.textContent = sb.classList.contains('collapsed') ? '▶' : '◀';
+};
+
+/* ═══════════════════════════════════════════════════════
+   CURRICULUM
+═══════════════════════════════════════════════════════ */
+const CURRICULUM = [
+  { id:'c1', title:'Temel Kurallar', lessons:[
+
+    { id:'l1', title:'Tahta ve Taşlar', steps:[
+      { text:`<p>Go, <strong>19×19'luk</strong> bir tahta üzerinde oynanan iki kişilik bir strateji oyunudur. Yeni başlayanlar için <strong>9×9</strong> daha uygundur.</p><p>İki oyuncu vardır: biri <strong>siyah</strong>, diğeri <strong>beyaz</strong>. <em>Siyah her zaman önce oynar.</em></p>`, board:[], auto:true, size:9, camera:CAM.overview, fb:{t:'Taşlar çizgilerin kesişim noktalarına yerleştirilir.',c:'info'} },
+      { text:`<p>Taşlar karelerin içine değil, <strong>çizgilerin kesişim noktalarına</strong> yerleştirilir.</p><p>Aşağıdaki tahtaya herhangi bir noktaya tıklayarak <strong>siyah taş koy.</strong></p>`, board:[], answers:'any', turn:'black', size:9, fb:{t:'Herhangi bir noktaya tıkla!',c:'info'}, fb_ok:'Mükemmel! Taşı doğru noktaya koydun.' },
+      { text:`<p>Taşlar bir kez konulduktan sonra <strong>hareket ettirilemez</strong> — sadece yakalanarak kaldırılabilir.</p><div class="highlight-box">Go'da taşlar hareket etmez, sadece eklenir veya kaldırılır.</div>`, board:[{color:'W',x:4,y:4}], auto:true, size:9, fb:{t:'Bu beyaz taş artık o noktada sabit.',c:'info'} },
+    ]},
+
+    { id:'l2', title:'Nefes Noktaları', steps:[
+      { text:`<p>Her taşın komşu boş noktalarına <strong><span class="term">nefes noktası</span></strong> denir.</p><p>Ortadaki bir taşın <strong>4 nefes noktası</strong> vardır (üst, alt, sol, sağ).</p>`, board:[{color:'B',x:4,y:4}], auto:true, size:9, camera:CAM.center, fb:{t:'Ortadaki siyah taşın 4 nefes noktası var.',c:'info'} },
+      { text:`<p>Kenar noktasındaki taşın <strong>3 nefes noktası</strong>, köşedekinin ise <strong>2 nefes noktası</strong> vardır.</p><div class="highlight-box">Nefes noktası azaldıkça taş tehlikeye girer. Köşe ve kenar taşları daha savunmasızdır.</div>`, board:[{color:'B',x:0,y:0},{color:'W',x:8,y:4}], auto:true, size:9, fb:{t:'Köşe: 2 · Kenar: 3 · Orta: 4 nefes noktası',c:'info'} },
+      { text:`<p>Yatay veya dikey olarak birbirine bağlı taşlar <strong>grup</strong> oluşturur. Grubun özgürlüğü tüm taşlarının boş komşularının toplamıdır.</p>`, board:[{color:'B',x:3,y:4},{color:'B',x:4,y:4},{color:'B',x:5,y:4}], auto:true, size:9, fb:{t:'Bu üç taş bir grup — birlikte 8 nefes noktası var.',c:'info'} },
+    ]},
+
+    { id:'l3', title:'Taş Alma', steps:[
+      { text:`<p>Bir taşın <strong>tüm nefes noktaları doldurulursa</strong>, o taş yakalanır ve tahtadan kalkar.</p><p>Beyaz taşın tek boş noktası var — oraya siyah taş koyarak beyazı yakala! <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}], answer:{x:4,y:5}, turn:'black', size:9, fb:{t:'Beyaz taşın son nefes noktasına tıkla!',c:'info'}, fb_ok:'Yakaladın! Beyaz taş tahtadan kalkar.', fb_err:'Beyaz taşın çevresindeki boş noktayı bul.', capture:[{x:4,y:4}] },
+      { text:`<p>Bir <strong>grubu</strong> yakalamak için grubun tüm nefes noktalarını doldurman gerekir.</p><p>İki beyaz taşın son nefes noktasını doldur — <strong>D5 noktasına tıkla.</strong></p>`, board:[{color:'W',x:3,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:3},{color:'B',x:4,y:4}], answer:{x:3,y:4}, turn:'black', size:9, fb:{t:'İki beyaz taşın son boş noktasını bul.',c:'info'}, fb_ok:'Grubu yakaladın!', fb_err:'Beyaz grubun son nefes noktasını bul.', capture:[{x:3,y:3},{x:4,y:3}] },
+      { text:`<p>Yakalanan taşlar <strong>esir</strong> sayılır ve oyun sonunda skora eklenir.</p><div class="highlight-box">Ne kadar çok taş yakalarsan skor avantajın o kadar artar.</div>`, board:[{color:'B',x:2,y:2},{color:'B',x:6,y:6}], auto:true, size:9, fb:{t:'Her yakalanan taş 1 puan kazandırır.',c:'info'} },
+    ]},
+
+    { id:'l4', title:'Yasak Hamleler', steps:[
+      { text:`<p>Kendi taşını nefessiz bırakacak bir hamle <strong>yapamazsın</strong> — bu <span class="term">öz-yakalama</span> yasağıdır.</p><p>Beyaz taşların sardığı orta noktaya siyah taş konamaz — anında nefessiz kalır.</p>`, board:[{color:'W',x:3,y:3},{color:'W',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}], auto:true, size:9, camera:CAM.center, fb:{t:'E4 noktasına taş koymak yasak — öz-yakalama!',c:'info'} },
+      { text:`<p><strong>İstisna:</strong> O noktaya koyduğunda rakip taşı <em>yakalıyorsan</em> hamle geçerlidir.</p><p>Beyazı yakala — <strong>E5 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:3},{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'B',x:4,y:2}], answer:{x:4,y:4}, turn:'black', size:9, fb:{t:'Beyazı yakalayan hamle geçerli!',c:'info'}, fb_ok:'Doğru! Yakalama hamlesi öz-yakalama sayılmaz.', fb_err:'Beyaz taşın altındaki noktayı bul.', capture:[{x:4,y:3}] },
+    ]},
+
+    { id:'l5', title:'Ko Kuralı', steps:[
+      { text:`<p><span class="term">Ko</span> — aynı pozisyonun sonsuza tekrar etmesini önleyen kuraldır.</p><p>Bir hamle tahtayı <em>önceki pozisyona</em> döndürüyorsa, o hamle <strong>yapılamaz.</strong></p>`, board:[{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4},{color:'W',x:4,y:5},{color:'W',x:3,y:5},{color:'W',x:5,y:5},{color:'W',x:4,y:4}], auto:true, size:9, camera:CAM.center, fb:{t:'Bu tipik bir Ko pozisyonu.',c:'info'} },
+      { text:`<p>Ko savaşında oyuncular <strong>"ko tehdidi"</strong> yaparlar — tahtanın başka yerinde önemli bir hamle.</p><div class="highlight-box">Ko, Go'nun en dramatik stratejik kavramlarından biridir.</div>`, board:[{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'B',x:4,y:3},{color:'W',x:4,y:5},{color:'W',x:3,y:5},{color:'W',x:5,y:5}], auto:true, size:9, fb:{t:'Ko pozisyonunu iyi tanıyın — sıkça karşılaşacaksınız.',c:'info'} },
+    ]},
+
+    { id:'l6', title:'Oyun Sonu ve Sayım', steps:[
+      { text:`<p>Her iki oyuncu da art arda <strong>pas geçince</strong> oyun biter.</p><p>Kazanan, <strong>daha fazla bölge</strong> çeviren oyuncudur. Bölge = etrafı sarılmış boş noktalar.</p>`, board:[{color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:1,y:2},{color:'B',x:3,y:2},{color:'B',x:1,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:3},{color:'W',x:5,y:5},{color:'W',x:6,y:5},{color:'W',x:7,y:5},{color:'W',x:5,y:6},{color:'W',x:7,y:6},{color:'W',x:5,y:7},{color:'W',x:6,y:7},{color:'W',x:7,y:7}], auto:true, size:9, camera:CAM.high, fb:{t:'Siyah sol üstte, Beyaz sağ altta bölge sardı.',c:'info'} },
+      { text:`<p>Puan hesabı: <strong>Bölge</strong> + <strong>Esirler</strong> + <strong>Komi</strong> (beyaza verilen avantaj, genellikle 6.5)</p><div class="highlight-box">Komi, siyahın ilk hamle avantajını dengeler.</div>`, board:[], auto:true, size:9, fb:{t:'Komi genellikle 6.5\'tir.',c:'info'} },
+    ]},
+  ]},
+
+  { id:'c2', title:'Temel Teknikler', lessons:[
+
+    { id:'l7', title:'Canlı Gruplar (İki Göz)', steps:[
+      { text:`<p>Bir grup <strong>iki göze</strong> sahipse asla yakalanamaz — <em>ölümsüzdür.</em></p><p><span class="term">Göz</span> = grubun içindeki, rakibin hiçbir zaman dolduramayacağı boş nokta.</p>`, board:[{color:'B',x:0,y:0},{color:'B',x:1,y:0},{color:'B',x:2,y:0},{color:'B',x:3,y:0},{color:'B',x:4,y:0},{color:'B',x:0,y:1},{color:'B',x:4,y:1},{color:'B',x:0,y:2},{color:'B',x:2,y:2},{color:'B',x:4,y:2},{color:'B',x:0,y:3},{color:'B',x:4,y:3},{color:'B',x:0,y:4},{color:'B',x:1,y:4},{color:'B',x:2,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:4}], auto:true, size:9, camera:CAM.corner_tl, fb:{t:'Bu grubun iki gözü var — ölümsüz!',c:'info'} },
+      { text:`<p><strong>Sahte göz</strong> — rakip tarafından doldurulabilecek nokta gerçek göz değildir.</p><div class="highlight-box">İki gerçek göz = ölümsüz grup. Go'nun en temel kavramlarından biridir.</div>`, board:[{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:2,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:4}], auto:true, size:9, fb:{t:'Bu grubun tek gözü var — ölümsüz değil!',c:'info'} },
+    ]},
+
+    { id:'l8', title:'Kesme ve Bağlama', steps:[
+      { text:`<p><span class="term">Kesme</span> — rakibin iki taşı arasına girerek bağlantısını koparmak.</p><p>Siyahın iki taşı arasına gir — <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}], answer:{x:4,y:3}, turn:'white', size:9, fb:{t:'Siyahın iki taşı arasına gir!',c:'info'}, fb_ok:'Kestik! Siyah artık iki ayrı grup.', fb_err:'Siyahın iki taşını birbirine bağlayan boşluğu bul.' },
+      { text:`<p><span class="term">Bağlama</span> — kendi taşlarının arasını kapatarak grubu güçlendirmek.</p><p>Siyah taşları birleştir — <strong>D4 noktasına tıkla.</strong></p>`, board:[{color:'B',x:3,y:3},{color:'B',x:3,y:5},{color:'W',x:2,y:4},{color:'W',x:4,y:4}], answer:{x:3,y:4}, turn:'black', size:9, fb:{t:'Siyah taşlarını birleştir!',c:'info'}, fb_ok:'Güçlü bağlantı! Artık tek grup.', fb_err:'Siyah taşlar arasındaki boşluğu doldur.' },
+    ]},
+
+    { id:'l9', title:'Çift Atari', steps:[
+      { text:`<p><span class="term">Atari</span> — bir taşın son nefes noktası tehdit altında. <span class="term">Çift atari</span> ise tek hamleyle iki farklı grubu aynı anda tehdit etmek.</p>`, board:[{color:'W',x:2,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:1,y:3},{color:'B',x:2,y:4},{color:'B',x:4,y:4}], auto:true, size:9, camera:CAM.center, fb:{t:'Doğru hamleyle iki beyaz gruba aynı anda atari yapılabilir.',c:'info'} },
+      { text:`<p>Çift atari hamlesini bul! <strong>D4 noktasına tıkla.</strong></p>`, board:[{color:'W',x:2,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:1,y:3},{color:'B',x:2,y:4},{color:'B',x:4,y:4}], answer:{x:3,y:3}, turn:'black', size:9, fb:{t:'Tek hamleyle iki grubu tehdit et!',c:'info'}, fb_ok:'Mükemmel çift atari!', fb_err:'Her iki beyaz gruba da atari yapacak noktayı bul.' },
+    ]},
+
+    { id:'l10', title:'Merdiven (Shicho)', steps:[
+      { text:`<p><span class="term">Merdiven</span> (Japonca: <em>shicho</em>) — bir taşı sürekli atari yaparak köşeye sürme tekniği.</p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3}], auto:true, size:9, camera:CAM.overview, fb:{t:'Beyaz kaçmaya çalışır ama her adımda yakalanır.',c:'info'} },
+      { text:`<p>Merdiven işe yaraması için tahtada <strong>merdiveni kıran taş</strong> olmamalıdır.</p><div class="highlight-box">Merdivene başlamadan önce tüm tahtayı kontrol et.</div>`, board:[{color:'W',x:4,y:4},{color:'W',x:7,y:1},{color:'B',x:3,y:4},{color:'B',x:4,y:3}], auto:true, size:9, fb:{t:'H2\'deki beyaz taş merdiveni kırıyor!',c:'info'} },
+    ]},
+
+    { id:'l11', title:'Ağ (Geta)', steps:[
+      { text:`<p><span class="term">Ağ</span> (Japonca: <em>geta</em>) — bir taşı atari yapmadan, kaçış yollarını keserek tuzağa düşürmek.</p><p>Beyazın kaçış yolunu kesen noktayı bul — <strong>F6 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'B',x:6,y:4},{color:'B',x:6,y:5}], answer:{x:5,y:5}, turn:'black', size:9, fb:{t:'Beyazın tüm kaçış yollarını kapat!',c:'info'}, fb_ok:'Ağ kuruldu! Beyaz kaçamaz.', fb_err:'Beyazın kaçış yollarını kapatan noktayı bul.' },
+    ]},
+
+    { id:'l12', title:'Snapback', steps:[
+      { text:`<p><span class="term">Snapback</span> — rakibe taş kurban vererek daha büyük bir grubu yakalama tekniği.</p><p>Snapback başlat — <strong>E7 noktasına tıkla.</strong></p>`, board:[{color:'B',x:3,y:3},{color:'B',x:4,y:3},{color:'B',x:5,y:3},{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'B',x:3,y:5},{color:'B',x:4,y:5},{color:'W',x:4,y:4}], answer:{x:4,y:6}, turn:'black', size:9, fb:{t:'Snapback\'i başlatacak noktayı bul!',c:'info'}, fb_ok:'Snapback! Beyaz kurbanı alsa bile büyük grubu kaybeder.', fb_err:'Doğru noktayı bul — kurbanı ver.' },
+    ]},
+  ]},
+
+  { id:'c3', title:'Strateji', lessons:[
+
+    { id:'l13', title:'Açılış (Fuseki)', steps:[
+      { text:`<p><span class="term">Fuseki</span> — Go'nun açılış aşaması. İlk 10-20 hamle tahtanın genel yapısını belirler.</p><p>Temel strateji: <strong>köşe → kenar → merkez</strong> sırasıyla bölge kurmak.</p>`, board:[], auto:true, size:9, camera:CAM.high, fb:{t:'Köşeler en değerli bölgelerdir.',c:'info'} },
+      { text:`<p>Standart açılış noktaları:<ul><li><strong>Hoshi (4-4)</strong> — dengeli, esnek</li><li><strong>Komoku (3-4)</strong> — bölge odaklı</li><li><strong>San-san (3-3)</strong> — köşe kesin, az etki</li></ul>Bir köşe noktasına tıkla.</p>`, board:[], answers:[{x:2,y:2},{x:3,y:3},{x:2,y:3},{x:3,y:2}], turn:'black', size:9, fb:{t:'Köşe noktalarından birini seç.',c:'info'}, fb_ok:'İyi seçim! Köşeden açıldın.' },
+      { text:`<p><strong>Yüksek (4. çizgi)</strong> hamleler etki alanı, <strong>alçak (3. çizgi)</strong> hamleler bölge kontrolü sağlar.</p><div class="highlight-box">Açılışta ne kadar çok köşe alırsan başlangıç avantajın artar.</div>`, board:[{color:'B',x:2,y:2},{color:'W',x:6,y:2},{color:'B',x:6,y:6},{color:'W',x:2,y:6}], auto:true, size:9, fb:{t:'Dört köşe de alındı — denge.',c:'info'} },
+    ]},
+
+    { id:'l14', title:'Orta Oyun', steps:[
+      { text:`<p>Orta oyunda gruplar şekillenir, savaşlar başlar. Temel hedefler:</p><ul><li>Zayıf grupları <strong>güçlendir</strong></li><li>Rakibin zayıf gruplarına <strong>saldır</strong></li><li>Bölge sınırlarını <strong>netleştir</strong></li></ul>`, board:[{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'W',x:6,y:2},{color:'W',x:6,y:3},{color:'B',x:4,y:6},{color:'B',x:5,y:6},{color:'W',x:2,y:6},{color:'W',x:2,y:5}], auto:true, size:9, camera:CAM.overview, fb:{t:'Her iki taraf da bölge oluşturuyor.',c:'info'} },
+      { text:`<p><span class="term">Sente</span> — rakibin cevap vermek zorunda kaldığı hamle (inisiyatif sende).</p><p><span class="term">Gote</span> — inisiyatifi rakibe bırakan hamle.</p><div class="highlight-box">Mümkün olduğunca sente hamleler yap.</div>`, board:[], auto:true, size:9, fb:{t:'Sente = taarruz · Gote = savunma',c:'info'} },
+    ]},
+
+    { id:'l15', title:'Son Oyun (Yose)', steps:[
+      { text:`<p><span class="term">Yose</span> — oyunun son aşaması. Sınırlar netleşir, her hamle doğrudan puana dönüşür.</p>`, board:[{color:'B',x:0,y:0},{color:'B',x:1,y:0},{color:'B',x:2,y:0},{color:'B',x:0,y:1},{color:'B',x:0,y:2},{color:'B',x:0,y:3},{color:'W',x:5,y:5},{color:'W',x:6,y:5},{color:'W',x:7,y:5},{color:'W',x:8,y:5},{color:'W',x:8,y:6},{color:'W',x:8,y:7},{color:'W',x:8,y:8}], auto:true, size:9, camera:CAM.high, fb:{t:'Sınırları tamamlamak son oyunun özüdür.',c:'info'} },
+      { text:`<p>Önem sırası:<ol><li><strong>Sente endgame</strong> — cevap gerektiren hamleler</li><li><strong>Büyük gote</strong> — en yüksek puanlı serbest hamleler</li><li><strong>Küçük gote</strong> — ince detay hamleler</li></ol></p><div class="highlight-box">🎉 Tebrikler! Temel Go bilgisini tamamladın. Artık oynayabilirsin!</div>`, board:[], auto:true, size:9, fb:{t:'Go öğrenme yolculuğun başlıyor!',c:'info'} },
+    ]},
+  ]},
+];
+
+/* ═══════════════════════════════════════════════════════
+   LESSON ENGINE
+═══════════════════════════════════════════════════════ */
+const ALL_LESSONS   = CURRICULUM.flatMap(c=>c.lessons);
+const TOTAL_LESSONS = ALL_LESSONS.length;
+let doneLessons = new Set(JSON.parse(localStorage.getItem('go_done_3d')||'[]'));
+let CUR_LESSON = null, CUR_STEP = 0, stepDone = false, CUR_STEP_DATA = null;
+
+function loadLesson(lesson) {
+  CUR_LESSON=lesson; CUR_STEP=0;
+  loadStep(0); updateSidebar(); updateProgress();
+}
+
+function loadStep(idx) {
+  const step = CUR_LESSON.steps[idx];
+  if(!step) return;
+  CUR_STEP=idx; CUR_STEP_DATA=step; stepDone=false;
+  ghostActive=false; rotateMode=false;
+
+  const chap = CURRICULUM.find(c=>c.lessons.some(l=>l.id===CUR_LESSON.id));
+  document.getElementById('chapter-tag').textContent   = chap?.title||'';
+  document.getElementById('lesson-title').textContent  = CUR_LESSON.title;
+  document.getElementById('lesson-body').innerHTML     = step.text;
+  document.getElementById('step-counter').textContent  = `Adım ${idx+1} / ${CUR_LESSON.steps.length}`;
+  document.getElementById('btn-prev').disabled = (idx===0);
+  renderDots();
+
+  /* Clear board, then seed */
+  game.reset();
+  if(step.turn) game.turn = step.turn==='black'?'black':'white';
+  (step.board||[]).forEach(s=>game.seed(s.x,s.y,s.color));
+
+  /* Camera */
+  if(step.camera) animateCamera(step.camera);
+
+  /* Feedback */
+  setFb(step.fb?.t||'Tahtayı inceleyin.', step.fb?.c||'info');
+
+  /* Mode */
+  if(step.auto) {
+    stepDone=true; ghostActive=false;
+    document.getElementById('rotate-toggle').style.display='none';
+  } else {
+    ghostActive=true;
+    document.getElementById('rotate-toggle').style.display='block';
+  }
+
+  updateNextBtn(step);
+}
+
+function onClick3D(gx,gz) {
+  const step=CUR_STEP_DATA;
+  if(!step||stepDone) return;
+  if(!step.answer&&step.answers!=='any'&&!Array.isArray(step.answers)) return;
+  if(game.grid[gz][gx]) return;
+
+  let ok=false;
+  if(step.answers==='any') ok=true;
+  else if(Array.isArray(step.answers)) ok=step.answers.some(a=>a.x===gx&&a.y===gz);
+  else if(step.answer) ok=(step.answer.x===gx&&step.answer.y===gz);
+
+  if(ok) {
+    game.seed(gx, gz, step.turn||'black');
+    setFb(step.fb_ok||'Doğru!','correct');
+    flashFeedback('correct');
+    stepDone=true; ghostActive=false;
+    if(step.capture) {
+      setTimeout(()=>{ step.capture.forEach(c=>game.removeStone(c.x,c.y)); },380);
+    }
+    updateNextBtn(step);
+  } else {
+    setFb(step.fb_err||'Yanlış, tekrar dene.','wrong');
+    flashFeedback('wrong');
+    const fb=document.getElementById('feedback');
+    fb.classList.add('shake');
+    setTimeout(()=>fb.classList.remove('shake'),320);
+  }
+}
+
+function nextStep() {
+  if(!CUR_LESSON) return;
+  if(CUR_STEP<CUR_LESSON.steps.length-1){ loadStep(CUR_STEP+1); return; }
+  doneLessons.add(CUR_LESSON.id);
+  localStorage.setItem('go_done_3d',JSON.stringify([...doneLessons]));
+  updateSidebar(); updateProgress();
+  const chap=CURRICULUM.find(c=>c.lessons.some(l=>l.id===CUR_LESSON.id));
+  if(chap&&chap.lessons.every(l=>doneLessons.has(l.id))){
+    document.getElementById('complete-msg').textContent=`"${chap.title}" bölümünü tamamladın! 🎊`;
+    document.getElementById('complete-screen').classList.add('show');
+    return;
+  }
+  const idx=ALL_LESSONS.findIndex(l=>l.id===CUR_LESSON.id);
+  if(idx<ALL_LESSONS.length-1) loadLesson(ALL_LESSONS[idx+1]);
+}
+window.closeComplete = function(){
+  document.getElementById('complete-screen').classList.remove('show');
+  const idx=ALL_LESSONS.findIndex(l=>l.id===CUR_LESSON.id);
+  if(idx<ALL_LESSONS.length-1) loadLesson(ALL_LESSONS[idx+1]);
+};
+function prevStep(){ if(CUR_STEP>0) loadStep(CUR_STEP-1); }
+
+function updateNextBtn(step) {
+  const btn=document.getElementById('btn-next');
+  const isLast=(CUR_STEP===CUR_LESSON.steps.length-1);
+  btn.disabled=!(step.auto||stepDone);
+  btn.textContent=isLast?'Dersi Bitir ✓':'İleri →';
+}
+
+/* Sidebar */
+function buildSidebar() {
+  const el=document.getElementById('curriculum'); el.innerHTML='';
+  CURRICULUM.forEach((chap,ci)=>{
+    const chapEl=document.createElement('div'); chapEl.className='chapter';
+    const title=document.createElement('div'); title.className='ch-title open';
+    title.innerHTML=`<div class="ch-left"><span class="ch-num">${ci+1}</span><span>${chap.title}</span></div><span class="ch-arrow">▶</span>`;
+    title.onclick=()=>{ title.classList.toggle('open'); list.classList.toggle('open'); };
+    chapEl.appendChild(title);
+    const list=document.createElement('div'); list.className='lesson-list open';
+    chap.lessons.forEach((lesson,li)=>{
+      const item=document.createElement('div');
+      item.className='lesson-item'+(CUR_LESSON?.id===lesson.id?' active':'')+(doneLessons.has(lesson.id)?' done':'');
+      item.dataset.id=lesson.id;
+      item.innerHTML=`<span class="li-check">✓</span><span class="li-num">${ci+1}.${li+1}</span>${lesson.title}`;
+      item.onclick=()=>loadLesson(lesson);
+      list.appendChild(item);
+    });
+    chapEl.appendChild(list); el.appendChild(chapEl);
+  });
+}
+function updateSidebar() {
+  document.querySelectorAll('.lesson-item').forEach(el=>{
+    const id=el.dataset.id;
+    el.classList.toggle('active', CUR_LESSON?.id===id);
+    el.classList.toggle('done',   doneLessons.has(id));
+  });
+}
+function updateProgress() {
+  const done=doneLessons.size, pct=TOTAL_LESSONS>0?Math.round(done/TOTAL_LESSONS*100):0;
+  document.getElementById('prog-text').textContent=`${done} / ${TOTAL_LESSONS}`;
+  document.getElementById('prog-fill').style.width=pct+'%';
+}
+function setFb(text,type) {
+  const box=document.getElementById('feedback');
+  const icon=box.querySelector('.fb-icon');
+  box.className='feedback-box '+type;  // keep id, reset class
+  box.id='feedback';
+  document.getElementById('fb-text').textContent=text;
+  icon.textContent=type==='correct'?'✓':type==='wrong'?'✗':'💡';
+}
+function renderDots() {
+  const el=document.getElementById('step-dots'); el.innerHTML='';
+  if(!CUR_LESSON) return;
+  CUR_LESSON.steps.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='sdot'+(i===CUR_STEP?' active':i<CUR_STEP?' done':'');
+    d.onclick=()=>{ if(i<CUR_STEP) loadStep(i); };
+    el.appendChild(d);
+  });
+}
+function flashFeedback(type) {
+  const fl=document.getElementById('flash');
+  fl.style.background=type==='correct'?'rgba(62,207,128,.06)':'rgba(224,80,80,.08)';
+  fl.style.opacity='1';
+  setTimeout(()=>{ fl.style.opacity='0'; },350);
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOOP + INIT
+═══════════════════════════════════════════════════════ */
+let lastT=performance.now();
+function loop(now) {
+  const dt=Math.min((now-lastT)/1000,.05); lastT=now;
+  hlTime += dt;
+  updateAnimations(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+buildSidebar(); updateProgress();
+const first=ALL_LESSONS.find(l=>!doneLessons.has(l.id))||ALL_LESSONS[0];
+loadLesson(first);
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

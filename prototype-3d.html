@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Antalya GO — 3D Prototip</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #080810; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+    canvas { display: block; }
+    #back {
+      position: fixed; top: 20px; left: 20px; z-index: 10;
+      background: rgba(8,8,14,.92); border: 1px solid #c8a84b;
+      color: #c8a84b; padding: 9px 18px; border-radius: 8px;
+      text-decoration: none; font-size: 12px; letter-spacing: .07em;
+      backdrop-filter: blur(12px); transition: all .2s;
+    }
+    #back:hover { background: #c8a84b; color: #1c1c20; }
+    #hud {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10;
+      background: rgba(8,8,14,.92); border: 1px solid rgba(200,168,75,.4);
+      color: #e8e4de; border-radius: 10px; padding: 10px 24px;
+      display: flex; align-items: center; gap: 14px;
+      backdrop-filter: blur(12px); font-size: 13px; letter-spacing: .05em;
+      white-space: nowrap; box-shadow: 0 4px 24px rgba(0,0,0,.5);
+    }
+    .dot {
+      width: 18px; height: 18px; border-radius: 50%; transition: all .3s;
+      box-shadow: 0 2px 8px rgba(0,0,0,.7);
+    }
+    .dot.black { background: radial-gradient(circle at 35% 30%, #607080, #080c14); }
+    .dot.white { background: radial-gradient(circle at 35% 30%, #fff, #e0d8c8); border: 1px solid #b0a898; }
+    #reset {
+      position: fixed; top: 20px; right: 20px; z-index: 10;
+      background: rgba(8,8,14,.92); border: 1px solid rgba(200,168,75,.3);
+      color: rgba(200,168,75,.65); padding: 9px 16px; border-radius: 8px;
+      cursor: pointer; font-size: 12px; letter-spacing: .07em;
+      backdrop-filter: blur(12px); transition: all .2s;
+    }
+    #reset:hover { color: #c8a84b; border-color: #c8a84b; }
+    #hint {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10;
+      color: rgba(232,228,222,.18); font-size: 11px; letter-spacing: .12em;
+      text-transform: uppercase; pointer-events: none; white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+<a href="index.html" id="back">← Ana Sayfa</a>
+<div id="hud">
+  <div class="dot black" id="turn-dot"></div>
+  <span id="turn-label">Siyah oynar</span>
+  <span style="color:rgba(200,168,75,.25);font-size:16px">|</span>
+  <span style="color:rgba(232,228,222,.45);font-size:12px">
+    Esir — S: <b id="cap-b">0</b> · B: <b id="cap-w">0</b>
+  </span>
+</div>
+<button id="reset" onclick="game.reset()">↺ Sıfırla</button>
+<div id="hint">Sol tık · Taş koy &nbsp;·&nbsp; Sürükle · Döndür &nbsp;·&nbsp; Tekerlek · Yaklaştır</div>
+<canvas id="c"></canvas>
+<script>
+/* ═══════════════════════════════════════════
+   CANVAS
+═══════════════════════════════════════════ */
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+let W, H;
+function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+/* ═══════════════════════════════════════════
+   CAMERA  —  başlangıç: 3/4 kuş bakışı
+═══════════════════════════════════════════ */
+let camYaw   = 0.50;
+let camPitch = 0.88;   // ~50° yukarıdan — yatay değil, belirgin açı
+let camDist  = 500;
+
+function project(x, y, z) {
+  const rx  =  x * Math.cos(camYaw) + z * Math.sin(camYaw);
+  const rz  = -x * Math.sin(camYaw) + z * Math.cos(camYaw);
+  const ry2 =  y * Math.cos(camPitch) - rz * Math.sin(camPitch);
+  const rz2 =  y * Math.sin(camPitch) + rz * Math.cos(camPitch);
+  const fov = 700, d = fov + rz2;
+  const sc  = fov / Math.max(d, 1) * (camDist / 500);
+  return { sx: W/2 + rx*sc, sy: H/2 + ry2*sc, scale: sc, z: rz2 };
+}
+
+/* ═══════════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════════ */
+const SIZE      = 9;
+const CELL      = 48;
+const HALF      = (SIZE - 1) * CELL / 2;
+const BOARD_H   = 14;
+const STONE_R   = 20;
+// Yunzi 8 mm: diameter ~22 mm → gerçek 3D aspect ≈ 0.36
+const ASPECT_3D = 0.36;
+const ANIM_DUR  = 0.22;  // appear animasyonu süresi (s)
+
+/* ═══════════════════════════════════════════
+   STONE RADII  —  kamera açısına duyarlı
+   Doğru formül (dönel cisim projeksiyon):
+     ry = rx * sqrt(sin²(pitch) + (aspect * cos(pitch))²)
+   → pitch = π/2 (üstten): ry = rx   (daire)
+   → pitch = 0   (yandan): ry = rx * aspect  (en basık)
+═══════════════════════════════════════════ */
+function stoneRadii(p, scaleMul) {
+  scaleMul = scaleMul || 1;
+  const rx  = STONE_R * p.scale * scaleMul;
+  const sp  = Math.sin(camPitch), cp = Math.cos(camPitch);
+  const ry  = rx * Math.sqrt(sp*sp + ASPECT_3D*ASPECT_3D * cp*cp);
+  return { rx, ry };
+}
+
+/* ═══════════════════════════════════════════
+   EASING — easeOutBack (overshoot)
+═══════════════════════════════════════════ */
+function easeOutBack(t) {
+  const c1 = 1.70158, c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
+/* ═══════════════════════════════════════════
+   KAYA AHŞABI DOKUSU
+═══════════════════════════════════════════ */
+const woodCv  = document.createElement('canvas');
+woodCv.width  = woodCv.height = 512;
+(function () {
+  const wc = woodCv.getContext('2d');
+
+  // Mat kaya tabanı — sarı-altın arası, canlı değil
+  const g = wc.createLinearGradient(0, 0, 512, 0);
+  g.addColorStop(0,    '#c8a84a');
+  g.addColorStop(0.15, '#d4b050');
+  g.addColorStop(0.38, '#c2a040');
+  g.addColorStop(0.60, '#caa848');
+  g.addColorStop(0.82, '#be9c3a');
+  g.addColorStop(1,    '#c8a444');
+  wc.fillStyle = g; wc.fillRect(0, 0, 512, 512);
+
+  // Birincil yatay damar çizgileri — ince, soluk
+  wc.globalAlpha = 0.055;
+  for (let i = 0; i < 120; i++) {
+    const y = Math.random() * 512;
+    const dark = i % 7 === 0;
+    wc.strokeStyle = dark ? '#5a2e00' : '#e8d060';
+    wc.lineWidth   = dark ? Math.random() * 1.2 + 0.4 : Math.random() * 0.8 + 0.2;
+    wc.beginPath();
+    wc.moveTo(0, y + (Math.random()-.5) * 4);
+    wc.bezierCurveTo(
+      128, y + (Math.random()-.5) * 3,
+      384, y + (Math.random()-.5) * 3,
+      512, y + (Math.random()-.5) * 4
+    );
+    wc.stroke();
+  }
+
+  // İkincil — çok hafif çapraz iğ damarı (kuruyuş çatlakları)
+  wc.globalAlpha = 0.022;
+  for (let i = 0; i < 18; i++) {
+    const x = Math.random() * 512, len = 40 + Math.random() * 100;
+    wc.strokeStyle = '#3a1800';
+    wc.lineWidth   = 0.6 + Math.random() * 0.8;
+    wc.beginPath();
+    wc.moveTo(x, Math.random() * 512);
+    wc.lineTo(x + (Math.random()-.5)*12, Math.random() * 512);
+    wc.stroke();
+  }
+
+  // Mat finish — hafif koyu vinyette kenar, parlak merkez yok
+  wc.globalAlpha = 0.10;
+  const vig = wc.createLinearGradient(0, 0, 512, 512);
+  vig.addColorStop(0,   '#3a1c00');
+  vig.addColorStop(0.5, 'transparent');
+  vig.addColorStop(1,   '#3a1c00');
+  wc.fillStyle = vig; wc.fillRect(0, 0, 512, 512);
+
+  wc.globalAlpha = 1;
+})();
+const woodPat = ctx.createPattern(woodCv, 'repeat');
+
+/* ═══════════════════════════════════════════
+   OYUN DURUMU
+═══════════════════════════════════════════ */
+const game = {
+  grid:   Array.from({ length: SIZE }, () => Array(SIZE).fill(null)),
+  turn:   'black',
+  capB:   0, capW: 0,
+  stones: [],
+
+  reset() {
+    this.grid   = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
+    this.turn   = 'black'; this.capB = 0; this.capW = 0;
+    this.stones = [];
+    updateHUD();
+  },
+
+  place(gx, gz) {
+    if (gx < 0 || gz < 0 || gx >= SIZE || gz >= SIZE) return;
+    if (this.grid[gz][gx]) return;
+    const isB  = this.turn === 'black';
+    const wx   = -HALF + gx * CELL;
+    const wz   = -HALF + gz * CELL;
+    const wy   = -(BOARD_H / 2) - STONE_R * ASPECT_3D - 1;
+    this.grid[gz][gx] = this.turn;
+    this.stones.push({
+      gx, gz, color: this.turn,
+      wx, wy, wz,
+      t: 0,          // animasyon zamanı 0→1
+      done: false,
+      pts: makeParticles(wx, wy, wz, isB),
+      showPts: false,
+    });
+    this.turn = isB ? 'white' : 'black';
+    updateHUD();
+  },
+};
+
+/* ═══════════════════════════════════════════
+   PARTİKÜLLER
+═══════════════════════════════════════════ */
+function makeParticles(wx, wy, wz, isBlack) {
+  const ps = [];
+  for (let i = 0; i < 16; i++) {
+    const a = Math.PI * 2 * i / 16 + Math.random() * .5;
+    const v = 1.2 + Math.random() * 1.8;
+    ps.push({
+      x: wx, y: wy, z: wz,
+      vx: Math.cos(a) * v * CELL * .09,
+      vy: -(2.5 + Math.random() * 3) * CELL * .09,
+      vz: Math.sin(a) * v * CELL * .09,
+      life: 1,
+      r: 2 + Math.random() * 2,
+      col: isBlack ? [160,175,200] : [255,240,170],
+    });
+  }
+  return ps;
+}
+
+/* ═══════════════════════════════════════════
+   ANİMASYON GÜNCELLEMESİ
+═══════════════════════════════════════════ */
+function updateAnimations(dt) {
+  const G = 2200;
+  for (const s of game.stones) {
+    // Partiküller
+    if (s.showPts) {
+      for (const p of s.pts) {
+        if (p.life <= 0) continue;
+        p.life -= dt * 2;
+        p.vy   += G * .2 * dt;
+        p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+        p.vx *= .97; p.vz *= .97;
+      }
+    }
+    if (s.done) continue;
+
+    // Appear animasyonu
+    s.t += dt / ANIM_DUR;
+    if (s.t >= 1) {
+      s.t = 1; s.done = true;
+      s.showPts = true;
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════
+   ÇİZİM — TAHTA
+═══════════════════════════════════════════ */
+function drawFace(corners, fill, stroke) {
+  const pts = corners.map(([x,y,z]) => project(x,y,z));
+  ctx.beginPath();
+  pts.forEach((p,i) => i===0 ? ctx.moveTo(p.sx,p.sy) : ctx.lineTo(p.sx,p.sy));
+  ctx.closePath();
+  ctx.fillStyle   = fill;   ctx.fill();
+  ctx.strokeStyle = stroke || fill; ctx.lineWidth = 1; ctx.stroke();
+}
+
+function drawBoard() {
+  const bh = BOARD_H/2, bw = HALF + CELL*.82;
+  drawFace([[-bw,-bh,-bw],[-bw,-bh,bw],[-bw,bh,bw],[-bw,bh,-bw]], '#7a4e0e', '#5e3a08');
+  drawFace([[-bw,-bh,bw],[bw,-bh,bw],[bw,bh,bw],[-bw,bh,bw]],    '#8a5a12', '#6a4408');
+  drawFace([[bw,-bh,-bw],[bw,-bh,bw],[bw,bh,bw],[bw,bh,-bw]],    '#966014', '#724808');
+
+  // Üst yüzey — kaya doku
+  const top  = [[-bw,-bh,-bw],[bw,-bh,-bw],[bw,-bh,bw],[-bw,-bh,bw]];
+  const tpts = top.map(([x,y,z]) => project(x,y,z));
+  ctx.save();
+  ctx.beginPath();
+  tpts.forEach((p,i) => i===0 ? ctx.moveTo(p.sx,p.sy) : ctx.lineTo(p.sx,p.sy));
+  ctx.closePath(); ctx.clip();
+  ctx.fillStyle = woodPat; ctx.globalAlpha = .96; ctx.fill();
+  // Mat finish — çok hafif koyu yüzey, yansıma yok
+  ctx.globalAlpha = .06; ctx.fillStyle = '#2a1200'; ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#6a4008'; ctx.lineWidth = 1.6; ctx.stroke();
+  ctx.restore();
+}
+
+/* ═══════════════════════════════════════════
+   ÇİZİM — IZGARA
+═══════════════════════════════════════════ */
+function drawGrid() {
+  const Y    = -BOARD_H/2 - .4;
+  const LTRS = 'ABCDEFGHJ';
+
+  // Dış çerçeve (kalın)
+  const corners = [[-HALF,Y,-HALF],[HALF,Y,-HALF],[HALF,Y,HALF],[-HALF,Y,HALF]];
+  ctx.strokeStyle = 'rgba(55,24,0,.92)'; ctx.lineWidth = 1.9;
+  for (let i = 0; i < 4; i++) {
+    const a = project(...corners[i]), b = project(...corners[(i+1)%4]);
+    ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke();
+  }
+
+  // İç çizgiler (ince)
+  ctx.strokeStyle = 'rgba(55,24,0,.68)'; ctx.lineWidth = 0.8;
+  for (let i = 1; i < SIZE-1; i++) {
+    const p = -HALF + i*CELL;
+    const a = project(p,Y,-HALF), b = project(p,Y,HALF);
+    ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke();
+    const c = project(-HALF,Y,p), d = project(HALF,Y,p);
+    ctx.beginPath(); ctx.moveTo(c.sx,c.sy); ctx.lineTo(d.sx,d.sy); ctx.stroke();
+  }
+
+  // Hoshi
+  [[2,2],[6,2],[4,4],[2,6],[6,6]].forEach(([sx,sz]) => {
+    const p  = project(-HALF+sx*CELL, Y, -HALF+sz*CELL);
+    const r  = 3.8 * p.scale;
+    ctx.beginPath(); ctx.arc(p.sx,p.sy,r,0,Math.PI*2);
+    ctx.fillStyle = 'rgba(48,20,0,.88)'; ctx.fill();
+  });
+
+  // Koordinat etiketleri
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let i = 0; i < SIZE; i++) {
+    const pos = -HALF + i*CELL;
+    const lb = project(pos,  Y, HALF+CELL*.72);
+    const nl = project(-HALF-CELL*.72, Y, pos);
+    const fs = Math.round(9 * lb.scale);
+    if (fs < 6) continue;
+    ctx.font = `bold ${fs}px monospace`;
+    ctx.fillStyle = 'rgba(75,36,6,.78)';
+    ctx.fillText(LTRS[i],        lb.sx, lb.sy);
+    ctx.fillText(String(SIZE-i), nl.sx, nl.sy);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   ÇİZİM — YUNZI TAŞI
+   scaleMul: easeOutBack ile 0→1 arasında büyüme
+═══════════════════════════════════════════ */
+function drawStone(wx, wy, wz, color, alpha, scaleMul) {
+  alpha    = alpha    !== undefined ? alpha    : 1;
+  scaleMul = scaleMul !== undefined ? scaleMul : 1;
+  const p  = project(wx, wy, wz);
+  const { rx, ry } = stoneRadii(p, scaleMul);
+  if (rx < 3) return;
+
+  const isB = color === 'black';
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // 1 — Tahta gölgesi (sadece taş yerine oturduğunda)
+  if (scaleMul >= 0.85) {
+    const ps  = project(wx, -BOARD_H/2-.5, wz);
+    const sha = 0.45 * Math.min(1, scaleMul);
+    const sgx = ps.sx + rx*.1, sgy = ps.sy + ry*.12;
+    const sg  = ctx.createRadialGradient(sgx,sgy,0, sgx,sgy,rx);
+    sg.addColorStop(0,   `rgba(0,0,0,${sha})`);
+    sg.addColorStop(.65, `rgba(0,0,0,${sha*.5})`);
+    sg.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.ellipse(sgx, sgy, rx, ry*.48, 0, 0, Math.PI*2);
+    ctx.fillStyle = sg; ctx.fill();
+  }
+
+  if (isB) {
+    // ── SİYAH YUNZİ ──────────────────────────────
+    // 2 — Gövde
+    ctx.beginPath(); ctx.ellipse(p.sx, p.sy, rx, ry, 0, 0, Math.PI*2);
+    const g = ctx.createRadialGradient(p.sx-rx*.18,p.sy-ry*.25,rx*.03, p.sx+rx*.08,p.sy+ry*.08,rx*1.05);
+    g.addColorStop(0,   '#4e5c70');
+    g.addColorStop(.12, '#22283a');
+    g.addColorStop(.45, '#0c0e18');
+    g.addColorStop(.82, '#07080e');
+    g.addColorStop(1,   '#050508');
+    ctx.fillStyle = g; ctx.fill();
+
+    // 3 — Kenar halkası
+    ctx.beginPath(); ctx.ellipse(p.sx, p.sy, rx, ry, 0, 0, Math.PI*2);
+    const eg = ctx.createRadialGradient(p.sx,p.sy,rx*.55, p.sx,p.sy,rx*1.02);
+    eg.addColorStop(0, 'rgba(0,0,0,0)'); eg.addColorStop(1, 'rgba(0,0,0,.42)');
+    ctx.fillStyle = eg; ctx.fill();
+
+    // 4 — Rim
+    ctx.beginPath(); ctx.ellipse(p.sx, p.sy, rx, ry, 0, 0, Math.PI*2);
+    ctx.strokeStyle = '#181c28'; ctx.lineWidth = rx*.045; ctx.stroke();
+
+    // 5 — Specular
+    const hx=p.sx-rx*.24, hy=p.sy-ry*.32;
+    const hg = ctx.createRadialGradient(hx,hy,0, hx,hy,rx*.30);
+    hg.addColorStop(0, 'rgba(210,225,255,.42)'); hg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.beginPath(); ctx.ellipse(hx,hy,rx*.30,ry*.22,-0.28,0,Math.PI*2);
+    ctx.fillStyle = hg; ctx.fill();
+
+    // 6 — Alt yansıma
+    const bg = ctx.createRadialGradient(p.sx+rx*.10,p.sy+ry*.32,0, p.sx+rx*.10,p.sy+ry*.32,rx*.35);
+    bg.addColorStop(0,'rgba(80,100,140,.12)'); bg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.ellipse(p.sx+rx*.10,p.sy+ry*.32,rx*.35,ry*.22,.2,0,Math.PI*2);
+    ctx.fillStyle = bg; ctx.fill();
+
+  } else {
+    // ── BEYAZ YUNZİ ───────────────────────────────────────────────────────
+    // Araştırma bulgularına göre:
+    // · Renk: sıcak yumurta kabuğu — saf beyaz değil, yeşilimsi-bej ton
+    // · Yüzey: mat, yansımasız, ışığı yumuşak dağıtır
+    // · İç yapı: sütlü mineral kompozit, bulutumsu opaklık değişimi
+    // · Kenar: ışıkta belirgin yeşilimsi-mavi hale (imza özelliği)
+    //          — yapay hard stroke değil, gradyan tabanlı geçiş
+
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(p.sx, p.sy, rx, ry, 0, 0, Math.PI*2);
+    ctx.clip();
+
+    // 2 — Sıcak yumurta kabuğu zemin, merkez odaklı radyal (ışık yönü yok)
+    ctx.beginPath(); ctx.ellipse(p.sx, p.sy, rx, ry, 0, 0, Math.PI*2);
+    const base = ctx.createRadialGradient(p.sx, p.sy, 0, p.sx, p.sy, rx);
+    base.addColorStop(0,    '#f8f4ec');  // sıcak sütlü merkez
+    base.addColorStop(0.42, '#f2ece0');  // hafif sarımsı-yeşil ara ton
+    base.addColorStop(0.78, '#e6dfd2');  // rim'e yakın koyulaşma
+    base.addColorStop(1,    '#d8d0c2');  // kenar — yunzi'nin tipik koyu kenar tonu
+    ctx.fillStyle = base; ctx.fill();
+
+    // 3 — Sütlü bulut katmanı (mineral kompozit heterojenliği)
+    const clouds = [
+      { dx:-.06, dy:-.05, rr:.45, a:.07  },
+      { dx: .15, dy: .10, rr:.34, a:.055 },
+      { dx:-.16, dy: .16, rr:.28, a:.045 },
+      { dx: .05, dy:-.18, rr:.32, a:.038 },
+      { dx:-.03, dy: .04, rr:.58, a:.028 },
+      { dx: .20, dy:-.07, rr:.24, a:.042 },
+    ];
+    for (const cl of clouds) {
+      const cx = p.sx + rx*cl.dx, cy = p.sy + ry*cl.dy;
+      const cr = rx*cl.rr;
+      const g  = ctx.createRadialGradient(cx,cy,0, cx,cy,cr);
+      g.addColorStop(0, `rgba(255,252,246,${cl.a})`);
+      g.addColorStop(1, 'rgba(255,252,246,0)');
+      ctx.beginPath(); ctx.ellipse(cx,cy,cr,cr*.68,cl.dx*.6,0,Math.PI*2);
+      ctx.fillStyle = g; ctx.fill();
+    }
+
+    // 4 — Hafif serin mineral leke (yunzi'nin yeşilimsi iç tonu)
+    const coolVein = ctx.createRadialGradient(
+      p.sx+rx*.10, p.sy+ry*.06, 0,
+      p.sx+rx*.10, p.sy+ry*.06, rx*.50
+    );
+    coolVein.addColorStop(0, 'rgba(185,200,190,.052)');
+    coolVein.addColorStop(1, 'rgba(185,200,190,0)');
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2);
+    ctx.fillStyle = coolVein; ctx.fill();
+
+    // 5 — Bikonveks kenar koyulaşması (gradyan, çizgi değil)
+    const edgeDark = ctx.createRadialGradient(p.sx,p.sy,rx*.50, p.sx,p.sy,rx);
+    edgeDark.addColorStop(0,    'rgba(0,0,0,0)');
+    edgeDark.addColorStop(0.72, 'rgba(35,25,10,.05)');
+    edgeDark.addColorStop(0.90, 'rgba(35,25,10,.16)');
+    edgeDark.addColorStop(1,    'rgba(35,25,10,.32)');
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2);
+    ctx.fillStyle = edgeDark; ctx.fill();
+
+    // 6 — Yunzi imzası: ince yeşilimsi-mavi rim hâlesi
+    //     (ışık kenardan geçerken mineral rengini ortaya çıkarır)
+    const greenHalo = ctx.createRadialGradient(p.sx,p.sy,rx*.80, p.sx,p.sy,rx);
+    greenHalo.addColorStop(0,    'rgba(130,160,135,0)');
+    greenHalo.addColorStop(0.65, 'rgba(130,160,135,.055)');
+    greenHalo.addColorStop(1,    'rgba(110,148,118,.14)');
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2);
+    ctx.fillStyle = greenHalo; ctx.fill();
+
+    // 7 — Mat yüzey ışığı (ışığı nokta değil alan olarak dağıtır)
+    const matteDiff = ctx.createRadialGradient(
+      p.sx - rx*.05, p.sy - ry*.08, 0,
+      p.sx - rx*.05, p.sy - ry*.08, rx*.85
+    );
+    matteDiff.addColorStop(0,   'rgba(255,253,248,.15)');
+    matteDiff.addColorStop(0.5, 'rgba(255,253,248,.05)');
+    matteDiff.addColorStop(1,   'rgba(255,253,248,0)');
+    ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2);
+    ctx.fillStyle = matteDiff; ctx.fill();
+
+    ctx.restore(); // clip biter
+
+    // 8 — Rim: tek katman, gradyan gölgesiyle yumuşatılmış stroke
+    //     kalınlık taş büyüklüğüne orantılı, renk warm-grey
+    ctx.beginPath(); ctx.ellipse(p.sx, p.sy, rx, ry, 0, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(90,72,45,.50)';
+    ctx.lineWidth   = rx * .042;
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/* ═══════════════════════════════════════════
+   ÇİZİM — PARTİKÜLLER
+═══════════════════════════════════════════ */
+function drawParticles(ps) {
+  for (const p of ps) {
+    if (p.life <= 0) continue;
+    const pr = project(p.x, p.y, p.z);
+    const r  = p.r * pr.scale * p.life;
+    if (r < .3) continue;
+    const [r0,g0,b0] = p.col;
+    ctx.beginPath(); ctx.arc(pr.sx,pr.sy,r,0,Math.PI*2);
+    ctx.fillStyle = `rgba(${r0},${g0},${b0},${p.life*.7})`; ctx.fill();
+  }
+}
+
+/* ═══════════════════════════════════════════
+   HOVER GHOST
+═══════════════════════════════════════════ */
+let ghostGrid = null;
+
+/* ═══════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════ */
+function render() {
+  const bg = ctx.createRadialGradient(W*.5,H*.45,0, W*.5,H*.5,Math.max(W,H)*.75);
+  bg.addColorStop(0,'#141420'); bg.addColorStop(1,'#060608');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+  drawBoard();
+  drawGrid();
+
+  // Ghost taş
+  if (ghostGrid) {
+    const { gx, gz } = ghostGrid;
+    const wy = -(BOARD_H/2) - STONE_R*ASPECT_3D - 1;
+    drawStone(-HALF+gx*CELL, wy, -HALF+gz*CELL, game.turn, 0.26, 1);
+  }
+
+  // Taşları derinliğe göre sırala (painter's algorithm)
+  const sorted = [...game.stones].sort((a,b) =>
+    project(a.wx,a.wy,a.wz).z - project(b.wx,b.wy,b.wz).z
+  );
+
+  for (const s of sorted) {
+    const sc = s.done ? 1 : easeOutBack(Math.min(s.t, 1));
+    drawStone(s.wx, s.wy, s.wz, s.color, 1, sc);
+    if (s.showPts) drawParticles(s.pts);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   MOUSE → GRID
+═══════════════════════════════════════════ */
+function screenToGrid(mx, my) {
+  const BY = -BOARD_H/2;
+  let best = null, bestD = Infinity, bestScale = 1;
+  for (let gz = 0; gz < SIZE; gz++) {
+    for (let gx = 0; gx < SIZE; gx++) {
+      const p = project(-HALF+gx*CELL, BY, -HALF+gz*CELL);
+      const d = Math.hypot(mx-p.sx, my-p.sy);
+      if (d < bestD) { bestD = d; best = { gx, gz }; bestScale = p.scale; }
+    }
+  }
+  return bestD < CELL * .55 * bestScale ? best : null;
+}
+
+/* ═══════════════════════════════════════════
+   MOUSE EVENTS
+═══════════════════════════════════════════ */
+let isDrag = false, dragFrom = {x:0,y:0}, lastM = {x:0,y:0};
+
+canvas.addEventListener('mousedown', e => {
+  dragFrom = {x:e.clientX, y:e.clientY};
+  lastM    = {x:e.clientX, y:e.clientY};
+  isDrag   = false;
+});
+
+canvas.addEventListener('mousemove', e => {
+  const dx = e.clientX-lastM.x, dy = e.clientY-lastM.y;
+  if (e.buttons===1 && Math.hypot(e.clientX-dragFrom.x, e.clientY-dragFrom.y) > 4) {
+    isDrag    = true;
+    camYaw   += dx * .007;
+    camPitch += dy * .007;
+    camPitch  = Math.max(.08, Math.min(1.48, camPitch));
+  }
+  lastM = {x:e.clientX, y:e.clientY};
+  ghostGrid = isDrag ? null : (() => {
+    const g = screenToGrid(e.clientX, e.clientY);
+    return (g && !game.grid[g.gz][g.gx]) ? g : null;
+  })();
+});
+
+canvas.addEventListener('click', e => {
+  if (isDrag) return;
+  const g = screenToGrid(e.clientX, e.clientY);
+  if (g) game.place(g.gx, g.gz);
+});
+
+canvas.addEventListener('wheel', e => {
+  camDist = Math.max(180, Math.min(960, camDist + e.deltaY*.5));
+}, { passive:true });
+
+/* ═══════════════════════════════════════════
+   HUD
+═══════════════════════════════════════════ */
+function updateHUD() {
+  document.getElementById('turn-dot').className     = 'dot ' + game.turn;
+  document.getElementById('turn-label').textContent = game.turn==='black' ? 'Siyah oynar' : 'Beyaz oynar';
+  document.getElementById('cap-b').textContent      = game.capB;
+  document.getElementById('cap-w').textContent      = game.capW;
+}
+
+/* ═══════════════════════════════════════════
+   LOOP
+═══════════════════════════════════════════ */
+let lastT = performance.now();
+function loop(now) {
+  const dt = Math.min((now-lastT)/1000, .05);
+  lastT = now;
+  updateAnimations(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+updateHUD();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
