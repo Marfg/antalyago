@@ -1024,10 +1024,10 @@ function playMoves(moves) {
     game.seed(mv.x, mv.y, mv.color);
     setTimeout(() => {
       if(mv.capture) mv.capture.forEach(c => game.removeStone(c.x, c.y));
-      setTimeout(next, 900);
-    }, 700);
+      setTimeout(next, 1600);
+    }, 1200);
   }
-  setTimeout(next, 800);
+  setTimeout(next, 1200);
 }
 
 function onClick3D(gx,gz) {
