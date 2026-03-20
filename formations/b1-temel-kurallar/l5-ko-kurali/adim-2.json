@@ -1,12 +1,19 @@
 {
   "adim": 2,
-  "aciklama": "Ko tehdidi sonrası pozisyon",
+  "aciklama": "Ko tehdidi: Beyaz tehdit → siyah yanıtlar → beyaz Ko'yu geri alır",
   "board": [
+    {"color": "B", "x": 4, "y": 3},
     {"color": "B", "x": 3, "y": 4},
     {"color": "B", "x": 5, "y": 4},
-    {"color": "B", "x": 4, "y": 3},
-    {"color": "W", "x": 4, "y": 5},
+    {"color": "B", "x": 4, "y": 5},
     {"color": "W", "x": 3, "y": 5},
-    {"color": "W", "x": 5, "y": 5}
+    {"color": "W", "x": 5, "y": 5},
+    {"color": "W", "x": 4, "y": 6}
+  ],
+  "initialKoIndicator": {"x": 4, "y": 4, "color": "red"},
+  "moves": [
+    {"color": "W", "x": 2, "y": 6, "indicatorAfter": {"x": 4, "y": 4, "color": "green"}},
+    {"color": "B", "x": 2, "y": 2, "indicatorAfter": {"x": 4, "y": 4, "color": "green"}},
+    {"color": "W", "x": 4, "y": 4, "capture": [{"x": 4, "y": 5}], "indicatorAfter": null}
   ]
 }
