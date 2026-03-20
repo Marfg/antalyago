@@ -889,12 +889,13 @@ const CURRICULUM = [
     { id:'l3', title:'Taş Alma', steps:[
       { text:`<p>Bir taşın <strong>tüm nefes noktaları doldurulursa</strong>, o taş yakalanır ve tahtadan kalkar.</p><p>Beyaz taşın tek boş noktası var — oraya siyah taş koyarak beyazı yakala! <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}], answer:{x:4,y:5}, turn:'black', size:9, fb:{t:'Beyaz taşın son nefes noktasına tıkla!',c:'info'}, fb_ok:'Yakaladın! Beyaz taş tahtadan kalkar.', fb_err:'Beyaz taşın çevresindeki boş noktayı bul.', capture:[{x:4,y:4}] },
       { text:`<p>Bir <strong>grubu</strong> yakalamak için grubun tüm nefes noktalarını doldurman gerekir.</p><p>İki beyaz taşın son nefes noktasını doldur — <strong>D5 noktasına tıkla.</strong></p>`, board:[{color:'W',x:3,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:3},{color:'B',x:4,y:4}], answer:{x:3,y:4}, turn:'black', size:9, fb:{t:'İki beyaz taşın son boş noktasını bul.',c:'info'}, fb_ok:'Grubu yakaladın!', fb_err:'Beyaz grubun son nefes noktasını bul.', capture:[{x:3,y:3},{x:4,y:3}] },
+      { text:`<p>Bir örnek daha! <strong>3 taşlı beyaz grup</strong> siyahlarla çevrilmiş.</p><p>Beyaz grubun tek nefes noktasını bul ve grubu yakala — <strong>E6 noktasına tıkla.</strong></p>`, board:[{color:'B',x:4,y:1},{color:'B',x:5,y:1},{color:'B',x:3,y:2},{color:'B',x:6,y:2},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'W',x:4,y:2},{color:'W',x:5,y:2},{color:'W',x:5,y:3}], answer:{x:4,y:3}, capture:[{x:4,y:2},{x:5,y:2},{x:5,y:3}], turn:'black', size:9, fb:{t:'3 taşlı beyaz grubun tek boş noktasını bul.',c:'info'}, fb_ok:'Mükemmel! Üç beyaz taş birden yakalandı.', fb_err:'E6 noktasına tıkla — beyazın tek boş komşusu.' },
       { text:`<p>Yakalanan taşlar <strong>esir</strong> sayılır ve oyun sonunda skora eklenir.</p><div class="highlight-box">Ne kadar çok taş yakalarsan skor avantajın o kadar artar.</div>`, board:[{color:'B',x:2,y:2},{color:'B',x:6,y:6}], auto:true, size:9, fb:{t:'Her yakalanan taş 1 puan kazandırır.',c:'info'} },
     ]},
 
     { id:'l4', title:'Yasak Hamleler', steps:[
-      { text:`<p>Kendi taşını nefessiz bırakacak bir hamle <strong>yapamazsın</strong> — bu <span class="term">öz-yakalama</span> yasağıdır.</p><p>Beyaz taşların sardığı orta noktaya siyah taş konamaz — anında nefessiz kalır.</p>`, board:[{color:'W',x:3,y:3},{color:'W',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}], auto:true, forbidden:[{x:4,y:3}], size:9, camera:CAM.center, fb:{t:'E4 noktasına taş koymak yasak — öz-yakalama!',c:'info'} },
-      { text:`<p><strong>İstisna:</strong> O noktaya koyduğunda rakip taşı <em>yakalıyorsan</em> hamle geçerlidir.</p><p>Beyazı yakala — <strong>E5 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:3},{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'B',x:4,y:2}], answer:{x:4,y:4}, turn:'black', size:9, fb:{t:'Beyazı yakalayan hamle geçerli!',c:'info'}, fb_ok:'Doğru! Yakalama hamlesi öz-yakalama sayılmaz.', fb_err:'Beyaz taşın altındaki noktayı bul.', capture:[{x:4,y:3}] },
+      { text:`<p>Kendi taşını nefessiz bırakacak bir hamle <strong>yapamazsın</strong> — bu <span class="term">öz-yakalama</span> yasağıdır.</p><p>Bu tahtada <strong>4 farklı yasak nokta</strong> var. X işaretli noktaları fark et — siyah bu noktalara taş koyamaz.</p>`, board:[{color:'W',x:4,y:0},{color:'W',x:6,y:0},{color:'W',x:4,y:1},{color:'W',x:5,y:1},{color:'W',x:6,y:1},{color:'W',x:0,y:3},{color:'W',x:1,y:4},{color:'W',x:4,y:4},{color:'W',x:0,y:5},{color:'W',x:3,y:5},{color:'W',x:5,y:5},{color:'W',x:4,y:6},{color:'W',x:8,y:7},{color:'W',x:7,y:8}], auto:true, forbidden:[{x:5,y:0},{x:0,y:4},{x:4,y:5},{x:8,y:8}], size:9, fb:{t:'4 yasak nokta: beyazın sardığı boşluklara taş konamaz.',c:'info'} },
+      { text:`<p><strong>İstisna:</strong> İntihar gibi görünen hamle rakip grubu <em>yakalıyorsa</em> geçerlidir.</p><p>Siyah üstte 5 beyazı yakalarken, beyaz altta 5 siyahı yakalar — yakalama istisnasını izle.</p>`, board:[{color:'W',x:3,y:0},{color:'W',x:5,y:0},{color:'W',x:3,y:1},{color:'W',x:4,y:1},{color:'W',x:5,y:1},{color:'W',x:3,y:6},{color:'W',x:4,y:6},{color:'W',x:5,y:6},{color:'W',x:2,y:7},{color:'W',x:6,y:7},{color:'W',x:2,y:8},{color:'W',x:6,y:8},{color:'B',x:2,y:0},{color:'B',x:6,y:0},{color:'B',x:2,y:1},{color:'B',x:6,y:1},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:2},{color:'B',x:3,y:7},{color:'B',x:4,y:7},{color:'B',x:5,y:7},{color:'B',x:3,y:8},{color:'B',x:5,y:8}], moves:[{color:'B',x:4,y:0,capture:[{x:3,y:0},{x:5,y:0},{x:3,y:1},{x:4,y:1},{x:5,y:1}]},{color:'W',x:4,y:8,capture:[{x:3,y:7},{x:4,y:7},{x:5,y:7},{x:3,y:8},{x:5,y:8}]}], size:9, fb:{t:'Yakalama istisnasını izle — iki hamle canlanıyor.',c:'info'} },
     ]},
 
     { id:'l5', title:'Ko Kuralı', steps:[
@@ -1002,7 +1003,7 @@ function loadStep(idx) {
   document.getElementById('board-picker').classList.toggle('show', !!step.boardSelector);
 
   /* Mode */
-  if(step.auto) {
+  if(step.auto || step.moves?.length) {
     stepDone=true; ghostActive=false;
     document.getElementById('rotate-toggle').style.display='none';
   } else {
@@ -1010,7 +1011,23 @@ function loadStep(idx) {
     document.getElementById('rotate-toggle').style.display='block';
   }
 
+  if(step.moves?.length) playMoves(step.moves);
+
   updateNextBtn(step);
+}
+
+function playMoves(moves) {
+  let i = 0;
+  function next() {
+    if(i >= moves.length) return;
+    const mv = moves[i++];
+    game.seed(mv.x, mv.y, mv.color);
+    setTimeout(() => {
+      if(mv.capture) mv.capture.forEach(c => game.removeStone(c.x, c.y));
+      setTimeout(next, 900);
+    }, 700);
+  }
+  setTimeout(next, 800);
 }
 
 function onClick3D(gx,gz) {
