@@ -1354,6 +1354,19 @@ const CURRICULUM = [
           {color:'W',x:5,y:8,capture:[]},{color:'B',x:6,y:8,capture:[]},
           {color:'W',x:5,y:7,capture:[]},{color:'B',x:5,y:6,capture:[]},
           {color:'W',x:6,y:7,capture:[]},{color:'B',x:7,y:7,capture:[]},
+          {color:'W',x:6,y:6,capture:[]},{color:'B',x:6,y:5,capture:[]},
+          {color:'W',x:7,y:6,capture:[],speed:0.12},{color:'B',x:8,y:6,capture:[],speed:0.12},
+          {color:'W',x:7,y:5,capture:[],speed:0.12},{color:'B',x:7,y:4,capture:[],speed:0.12},
+          {color:'W',x:8,y:5,capture:[],speed:0.12},{color:'B',x:9,y:5,capture:[],speed:0.12},
+          {color:'W',x:8,y:4,capture:[],speed:0.12},{color:'B',x:8,y:3,capture:[],speed:0.12},
+          {color:'W',x:9,y:4,capture:[],speed:0.12},{color:'B',x:10,y:4,capture:[],speed:0.12},
+          {color:'W',x:9,y:3,capture:[],speed:0.12},{color:'B',x:9,y:2,capture:[],speed:0.12},
+          {color:'W',x:10,y:3,capture:[],speed:0.12},{color:'B',x:11,y:3,capture:[],speed:0.12},
+          {color:'W',x:10,y:2,capture:[],speed:0.12},{color:'B',x:10,y:1,capture:[],speed:0.12},
+          {color:'W',x:11,y:2,capture:[],speed:0.12},{color:'B',x:12,y:2,capture:[],speed:0.12},
+          {color:'W',x:11,y:1,capture:[],speed:0.12},{color:'B',x:11,y:0,capture:[],speed:0.12},
+          {color:'W',x:12,y:1,capture:[],speed:0.12},
+          {color:'B',x:12,y:0,capture:[{x:4,y:9},{x:4,y:8},{x:5,y:8},{x:5,y:7},{x:6,y:7},{x:6,y:6},{x:7,y:6},{x:7,y:5},{x:8,y:5},{x:8,y:4},{x:9,y:4},{x:9,y:3},{x:10,y:3},{x:10,y:2},{x:11,y:2},{x:11,y:1},{x:12,y:1}],speed:0.12},
         ],
         moveSpeed:0.35, auto:true, size:13, camera:CAM.overview,
         fb:{t:'Beyaz her kaçışta köşeye yaklaşıyor — merdiven sonunda onu sıkıştırır.',c:'info'} },
@@ -1476,7 +1489,7 @@ function loadStep(idx) {
 }
 
 function playMoves(moves, step) {
-  const sp = step?.moveSpeed || 1;
+  const defaultSp = step?.moveSpeed || 1;
   let i = 0;
   function next() {
     if(i >= moves.length) {
@@ -1484,6 +1497,7 @@ function playMoves(moves, step) {
       return;
     }
     const mv = moves[i++];
+    const sp = mv.speed !== undefined ? mv.speed : defaultSp;
     game.seed(mv.x, mv.y, mv.color);
     setTimeout(() => {
       if(mv.capture) mv.capture.forEach(c => game.removeStone(c.x, c.y));
@@ -1491,7 +1505,7 @@ function playMoves(moves, step) {
       setTimeout(next, 2400 * sp);
     }, 1200 * sp);
   }
-  setTimeout(next, 1200 * sp);
+  setTimeout(next, 1200 * defaultSp);
 }
 
 function onClick3D(gx,gz) {
