@@ -397,7 +397,7 @@
 ═══════════════════════════════════════════════════════ */
 const canvas = document.getElementById('c');
 const ctx    = canvas.getContext('2d');
-let W, H;
+let W, H, projCY = 0;
 function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; updateProjCenter(); }
 resize(); window.addEventListener('resize', resize);
 
@@ -405,7 +405,6 @@ let camYaw = 0.50, camPitch = 0.88, camDist = 500;
 let camTarget = null, camStart = null, camLerpT = 1;
 const CAM_DUR = 0.65;
 
-let projCY = 0;
 function updateProjCenter() {
   if(innerWidth <= 640) {
     const panelH = Math.min(innerHeight * 0.44, 320);
