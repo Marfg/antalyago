@@ -790,6 +790,28 @@ function drawMarkers(step) {
   });
 }
 
+/* Grup durum imleci — yeşil=canlı (iki göz), kırmızı=ölü (tek göz/gözsüz) */
+function drawGroupIndicators(step) {
+  if(!step || !step.groupIndicators) return;
+  const Y   = -BOARD_H/2 - .3;
+  const ARM = CELL * 0.26;
+  const pulse = .1 + .9*Math.max(0, Math.sin(hlTime*3.2));
+  step.groupIndicators.forEach(({x, y, color}) => {
+    const col = color === 'green' ? `rgba(39,174,96,${pulse.toFixed(2)})` : `rgba(224,48,48,${pulse.toFixed(2)})`;
+    const wx = -HALF + x*CELL;
+    const wz = -HALF + y*CELL;
+    const p  = project(wx, Y, wz);
+    if(p.scale < 0.12) return;
+    const r = ARM * p.scale;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, r, 0, Math.PI*2);
+    ctx.strokeStyle = col;
+    ctx.lineWidth = Math.max(1.5, 2.8 * p.scale);
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
 /* Ko gösterge imleci — yanıp sönen çarpı (kırmızı=yasak, yeşil=serbest) */
 function drawKoPoint({x, y, color}) {
   const col = color === 'green' ? '#27ae60' : '#e03030';
@@ -960,6 +982,7 @@ function render() {
   if(CUR_STEP_DATA && !CUR_STEP_DATA.auto) drawHighlights(CUR_STEP_DATA);
   if(CUR_STEP_DATA) drawLiberties(CUR_STEP_DATA);
   if(CUR_STEP_DATA) drawMarkers(CUR_STEP_DATA);
+  if(CUR_STEP_DATA) drawGroupIndicators(CUR_STEP_DATA);
   if(koPoint) drawKoPoint(koPoint);
   if(CUR_STEP_DATA?.blackTerritory?.length) drawTerritory(CUR_STEP_DATA.blackTerritory, 'black');
   if(CUR_STEP_DATA?.whiteTerritory?.length) drawTerritory(CUR_STEP_DATA.whiteTerritory, 'white');
@@ -1073,7 +1096,8 @@ canvas.addEventListener('click',e=>{
   }
 });
 canvas.addEventListener('wheel',e=>{
-  camDist=Math.max(HALF*.8,Math.min(HALF*2.8,camDist+e.deltaY*.5));
+  const minD = SIZE>=13 ? HALF*.58 : HALF*.8;
+  camDist=Math.max(minD,Math.min(HALF*2.8,camDist+e.deltaY*.5));
 },{passive:true});
 
 /* ── KLAVYE DESTEĞİ ── */
@@ -1140,7 +1164,8 @@ canvas.addEventListener('touchmove',e=>{
     lastM={x:t.clientX,y:t.clientY};
   } else if(e.touches.length===2 && pinchDist0){
     const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    camDist=Math.max(HALF*.8,Math.min(HALF*2.8,camDist-(d-pinchDist0)*.8));
+    const minD = SIZE>=13 ? HALF*.58 : HALF*.8;
+    camDist=Math.max(minD,Math.min(HALF*2.8,camDist-(d-pinchDist0)*.8));
     pinchDist0=d;
   }
 },{passive:false});
@@ -1249,7 +1274,7 @@ const CURRICULUM = [
   { id:'c2', title:'Temel Teknikler', lessons:[
 
     { id:'l7', title:'Canlı Gruplar (İki Göz)', steps:[
-      { text:`<p>Bir grup <strong>iki göze</strong> sahipse asla yakalanamaz — <em>ölümsüzdür.</em></p><p><span class="term">Göz</span> = grubun içindeki boş nokta. Tahtadaki her siyah grup farklı bir köşe veya kenarda iki göze sahip. <strong>△ işaretler</strong> gözleri, <strong>□ işaretler</strong> alt gruptaki ek göz noktalarını gösteriyor.</p>`, size:19, board:[
+      { text:`<p>Bir grup <strong>iki göze</strong> sahipse asla yakalanamaz — <em>ölümsüzdür.</em></p><p><span class="term">Göz</span> = grubun içindeki boş nokta. <strong>Yeşil halkalar</strong> tahtadaki tüm canlı grupları gösteriyor — her biri iki göze sahip.</p>`, size:19, board:[
         {color:'W',x:2,y:0},{color:'W',x:6,y:0},{color:'W',x:12,y:0},{color:'W',x:15,y:0},
         {color:'W',x:2,y:1},{color:'W',x:6,y:1},{color:'W',x:12,y:1},{color:'W',x:15,y:1},
         {color:'W',x:2,y:2},{color:'W',x:6,y:2},{color:'W',x:7,y:2},{color:'W',x:8,y:2},{color:'W',x:9,y:2},{color:'W',x:10,y:2},{color:'W',x:11,y:2},{color:'W',x:12,y:2},{color:'W',x:15,y:2},
@@ -1276,13 +1301,11 @@ const CURRICULUM = [
         {color:'B',x:16,y:16},{color:'B',x:17,y:16},{color:'B',x:18,y:16},
         {color:'B',x:0,y:17},{color:'B',x:1,y:17},{color:'B',x:2,y:17},{color:'B',x:3,y:17},{color:'B',x:7,y:17},{color:'B',x:8,y:17},{color:'B',x:9,y:17},{color:'B',x:10,y:17},{color:'B',x:11,y:17},{color:'B',x:16,y:17},
         {color:'B',x:3,y:18},{color:'B',x:7,y:18},{color:'B',x:11,y:18},{color:'B',x:16,y:18},{color:'B',x:17,y:18},
-      ], markers:[
-        {x:0,y:0,type:'triangle'},{x:8,y:0,type:'triangle'},{x:10,y:0,type:'triangle'},{x:18,y:0,type:'triangle'},
-        {x:17,y:1,type:'triangle'},{x:0,y:2,type:'triangle'},{x:9,y:9,type:'triangle'},{x:8,y:10,type:'triangle'},
-        {x:17,y:17,type:'square'},{x:0,y:18,type:'square'},{x:2,y:18,type:'square'},
-        {x:8,y:18,type:'square'},{x:10,y:18,type:'square'},{x:18,y:18,type:'square'},
-      ], auto:true, camera:CAM.board19, fb:{t:'Her △ işareti bir gözü gösteriyor — 5 grup, hepsi iki göze sahip, ölümsüz!',c:'info'} },
-      { text:`<p><strong>Sahte göz</strong> — rakip tarafından doldurulabilecek nokta gerçek göz değildir.</p><div class="highlight-box">İki gerçek göz = ölümsüz grup. Go'nun en temel kavramlarından biridir.</div>`, board:[{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:2,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:4}], auto:true, size:9, fb:{t:'Bu grubun tek gözü var — ölümsüz değil!',c:'info'} },
+      ], groupIndicators:[
+        {x:0,y:1,color:'green'},{x:9,y:0,color:'green'},{x:17,y:0,color:'green'},
+        {x:9,y:9,color:'green'},{x:9,y:18,color:'green'},
+      ], auto:true, camera:CAM.board19, fb:{t:'Yeşil halkalar = iki göze sahip canlı gruplar — asla yakalanamaz!',c:'info'} },
+      { text:`<p><strong>Sahte göz</strong> — rakip tarafından doldurulabilecek nokta gerçek göz değildir.</p><div class="highlight-box">İki gerçek göz = ölümsüz grup. Go'nun en temel kavramlarından biridir.</div>`, board:[{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:2,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:4}], groupIndicators:[{x:3,y:3,color:'red'}], auto:true, size:9, fb:{t:'Kırmızı halka = tek göz, ölümlü grup — yakalanabilir!',c:'info'} },
     ]},
 
     { id:'l8', title:'Kesme ve Bağlama', steps:[
