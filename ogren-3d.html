@@ -1074,8 +1074,10 @@ function render() {
   }
 
   const sorted=[...game.stones].sort((a,b)=>project(a.wx,a.wy,a.wz).z-project(b.wx,b.wy,b.wz).z);
+  const deadSet=new Set((CUR_STEP_DATA?.deadStones||[]).map(p=>`${p.x},${p.y}`));
   for(const s of sorted){
-    const al = s.removing ? Math.max(0,1-s.removeT) : 1;
+    const dead = deadSet.has(`${s.gx},${s.gz}`);
+    const al = s.removing ? Math.max(0,1-s.removeT) : (dead ? 0.28 : 1);
     const sc = s.done ? 1 : easeOutBack(Math.min(s.t,1));
     if(al>0) drawStone(s.wx,s.wy,s.wz,s.color,al,sc);
     if(s.showPts&&al>0) drawParticles(s.pts);
@@ -1470,10 +1472,14 @@ const STEP_T = {
     ru:{text:`<p><span class="term">Сэнтэ</span> — ход, на который противник вынужден отвечать (инициатива у вас).</p><p><span class="term">Готэ</span> — ход, передающий инициативу противнику.</p><div class="highlight-box">Делайте сэнтэ всегда, когда возможно.</div>`,fb:'Сэнтэ = атака · Готэ = защита'},
   },
   'l15-0':{
+    en:{text:`<p>A real endgame position from a 19×19 game. Territories have taken shape — count the areas and prisoners to find the winner.</p>`,fb:'Endgame — territories and prisoners are counted.'},
+    ru:{text:`<p>Реальная позиция в эндшпиле на доске 19×19. Территории сформированы — подсчитайте области и пленников, чтобы определить победителя.</p>`,fb:'Эндшпиль — подсчёт территорий и пленников.'},
+  },
+  'l15-1':{
     en:{text:`<p><span class="term">Yose</span> — the endgame phase. Boundaries are finalized and every move directly converts to points.</p>`,fb:'Points scored at the end determine the winner.'},
     ru:{text:`<p><span class="term">Ёсэ</span> — заключительная стадия игры. Границы уточняются, каждый ход прямо переводится в очки.</p>`,fb:'Очки в конце игры определяют победителя.'},
   },
-  'l15-1':{
+  'l15-2':{
     en:{text:`<p>Priority order:<ol><li><strong>Sente endgame</strong> — moves that require a response</li><li><strong>Big gote</strong> — highest-value free moves</li><li><strong>Small gote</strong> — fine detail moves</li></ol></p>`,fb:'Your Go learning journey begins!'},
     ru:{text:`<p>Порядок приоритетов:<ol><li><strong>Сэнтэ-эндшпиль</strong> — ходы, требующие ответа</li><li><strong>Большое готэ</strong> — самые ценные свободные ходы</li><li><strong>Малое готэ</strong> — тонкие детальные ходы</li></ol></p>`,fb:'Ваше путешествие в мир Го начинается!'},
   },
@@ -1757,6 +1763,77 @@ const CURRICULUM = [
     ]},
 
     { id:'l15', title:'Son Oyun (Yose)', steps:[
+      { text:`<p>Gerçek bir Go maçından alınan oyun sonu pozisyonu. Siyah ve Beyaz bölgeleri şekillenmiş; sayılacak alan ve esir taşlar görülüyor.</p>`, board:[
+        {color:'W',x:6,y:1},{color:'W',x:0,y:2},{color:'W',x:6,y:2},
+        {color:'W',x:0,y:3},{color:'W',x:1,y:3},{color:'W',x:5,y:3},{color:'W',x:8,y:3},
+        {color:'W',x:1,y:4},{color:'W',x:2,y:4},{color:'W',x:5,y:4},{color:'W',x:6,y:4},{color:'W',x:7,y:4},{color:'W',x:8,y:4},{color:'W',x:10,y:4},{color:'W',x:11,y:4},{color:'W',x:12,y:4},{color:'W',x:14,y:4},{color:'W',x:17,y:4},{color:'W',x:18,y:4},
+        {color:'W',x:2,y:5},{color:'W',x:4,y:5},{color:'W',x:5,y:5},{color:'W',x:7,y:5},{color:'W',x:10,y:5},{color:'W',x:12,y:5},{color:'W',x:13,y:5},{color:'W',x:14,y:5},{color:'W',x:15,y:5},{color:'W',x:16,y:5},{color:'W',x:18,y:5},
+        {color:'W',x:2,y:6},{color:'W',x:5,y:6},{color:'W',x:7,y:6},{color:'W',x:10,y:6},{color:'W',x:17,y:6},
+        {color:'W',x:1,y:7},{color:'W',x:5,y:7},{color:'W',x:6,y:7},{color:'W',x:9,y:7},{color:'W',x:12,y:7},{color:'W',x:13,y:7},
+        {color:'W',x:1,y:8},{color:'W',x:2,y:8},{color:'W',x:3,y:8},{color:'W',x:6,y:8},{color:'W',x:9,y:8},{color:'W',x:12,y:8},{color:'W',x:14,y:8},{color:'W',x:15,y:8},{color:'W',x:16,y:8},
+        {color:'W',x:3,y:9},{color:'W',x:5,y:9},{color:'W',x:7,y:9},{color:'W',x:8,y:9},{color:'W',x:9,y:9},{color:'W',x:12,y:9},{color:'W',x:16,y:9},
+        {color:'W',x:3,y:10},{color:'W',x:5,y:10},{color:'W',x:6,y:10},{color:'W',x:7,y:10},{color:'W',x:10,y:10},{color:'W',x:11,y:10},{color:'W',x:12,y:10},{color:'W',x:13,y:10},{color:'W',x:15,y:10},{color:'W',x:16,y:10},
+        {color:'W',x:2,y:11},{color:'W',x:17,y:11},
+        {color:'W',x:1,y:12},{color:'W',x:2,y:12},{color:'W',x:3,y:12},{color:'W',x:6,y:12},{color:'W',x:9,y:12},{color:'W',x:11,y:12},{color:'W',x:12,y:12},{color:'W',x:17,y:12},
+        {color:'W',x:0,y:13},{color:'W',x:1,y:13},{color:'W',x:5,y:13},{color:'W',x:6,y:13},{color:'W',x:7,y:13},{color:'W',x:8,y:13},{color:'W',x:9,y:13},{color:'W',x:10,y:13},{color:'W',x:16,y:13},
+        {color:'W',x:1,y:14},{color:'W',x:2,y:14},{color:'W',x:4,y:14},{color:'W',x:6,y:14},{color:'W',x:8,y:14},{color:'W',x:10,y:14},{color:'W',x:16,y:14},
+        {color:'W',x:3,y:15},{color:'W',x:4,y:15},{color:'W',x:5,y:15},{color:'W',x:7,y:15},{color:'W',x:8,y:15},{color:'W',x:15,y:15},{color:'W',x:16,y:15},
+        {color:'W',x:2,y:16},{color:'W',x:5,y:16},{color:'W',x:6,y:16},{color:'W',x:14,y:16},{color:'W',x:15,y:16},
+        {color:'W',x:13,y:17},{color:'W',x:14,y:17},{color:'W',x:13,y:18},
+        {color:'B',x:0,y:1},{color:'B',x:1,y:1},
+        {color:'B',x:1,y:2},{color:'B',x:2,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:2},{color:'B',x:7,y:2},{color:'B',x:8,y:2},{color:'B',x:9,y:2},
+        {color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:6,y:3},{color:'B',x:7,y:3},{color:'B',x:9,y:3},{color:'B',x:10,y:3},{color:'B',x:11,y:3},{color:'B',x:12,y:3},{color:'B',x:13,y:3},{color:'B',x:14,y:3},{color:'B',x:15,y:3},{color:'B',x:17,y:3},{color:'B',x:18,y:3},
+        {color:'B',x:3,y:4},{color:'B',x:4,y:4},{color:'B',x:9,y:4},{color:'B',x:13,y:4},{color:'B',x:15,y:4},{color:'B',x:16,y:4},
+        {color:'B',x:3,y:5},{color:'B',x:8,y:5},{color:'B',x:9,y:5},
+        {color:'B',x:3,y:6},{color:'B',x:4,y:6},{color:'B',x:8,y:6},{color:'B',x:9,y:6},{color:'B',x:11,y:6},
+        {color:'B',x:2,y:7},{color:'B',x:3,y:7},{color:'B',x:4,y:7},{color:'B',x:7,y:7},{color:'B',x:8,y:7},{color:'B',x:10,y:7},
+        {color:'B',x:4,y:8},{color:'B',x:5,y:8},{color:'B',x:7,y:8},{color:'B',x:8,y:8},{color:'B',x:10,y:8},
+        {color:'B',x:4,y:9},{color:'B',x:10,y:9},{color:'B',x:13,y:9},{color:'B',x:14,y:9},{color:'B',x:15,y:9},
+        {color:'B',x:4,y:10},{color:'B',x:8,y:10},{color:'B',x:9,y:10},{color:'B',x:14,y:10},
+        {color:'B',x:3,y:11},{color:'B',x:4,y:11},{color:'B',x:5,y:11},{color:'B',x:6,y:11},{color:'B',x:7,y:11},{color:'B',x:9,y:11},{color:'B',x:10,y:11},{color:'B',x:11,y:11},{color:'B',x:12,y:11},{color:'B',x:13,y:11},{color:'B',x:14,y:11},{color:'B',x:15,y:11},{color:'B',x:16,y:11},
+        {color:'B',x:4,y:12},{color:'B',x:5,y:12},{color:'B',x:7,y:12},{color:'B',x:8,y:12},{color:'B',x:10,y:12},{color:'B',x:14,y:12},{color:'B',x:16,y:12},
+        {color:'B',x:2,y:13},{color:'B',x:3,y:13},{color:'B',x:4,y:13},{color:'B',x:11,y:13},{color:'B',x:15,y:13},
+        {color:'B',x:0,y:14},{color:'B',x:3,y:14},{color:'B',x:9,y:14},{color:'B',x:11,y:14},{color:'B',x:15,y:14},
+        {color:'B',x:0,y:15},{color:'B',x:1,y:15},{color:'B',x:2,y:15},{color:'B',x:9,y:15},{color:'B',x:10,y:15},{color:'B',x:12,y:15},{color:'B',x:14,y:15},
+        {color:'B',x:1,y:16},{color:'B',x:3,y:16},{color:'B',x:4,y:16},{color:'B',x:7,y:16},{color:'B',x:8,y:16},{color:'B',x:13,y:16},
+        {color:'B',x:3,y:17},{color:'B',x:5,y:17},{color:'B',x:6,y:17},{color:'B',x:12,y:17},{color:'B',x:12,y:18},
+      ],
+      deadStones:[
+        {x:6,y:1},{x:6,y:2},{x:11,y:12},{x:12,y:12},{x:2,y:16},
+        {x:11,y:6},{x:10,y:7},{x:10,y:8},{x:10,y:9},
+      ],
+      blackTerritory:[
+        {x:0,y:0},{x:1,y:0},{x:2,y:0},{x:3,y:0},{x:4,y:0},{x:5,y:0},{x:6,y:0},{x:7,y:0},{x:8,y:0},{x:9,y:0},{x:10,y:0},{x:11,y:0},{x:12,y:0},{x:13,y:0},{x:14,y:0},{x:15,y:0},{x:16,y:0},{x:17,y:0},{x:18,y:0},
+        {x:2,y:1},{x:3,y:1},{x:4,y:1},{x:5,y:1},{x:7,y:1},{x:8,y:1},{x:9,y:1},{x:10,y:1},{x:11,y:1},{x:12,y:1},{x:13,y:1},{x:14,y:1},{x:15,y:1},{x:16,y:1},{x:17,y:1},{x:18,y:1},
+        {x:3,y:2},{x:10,y:2},{x:11,y:2},{x:12,y:2},{x:13,y:2},{x:14,y:2},{x:15,y:2},{x:16,y:2},{x:17,y:2},{x:18,y:2},
+        {x:3,y:3},{x:16,y:3},
+        {x:8,y:11},
+        {x:13,y:12},{x:15,y:12},
+        {x:12,y:13},{x:13,y:13},{x:14,y:13},
+        {x:12,y:14},{x:13,y:14},{x:14,y:14},
+        {x:11,y:15},{x:13,y:15},
+        {x:0,y:16},{x:9,y:16},{x:10,y:16},{x:11,y:16},{x:12,y:16},
+        {x:0,y:17},{x:1,y:17},{x:2,y:17},{x:4,y:17},{x:7,y:17},{x:8,y:17},{x:9,y:17},{x:10,y:17},{x:11,y:17},
+        {x:0,y:18},{x:1,y:18},{x:2,y:18},{x:3,y:18},{x:4,y:18},{x:5,y:18},{x:6,y:18},{x:7,y:18},{x:8,y:18},{x:9,y:18},{x:10,y:18},{x:11,y:18},
+      ],
+      whiteTerritory:[
+        {x:0,y:4},
+        {x:0,y:5},{x:1,y:5},{x:6,y:5},{x:11,y:5},{x:17,y:5},
+        {x:0,y:6},{x:1,y:6},{x:6,y:6},{x:12,y:6},{x:13,y:6},{x:14,y:6},{x:15,y:6},{x:16,y:6},{x:18,y:6},
+        {x:0,y:7},{x:11,y:7},{x:14,y:7},{x:15,y:7},{x:16,y:7},{x:17,y:7},{x:18,y:7},
+        {x:0,y:8},{x:11,y:8},{x:17,y:8},{x:18,y:8},
+        {x:0,y:9},{x:1,y:9},{x:2,y:9},{x:6,y:9},{x:11,y:9},{x:17,y:9},{x:18,y:9},
+        {x:0,y:10},{x:1,y:10},{x:2,y:10},{x:17,y:10},{x:18,y:10},
+        {x:0,y:11},{x:1,y:11},{x:18,y:11},
+        {x:0,y:12},{x:18,y:12},
+        {x:17,y:13},{x:18,y:13},
+        {x:5,y:14},{x:7,y:14},{x:17,y:14},{x:18,y:14},
+        {x:6,y:15},{x:17,y:15},{x:18,y:15},
+        {x:16,y:16},{x:17,y:16},{x:18,y:16},
+        {x:15,y:17},{x:16,y:17},{x:17,y:17},{x:18,y:17},
+        {x:14,y:18},{x:15,y:18},{x:16,y:18},{x:17,y:18},{x:18,y:18},
+      ],
+      auto:true, size:19, camera:CAM.board19, fb:{t:'Oyun sonu — bölgeler ve esir taşlar sayılıyor.',c:'info'} },
       { text:`<p><span class="term">Yose</span> — oyunun son aşaması. Sınırlar netleşir, her hamle doğrudan puana dönüşür.</p>`, board:[{color:'B',x:0,y:0},{color:'B',x:1,y:0},{color:'B',x:2,y:0},{color:'B',x:0,y:1},{color:'B',x:0,y:2},{color:'B',x:0,y:3},{color:'W',x:5,y:5},{color:'W',x:6,y:5},{color:'W',x:7,y:5},{color:'W',x:8,y:5},{color:'W',x:8,y:6},{color:'W',x:8,y:7},{color:'W',x:8,y:8}], auto:true, size:9, camera:CAM.high, fb:{t:'Oyun sonunda sayılan puanlar kazanan oyuncuyu belirler.',c:'info'} },
       { text:`<p>Önem sırası:<ol><li><strong>Sente endgame</strong> — cevap gerektiren hamleler</li><li><strong>Büyük gote</strong> — en yüksek puanlı serbest hamleler</li><li><strong>Küçük gote</strong> — ince detay hamleler</li></ol></p>`, board:[], auto:true, size:9, fb:{t:'Go öğrenme yolculuğun başlıyor!',c:'info'} },
     ]},
