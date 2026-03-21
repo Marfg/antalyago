@@ -1428,7 +1428,17 @@ const CURRICULUM = [
     ]},
 
     { id:'l12', title:'Snapback', steps:[
-      { text:`<p><span class="term">Snapback</span> — rakibe taş kurban vererek daha büyük bir grubu yakalama tekniği.</p><p>Snapback başlat — <strong>E7 noktasına tıkla.</strong></p>`, board:[{color:'B',x:3,y:3},{color:'B',x:4,y:3},{color:'B',x:5,y:3},{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'B',x:3,y:5},{color:'B',x:4,y:5},{color:'W',x:4,y:4}], answer:{x:4,y:6}, turn:'black', size:9, fb:{t:'Snapback\'i başlatacak noktayı bul!',c:'info'}, fb_ok:'Snapback! Beyaz kurbanı alsa bile büyük grubu kaybeder.', fb_err:'Doğru noktayı bul — kurbanı ver.' },
+      { text:`<p><span class="term">Snapback</span> — rakibe taş kurban vererek daha büyük bir grubu yakalama tekniği.</p><p>Kurban ver — <strong>D5 noktasına tıkla.</strong></p>`,
+        board:[
+          {color:'W',x:3,y:3},{color:'W',x:2,y:4},{color:'W',x:4,y:4},{color:'W',x:4,y:5},
+          {color:'B',x:4,y:3},{color:'B',x:5,y:3},{color:'B',x:5,y:4},{color:'B',x:2,y:5},{color:'B',x:5,y:5},{color:'B',x:3,y:6},{color:'B',x:4,y:6},
+        ],
+        answer:{x:3,y:4}, turn:'black', size:9,
+        movesAfterAnswer:[
+          {color:'W',x:3,y:5,capture:[{x:3,y:4}]},
+          {color:'B',x:3,y:4,capture:[{x:3,y:5},{x:4,y:4},{x:4,y:5}]},
+        ],
+        fb:{t:'Kurbanı ver — beyaz alacak ama daha büyük grubu kaybedecek!',c:'info'}, fb_ok:'Snapback başladı! Beyaz kurbanı aldı ama tuzağa düştü.', fb_err:'D5 noktasına tıkla — kurbanı ver.' },
     ]},
   ]},
 
