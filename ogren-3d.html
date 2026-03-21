@@ -202,6 +202,18 @@
       width: 38px; height: 4px; border-radius: 2px;
       background: rgba(200,168,75,.25);
       margin: 0 auto .4rem; display: none; flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    /* ── MOBILE CTRL ZONE ── */
+    #ctrl-zone {
+      display: none;
+      align-items: center; justify-content: space-between;
+      gap: .5rem; flex-shrink: 0;
+    }
+    #mob-counter {
+      font-size: .72rem; color: var(--muted); font-family: monospace;
+      min-width: 5.5ch; text-align: center;
     }
 
     /* ── ROTATE TOGGLE ── */
@@ -314,16 +326,26 @@
       /* Drag handle */
       .panel-handle { display: block; }
 
-      /* Lesson panel: saydam bottom sheet */
+      /* Ctrl zone */
+      #ctrl-zone { display: flex; }
+
+      /* Lesson panel: saydam bottom sheet — varsayılan kapalı */
       #lesson-panel {
         top: auto; bottom: 0;
         left: 0; right: 0; width: 100%;
-        max-height: 46vh;
+        max-height: 68px;
+        overflow: hidden;
         border-left: none;
         border-top: 1px solid rgba(200,168,75,.18);
-        padding: .5rem 1rem .8rem;
-        gap: .5rem;
+        padding: .5rem 1rem .5rem;
+        gap: .4rem;
         background: rgba(8,8,14,.48);
+        transition: max-height .3s ease;
+      }
+      /* Açık durum */
+      #lesson-panel.expanded {
+        max-height: 46vh;
+        overflow-y: auto;
       }
 
       /* Bölüm etiketi gizle */
@@ -332,8 +354,8 @@
       /* Nav bar tamamen gizle */
       #nav-bar { display: none; }
 
-      /* Canvas nav pill: mobilde JS ile konumlandırılır, başlangıç */
-      #canvas-nav { bottom: 48vh; left: 50%; transform: translateX(-50%); }
+      /* Canvas nav pill: mobilde gizle (ctrl-zone devraldı) */
+      #canvas-nav { display: none; }
 
       /* Rotate toggle */
       #rotate-toggle { bottom: auto; top: 56px; left: 10px; }
@@ -399,7 +421,12 @@
 
 <!-- Lesson panel -->
 <div id="lesson-panel">
-  <div class="panel-handle"></div>
+  <div class="panel-handle" onclick="togglePanel()"></div>
+  <div id="ctrl-zone">
+    <button class="cc-btn" id="mprev" onclick="prevStep()">‹</button>
+    <span id="mob-counter"></span>
+    <button class="cc-btn" id="mnext" onclick="nextStep()">›</button>
+  </div>
   <div class="ch-tag"  id="chapter-tag"></div>
   <div id="lesson-title">Ders Seç</div>
   <div class="step-dots" id="step-dots"></div>
@@ -452,21 +479,19 @@ let camYaw = 0.50, camPitch = 0.88, camDist = 500;
 let camTarget = null, camStart = null, camLerpT = 1;
 const CAM_DUR = 0.65;
 
+let panelExpanded = false;
+function togglePanel() {
+  panelExpanded = !panelExpanded;
+  document.getElementById('lesson-panel').classList.toggle('expanded', panelExpanded);
+  updateProjCenter();
+}
+
 function updateProjCenter() {
-  const nav = document.getElementById('canvas-nav');
   if(innerWidth <= 640) {
-    const panelH = Math.min(innerHeight * 0.46, 320);
+    const panelH = panelExpanded ? innerHeight * 0.46 : 68;
     projCY = 46 + (innerHeight - 46 - panelH) / 2;
-    // canvas-nav: panelin tam üstüne, merkeze
-    const navBottom = Math.round(panelH + 10);
-    nav.style.bottom = navBottom + 'px';
-    nav.style.left = '50%';
-    nav.style.transform = 'translateX(-50%)';
   } else {
     projCY = H / 2;
-    nav.style.bottom = '';
-    nav.style.left = '';
-    nav.style.transform = '';
   }
 }
 
@@ -1025,14 +1050,24 @@ document.addEventListener('keydown',e=>{
   }
 });
 
-/* ── PANEL SWIPE (sola=ileri, sağa=geri) ── */
-let _swX=null;
+/* ── PANEL SWIPE ── */
+let _swX=null, _swY=null;
 document.getElementById('lesson-panel').addEventListener('touchstart',e=>{
   _swX=e.touches[0].clientX;
+  _swY=e.touches[0].clientY;
 },{passive:true});
 document.getElementById('lesson-panel').addEventListener('touchend',e=>{
   if(_swX===null) return;
-  const dx=e.changedTouches[0].clientX-_swX; _swX=null;
+  const dx=e.changedTouches[0].clientX-_swX;
+  const dy=e.changedTouches[0].clientY-_swY;
+  _swX=null; _swY=null;
+  // Dikey kaydırma: yukarı=aç, aşağı=kapat
+  if(Math.abs(dy)>Math.abs(dx) && Math.abs(dy)>30) {
+    if(dy<0 && !panelExpanded) togglePanel();
+    else if(dy>0 && panelExpanded) togglePanel();
+    return;
+  }
+  // Yatay kaydırma: sola=ileri, sağa=geri
   if(Math.abs(dx)<55) return;
   const b=dx<0?document.getElementById('btn-next'):document.getElementById('btn-prev');
   if(b&&!b.disabled) b.click();
@@ -1252,8 +1287,10 @@ function loadStep(idx) {
   const counterTxt = `${idx+1} / ${CUR_LESSON.steps.length}`;
   document.getElementById('step-counter').textContent  = `Adım ${counterTxt}`;
   document.getElementById('cc-counter').textContent    = counterTxt;
+  document.getElementById('mob-counter').textContent   = counterTxt;
   document.getElementById('btn-prev').disabled  = (idx===0);
   document.getElementById('cnav-prev').disabled = (idx===0);
+  document.getElementById('mprev').disabled     = (idx===0);
   renderDots();
 
   /* Clear board, then seed */
@@ -1358,12 +1395,15 @@ function prevStep(){ if(CUR_STEP>0) loadStep(CUR_STEP-1); }
 function updateNextBtn(step) {
   const btn=document.getElementById('btn-next');
   const cnext=document.getElementById('cnav-next');
+  const mnext=document.getElementById('mnext');
   const isLast=(CUR_STEP===CUR_LESSON.steps.length-1);
   const enabled=!!(step.auto||stepDone);
   btn.disabled=!enabled;
   btn.textContent=isLast?'Dersi Bitir ✓':'İleri →';
   cnext.disabled=!enabled;
   cnext.textContent=isLast?'✓':'›';
+  mnext.disabled=!enabled;
+  mnext.textContent=isLast?'✓':'›';
 }
 
 /* Sidebar */
