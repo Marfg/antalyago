@@ -45,6 +45,10 @@
     .prog-text { font-size: 11px; color: var(--muted); font-weight: 600; }
     .prog-track { width: 120px; height: 5px; background: rgba(200,168,75,.12); border: 1px solid var(--gborder); border-radius: 3px; overflow: hidden; }
     .prog-fill  { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2)); border-radius: 3px; transition: width .5s; }
+    .lang-switcher { display:flex; gap:.3rem; align-items:center; }
+    .lang-btn { padding:3px 8px; font-size:.7rem; font-weight:700; letter-spacing:.04em; border:1px solid var(--gborder); border-radius:4px; background:transparent; color:var(--muted); cursor:pointer; transition:all .15s; }
+    .lang-btn:hover { border-color:var(--gold); color:var(--gold); }
+    .lang-btn.active { background:var(--gold); color:var(--dark); border-color:var(--gold); }
 
     /* ── SIDEBAR ── */
     #sidebar {
@@ -404,6 +408,11 @@
   <div class="prog-wrap">
     <span class="prog-text" id="prog-text">0 / 0</span>
     <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+  <div class="lang-switcher">
+    <button class="lang-btn active" data-lang="tr" onclick="setLang('tr')">TR</button>
+    <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" data-lang="ru" onclick="setLang('ru')">RU</button>
   </div>
 </div>
 
@@ -1242,7 +1251,7 @@ function toggleRotate() {
   rotateMode = !rotateMode;
   const btn=document.getElementById('rotate-toggle');
   btn.classList.toggle('active',rotateMode);
-  btn.textContent = rotateMode ? '✕ Hamle Modu' : '⟳ Döndür';
+  btn.textContent = rotateMode ? t('rotateModeOff') : t('rotateModeOn');
 }
 
 window.toggleSidebar = function() {
@@ -1258,6 +1267,245 @@ window.toggleMobileMenu = function() {
   const open=sb.classList.toggle('mob-open');
   ov.classList.toggle('show', open);
 };
+
+/* ═══════════════════════════════════════════════════════
+   LOCALISATION
+═══════════════════════════════════════════════════════ */
+let currentLang = localStorage.getItem('go_lang') || 'tr';
+
+const UI_T = {
+  tr: {
+    backBtn:'← Ana', pageTitle:'Go Öğren 3D', curriculum:'Müfredat',
+    selectLesson:'Ders Seç', selectLessonBody:'<p>Sol panelden bir ders seçin.</p>',
+    selectLessonFb:'Bir ders seçin.', defaultFb:'Tahtayı inceleyin.',
+    boardSize:'Tahta Boyutu', bp9sub:'Başlangıç', bp13sub:'Orta', bp19sub:'Standart',
+    bp9desc:'Yeni başlayanlar için idealdir. Oyun hızlı biter, temel kavramlar net görünür.',
+    bp13desc:'Orta seviye oyuncular için. Strateji gelişmeye başlar, oyun daha uzun sürer.',
+    bp19desc:'Profesyonel standart tahta. Tam strateji derinliği ve uzun oyunlar için.',
+    prevBtn:'← Geri', nextBtn:'İleri →', step:'Adım',
+    rotateModeOn:'⟳ Döndür', rotateModeOff:'✕ Hamle Modu',
+    hint:'Sol tık · Hamle &nbsp;·&nbsp; Sürükle · Döndür &nbsp;·&nbsp; Tekerlek · Yaklaştır',
+    defaultOk:'Doğru!', defaultErr:'Yanlış, tekrar dene.',
+  },
+  en: {
+    backBtn:'← Home', pageTitle:'Learn Go 3D', curriculum:'Curriculum',
+    selectLesson:'Select Lesson', selectLessonBody:'<p>Select a lesson from the left panel.</p>',
+    selectLessonFb:'Select a lesson.', defaultFb:'Examine the board.',
+    boardSize:'Board Size', bp9sub:'Beginner', bp13sub:'Intermediate', bp19sub:'Standard',
+    bp9desc:'Ideal for beginners. Games end quickly and basic concepts are easy to see.',
+    bp13desc:'For intermediate players. Strategy develops and games last longer.',
+    bp19desc:'Professional standard board. For full strategic depth and long games.',
+    prevBtn:'← Back', nextBtn:'Next →', step:'Step',
+    rotateModeOn:'⟳ Rotate', rotateModeOff:'✕ Move Mode',
+    hint:'Click · Place &nbsp;·&nbsp; Drag · Rotate &nbsp;·&nbsp; Scroll · Zoom',
+    defaultOk:'Correct!', defaultErr:'Wrong, try again.',
+  },
+  ru: {
+    backBtn:'← Главная', pageTitle:'Учим Го 3D', curriculum:'Учебный план',
+    selectLesson:'Выберите урок', selectLessonBody:'<p>Выберите урок из левой панели.</p>',
+    selectLessonFb:'Выберите урок.', defaultFb:'Изучите доску.',
+    boardSize:'Размер доски', bp9sub:'Начальный', bp13sub:'Средний', bp19sub:'Стандартный',
+    bp9desc:'Идеально для начинающих. Игры короткие, основные концепции ясны.',
+    bp13desc:'Для среднего уровня. Стратегия развивается, игры длиннее.',
+    bp19desc:'Профессиональная стандартная доска. Для полной стратегической глубины.',
+    prevBtn:'← Назад', nextBtn:'Далее →', step:'Шаг',
+    rotateModeOn:'⟳ Повернуть', rotateModeOff:'✕ Режим хода',
+    hint:'Клик · Ход &nbsp;·&nbsp; Тащить · Повернуть &nbsp;·&nbsp; Колесо · Зум',
+    defaultOk:'Правильно!', defaultErr:'Неверно, попробуйте снова.',
+  },
+};
+
+const TITLE_T = {
+  c1:{en:'Basic Rules',ru:'Основные правила'},
+  c2:{en:'Basic Techniques',ru:'Основные техники'},
+  c3:{en:'Strategy',ru:'Стратегия'},
+  l1:{en:'Board and Stones',ru:'Доска и камни'},
+  l2:{en:'Liberties',ru:'Свободы'},
+  l3:{en:'Capturing Stones',ru:'Захват камней'},
+  l4:{en:'Illegal Moves',ru:'Запрещённые ходы'},
+  l5:{en:'Ko Rule',ru:'Правило ко'},
+  l6:{en:'End of Game & Scoring',ru:'Конец игры и подсчёт'},
+  l7:{en:'Living Groups (Two Eyes)',ru:'Живые группы (два глаза)'},
+  l8:{en:'Cutting and Connecting',ru:'Разрезание и связывание'},
+  l9:{en:'Double Atari',ru:'Двойное атари'},
+  l10:{en:'Ladder (Shicho)',ru:'Лестница (Сичо)'},
+  l11:{en:'Net (Geta)',ru:'Сеть (Гета)'},
+  l12:{en:'Snapback',ru:'Снэпбэк'},
+  l13:{en:'Opening (Fuseki)',ru:'Дебют (Фусеки)'},
+  l14:{en:'Middlegame',ru:'Миттельшпиль'},
+  l15:{en:'Endgame (Yose)',ru:'Эндшпиль (Ёсэ)'},
+};
+
+const STEP_T = {
+  'l1-0':{
+    en:{text:`<p>Go is a two-player strategy game played on a <strong>19×19</strong> board. A <strong>9×9</strong> board is better for beginners.</p><p>It is a sequential move game — <strong>black</strong> plays first.</p>`,fb:'Explore board sizes to see the difference.'},
+    ru:{text:`<p>Го — стратегическая игра для двух игроков на доске <strong>19×19</strong>. Для начинающих лучше подходит доска <strong>9×9</strong>.</p><p>Ходы делаются поочерёдно — <strong>чёрные</strong> ходят первыми.</p>`,fb:'Попробуйте разные размеры доски.'},
+  },
+  'l1-1':{
+    en:{text:`<p>Stones are placed not inside squares, but on the <strong>intersections of lines</strong>.</p><p>Click anywhere on the board to <strong>place a black stone.</strong></p>`,fb:'Click on any intersection!',fb_ok:'Perfect! You placed the stone correctly.'},
+    ru:{text:`<p>Камни размещаются не внутри клеток, а на <strong>пересечениях линий</strong>.</p><p>Нажмите на любую точку доски, чтобы <strong>поставить чёрный камень.</strong></p>`,fb:'Нажмите на любое пересечение!',fb_ok:'Отлично! Камень поставлен верно.'},
+  },
+  'l1-2':{
+    en:{text:`<p>Once placed, stones <strong>cannot be moved</strong> — they can only be removed by capture.</p><div class="highlight-box">In Go, stones don't move — they are only added or removed.</div>`,fb:'This white stone is now fixed at that point.'},
+    ru:{text:`<p>После размещения камни <strong>нельзя перемещать</strong> — их можно только захватить и убрать с доски.</p><div class="highlight-box">В Го камни не двигаются — их только добавляют или убирают.</div>`,fb:'Этот белый камень теперь стоит на месте.'},
+  },
+  'l2-0':{
+    en:{text:`<p>The empty points adjacent to a stone are called its <strong><span class="term">liberties</span></strong>.</p><p>A stone in the center has <strong>4 liberties</strong> (up, down, left, right).</p>`,fb:'The black stone in the center has 4 liberties.'},
+    ru:{text:`<p>Пустые точки рядом с камнем называются его <strong><span class="term">свободами</span></strong>.</p><p>Камень в центре имеет <strong>4 свободы</strong> (вверх, вниз, влево, вправо).</p>`,fb:'Чёрный камень в центре имеет 4 свободы.'},
+  },
+  'l2-1':{
+    en:{text:`<p>A stone on the edge has <strong>3 liberties</strong>, and a corner stone has only <strong>2 liberties</strong>.</p><div class="highlight-box">Fewer liberties means more vulnerable. Corner and edge stones are more exposed.</div>`,fb:'Corner: 2 · Edge: 3 · Center: 4 liberties'},
+    ru:{text:`<p>Камень на краю имеет <strong>3 свободы</strong>, а угловой — только <strong>2 свободы</strong>.</p><div class="highlight-box">Меньше свобод — больше уязвимость. Угловые и краевые камни более уязвимы.</div>`,fb:'Угол: 2 · Край: 3 · Центр: 4 свободы'},
+  },
+  'l2-2':{
+    en:{text:`<p>Horizontally or vertically connected stones form a <strong>group</strong>. A group's liberties are the total empty adjacent points of all its stones.</p>`,fb:'These three stones form a group — together they have 8 liberties.'},
+    ru:{text:`<p>Горизонтально или вертикально связанные камни образуют <strong>группу</strong>. Свободы группы — сумма пустых смежных точек всех её камней.</p>`,fb:'Эти три камня — группа. Вместе у них 8 свобод.'},
+  },
+  'l3-0':{
+    en:{text:`<p>When <strong>all liberties of a stone are filled</strong>, it is captured and removed from the board.</p><p>The white stone has one empty point left — place a black stone there to capture it! <strong>Click E4.</strong></p>`,fb:'Click the last liberty of the white stone!',fb_ok:'Captured! The white stone is removed from the board.',fb_err:'Find the empty point around the white stone.'},
+    ru:{text:`<p>Когда <strong>все свободы камня заполнены</strong>, он захватывается и убирается с доски.</p><p>У белого камня осталась одна пустая точка — поставьте туда чёрный камень! <strong>Нажмите E4.</strong></p>`,fb:'Нажмите на последнюю свободу белого камня!',fb_ok:'Захвачен! Белый камень убран с доски.',fb_err:'Найдите пустую точку рядом с белым камнем.'},
+  },
+  'l3-1':{
+    en:{text:`<p>To capture a <strong>group</strong>, you must fill all of its liberties.</p><p>Fill the last liberty of the two white stones — <strong>click D5.</strong></p>`,fb:'Find the last empty point of the two white stones.',fb_ok:'You captured the group!',fb_err:'Find the last liberty of the white group.'},
+    ru:{text:`<p>Чтобы захватить <strong>группу</strong>, нужно заполнить все её свободы.</p><p>Заполните последнюю свободу двух белых камней — <strong>нажмите D5.</strong></p>`,fb:'Найдите последнюю пустую точку у двух белых камней.',fb_ok:'Группа захвачена!',fb_err:'Найдите последнюю свободу белой группы.'},
+  },
+  'l3-2':{
+    en:{text:`<p>One more! A <strong>3-stone white group</strong> is surrounded by black.</p><p>Find the last liberty of the white group — <strong>click E6.</strong></p>`,fb:'Find the last empty point of the 3-stone white group.',fb_ok:'Excellent! Three white stones captured at once.',fb_err:'Click E6 — the only empty neighbor of white.'},
+    ru:{text:`<p>Ещё пример! <strong>Группа из 3 белых камней</strong> окружена чёрными.</p><p>Найдите последнюю свободу белой группы — <strong>нажмите E6.</strong></p>`,fb:'Найдите последнюю пустую точку группы из 3 белых.',fb_ok:'Отлично! Три белых камня захвачены сразу.',fb_err:'Нажмите E6 — единственный пустой сосед белых.'},
+  },
+  'l4-0':{
+    en:{text:`<p>You <strong>cannot</strong> make a move that leaves your own stone without liberties — this is the <span class="term">self-capture</span> rule.</p><p>This board has <strong>4 forbidden points</strong>. Notice the X marks — black cannot place stones there.</p>`,fb:'4 forbidden points: black cannot enter spaces enclosed by white.'},
+    ru:{text:`<p>Нельзя делать ход, оставляющий собственный камень без свобод — это правило <span class="term">самозахвата</span>.</p><p>На этой доске <strong>4 запрещённых пункта</strong>. Метки X — чёрные не могут туда ходить.</p>`,fb:'4 запрещённых пункта: нельзя входить в пространства, окружённые белыми.'},
+  },
+  'l4-1':{
+    en:{text:`<p><strong>Exception:</strong> a move that looks like self-capture is <em>legal</em> if it captures an opponent's group.</p><p>Black captures 5 white stones above, white captures 5 black stones below — watch the capture exception.</p>`,fb:'Watch the capture exception — two moves play out.'},
+    ru:{text:`<p><strong>Исключение:</strong> ход, похожий на самозахват, <em>разрешён</em>, если он захватывает группу противника.</p><p>Чёрные захватывают 5 белых сверху, белые — 5 чёрных снизу. Наблюдайте исключение захвата.</p>`,fb:'Наблюдайте исключение захвата — два хода разыгрываются.'},
+  },
+  'l5-0':{
+    en:{text:`<p><span class="term">Ko</span> — the rule that prevents the same board position from repeating indefinitely.</p><p>Black captures white — but white <strong>cannot immediately recapture</strong>, as it would return the board to the previous position.</p>`,fb:'Black captured — white cannot immediately return. This is Ko!'},
+    ru:{text:`<p><span class="term">Ко</span> — правило, запрещающее бесконечное повторение одной позиции.</p><p>Чёрные захватывают белого — но белые <strong>не могут сразу ответить захватом</strong>, иначе позиция повторится.</p>`,fb:'Чёрные захватили — белые не могут сразу вернуться. Это Ко!'},
+  },
+  'l5-1':{
+    en:{text:`<p>In a ko fight, players make <strong>"ko threats"</strong> — important moves elsewhere on the board. White threatens first, black responds, then white recaptures the ko.</p>`,fb:'Red = ko forbidden. White threatens → black responds → green = now free!'},
+    ru:{text:`<p>В борьбе за ко игроки делают <strong>«угрозы ко»</strong> — важные ходы в другом месте. Белые угрожают, чёрные отвечают, затем белые снова берут ко.</p>`,fb:'Красный = ко запрещён. Белые угрожают → чёрные отвечают → зелёный = можно!'},
+  },
+  'l6-0':{
+    en:{text:`<p>The game ends when both players <strong>pass consecutively</strong>.</p><p>The winner is the player who enclosed <strong>more territory</strong>. Territory = empty points surrounded by your stones.</p>`,fb:'Black left (20 pts) · White right (22 pts) — white is ahead!'},
+    ru:{text:`<p>Игра заканчивается, когда оба игрока <strong>пасуют подряд</strong>.</p><p>Побеждает тот, кто окружил <strong>больше территории</strong>. Территория = пустые точки, окружённые вашими камнями.</p>`,fb:'Чёрные слева (20 очков) · Белые справа (22 очка) — белые впереди!'},
+  },
+  'l6-1':{
+    en:{text:`<p>Scoring: <strong>Territory</strong> + <strong>Prisoners</strong> + <strong>Komi</strong> (a bonus given to white, usually 6.5)</p><div class="highlight-box">Komi balances the advantage of black moving first.</div>`,fb:'Komi is usually 6.5.'},
+    ru:{text:`<p>Подсчёт: <strong>Территория</strong> + <strong>Пленники</strong> + <strong>Коми</strong> (бонус белым, обычно 6.5)</p><div class="highlight-box">Коми компенсирует преимущество первого хода чёрных.</div>`,fb:'Коми обычно равно 6.5.'},
+  },
+  'l7-0':{
+    en:{text:`<p>A group with <strong>two eyes</strong> can never be captured — it is <em>immortal.</em></p><p><span class="term">Eye</span> = an empty point inside a group. <strong>Green markers</strong> show all living groups — each has two eyes.</p>`,fb:'Green cross = living group eye · Red cross = no two eyes, mortal point'},
+    ru:{text:`<p>Группа с <strong>двумя глазами</strong> никогда не может быть захвачена — она <em>бессмертна.</em></p><p><span class="term">Глаз</span> = пустая точка внутри группы. <strong>Зелёные маркеры</strong> — живые группы, у каждой два глаза.</p>`,fb:'Зелёный крест = глаз живой группы · Красный крест = нет двух глаз, смертная точка'},
+  },
+  'l7-1':{
+    en:{text:`<p><strong>False eye</strong> — a point that can be filled by the opponent is not a true eye.</p><div class="highlight-box">Two real eyes = immortal group. One of the most fundamental concepts in Go.</div>`,fb:'Red marker = single eye, mortal group — can be captured!'},
+    ru:{text:`<p><strong>Ложный глаз</strong> — точка, которую может занять противник, не является настоящим глазом.</p><div class="highlight-box">Два настоящих глаза = бессмертная группа. Важнейший концепт Го.</div>`,fb:'Красный маркер = один глаз, смертная группа — может быть захвачена!'},
+  },
+  'l8-0':{
+    en:{text:`<p><span class="term">Cut</span> — breaking your opponent's connection by playing between two of their stones.</p><p>Cut between black's two stones — <strong>click E4.</strong></p>`,fb:"Cut between black's two stones!",fb_ok:"Cut! Black is now two separate groups.",fb_err:"Find the gap connecting black's two stones."},
+    ru:{text:`<p><span class="term">Разрезание</span> — разрыв связи противника путём хода между двумя его камнями.</p><p>Разрежьте между двумя чёрными камнями — <strong>нажмите E4.</strong></p>`,fb:'Разрежьте между двумя чёрными камнями!',fb_ok:'Разрезание! Теперь чёрные — две отдельные группы.',fb_err:'Найдите точку между двумя чёрными камнями.'},
+  },
+  'l8-1':{
+    en:{text:`<p><span class="term">Connect</span> — closing the gap between your own stones to strengthen the group.</p><p>Connect the black stones — <strong>click D4.</strong></p>`,fb:'Connect your black stones!',fb_ok:'Strong connection! Now they are one group.',fb_err:'Fill the gap between the black stones.'},
+    ru:{text:`<p><span class="term">Связывание</span> — соединение своих камней для усиления группы.</p><p>Соедините чёрные камни — <strong>нажмите D4.</strong></p>`,fb:'Соедините чёрные камни!',fb_ok:'Крепкая связь! Теперь они одна группа.',fb_err:'Заполните зазор между чёрными камнями.'},
+  },
+  'l9-0':{
+    en:{text:`<p><span class="term">Double atari</span> — threatening two separate groups at once with a single move. White cannot save both.</p><p>Find and play the double atari point!</p>`,fb:'Find the point that puts both white groups in atari at once!',fb_ok:'Double atari! If the right one escapes, the left is captured — what if it saves the left?',fb_err:'Find the point that threatens both white groups.'},
+    ru:{text:`<p><span class="term">Двойное атари</span> — одним ходом угрожать двум разным группам противника. Белые не могут спасти обе.</p><p>Найдите и сыграйте точку двойного атари!</p>`,fb:'Найдите точку, ставящую обе белые группы в атари!',fb_ok:'Двойное атари! Спасут правую — захватим левую. А если спасут левую?',fb_err:'Найдите точку, угрожающую обеим белым группам.'},
+  },
+  'l9-1':{
+    en:{text:`<p>Now play as <strong>white</strong> — which stone will you save?</p><div class="highlight-box">Whichever you choose, the other stone is captured.</div>`,fb:'Play next to one of the white stones.',fb_ok:'You saved one stone — but the other is captured. There is no escape from double atari!',fb_err:'Play next to one of the white stones to save it.'},
+    ru:{text:`<p>Теперь играйте за <strong>белых</strong> — какой камень спасёте?</p><div class="highlight-box">Что бы вы ни выбрали, другой камень захватят.</div>`,fb:'Сыграйте рядом с одним из белых камней.',fb_ok:'Вы спасли один камень — но другой захвачен. От двойного атари не уйти!',fb_err:'Сыграйте рядом с одним из белых камней, чтобы спасти его.'},
+  },
+  'l10-0':{
+    en:{text:`<p><span class="term">Ladder</span> (Japanese: <em>shicho</em>) — a stone fleeing from atari is put in atari again each move and driven toward a corner.</p><p>Watch the cycle as white tries to escape and black chases.</p>`,fb:'White approaches the corner with each escape — the ladder eventually traps it.'},
+    ru:{text:`<p><span class="term">Лестница</span> (яп.: <em>сичо</em>) — камень, убегающий от атари, снова попадает в атари с каждым ходом и загоняется в угол.</p><p>Наблюдайте цикл: белые убегают, чёрные преследуют.</p>`,fb:'С каждым бегством белые приближаются к углу — лестница их ловит.'},
+  },
+  'l10-1':{
+    en:{text:`<p><strong>Ladder breaker</strong> — if a friendly stone lies in the ladder's path, the escaping group connects to it and survives.</p><div class="highlight-box">Before playing a ladder, check the entire path of the escaping stone!</div>`,fb:'White connected to the ladder-breaking stone — no longer driven to the corner!'},
+    ru:{text:`<p><strong>Разрушитель лестницы</strong> — если на пути лестницы стоит союзный камень, убегающая группа соединяется с ним и спасается.</p><div class="highlight-box">Прежде чем играть лестницу, проверьте весь путь убегающего камня!</div>`,fb:'Белые соединились с разрушителем лестницы — больше не загоняются в угол!'},
+  },
+  'l11-0':{
+    en:{text:`<p><span class="term">Net</span> (Japanese: <em>geta</em>) — trapping a stone by cutting off its escape routes without putting it in atari.</p><p>Find the point that cuts off white's escape — <strong>click F6.</strong></p>`,fb:"Cut off all of white's escape routes!",fb_ok:'Net set! White tries to escape but is trapped.',fb_err:"Find the point that cuts off white's escape routes."},
+    ru:{text:`<p><span class="term">Сеть</span> (яп.: <em>гэта</em>) — ловушка для камня путём перекрытия всех путей к бегству, без постановки в атари.</p><p>Найдите точку, перекрывающую путь белых — <strong>нажмите F6.</strong></p>`,fb:'Перекройте все пути бегства белых!',fb_ok:'Сеть расставлена! Белые в ловушке.',fb_err:'Найдите точку, перекрывающую пути бегства белых.'},
+  },
+  'l12-0':{
+    en:{text:`<p><span class="term">Snapback</span> — capturing a larger group by sacrificing a stone.</p><p>Sacrifice — <strong>click D5.</strong></p>`,fb:'Sacrifice — white will take, but lose a bigger group!',fb_ok:'Snapback started! White took the bait but fell into the trap.',fb_err:'Click D5 — sacrifice the stone.'},
+    ru:{text:`<p><span class="term">Снэпбэк</span> — захват большой группы путём жертвы камня.</p><p>Пожертвуйте камень — <strong>нажмите D5.</strong></p>`,fb:'Жертва — белые возьмут, но потеряют группу побольше!',fb_ok:'Снэпбэк начался! Белые взяли приманку, но попали в ловушку.',fb_err:'Нажмите D5 — пожертвуйте камень.'},
+  },
+  'l12-1':{
+    en:{text:`<p>One more snapback example. Sacrifice — <strong>click A5.</strong></p>`,fb:'Sacrifice — white will take, but lose the group!',fb_ok:'Snapback! White took the bait but fell into the trap.',fb_err:'Click A5 — sacrifice the stone.'},
+    ru:{text:`<p>Ещё один пример снэпбэка. Пожертвуйте камень — <strong>нажмите A5.</strong></p>`,fb:'Жертва — белые возьмут, но потеряют группу!',fb_ok:'Снэпбэк! Белые взяли приманку, но попали в ловушку.',fb_err:'Нажмите A5 — пожертвуйте камень.'},
+  },
+  'l13-0':{
+    en:{text:`<p><span class="term">Fuseki</span> — the opening phase of Go. The first 10-20 moves determine the overall shape of the board.</p><p>Basic strategy: build territory in the order <strong>corner → side → center</strong>.</p>`,fb:'Corners are the most valuable areas.'},
+    ru:{text:`<p><span class="term">Фусеки</span> — дебютная стадия Го. Первые 10-20 ходов определяют общую структуру доски.</p><p>Базовая стратегия: строить территорию по порядку <strong>угол → сторона → центр</strong>.</p>`,fb:'Углы — самые ценные области.'},
+  },
+  'l13-1':{
+    en:{text:`<p>Standard opening points:<ul><li><strong>Hoshi (4-4)</strong> — balanced, flexible</li><li><strong>Komoku (3-4)</strong> — territory-oriented</li><li><strong>San-san (3-3)</strong> — secure corner, less influence</li></ul>Click a corner point.</p>`,fb:'Choose one of the corner points.',fb_ok:'Good choice! You opened from the corner.'},
+    ru:{text:`<p>Стандартные начальные точки:<ul><li><strong>Хоши (4-4)</strong> — сбалансированная, гибкая</li><li><strong>Комоку (3-4)</strong> — ориентированная на территорию</li><li><strong>Сан-сан (3-3)</strong> — угол надёжен, меньше влияния</li></ul>Нажмите на угловую точку.</p>`,fb:'Выберите одну из угловых точек.',fb_ok:'Хороший выбор! Вы открылись из угла.'},
+  },
+  'l13-2':{
+    en:{text:`<p><strong>High (4th line)</strong> moves create influence, <strong>low (3rd line)</strong> moves control territory.</p><div class="highlight-box">The more corners you take in the opening, the greater your initial advantage.</div>`,fb:'All four corners taken — balance.'},
+    ru:{text:`<p><strong>Высокие (4-я линия)</strong> ходы создают влияние, <strong>низкие (3-я линия)</strong> — контролируют территорию.</p><div class="highlight-box">Чем больше углов в дебюте, тем больше начальное преимущество.</div>`,fb:'Все четыре угла заняты — баланс.'},
+  },
+  'l14-0':{
+    en:{text:`<p>In the middlegame, groups take shape and battles begin. Key objectives:</p><ul><li><strong>Strengthen</strong> weak groups</li><li><strong>Attack</strong> the opponent's weak groups</li><li><strong>Clarify</strong> territorial boundaries</li></ul>`,fb:'Both sides are building territory.'},
+    ru:{text:`<p>В миттельшпиле группы формируются и начинаются сражения. Основные цели:</p><ul><li><strong>Усиливайте</strong> слабые группы</li><li><strong>Атакуйте</strong> слабые группы противника</li><li><strong>Уточняйте</strong> границы территорий</li></ul>`,fb:'Обе стороны строят территорию.'},
+  },
+  'l14-1':{
+    en:{text:`<p><span class="term">Sente</span> — a move that forces the opponent to respond (you keep the initiative).</p><p><span class="term">Gote</span> — a move that gives initiative to the opponent.</p><div class="highlight-box">Make sente moves whenever possible.</div>`,fb:'Sente = offense · Gote = defense'},
+    ru:{text:`<p><span class="term">Сэнтэ</span> — ход, на который противник вынужден отвечать (инициатива у вас).</p><p><span class="term">Готэ</span> — ход, передающий инициативу противнику.</p><div class="highlight-box">Делайте сэнтэ всегда, когда возможно.</div>`,fb:'Сэнтэ = атака · Готэ = защита'},
+  },
+  'l15-0':{
+    en:{text:`<p><span class="term">Yose</span> — the endgame phase. Boundaries are finalized and every move directly converts to points.</p>`,fb:'Points scored at the end determine the winner.'},
+    ru:{text:`<p><span class="term">Ёсэ</span> — заключительная стадия игры. Границы уточняются, каждый ход прямо переводится в очки.</p>`,fb:'Очки в конце игры определяют победителя.'},
+  },
+  'l15-1':{
+    en:{text:`<p>Priority order:<ol><li><strong>Sente endgame</strong> — moves that require a response</li><li><strong>Big gote</strong> — highest-value free moves</li><li><strong>Small gote</strong> — fine detail moves</li></ol></p>`,fb:'Your Go learning journey begins!'},
+    ru:{text:`<p>Порядок приоритетов:<ol><li><strong>Сэнтэ-эндшпиль</strong> — ходы, требующие ответа</li><li><strong>Большое готэ</strong> — самые ценные свободные ходы</li><li><strong>Малое готэ</strong> — тонкие детальные ходы</li></ol></p>`,fb:'Ваше путешествие в мир Го начинается!'},
+  },
+};
+
+function t(key) { return (UI_T[currentLang]||UI_T.tr)[key] ?? UI_T.tr[key] ?? ''; }
+function stepT(lid, idx, field) {
+  if(currentLang==='tr') return null;
+  return STEP_T[`${lid}-${idx}`]?.[currentLang]?.[field] || null;
+}
+window.setLang = function(lang) {
+  currentLang = lang;
+  localStorage.setItem('go_lang', lang);
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active', b.dataset.lang===lang));
+  applyLang();
+};
+function applyLang() {
+  document.documentElement.lang = currentLang;
+  document.querySelector('.back-btn').textContent = t('backBtn');
+  document.querySelector('.page-title').textContent = t('pageTitle');
+  document.querySelector('.sb-header').textContent = t('curriculum');
+  const bpLabel = document.querySelector('.bp-label');
+  if(bpLabel) bpLabel.textContent = t('boardSize');
+  document.querySelectorAll('.bp-btn').forEach(b=>{
+    const sub=b.querySelector('.bp-sub'); if(sub) sub.textContent=t('bp'+b.dataset.size+'sub');
+  });
+  document.getElementById('bp-desc').textContent = t('bp'+(SIZE||9)+'desc');
+  document.getElementById('btn-prev').textContent = t('prevBtn');
+  document.getElementById('btn-next').textContent = t('nextBtn');
+  document.getElementById('hint').innerHTML = t('hint');
+  const rtBtn=document.getElementById('rotate-toggle');
+  if(rtBtn) rtBtn.textContent = rotateMode ? t('rotateModeOff') : t('rotateModeOn');
+  buildSidebar();
+  if(CUR_STEP_DATA) loadStep(CUR_STEP);
+  else {
+    document.getElementById('lesson-title').textContent = t('selectLesson');
+    document.getElementById('lesson-body').innerHTML = t('selectLessonBody');
+    setFb(t('selectLessonFb'), 'info');
+  }
+}
 
 /* ═══════════════════════════════════════════════════════
    CURRICULUM
@@ -1497,11 +1745,11 @@ function loadStep(idx) {
   nextMoveHint = null;
 
   const chap = CURRICULUM.find(c=>c.lessons.some(l=>l.id===CUR_LESSON.id));
-  document.getElementById('chapter-tag').textContent   = chap?.title||'';
-  document.getElementById('lesson-title').textContent  = CUR_LESSON.title;
-  document.getElementById('lesson-body').innerHTML     = step.text;
+  document.getElementById('chapter-tag').textContent   = (currentLang!=='tr'&&TITLE_T[chap?.id]?.[currentLang])||chap?.title||'';
+  document.getElementById('lesson-title').textContent  = (currentLang!=='tr'&&TITLE_T[CUR_LESSON.id]?.[currentLang])||CUR_LESSON.title;
+  document.getElementById('lesson-body').innerHTML     = stepT(CUR_LESSON.id,idx,'text')||step.text;
   const counterTxt = `${idx+1} / ${CUR_LESSON.steps.length}`;
-  document.getElementById('step-counter').textContent  = `Adım ${counterTxt}`;
+  document.getElementById('step-counter').textContent  = `${t('step')} ${counterTxt}`;
   document.getElementById('cc-counter').textContent    = counterTxt;
   document.getElementById('mob-counter').textContent   = counterTxt;
   document.getElementById('btn-prev').disabled  = (idx===0);
@@ -1525,7 +1773,7 @@ function loadStep(idx) {
   if(step.camera) animateCamera(step.camera);
 
   /* Feedback */
-  setFb(step.fb?.t||'Tahtayı inceleyin.', step.fb?.c||'info');
+  setFb(stepT(CUR_LESSON.id,idx,'fb')||step.fb?.t||t('defaultFb'), step.fb?.c||'info');
 
   /* Mode */
   if(step.auto || step.moves?.length) {
@@ -1577,7 +1825,7 @@ function onClick3D(gx,gz) {
 
   if(ok) {
     game.seed(gx, gz, step.turn||'black');
-    setFb(step.fb_ok||'Doğru!','correct');
+    setFb(stepT(CUR_LESSON.id,CUR_STEP,'fb_ok')||step.fb_ok||t('defaultOk'),'correct');
     flashFeedback('correct');
     stepDone=true; ghostActive=false;
     if(step.capture) {
@@ -1591,7 +1839,7 @@ function onClick3D(gx,gz) {
     }
     updateNextBtn(step);
   } else {
-    setFb(step.fb_err||'Yanlış, tekrar dene.','wrong');
+    setFb(stepT(CUR_LESSON.id,CUR_STEP,'fb_err')||step.fb_err||t('defaultErr'),'wrong');
     flashFeedback('wrong');
     const fb=document.getElementById('feedback');
     fb.classList.add('shake');
@@ -1641,7 +1889,8 @@ function buildSidebar() {
   CURRICULUM.forEach((chap,ci)=>{
     const chapEl=document.createElement('div'); chapEl.className='chapter';
     const title=document.createElement('div'); title.className='ch-title open';
-    title.innerHTML=`<div class="ch-left"><span class="ch-num">${ci+1}</span><span>${chap.title}</span></div><span class="ch-arrow">▶</span>`;
+    const chapTitleTxt=(currentLang!=='tr'&&TITLE_T[chap.id]?.[currentLang])||chap.title;
+    title.innerHTML=`<div class="ch-left"><span class="ch-num">${ci+1}</span><span>${chapTitleTxt}</span></div><span class="ch-arrow">▶</span>`;
     title.onclick=()=>{ title.classList.toggle('open'); list.classList.toggle('open'); };
     chapEl.appendChild(title);
     const list=document.createElement('div'); list.className='lesson-list open';
@@ -1649,7 +1898,8 @@ function buildSidebar() {
       const item=document.createElement('div');
       item.className='lesson-item'+(CUR_LESSON?.id===lesson.id?' active':'')+(doneLessons.has(lesson.id)?' done':'');
       item.dataset.id=lesson.id;
-      item.innerHTML=`<span class="li-check">✓</span><span class="li-num">${ci+1}.${li+1}</span>${lesson.title}`;
+      const lessonTitleTxt=(currentLang!=='tr'&&TITLE_T[lesson.id]?.[currentLang])||lesson.title;
+      item.innerHTML=`<span class="li-check">✓</span><span class="li-num">${ci+1}.${li+1}</span>${lessonTitleTxt}`;
       item.onclick=()=>loadLesson(lesson);
       list.appendChild(item);
     });
@@ -1705,9 +1955,11 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===currentLang));
 buildSidebar(); updateProgress();
 const first=ALL_LESSONS.find(l=>!doneLessons.has(l.id))||ALL_LESSONS[0];
 loadLesson(first);
+applyLang();
 requestAnimationFrame(loop);
 </script>
 </body>
