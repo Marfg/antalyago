@@ -171,6 +171,29 @@
     .nav-btn:disabled { opacity: .3; cursor: not-allowed; }
     #step-counter { font-size: .7rem; color: var(--muted); font-family: monospace; }
 
+    /* ── CANVAS NAV ARROWS (mobil) ── */
+    .cnav {
+      position: fixed; z-index: 16;
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--glass); border: 1px solid var(--gborder);
+      color: var(--gold); font-size: 30px; line-height: 1;
+      cursor: pointer; backdrop-filter: blur(10px);
+      display: none; align-items: center; justify-content: center;
+      transition: background .18s, transform .12s; user-select: none;
+      padding-bottom: 2px;
+    }
+    .cnav:active { background: rgba(200,168,75,.22); transform: scale(.92); }
+    .cnav:disabled { opacity: .2; pointer-events: none; }
+    #cnav-prev { left: 12px; }
+    #cnav-next { right: 12px; }
+
+    /* ── PANEL DRAG HANDLE ── */
+    .panel-handle {
+      width: 38px; height: 4px; border-radius: 2px;
+      background: rgba(200,168,75,.25);
+      margin: 0 auto .4rem; display: none; flex-shrink: 0;
+    }
+
     /* ── ROTATE TOGGLE ── */
     #rotate-toggle {
       position: fixed; bottom: 68px; left: 228px; z-index: 25;
@@ -264,49 +287,60 @@
     }
 
     @media (max-width: 640px) {
-      /* Hamburger görünür, back-btn kısalt */
+      /* Topbar */
       .mob-menu-btn { display: flex; align-items: center; }
       .prog-wrap { display: none; }
       .page-title { font-size: .85rem; }
 
-      /* Sidebar: mobilde tam yükseklik overlay */
+      /* Sidebar overlay */
       #sidebar {
         display: block;
-        width: 80vw; max-width: 300px;
+        width: 82vw; max-width: 300px;
         transform: translateX(-100%);
         z-index: 21;
       }
       #sidebar.mob-open { transform: translateX(0); }
 
+      /* Canvas nav arrows */
+      .cnav { display: flex; }
+
+      /* Drag handle */
+      .panel-handle { display: block; }
+
       /* Lesson panel: bottom sheet */
       #lesson-panel {
-        top: auto; bottom: 56px;
+        top: auto; bottom: 48px;
         left: 0; right: 0; width: 100%;
-        max-height: 44vh;
+        max-height: 46vh;
         border-left: none;
         border-top: 1px solid var(--gborder);
-        padding: .9rem 1rem .6rem;
-        gap: .55rem;
+        padding: .5rem 1rem .7rem;
+        gap: .5rem;
       }
 
-      /* Nav bar: tam genişlik, daha yüksek */
+      /* Bölüm etiketi gizle */
+      .ch-tag { display: none; }
+
+      /* Nav bar: sadece sayaç */
       #nav-bar {
         left: 0; right: 0; width: 100%;
-        border-left: none; height: 60px; padding: 0 1rem;
+        border-left: none; height: 48px;
+        justify-content: center; padding: 0;
       }
-      .nav-btn { padding: .55rem 1.1rem; font-size: .82rem; min-height: 44px; }
+      #btn-prev, #btn-next { display: none; }
+      #step-counter { font-size: .8rem; letter-spacing: .05em; }
 
-      /* Rotate toggle: sol üste */
+      /* Rotate toggle */
       #rotate-toggle { bottom: auto; top: 56px; left: 10px; }
 
-      /* Adım noktaları: daha büyük dokunma hedefi */
+      /* Adım noktaları */
       .sdot { width: 11px; height: 11px; }
-      .step-dots { gap: .55rem; padding: .25rem 0; }
+      .step-dots { gap: .6rem; padding: .2rem 0; }
 
       /* Font */
-      #lesson-title { font-size: 1.05rem; }
+      #lesson-title { font-size: 1.05rem; line-height: 1.2; }
       #lesson-body  { font-size: .83rem; line-height: 1.68; }
-      #feedback     { font-size: .76rem; padding: .55rem .8rem; }
+      #feedback     { font-size: .76rem; padding: .5rem .75rem; }
     }
   </style>
 </head>
@@ -319,6 +353,10 @@
   <div class="comp-sub" id="complete-msg">Bölümü tamamladın!</div>
   <button class="nav-btn primary" onclick="closeComplete()" style="margin-top:.5rem">Devam Et →</button>
 </div>
+
+<!-- Canvas nav arrows -->
+<button class="cnav" id="cnav-prev" onclick="prevStep()">‹</button>
+<button class="cnav" id="cnav-next" onclick="nextStep()">›</button>
 
 <!-- Canvas (3D board) -->
 <canvas id="c"></canvas>
@@ -353,6 +391,7 @@
 
 <!-- Lesson panel -->
 <div id="lesson-panel">
+  <div class="panel-handle"></div>
   <div class="ch-tag"  id="chapter-tag"></div>
   <div id="lesson-title">Ders Seç</div>
   <div class="step-dots" id="step-dots"></div>
@@ -407,10 +446,15 @@ const CAM_DUR = 0.65;
 
 function updateProjCenter() {
   if(innerWidth <= 640) {
-    const panelH = Math.min(innerHeight * 0.44, 320);
-    projCY = 46 + (innerHeight - 46 - 56 - panelH) / 2;
+    const panelH = Math.min(innerHeight * 0.46, 320);
+    projCY = 46 + (innerHeight - 46 - 48 - panelH) / 2;
+    const top = Math.round(projCY - 26) + 'px';
+    document.getElementById('cnav-prev').style.top = top;
+    document.getElementById('cnav-next').style.top = top;
   } else {
     projCY = H / 2;
+    document.getElementById('cnav-prev').style.top = '';
+    document.getElementById('cnav-next').style.top = '';
   }
 }
 
@@ -958,6 +1002,30 @@ canvas.addEventListener('wheel',e=>{
   camDist=Math.max(180,Math.min(960,camDist+e.deltaY*.5));
 },{passive:true});
 
+/* ── KLAVYE DESTEĞİ ── */
+document.addEventListener('keydown',e=>{
+  if(!CUR_LESSON) return;
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'){
+    const b=document.getElementById('btn-next'); if(!b.disabled) nextStep();
+  }
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp'){
+    const b=document.getElementById('btn-prev'); if(!b.disabled) prevStep();
+  }
+});
+
+/* ── PANEL SWIPE (sola=ileri, sağa=geri) ── */
+let _swX=null;
+document.getElementById('lesson-panel').addEventListener('touchstart',e=>{
+  _swX=e.touches[0].clientX;
+},{passive:true});
+document.getElementById('lesson-panel').addEventListener('touchend',e=>{
+  if(_swX===null) return;
+  const dx=e.changedTouches[0].clientX-_swX; _swX=null;
+  if(Math.abs(dx)<55) return;
+  const b=dx<0?document.getElementById('btn-next'):document.getElementById('btn-prev');
+  if(b&&!b.disabled) b.click();
+},{passive:true});
+
 /* ── TOUCH EVENTS ── */
 let pinchDist0 = null;
 canvas.addEventListener('touchstart',e=>{
@@ -1171,6 +1239,7 @@ function loadStep(idx) {
   document.getElementById('lesson-body').innerHTML     = step.text;
   document.getElementById('step-counter').textContent  = `Adım ${idx+1} / ${CUR_LESSON.steps.length}`;
   document.getElementById('btn-prev').disabled = (idx===0);
+  document.getElementById('cnav-prev').disabled = (idx===0);
   renderDots();
 
   /* Clear board, then seed */
@@ -1274,9 +1343,12 @@ function prevStep(){ if(CUR_STEP>0) loadStep(CUR_STEP-1); }
 
 function updateNextBtn(step) {
   const btn=document.getElementById('btn-next');
+  const cnext=document.getElementById('cnav-next');
   const isLast=(CUR_STEP===CUR_LESSON.steps.length-1);
-  btn.disabled=!(step.auto||stepDone);
+  const enabled=!!(step.auto||stepDone);
+  btn.disabled=!enabled;
   btn.textContent=isLast?'Dersi Bitir ✓':'İleri →';
+  cnext.disabled=!enabled;
 }
 
 /* Sidebar */
