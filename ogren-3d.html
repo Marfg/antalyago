@@ -1442,22 +1442,30 @@ const STEP_T = {
     ru:{text:`<p>Ещё один пример снэпбэка. Пожертвуйте камень — <strong>нажмите A5.</strong></p>`,fb:'Жертва — белые возьмут, но потеряют группу!',fb_ok:'Снэпбэк! Белые взяли приманку, но попали в ловушку.',fb_err:'Нажмите A5 — пожертвуйте камень.'},
   },
   'l13-0':{
+    en:{text:`<p>A real opening on a 19×19 board. Observe the corner plays, side placements, and early contest for the center.</p><div class="highlight-box">In the opening, think about the whole board — corner, side, center in order.</div>`,fb:'19×19 opening — corners taken, groups beginning to form.'},
+    ru:{text:`<p>Настоящее начало партии на доске 19×19. Наблюдайте за угловыми ходами, размещением на сторонах и борьбой за центр.</p><div class="highlight-box">В дебюте думайте о всей доске — угол, сторона, центр по порядку.</div>`,fb:'19×19 дебют — углы заняты, группы начинают формироваться.'},
+  },
+  'l13-1':{
     en:{text:`<p><span class="term">Fuseki</span> — the opening phase of Go. The first 10-20 moves determine the overall shape of the board.</p><p>Basic strategy: build territory in the order <strong>corner → side → center</strong>.</p>`,fb:'Corners are the most valuable areas.'},
     ru:{text:`<p><span class="term">Фусеки</span> — дебютная стадия Го. Первые 10-20 ходов определяют общую структуру доски.</p><p>Базовая стратегия: строить территорию по порядку <strong>угол → сторона → центр</strong>.</p>`,fb:'Углы — самые ценные области.'},
   },
-  'l13-1':{
+  'l13-2':{
     en:{text:`<p>Standard opening points:<ul><li><strong>Hoshi (4-4)</strong> — balanced, flexible</li><li><strong>Komoku (3-4)</strong> — territory-oriented</li><li><strong>San-san (3-3)</strong> — secure corner, less influence</li></ul>Click a corner point.</p>`,fb:'Choose one of the corner points.',fb_ok:'Good choice! You opened from the corner.'},
     ru:{text:`<p>Стандартные начальные точки:<ul><li><strong>Хоши (4-4)</strong> — сбалансированная, гибкая</li><li><strong>Комоку (3-4)</strong> — ориентированная на территорию</li><li><strong>Сан-сан (3-3)</strong> — угол надёжен, меньше влияния</li></ul>Нажмите на угловую точку.</p>`,fb:'Выберите одну из угловых точек.',fb_ok:'Хороший выбор! Вы открылись из угла.'},
   },
-  'l13-2':{
+  'l13-3':{
     en:{text:`<p><strong>High (4th line)</strong> moves create influence, <strong>low (3rd line)</strong> moves control territory.</p><div class="highlight-box">The more corners you take in the opening, the greater your initial advantage.</div>`,fb:'All four corners taken — balance.'},
     ru:{text:`<p><strong>Высокие (4-я линия)</strong> ходы создают влияние, <strong>низкие (3-я линия)</strong> — контролируют территорию.</p><div class="highlight-box">Чем больше углов в дебюте, тем больше начальное преимущество.</div>`,fb:'Все четыре угла заняты — баланс.'},
   },
   'l14-0':{
+    en:{text:`<p>A real middlegame on a 19×19 board. Groups are intertwined — a different battle in every area.</p><div class="highlight-box">Strengthen your weak groups and pressure your opponent's weak groups.</div>`,fb:'A complex middlegame — black and white groups clash across the whole board.'},
+    ru:{text:`<p>Настоящий миттельшпиль на доске 19×19. Группы переплетены — в каждой области своё сражение.</p><div class="highlight-box">Усиляйте свои слабые группы и давите на слабые группы противника.</div>`,fb:'Сложный миттельшпиль — группы чёрных и белых сталкиваются по всей доске.'},
+  },
+  'l14-1':{
     en:{text:`<p>In the middlegame, groups take shape and battles begin. Key objectives:</p><ul><li><strong>Strengthen</strong> weak groups</li><li><strong>Attack</strong> the opponent's weak groups</li><li><strong>Clarify</strong> territorial boundaries</li></ul>`,fb:'Both sides are building territory.'},
     ru:{text:`<p>В миттельшпиле группы формируются и начинаются сражения. Основные цели:</p><ul><li><strong>Усиливайте</strong> слабые группы</li><li><strong>Атакуйте</strong> слабые группы противника</li><li><strong>Уточняйте</strong> границы территорий</li></ul>`,fb:'Обе стороны строят территорию.'},
   },
-  'l14-1':{
+  'l14-2':{
     en:{text:`<p><span class="term">Sente</span> — a move that forces the opponent to respond (you keep the initiative).</p><p><span class="term">Gote</span> — a move that gives initiative to the opponent.</p><div class="highlight-box">Make sente moves whenever possible.</div>`,fb:'Sente = offense · Gote = defense'},
     ru:{text:`<p><span class="term">Сэнтэ</span> — ход, на который противник вынужден отвечать (инициатива у вас).</p><p><span class="term">Готэ</span> — ход, передающий инициативу противнику.</p><div class="highlight-box">Делайте сэнтэ всегда, когда возможно.</div>`,fb:'Сэнтэ = атака · Готэ = защита'},
   },
@@ -1704,12 +1712,46 @@ const CURRICULUM = [
   { id:'c3', title:'Strateji', lessons:[
 
     { id:'l13', title:'Açılış (Fuseki)', steps:[
+      { text:`<p>Gerçek bir Go maçından alınan açılış pozisyonu. Siyah ve Beyaz köşelere yerleşmiş, kenar kontrolü için rekabet ediyor.</p>`, board:[
+        {color:'W',x:15,y:5},{color:'W',x:16,y:5},{color:'W',x:2,y:6},{color:'W',x:15,y:8},{color:'W',x:3,y:9},
+        {color:'W',x:2,y:12},{color:'W',x:1,y:13},{color:'W',x:16,y:13},{color:'W',x:1,y:14},{color:'W',x:2,y:14},
+        {color:'W',x:16,y:14},{color:'W',x:3,y:15},{color:'W',x:4,y:15},{color:'W',x:16,y:15},{color:'W',x:2,y:16},
+        {color:'W',x:5,y:16},{color:'W',x:14,y:16},{color:'W',x:15,y:16},
+        {color:'B',x:8,y:2},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:13,y:3},{color:'B',x:15,y:3},
+        {color:'B',x:16,y:4},{color:'B',x:14,y:9},{color:'B',x:2,y:13},{color:'B',x:3,y:14},{color:'B',x:15,y:14},
+        {color:'B',x:1,y:15},{color:'B',x:2,y:15},{color:'B',x:9,y:15},{color:'B',x:12,y:15},{color:'B',x:14,y:15},
+        {color:'B',x:1,y:16},{color:'B',x:3,y:16},{color:'B',x:13,y:16},{color:'B',x:3,y:17}
+      ], auto:true, size:19, camera:CAM.board19, fb:{t:'Açılış tamamlandı — her iki taraf da köşe ve kenarlara yerleşti.',c:'info'} },
       { text:`<p><span class="term">Fuseki</span> — Go'nun açılış aşaması. İlk 10-20 hamle tahtanın genel yapısını belirler.</p><p>Temel strateji: <strong>köşe → kenar → merkez</strong> sırasıyla bölge kurmak.</p>`, board:[], auto:true, size:9, camera:CAM.high, fb:{t:'Köşeler en değerli bölgelerdir.',c:'info'} },
       { text:`<p>Standart açılış noktaları:<ul><li><strong>Hoshi (4-4)</strong> — dengeli, esnek</li><li><strong>Komoku (3-4)</strong> — bölge odaklı</li><li><strong>San-san (3-3)</strong> — köşe kesin, az etki</li></ul>Bir köşe noktasına tıkla.</p>`, board:[], answers:[{x:2,y:2},{x:3,y:3},{x:2,y:3},{x:3,y:2}], turn:'black', size:9, fb:{t:'Köşe noktalarından birini seç.',c:'info'}, fb_ok:'İyi seçim! Köşeden açıldın.' },
       { text:`<p><strong>Yüksek (4. çizgi)</strong> hamleler etki alanı, <strong>alçak (3. çizgi)</strong> hamleler bölge kontrolü sağlar.</p><div class="highlight-box">Açılışta ne kadar çok köşe alırsan başlangıç avantajın artar.</div>`, board:[{color:'B',x:2,y:2},{color:'W',x:6,y:2},{color:'B',x:6,y:6},{color:'W',x:2,y:6}], auto:true, size:9, fb:{t:'Dört köşe de alındı — denge.',c:'info'} },
     ]},
 
     { id:'l14', title:'Orta Oyun', steps:[
+      { text:`<p>Gerçek bir Go maçından alınan orta oyun pozisyonu. Gruplar şekillenmiş, mücadele tüm tahtaya yayılmış.</p>`, board:[
+        {color:'W',x:6,y:2},{color:'W',x:5,y:3},{color:'W',x:8,y:3},{color:'W',x:5,y:4},{color:'W',x:6,y:4},
+        {color:'W',x:7,y:4},{color:'W',x:17,y:4},{color:'W',x:2,y:5},{color:'W',x:15,y:5},{color:'W',x:16,y:5},
+        {color:'W',x:18,y:5},{color:'W',x:2,y:6},{color:'W',x:17,y:6},{color:'W',x:1,y:7},{color:'W',x:6,y:7},
+        {color:'W',x:12,y:7},{color:'W',x:1,y:8},{color:'W',x:3,y:8},{color:'W',x:6,y:8},{color:'W',x:14,y:8},
+        {color:'W',x:15,y:8},{color:'W',x:16,y:8},{color:'W',x:3,y:9},{color:'W',x:8,y:9},{color:'W',x:9,y:9},
+        {color:'W',x:3,y:10},{color:'W',x:6,y:10},{color:'W',x:7,y:10},{color:'W',x:2,y:11},{color:'W',x:2,y:12},
+        {color:'W',x:3,y:12},{color:'W',x:1,y:13},{color:'W',x:5,y:13},{color:'W',x:6,y:13},{color:'W',x:7,y:13},
+        {color:'W',x:8,y:13},{color:'W',x:16,y:13},{color:'W',x:1,y:14},{color:'W',x:2,y:14},{color:'W',x:4,y:14},
+        {color:'W',x:6,y:14},{color:'W',x:10,y:14},{color:'W',x:16,y:14},{color:'W',x:3,y:15},{color:'W',x:4,y:15},
+        {color:'W',x:7,y:15},{color:'W',x:16,y:15},{color:'W',x:2,y:16},{color:'W',x:5,y:16},{color:'W',x:14,y:16},
+        {color:'W',x:15,y:16},
+        {color:'B',x:4,y:2},{color:'B',x:5,y:2},{color:'B',x:7,y:2},{color:'B',x:8,y:2},{color:'B',x:9,y:2},
+        {color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:6,y:3},{color:'B',x:7,y:3},{color:'B',x:10,y:3},
+        {color:'B',x:13,y:3},{color:'B',x:15,y:3},{color:'B',x:17,y:3},{color:'B',x:16,y:4},{color:'B',x:3,y:5},
+        {color:'B',x:8,y:5},{color:'B',x:3,y:6},{color:'B',x:2,y:7},{color:'B',x:3,y:7},{color:'B',x:4,y:7},
+        {color:'B',x:5,y:8},{color:'B',x:8,y:8},{color:'B',x:13,y:9},{color:'B',x:14,y:9},{color:'B',x:15,y:9},
+        {color:'B',x:4,y:10},{color:'B',x:8,y:10},{color:'B',x:3,y:11},{color:'B',x:5,y:11},{color:'B',x:7,y:11},
+        {color:'B',x:9,y:11},{color:'B',x:4,y:12},{color:'B',x:5,y:12},{color:'B',x:7,y:12},{color:'B',x:8,y:12},
+        {color:'B',x:14,y:12},{color:'B',x:2,y:13},{color:'B',x:3,y:13},{color:'B',x:4,y:13},{color:'B',x:3,y:14},
+        {color:'B',x:5,y:14},{color:'B',x:7,y:14},{color:'B',x:15,y:14},{color:'B',x:1,y:15},{color:'B',x:2,y:15},
+        {color:'B',x:6,y:15},{color:'B',x:9,y:15},{color:'B',x:10,y:15},{color:'B',x:12,y:15},{color:'B',x:14,y:15},
+        {color:'B',x:1,y:16},{color:'B',x:3,y:16},{color:'B',x:13,y:16},{color:'B',x:3,y:17}
+      ], auto:true, size:19, camera:CAM.board19, fb:{t:'Orta oyun — gruplar her iki tarafta da şekillenmiş.',c:'info'} },
       { text:`<p>Orta oyunda gruplar şekillenir, savaşlar başlar. Temel hedefler:</p><ul><li>Zayıf grupları <strong>güçlendir</strong></li><li>Rakibin zayıf gruplarına <strong>saldır</strong></li><li>Bölge sınırlarını <strong>netleştir</strong></li></ul>`, board:[{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'W',x:6,y:2},{color:'W',x:6,y:3},{color:'B',x:4,y:6},{color:'B',x:5,y:6},{color:'W',x:2,y:6},{color:'W',x:2,y:5}], auto:true, size:9, camera:CAM.overview, fb:{t:'Her iki taraf da bölge oluşturuyor.',c:'info'} },
       { text:`<p><span class="term">Sente</span> — rakibin cevap vermek zorunda kaldığı hamle (inisiyatif sende).</p><p><span class="term">Gote</span> — inisiyatifi rakibe bırakan hamle.</p><div class="highlight-box">Mümkün olduğunca sente hamleler yap.</div>`, board:[], auto:true, size:9, fb:{t:'Sente = taarruz · Gote = savunma',c:'info'} },
     ]},
