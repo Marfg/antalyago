@@ -1322,8 +1322,27 @@ const CURRICULUM = [
     ]},
 
     { id:'l9', title:'Çift Atari', steps:[
-      { text:`<p><span class="term">Atari</span> — bir taşın son nefes noktası tehdit altında. <span class="term">Çift atari</span> ise tek hamleyle iki farklı grubu aynı anda tehdit etmek.</p>`, board:[{color:'W',x:2,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:1,y:3},{color:'B',x:2,y:4},{color:'B',x:4,y:4}], auto:true, size:9, camera:CAM.center, fb:{t:'Doğru hamleyle iki beyaz gruba aynı anda atari yapılabilir.',c:'info'} },
-      { text:`<p>Çift atari hamlesini bul! <strong>D4 noktasına tıkla.</strong></p>`, board:[{color:'W',x:2,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:1,y:3},{color:'B',x:2,y:4},{color:'B',x:4,y:4}], answer:{x:3,y:3}, turn:'black', size:9, fb:{t:'Tek hamleyle iki grubu tehdit et!',c:'info'}, fb_ok:'Mükemmel çift atari!', fb_err:'Her iki beyaz gruba da atari yapacak noktayı bul.' },
+      { text:`<p><span class="term">Çift atari</span> — tek hamleyle iki ayrı gruba aynı anda atari. Beyaz ikisini birden kurtaramaz; biri mutlaka yakalanır.</p><p>△ işareti her iki beyazı da tehdit eden noktayı gösteriyor.</p>`,
+        board:[{color:'W',x:5,y:3},{color:'W',x:4,y:4},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'B',x:4,y:5}],
+        markers:[{x:4,y:3,type:'triangle'}],
+        auto:true, size:9, camera:CAM.center, fb:{t:'Bu tek noktadan oynayınca her iki beyaz da atariye girer.',c:'info'} },
+
+      { text:`<p>Çift atari noktasını bul ve oyna — <strong>△ noktasına tıkla.</strong></p>`,
+        board:[{color:'W',x:5,y:3},{color:'W',x:4,y:4},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'B',x:4,y:5}],
+        answer:{x:4,y:3}, turn:'black', size:9,
+        fb:{t:'İki beyazı aynı anda atariye al!',c:'info'}, fb_ok:'Çift atari! Beyaz ikisini birden kurtaramaz.', fb_err:'Her iki beyaz gruba da atari yapacak noktayı bul.' },
+
+      { text:`<p><strong>Dal A —</strong> Beyaz sağdaki taşı kurtarırsa… sol taş yakalanır.</p>`,
+        board:[{color:'W',x:5,y:3},{color:'W',x:4,y:4},{color:'B',x:4,y:3},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'B',x:4,y:5}],
+        moves:[{color:'W',x:5,y:2,capture:[]},{color:'B',x:3,y:4,capture:[{x:4,y:4}]}],
+        moveSpeed:1.4, auto:true, size:9, camera:CAM.center,
+        fb:{t:'Beyaz sağı kurtardı — ama sol taş yakalandı.',c:'info'} },
+
+      { text:`<p><strong>Dal B —</strong> Beyaz sol taşı kurtarırsa… sağdaki yakalanır.</p><div class="highlight-box">Çift atariden kaçış yoktur: beyaz her seçimde bir taşını kaybeder.</div>`,
+        board:[{color:'W',x:5,y:3},{color:'W',x:4,y:4},{color:'B',x:4,y:3},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'B',x:4,y:5}],
+        moves:[{color:'W',x:3,y:4,capture:[]},{color:'B',x:5,y:2,capture:[{x:5,y:3}]}],
+        moveSpeed:1.4, auto:true, size:9, camera:CAM.center,
+        fb:{t:'Beyaz solu kurtardı — ama bu sefer sağ taş yakalandı.',c:'info'} },
     ]},
 
     { id:'l10', title:'Merdiven (Shicho)', steps:[
