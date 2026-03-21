@@ -882,7 +882,7 @@ function drawTerritory(points, side) {
   const col = side === 'black' ? '#1a1a2e' : '#f5f0e8';
   const Y   = -BOARD_H/2 - .3;
   const ARM = CELL * 0.22;
-  const pulse = .1 + .9*Math.max(0, Math.sin(hlTime*3.2));
+  const pulse = .6 + .4*Math.sin(hlTime*2.8);
 
   points.forEach(({x, y}) => {
     const wx = -HALF + x*CELL;
