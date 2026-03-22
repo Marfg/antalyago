@@ -6,196 +6,196 @@
 <title>Antalyago Mobile</title>
 <style>
   :root {
-    --gold:  #c8a84b; --gold2: #e0c060;
-    --dark:  #08080e; --glass: rgba(10,10,18,.92);
-    --gb:    rgba(200,168,75,.22);
-    --text:  #e8e4de; --muted: rgba(232,228,222,.45);
-    --green: #3ecf80; --red: #e05050;
-    --sat: env(safe-area-inset-top, 0px);
-    --sab: env(safe-area-inset-bottom, 0px);
+    --gold:#c8a84b; --gold2:#e0c060;
+    --dark:#08080e; --glass:rgba(10,10,18,.92);
+    --gb:rgba(200,168,75,.22);
+    --text:#e8e4de; --muted:rgba(232,228,222,.45);
+    --green:#3ecf80; --red:#e05050;
+    --sat:env(safe-area-inset-top,0px);
+    --sab:env(safe-area-inset-bottom,0px);
   }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body {
-    height: 100dvh; overflow: hidden;
-    background: var(--dark);
-    font-family: system-ui, -apple-system, sans-serif;
-    color: var(--text);
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-  }
-
-  /* ── TAHTA ARKA PLAN ── */
-  #board-wrap {
-    position: fixed; inset: 0; z-index: 0;
-    display: flex; align-items: center; justify-content: center;
-    background: radial-gradient(ellipse at 50% 44%, #1c1608 0%, #08080e 72%);
-  }
-  #bc {
-    display: block;
-    border-radius: 3px;
-    box-shadow: 0 8px 40px rgba(0,0,0,.7);
-    cursor: pointer;
-    touch-action: none;
-    width: min(82vw, 360px);
-    height: min(82vw, 360px);
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{
+    height:100dvh;overflow:hidden;
+    background:var(--dark);
+    font-family:system-ui,-apple-system,sans-serif;
+    color:var(--text);
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
   }
 
-  /* ── TOPBAR ── */
-  #topbar {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 40;
-    padding: calc(var(--sat) + 8px) 14px 8px;
-    background: linear-gradient(to bottom, rgba(8,8,14,.96) 60%, transparent);
-    display: flex; align-items: center; gap: 10px;
+  /* BOARD */
+  #board-wrap{
+    position:fixed;inset:0;z-index:0;
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at 50% 44%,#1c1608 0%,#08080e 72%);
   }
-  .tb-btn {
-    width: 40px; height: 40px; border-radius: 10px;
-    border: 1px solid var(--gb); background: rgba(10,10,18,.8);
-    backdrop-filter: blur(12px);
-    color: var(--gold); font-size: 16px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; transition: background .15s;
+  #bc{
+    display:block;border-radius:3px;
+    box-shadow:0 8px 40px rgba(0,0,0,.7);
+    cursor:pointer;touch-action:none;
+    width:min(84vw,360px);height:min(84vw,360px);
   }
-  .tb-btn:active { background: rgba(200,168,75,.18); }
-  .tb-center { flex: 1; text-align: center; }
-  .tb-title { font-size: .8rem; font-weight: 700; letter-spacing: .06em; }
-  .tb-dots  { display: flex; justify-content: center; gap: 6px; margin-top: 3px; }
-  .tb-dot   { width: 6px; height: 6px; border-radius: 50%; background: var(--gb); transition: all .25s; }
-  .tb-dot.done { background: rgba(62,207,128,.55); }
-  .tb-dot.on   { background: var(--gold); transform: scale(1.45); }
 
-  /* ── FEEDBACK BADGE ── */
-  #fb-badge {
-    position: fixed; top: calc(var(--sat) + 58px); left: 14px; right: 14px;
-    z-index: 38;
-    display: flex; align-items: flex-start; gap: 8px;
-    padding: 9px 13px; border-radius: 12px;
-    background: rgba(10,10,18,.88); backdrop-filter: blur(14px);
-    border: 1px solid var(--gb);
-    font-size: .78rem; font-weight: 600; line-height: 1.4;
-    color: var(--muted);
-    transition: border-color .22s, color .22s, background .22s, opacity .22s;
-    pointer-events: none;
+  /* TOPBAR */
+  #topbar{
+    position:fixed;top:0;left:0;right:0;z-index:40;
+    padding:calc(var(--sat) + 8px) 14px 8px;
+    background:linear-gradient(to bottom,rgba(8,8,14,.96) 65%,transparent);
+    display:flex;align-items:center;gap:10px;
   }
-  #fb-badge.ok   { border-color: var(--green); color: var(--green); background: rgba(62,207,128,.1); }
-  #fb-badge.err  { border-color: var(--red);   color: var(--red);   background: rgba(224,80,80,.1); }
-  #fb-badge.info { border-color: var(--gb);    color: var(--muted); }
-  .fb-icon { font-size: .95rem; flex-shrink: 0; margin-top: 1px; }
+  .tb-btn{
+    width:40px;height:40px;border-radius:10px;
+    border:1px solid var(--gb);background:rgba(10,10,18,.8);
+    backdrop-filter:blur(12px);
+    color:var(--gold);font-size:16px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;transition:background .15s;
+  }
+  .tb-btn:active{background:rgba(200,168,75,.18)}
+  .tb-center{flex:1;text-align:center}
+  .tb-title{font-size:.8rem;font-weight:700;letter-spacing:.06em}
+  .tb-dots{display:flex;justify-content:center;gap:6px;margin-top:3px}
+  .tb-dot{width:6px;height:6px;border-radius:50%;background:var(--gb);transition:all .25s}
+  .tb-dot.done{background:rgba(62,207,128,.55)}
+  .tb-dot.on{background:var(--gold);transform:scale(1.45)}
 
-  /* ── BOTTOM SHEET ── */
-  #sheet {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 35;
-    background: var(--glass); backdrop-filter: blur(22px);
-    border-top: 1px solid var(--gb);
-    border-radius: 18px 18px 0 0;
-    padding-bottom: max(var(--sab), 14px);
-    will-change: transform;
-    transition: transform .32s cubic-bezier(.32,.72,0,1);
+  /* FEEDBACK */
+  #fb-badge{
+    position:fixed;top:calc(var(--sat) + 58px);left:14px;right:14px;
+    z-index:38;
+    display:flex;align-items:flex-start;gap:8px;
+    padding:9px 13px;border-radius:12px;
+    background:rgba(10,10,18,.88);backdrop-filter:blur(14px);
+    border:1px solid var(--gb);
+    font-size:.78rem;font-weight:600;line-height:1.4;
+    color:var(--muted);pointer-events:none;
+    transition:border-color .22s,color .22s,background .22s;
   }
-  #sheet.peek { transform: translateY(calc(100% - 88px)); }
-  #sheet.open { transform: translateY(0); }
+  #fb-badge.ok  {border-color:var(--green);color:var(--green);background:rgba(62,207,128,.1)}
+  #fb-badge.err {border-color:var(--red);color:var(--red);background:rgba(224,80,80,.1)}
+  #fb-badge.info{border-color:var(--gb);color:var(--muted)}
+  .fb-icon{font-size:.95rem;flex-shrink:0;margin-top:1px}
 
-  .sh-handle {
-    width: 42px; height: 5px; border-radius: 3px;
-    background: rgba(200,168,75,.28);
-    margin: 11px auto 0; cursor: pointer;
+  /* BOTTOM SHEET */
+  #sheet{
+    position:fixed;bottom:0;left:0;right:0;z-index:35;
+    background:var(--glass);backdrop-filter:blur(22px);
+    border-top:1px solid var(--gb);border-radius:18px 18px 0 0;
+    padding-bottom:max(var(--sab),14px);
+    will-change:transform;
+    transition:transform .32s cubic-bezier(.32,.72,0,1);
   }
-  .sh-peek-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 16px 11px; cursor: pointer;
+  #sheet.peek{transform:translateY(calc(100% - 88px))}
+  #sheet.open{transform:translateY(0)}
+  .sh-handle{
+    width:42px;height:5px;border-radius:3px;
+    background:rgba(200,168,75,.28);
+    margin:11px auto 0;cursor:pointer;
   }
-  .sh-nav {
-    width: 50px; height: 50px; border-radius: 50%;
-    border: 1.5px solid var(--gb); background: transparent;
-    color: var(--gold); font-size: 28px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; transition: background .15s, transform .1s;
+  .sh-peek-row{
+    display:flex;align-items:center;gap:12px;
+    padding:10px 16px 11px;cursor:pointer;
   }
-  .sh-nav:active { background: rgba(200,168,75,.15); transform: scale(.9); }
-  .sh-nav:disabled { opacity: .25; pointer-events: none; }
-  .sh-meta { flex: 1; min-width: 0; }
-  .sh-ch   { font-size: .62rem; color: var(--gold); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 2px; }
-  .sh-title { font-size: .95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sh-hint  { font-size: .67rem; color: var(--muted); margin-top: 2px; }
+  .sh-nav{
+    width:50px;height:50px;border-radius:50%;
+    border:1.5px solid var(--gb);background:transparent;
+    color:var(--gold);font-size:28px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;transition:background .15s,transform .1s;
+  }
+  .sh-nav:active{background:rgba(200,168,75,.15);transform:scale(.9)}
+  .sh-nav:disabled{opacity:.25;pointer-events:none}
+  .sh-meta{flex:1;min-width:0}
+  .sh-ch  {font-size:.62rem;color:var(--gold);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+  .sh-title{font-size:.95rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sh-hint {font-size:.67rem;color:var(--muted);margin-top:2px}
+  .sh-body{
+    padding:0 18px 12px;overflow-y:auto;max-height:42vh;
+    display:flex;flex-direction:column;gap:12px;
+  }
+  .sh-body::-webkit-scrollbar{width:2px}
+  .sh-body::-webkit-scrollbar-thumb{background:var(--gb)}
+  .lesson-text{font-size:.875rem;line-height:1.8;color:rgba(232,228,222,.88)}
+  .lesson-text p{margin-bottom:.6rem}
+  .lesson-text p:last-child{margin-bottom:0}
+  .lesson-text strong{color:var(--text);font-weight:700}
+  .lesson-text em{color:var(--gold)}
+  .lesson-text ul,.lesson-text ol{margin:.3rem 0 .6rem 1.2rem;line-height:2;font-size:.84rem}
+  .highlight-box{
+    background:rgba(200,168,75,.07);border-left:2px solid var(--gold);
+    padding:.5rem .8rem;border-radius:0 6px 6px 0;
+    font-size:.82rem;line-height:1.65;color:rgba(232,228,222,.8);
+  }
+  .term{
+    display:inline-block;background:rgba(200,168,75,.12);
+    border:1px solid var(--gb);border-radius:2px;
+    padding:.02rem .3rem;font-family:monospace;font-size:.78rem;
+    color:var(--gold);font-weight:600;
+  }
+  .sh-cta{display:flex}
+  .cta-btn{
+    flex:1;padding:.75rem 1rem;border-radius:10px;
+    background:rgba(200,168,75,.18);border:1.5px solid var(--gold);
+    color:var(--gold);font-size:.88rem;font-weight:700;
+    cursor:pointer;font-family:inherit;transition:all .15s;
+  }
+  .cta-btn:active{background:var(--gold);color:var(--dark)}
 
-  .sh-body {
-    padding: 0 18px 12px; overflow-y: auto; max-height: 42vh;
-    display: flex; flex-direction: column; gap: 12px;
+  /* SIDEBAR */
+  #sidebar{
+    position:fixed;inset:0;z-index:50;
+    display:flex;opacity:0;pointer-events:none;
+    transition:opacity .25s;
   }
-  .sh-body::-webkit-scrollbar { width: 2px; }
-  .sh-body::-webkit-scrollbar-thumb { background: var(--gb); }
-  .lesson-text { font-size: .875rem; line-height: 1.8; color: rgba(232,228,222,.88); }
-  .lesson-text p { margin-bottom: .6rem; }
-  .lesson-text p:last-child { margin-bottom: 0; }
-  .lesson-text strong { color: var(--text); font-weight: 700; }
-  .lesson-text em { color: var(--gold); }
-  .hbox {
-    background: rgba(200,168,75,.07); border-left: 2px solid var(--gold);
-    padding: .5rem .8rem; border-radius: 0 6px 6px 0;
-    font-size: .82rem; line-height: 1.65; color: rgba(232,228,222,.8);
+  #sidebar.open{opacity:1;pointer-events:all}
+  .sb-panel{
+    width:82vw;max-width:300px;height:100%;
+    background:rgba(8,8,14,.97);backdrop-filter:blur(24px);
+    border-right:1px solid var(--gb);
+    display:flex;flex-direction:column;
+    padding-top:var(--sat);
+    transform:translateX(-100%);
+    transition:transform .3s cubic-bezier(.32,.72,0,1);
   }
-  .sh-cta { display: flex; }
-  .cta-btn {
-    flex: 1; padding: .75rem 1rem; border-radius: 10px;
-    background: rgba(200,168,75,.18); border: 1.5px solid var(--gold);
-    color: var(--gold); font-size: .88rem; font-weight: 700;
-    cursor: pointer; font-family: inherit; transition: all .15s;
+  #sidebar.open .sb-panel{transform:translateX(0)}
+  .sb-scrim{flex:1;background:rgba(0,0,0,.5);cursor:pointer}
+  .sb-head{
+    padding:16px 18px;border-bottom:1px solid var(--gb);
+    display:flex;align-items:center;justify-content:space-between;
   }
-  .cta-btn:active { background: var(--gold); color: var(--dark); }
-
-  /* ── SIDEBAR ── */
-  #sidebar {
-    position: fixed; inset: 0; z-index: 50;
-    display: flex; opacity: 0; pointer-events: none;
-    transition: opacity .25s;
+  .sb-head-title{font-size:.7rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+  .sb-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:4px}
+  .sb-prog{padding:10px 18px;border-bottom:1px solid var(--gb);display:flex;align-items:center;gap:10px}
+  .sb-prog-bar{flex:1;height:4px;background:rgba(200,168,75,.12);border-radius:2px;overflow:hidden}
+  .sb-prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px;transition:width .5s}
+  .sb-prog-txt{font-size:.67rem;color:var(--muted);font-weight:700;white-space:nowrap}
+  .sb-scroll{overflow-y:auto;flex:1}
+  .sb-ch{border-bottom:1px solid rgba(200,168,75,.1)}
+  .sb-ch-hd{
+    padding:11px 18px;display:flex;align-items:center;gap:10px;
+    cursor:pointer;background:rgba(200,168,75,.03);
   }
-  #sidebar.open { opacity: 1; pointer-events: all; }
-  .sb-panel {
-    width: 82vw; max-width: 300px; height: 100%;
-    background: rgba(8,8,14,.97); backdrop-filter: blur(24px);
-    border-right: 1px solid var(--gb);
-    display: flex; flex-direction: column;
-    padding-top: var(--sat);
-    transform: translateX(-100%);
-    transition: transform .3s cubic-bezier(.32,.72,0,1);
+  .sb-ch-num{
+    width:22px;height:22px;border-radius:50%;
+    background:var(--gold);color:var(--dark);
+    font-size:.62rem;font-weight:800;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
   }
-  #sidebar.open .sb-panel { transform: translateX(0); }
-  .sb-scrim { flex: 1; background: rgba(0,0,0,.5); cursor: pointer; }
-  .sb-head {
-    padding: 16px 18px; border-bottom: 1px solid var(--gb);
-    display: flex; align-items: center; justify-content: space-between;
+  .sb-ch-name{font-size:.76rem;font-weight:700;flex:1}
+  .sb-ch-arr{font-size:.55rem;color:var(--muted);transition:transform .2s}
+  .sb-ch-hd.expanded .sb-ch-arr{transform:rotate(90deg)}
+  .sb-lessons{display:none}
+  .sb-ch-hd.expanded + .sb-lessons{display:block}
+  .sb-lesson{
+    padding:9px 18px 9px 50px;font-size:.75rem;
+    color:var(--muted);cursor:pointer;
+    border-left:2px solid transparent;
+    transition:background .12s;
   }
-  .sb-head-title { font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
-  .sb-close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; padding: 4px; }
-  .sb-prog { padding: 10px 18px; border-bottom: 1px solid var(--gb); display: flex; align-items: center; gap: 10px; }
-  .sb-prog-bar { flex: 1; height: 4px; background: rgba(200,168,75,.12); border-radius: 2px; overflow: hidden; }
-  .sb-prog-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2)); border-radius: 2px; transition: width .5s; }
-  .sb-prog-txt { font-size: .67rem; color: var(--muted); font-weight: 700; white-space: nowrap; }
-  .sb-scroll { overflow-y: auto; flex: 1; }
-  .sb-ch { border-bottom: 1px solid rgba(200,168,75,.1); }
-  .sb-ch-hd {
-    padding: 11px 18px; display: flex; align-items: center; gap: 10px;
-    cursor: pointer; background: rgba(200,168,75,.03);
-  }
-  .sb-ch-num {
-    width: 22px; height: 22px; border-radius: 50%;
-    background: var(--gold); color: var(--dark);
-    font-size: .62rem; font-weight: 800;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  .sb-ch-name { font-size: .76rem; font-weight: 700; flex: 1; }
-  .sb-ch-arr  { font-size: .55rem; color: var(--muted); transition: transform .2s; }
-  .sb-ch-hd.expanded .sb-ch-arr { transform: rotate(90deg); }
-  .sb-lessons { display: none; }
-  .sb-ch-hd.expanded + .sb-lessons { display: block; }
-  .sb-lesson {
-    padding: 9px 18px 9px 50px; font-size: .75rem;
-    color: var(--muted); cursor: pointer;
-    border-left: 2px solid transparent;
-    transition: background .12s;
-  }
-  .sb-lesson:active { background: rgba(200,168,75,.08); }
-  .sb-lesson.active { color: var(--text); font-weight: 700; border-left-color: var(--gold); background: rgba(200,168,75,.08); }
-  .sb-lesson.done   { color: rgba(62,207,128,.7); }
+  .sb-lesson:active{background:rgba(200,168,75,.08)}
+  .sb-lesson.active{color:var(--text);font-weight:700;border-left-color:var(--gold);background:rgba(200,168,75,.08)}
+  .sb-lesson.done{color:rgba(62,207,128,.7)}
 </style>
 </head>
 <body>
@@ -203,29 +203,29 @@
 <div id="board-wrap"><canvas id="bc"></canvas></div>
 
 <div id="topbar">
-  <button class="tb-btn" id="btn-menu" onclick="openSidebar()">☰</button>
+  <button class="tb-btn" onclick="openSidebar()">☰</button>
   <div class="tb-center">
     <div class="tb-title" id="tb-title">Go Öğren</div>
     <div class="tb-dots" id="tb-dots"></div>
   </div>
-  <button class="tb-btn" id="btn-lang">TR</button>
+  <button class="tb-btn" id="btn-home" onclick="openSidebar()" title="Müfredatı aç">⊞</button>
 </div>
 
-<div id="fb-badge">
+<div id="fb-badge" class="info">
   <span class="fb-icon" id="fb-icon">💡</span>
-  <span id="fb-text">Sol panelden bir ders seçin.</span>
+  <span id="fb-text">☰ menüden bir ders seçin.</span>
 </div>
 
 <div id="sheet" class="peek">
   <div class="sh-handle" onclick="toggleSheet()"></div>
   <div class="sh-peek-row" id="peek-row">
-    <button class="sh-nav" id="btn-prev" onclick="prevStep()">‹</button>
+    <button class="sh-nav" id="btn-prev" onclick="prevStep()" disabled>‹</button>
     <div class="sh-meta">
       <div class="sh-ch"  id="sh-ch">—</div>
       <div class="sh-title" id="sh-title">Ders Seç</div>
       <div class="sh-hint"  id="sh-hint">☰ menüden ders seç</div>
     </div>
-    <button class="sh-nav" id="btn-next" onclick="nextStep()">›</button>
+    <button class="sh-nav" id="btn-next" onclick="nextStep()" disabled>›</button>
   </div>
   <div class="sh-body" id="sh-body" style="display:none">
     <div class="lesson-text" id="lesson-text"></div>
@@ -243,7 +243,7 @@
     </div>
     <div class="sb-prog">
       <div class="sb-prog-bar"><div class="sb-prog-fill" id="sb-prog-fill" style="width:0%"></div></div>
-      <span class="sb-prog-txt" id="sb-prog-txt">0 / 0</span>
+      <span class="sb-prog-txt" id="sb-prog-txt">0 / 15</span>
     </div>
     <div class="sb-scroll" id="sb-scroll"></div>
   </div>
@@ -251,407 +251,626 @@
 </div>
 
 <script>
-/* ════════════════════════════════════
-   MİNİ CURRICULUM (L1–L3 tam, diğerleri başlık)
-   ════════════════════════════════════ */
+/* ═══════════════════════════════════════
+   TAM CURRICULUM — L1–L15
+═══════════════════════════════════════ */
 const CURRICULUM = [
-  { id:'c1', title:'Temel Kurallar', lessons:[
-    { id:'l1', title:'Tahta ve Taşlar', steps:[
-      { text:`<p>Go <strong>9×9</strong>, <strong>13×13</strong> veya <strong>19×19</strong> boyutunda ahşap bir tahtada oynanır. Siyah ve beyaz taşlar çizgilerin <em>kesişim noktalarına</em> konur.</p>`, board:[], auto:true, size:9,
-        fb:{t:'Taşlar karelerin içine değil, çizgi kesişimlerine konur.',c:'info'} },
-      { text:`<p>Siyah daima ilk oynar. Her hamle kalıcıdır — taşlar hareket etmez, sadece <em>yakalanarak</em> tahtadan kalkar.</p>`, board:[{color:'B',x:4,y:4},{color:'W',x:3,y:3}], auto:true, size:9,
-        fb:{t:'Siyah ilk oynar. Taşlar hareket etmez.',c:'info'} },
-      { text:`<p>Şimdi tahtaya bir taş koy — istediğin boş noktaya dokun.</p>`, board:[], turn:'black', answers:'any', size:9,
-        fb:{t:'Boş bir noktaya dokun.',c:'info'}, fb_ok:'Taş yerleşti!', fb_err:'Boş bir noktaya oyna.' },
-    ]},
-    { id:'l2', title:'Nefes Noktaları', steps:[
-      { text:`<p>Her taşın <strong>nefes noktaları</strong> vardır — yatay ve dikey komşu boş noktalar. Siyah taşın 4 nefes noktası var.</p>`, board:[{color:'B',x:4,y:4}], showLiberties:true, auto:true, size:9,
-        fb:{t:'Mavi noktalar = nefes noktaları.',c:'info'} },
-      { text:`<p>Bir taşın <strong>tüm nefes noktaları dolarsa</strong> yakalanır. Beyaz taşı çevreleyerek yakala — son boş noktaya dokun.</p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}], answer:{x:4,y:5}, turn:'black', size:9,
-        fb:{t:'Beyaz taşın son boş komşusuna oyna.',c:'info'}, fb_ok:'Yakaladın!', fb_err:'Beyaz taşın etrafındaki tek boş noktayı bul.', capture:[{x:4,y:4}] },
-      { text:`<p>Kenara yakın taşların daha az nefes noktası vardır — köşede sadece 2, kenarda 3.</p>`, board:[{color:'B',x:0,y:0},{color:'B',x:0,y:4},{color:'B',x:4,y:4}], showLiberties:true, auto:true, size:9,
-        fb:{t:'Köşe=2, kenar=3, orta=4 nefes noktası.',c:'info'} },
-    ]},
-    { id:'l3', title:'Taş Alma', steps:[
-      { text:`<p>Bir taşın <strong>tüm nefes noktaları doldurulursa</strong>, o taş yakalanır ve tahtadan kalkar.</p><p>Beyaz taşın tek boş noktası var — oraya siyah taş koyarak beyazı yakala!</p>`,
-        board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}],
-        answer:{x:4,y:5}, turn:'black', size:9,
-        fb:{t:'Beyaz taşın son nefes noktasına tıkla!',c:'info'},
-        fb_ok:'Yakaladın! Beyaz taş tahtadan kalktı.', fb_err:'Beyaz taşın çevresindeki boş noktayı bul.',
-        capture:[{x:4,y:4}] },
-      { text:`<p>Bir <strong>grubu</strong> yakalamak için grubun tüm nefes noktalarını doldurman gerekir.</p><p>İki beyaz taşın son nefes noktasını doldur.</p>`,
-        board:[{color:'W',x:3,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:3},{color:'B',x:4,y:4}],
-        answer:{x:3,y:4}, turn:'black', size:9,
-        fb:{t:'İki beyaz taşın son boş noktasını bul.',c:'info'},
-        fb_ok:'Grubu yakaladın!', fb_err:'Beyaz grubun son nefes noktasını bul.',
-        capture:[{x:3,y:3},{x:4,y:3}] },
-      { text:`<p>Bir örnek daha! <strong>3 taşlı beyaz grup</strong> siyahlarla çevrilmiş.</p><p>Beyaz grubun tek nefes noktasını bul ve grubu yakala.</p>`,
-        board:[{color:'B',x:4,y:1},{color:'B',x:5,y:1},{color:'B',x:3,y:2},{color:'B',x:6,y:2},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'W',x:4,y:2},{color:'W',x:5,y:2},{color:'W',x:5,y:3}],
-        answer:{x:4,y:3}, turn:'black', size:9,
-        fb:{t:'3 taşlı beyaz grubun tek boş noktasını bul.',c:'info'},
-        fb_ok:'Mükemmel! Üç beyaz taş birden yakalandı.', fb_err:'Beyaz grubun tek nefes noktasını bul.',
-        capture:[{x:4,y:2},{x:5,y:2},{x:5,y:3}] },
-    ]},
+ {id:'c1',title:'Temel Kurallar',lessons:[
+
+  {id:'l1',title:'Tahta ve Taşlar',steps:[
+   {text:`<p>Go, <strong>9×9</strong>, <strong>13×13</strong> veya <strong>19×19</strong> boyutunda ahşap bir tahta üzerinde iki kişilik bir strateji oyunudur. <strong>Siyah</strong> daima önce oynar.</p>`,
+    board:[],auto:true,size:9,fb:{t:'Tahta boyutları: 9×9 başlangıç, 19×19 standart.',c:'info'}},
+   {text:`<p>Taşlar karelerin içine değil, <strong>çizgilerin kesişim noktalarına</strong> yerleştirilir.</p><p>Aşağıdaki tahtaya herhangi bir noktaya dokun — <strong>siyah taş koy.</strong></p>`,
+    board:[],answers:'any',turn:'black',size:9,
+    fb:{t:'Herhangi bir noktaya dokun!',c:'info'},fb_ok:'Mükemmel! Taşı doğru noktaya koydun.'},
+   {text:`<p>Taşlar bir kez konulduktan sonra <strong>hareket ettirilemez</strong> — sadece yakalanarak kaldırılabilir.</p><div class="highlight-box">Go'da taşlar hareket etmez, sadece eklenir veya kaldırılır.</div>`,
+    board:[{color:'W',x:4,y:4}],auto:true,size:9,
+    fb:{t:'Bu beyaz taş artık o noktada sabit.',c:'info'}},
   ]},
-  { id:'c2', title:'Temel Teknikler', lessons:[
-    { id:'l4', title:'Yasak Hamleler', steps:[
-      { text:`<p>Ders içeriği yakında eklenecek.</p>`, board:[], auto:true, size:9, fb:{t:'Yakında.',c:'info'} }
-    ]},
-    { id:'l5', title:'Ko Kuralı', steps:[
-      { text:`<p>Ders içeriği yakında eklenecek.</p>`, board:[], auto:true, size:9, fb:{t:'Yakında.',c:'info'} }
-    ]},
+
+  {id:'l2',title:'Nefes Noktaları',steps:[
+   {text:`<p>Her taşın komşu boş noktalarına <strong><span class="term">nefes noktası</span></strong> denir.</p><p>Ortadaki bir taşın <strong>4 nefes noktası</strong> vardır.</p>`,
+    board:[{color:'B',x:4,y:4}],auto:true,showLiberties:true,size:9,
+    fb:{t:'Ortadaki siyah taşın 4 nefes noktası var.',c:'info'}},
+   {text:`<p>Kenar noktasındaki taşın <strong>3 nefes noktası</strong>, köşedekinin <strong>2 nefes noktası</strong> vardır.</p><div class="highlight-box">Nefes noktası azaldıkça taş tehlikeye girer.</div>`,
+    board:[{color:'B',x:0,y:0},{color:'W',x:8,y:4}],auto:true,showLiberties:true,size:9,
+    fb:{t:'Köşe: 2 · Kenar: 3 · Orta: 4 nefes noktası',c:'info'}},
+   {text:`<p>Yatay veya dikey bağlı taşlar <strong>grup</strong> oluşturur. Grubun nefes noktaları tüm üyelerinin boş komşularının toplamıdır.</p>`,
+    board:[{color:'B',x:3,y:4},{color:'B',x:4,y:4},{color:'B',x:5,y:4}],auto:true,showLiberties:true,size:9,
+    fb:{t:'Bu üç taş bir grup — birlikte 8 nefes noktası var.',c:'info'}},
   ]},
+
+  {id:'l3',title:'Taş Alma',steps:[
+   {text:`<p>Bir taşın <strong>tüm nefes noktaları doldurulursa</strong> o taş yakalanır ve tahtadan kalkar.</p><p>Beyaz taşın son boş noktasına oyna.</p>`,
+    board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}],
+    answer:{x:4,y:5},turn:'black',size:9,
+    fb:{t:'Beyaz taşın son nefes noktasına tıkla!',c:'info'},
+    fb_ok:'Yakaladın! Beyaz taş tahtadan kalktı.',fb_err:'Beyaz taşın çevresindeki tek boş noktayı bul.',
+    capture:[{x:4,y:4}]},
+   {text:`<p>Bir <strong>grubu</strong> yakalamak için grubun tüm nefes noktalarını doldurman gerekir.</p><p>İki beyaz taşın son nefes noktasını doldur.</p>`,
+    board:[{color:'W',x:3,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:3},{color:'B',x:4,y:4}],
+    answer:{x:3,y:4},turn:'black',size:9,
+    fb:{t:'İki beyaz taşın son boş noktasını bul.',c:'info'},
+    fb_ok:'Grubu yakaladın!',fb_err:'Beyaz grubun son nefes noktasını bul.',
+    capture:[{x:3,y:3},{x:4,y:3}]},
+   {text:`<p>Bir örnek daha — <strong>3 taşlı beyaz grup</strong> siyahlarla çevrilmiş.</p><p>Beyaz grubun tek nefes noktasını bul ve grubu yakala.</p>`,
+    board:[{color:'B',x:4,y:1},{color:'B',x:5,y:1},{color:'B',x:3,y:2},{color:'B',x:6,y:2},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'W',x:4,y:2},{color:'W',x:5,y:2},{color:'W',x:5,y:3}],
+    answer:{x:4,y:3},turn:'black',size:9,
+    fb:{t:'3 taşlı beyaz grubun tek boş noktasını bul.',c:'info'},
+    fb_ok:'Mükemmel! Üç beyaz taş birden yakalandı.',fb_err:'Beyazın tek nefes noktasını bul.',
+    capture:[{x:4,y:2},{x:5,y:2},{x:5,y:3}]},
+  ]},
+
+  {id:'l4',title:'Yasak Hamleler',steps:[
+   {text:`<p>Kendi taşını nefessiz bırakacak hamle <strong>yapamazsın</strong> — bu <span class="term">öz-yakalama</span> yasağıdır.</p><p>Bu tahtada 4 farklı yasak nokta var — X işaretli noktalar.</p>`,
+    board:[{color:'W',x:4,y:0},{color:'W',x:6,y:0},{color:'W',x:4,y:1},{color:'W',x:5,y:1},{color:'W',x:6,y:1},{color:'W',x:0,y:3},{color:'W',x:1,y:4},{color:'W',x:4,y:4},{color:'W',x:0,y:5},{color:'W',x:3,y:5},{color:'W',x:5,y:5},{color:'W',x:4,y:6},{color:'W',x:8,y:7},{color:'W',x:7,y:8}],
+    auto:true,forbidden:[{x:5,y:0},{x:0,y:4},{x:4,y:5},{x:8,y:8}],size:9,
+    fb:{t:'4 yasak nokta: beyazın sardığı boşluklara taş konamaz.',c:'info'}},
+   {text:`<p><strong>İstisna:</strong> İntihar gibi görünen hamle rakip grubu <em>yakalıyorsa</em> geçerlidir.</p><p>Siyah üstte 5 beyazı, beyaz altta 5 siyahı yakalar — izle.</p>`,
+    board:[{color:'W',x:3,y:0},{color:'W',x:5,y:0},{color:'W',x:3,y:1},{color:'W',x:4,y:1},{color:'W',x:5,y:1},{color:'W',x:3,y:6},{color:'W',x:4,y:6},{color:'W',x:5,y:6},{color:'W',x:2,y:7},{color:'W',x:6,y:7},{color:'W',x:2,y:8},{color:'W',x:6,y:8},{color:'B',x:2,y:0},{color:'B',x:6,y:0},{color:'B',x:2,y:1},{color:'B',x:6,y:1},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:2},{color:'B',x:3,y:7},{color:'B',x:4,y:7},{color:'B',x:5,y:7},{color:'B',x:3,y:8},{color:'B',x:5,y:8}],
+    moves:[{color:'B',x:4,y:0,capture:[{x:3,y:0},{x:5,y:0},{x:3,y:1},{x:4,y:1},{x:5,y:1}]},{color:'W',x:4,y:8,capture:[{x:3,y:7},{x:4,y:7},{x:5,y:7},{x:3,y:8},{x:5,y:8}]}],
+    size:9,fb:{t:'Yakalama istisnasını izle — iki hamle canlanıyor.',c:'info'}},
+  ]},
+
+  {id:'l5',title:'Ko Kuralı',steps:[
+   {text:`<p><span class="term">Ko</span> — aynı pozisyonun sonsuza tekrar etmesini önleyen kuraldır.</p><p>Siyah beyazı yakalar — ama beyaz hemen geri alamaz.</p>`,
+    board:[{color:'B',x:4,y:3},{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'W',x:4,y:4},{color:'W',x:3,y:5},{color:'W',x:5,y:5},{color:'W',x:4,y:6}],
+    moves:[{color:'B',x:4,y:5,capture:[{x:4,y:4}]}],
+    koPoint:{x:4,y:4},size:9,
+    fb:{t:'Siyah yakaladı — beyaz hemen aynı noktaya dönemez. Ko!',c:'info'}},
+   {text:`<p>Ko savaşında oyuncular <strong>"ko tehdidi"</strong> yaparlar. Beyaz önce tehdit eder, siyah yanıtlar, sonra beyaz Ko'yu geri alır.</p>`,
+    board:[{color:'B',x:4,y:3},{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'B',x:4,y:5},{color:'W',x:3,y:5},{color:'W',x:5,y:5},{color:'W',x:4,y:6}],
+    koPoint:{x:4,y:4},
+    moves:[{color:'W',x:6,y:2},{color:'B',x:2,y:2},{color:'W',x:4,y:4,capture:[{x:4,y:5}]}],
+    size:9,fb:{t:'Beyaz tehdit → siyah yanıt → beyaz Ko\'yu geri aldı!',c:'info'}},
+  ]},
+
+  {id:'l6',title:'Oyun Sonu ve Sayım',steps:[
+   {text:`<p>Her iki oyuncu art arda <strong>pas geçince</strong> oyun biter.</p><p>Kazanan daha fazla bölge çevirendir. Bölge = etrafı sarılmış boş noktalar.</p>`,
+    board:[{color:'W',x:3,y:0},{color:'W',x:3,y:1},{color:'W',x:2,y:2},{color:'W',x:3,y:2},{color:'W',x:5,y:2},{color:'W',x:1,y:3},{color:'W',x:3,y:3},{color:'W',x:4,y:3},{color:'W',x:5,y:3},{color:'W',x:6,y:3},{color:'W',x:1,y:4},{color:'W',x:4,y:4},{color:'W',x:6,y:4},{color:'W',x:2,y:5},{color:'W',x:2,y:6},{color:'W',x:3,y:6},{color:'W',x:3,y:7},{color:'W',x:3,y:8},{color:'W',x:4,y:8},{color:'B',x:4,y:0},{color:'B',x:4,y:1},{color:'B',x:5,y:1},{color:'B',x:7,y:1},{color:'B',x:4,y:2},{color:'B',x:6,y:2},{color:'B',x:2,y:3},{color:'B',x:7,y:3},{color:'B',x:2,y:4},{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'B',x:7,y:4},{color:'B',x:3,y:5},{color:'B',x:4,y:5},{color:'B',x:5,y:5},{color:'B',x:6,y:5},{color:'B',x:4,y:6},{color:'B',x:4,y:7},{color:'B',x:6,y:7},{color:'B',x:5,y:8}],
+    whiteTerritory:[{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:0,y:2},{x:1,y:2},{x:0,y:3},{x:0,y:4},{x:0,y:5},{x:1,y:5},{x:0,y:6},{x:1,y:6},{x:0,y:7},{x:1,y:7},{x:2,y:7},{x:0,y:8},{x:1,y:8},{x:2,y:8}],
+    blackTerritory:[{x:5,y:0},{x:6,y:0},{x:7,y:0},{x:8,y:0},{x:6,y:1},{x:8,y:1},{x:7,y:2},{x:8,y:2},{x:8,y:3},{x:8,y:4},{x:7,y:5},{x:8,y:5},{x:5,y:6},{x:6,y:6},{x:7,y:6},{x:8,y:6},{x:5,y:7},{x:7,y:7},{x:8,y:7},{x:6,y:8},{x:7,y:8},{x:8,y:8}],
+    auto:true,size:9,fb:{t:'Siyah 20 puan · Beyaz 22 puan — beyaz önde!',c:'info'}},
+   {text:`<p>Puan hesabı: <strong>Bölge</strong> + <strong>Esirler</strong> + <strong>Komi</strong> (beyaza verilen avantaj, genellikle 6.5)</p><div class="highlight-box">Komi, siyahın ilk hamle avantajını dengeler.</div>`,
+    board:[],auto:true,size:9,fb:{t:"Komi genellikle 6.5'tir.",c:'info'}},
+  ]},
+
+ ]},
+
+ {id:'c2',title:'Temel Teknikler',lessons:[
+
+  {id:'l7',title:'Canlı Gruplar (İki Göz)',steps:[
+   {text:`<p>Bir grup <strong>iki göze</strong> sahipse asla yakalanamaz — <em>ölümsüzdür.</em></p><p><span class="term">Göz</span> = grubun içindeki boş nokta. Tahtadaki tüm canlı gruplar işaretlenmiş.</p>`,
+    size:19,
+    board:[{color:'W',x:2,y:0},{color:'W',x:6,y:0},{color:'W',x:12,y:0},{color:'W',x:15,y:0},{color:'W',x:2,y:1},{color:'W',x:6,y:1},{color:'W',x:12,y:1},{color:'W',x:15,y:1},{color:'W',x:2,y:2},{color:'W',x:6,y:2},{color:'W',x:7,y:2},{color:'W',x:8,y:2},{color:'W',x:9,y:2},{color:'W',x:10,y:2},{color:'W',x:11,y:2},{color:'W',x:12,y:2},{color:'W',x:15,y:2},{color:'W',x:2,y:3},{color:'W',x:15,y:3},{color:'W',x:16,y:3},{color:'W',x:17,y:3},{color:'W',x:18,y:3},{color:'W',x:0,y:4},{color:'W',x:1,y:4},{color:'W',x:2,y:4},{color:'W',x:8,y:7},{color:'W',x:9,y:7},{color:'W',x:10,y:7},{color:'W',x:7,y:8},{color:'W',x:11,y:8},{color:'W',x:6,y:9},{color:'W',x:11,y:9},{color:'W',x:6,y:10},{color:'W',x:11,y:10},{color:'W',x:6,y:11},{color:'W',x:11,y:11},{color:'W',x:6,y:12},{color:'W',x:7,y:12},{color:'W',x:8,y:12},{color:'W',x:9,y:12},{color:'W',x:10,y:12},{color:'W',x:15,y:15},{color:'W',x:16,y:15},{color:'W',x:17,y:15},{color:'W',x:18,y:15},{color:'W',x:0,y:16},{color:'W',x:1,y:16},{color:'W',x:2,y:16},{color:'W',x:3,y:16},{color:'W',x:4,y:16},{color:'W',x:6,y:16},{color:'W',x:7,y:16},{color:'W',x:8,y:16},{color:'W',x:9,y:16},{color:'W',x:10,y:16},{color:'W',x:11,y:16},{color:'W',x:12,y:16},{color:'W',x:15,y:16},{color:'W',x:4,y:17},{color:'W',x:6,y:17},{color:'W',x:12,y:17},{color:'W',x:15,y:17},{color:'W',x:18,y:17},{color:'W',x:1,y:18},{color:'W',x:4,y:18},{color:'W',x:6,y:18},{color:'W',x:9,y:18},{color:'W',x:12,y:18},{color:'W',x:15,y:18},{color:'B',x:1,y:0},{color:'B',x:7,y:0},{color:'B',x:9,y:0},{color:'B',x:11,y:0},{color:'B',x:16,y:0},{color:'B',x:17,y:0},{color:'B',x:0,y:1},{color:'B',x:1,y:1},{color:'B',x:7,y:1},{color:'B',x:8,y:1},{color:'B',x:9,y:1},{color:'B',x:10,y:1},{color:'B',x:11,y:1},{color:'B',x:16,y:1},{color:'B',x:18,y:1},{color:'B',x:1,y:2},{color:'B',x:16,y:2},{color:'B',x:17,y:2},{color:'B',x:18,y:2},{color:'B',x:0,y:3},{color:'B',x:1,y:3},{color:'B',x:8,y:8},{color:'B',x:9,y:8},{color:'B',x:8,y:9},{color:'B',x:10,y:9},{color:'B',x:7,y:10},{color:'B',x:9,y:10},{color:'B',x:10,y:10},{color:'B',x:7,y:11},{color:'B',x:8,y:11},{color:'B',x:9,y:11},{color:'B',x:16,y:16},{color:'B',x:17,y:16},{color:'B',x:18,y:16},{color:'B',x:0,y:17},{color:'B',x:1,y:17},{color:'B',x:2,y:17},{color:'B',x:3,y:17},{color:'B',x:7,y:17},{color:'B',x:8,y:17},{color:'B',x:9,y:17},{color:'B',x:10,y:17},{color:'B',x:11,y:17},{color:'B',x:16,y:17},{color:'B',x:3,y:18},{color:'B',x:7,y:18},{color:'B',x:11,y:18},{color:'B',x:16,y:18},{color:'B',x:17,y:18}],
+    groupIndicators:[{x:0,y:0,color:'green'},{x:8,y:0,color:'green'},{x:10,y:0,color:'green'},{x:18,y:0,color:'green'},{x:17,y:1,color:'green'},{x:0,y:2,color:'green'},{x:9,y:9,color:'green'},{x:8,y:10,color:'green'},{x:17,y:17,color:'red'},{x:0,y:18,color:'red'},{x:2,y:18,color:'red'},{x:8,y:18,color:'red'},{x:10,y:18,color:'red'},{x:18,y:18,color:'red'}],
+    auto:true,fb:{t:'Yeşil = canlı grup gözü · Kırmızı = ölümlü nokta',c:'info'}},
+   {text:`<p><strong>Sahte göz</strong> — rakip tarafından doldurulabilecek nokta gerçek göz değildir.</p><div class="highlight-box">İki gerçek göz = ölümsüz grup. Go'nun en temel kavramlarından biri.</div>`,
+    board:[{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:2,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:4}],
+    groupIndicators:[{x:3,y:3,color:'red'}],
+    auto:true,size:9,fb:{t:'Kırmızı halka = tek göz, ölümlü grup — yakalanabilir!',c:'info'}},
+  ]},
+
+  {id:'l8',title:'Kesme ve Bağlama',steps:[
+   {text:`<p><span class="term">Kesme</span> — rakibin iki taşı arasına girerek bağlantısını koparmak.</p><p>Siyahın iki taşı arasına gir.</p>`,
+    board:[{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}],
+    answer:{x:4,y:3},turn:'white',size:9,
+    fb:{t:'Siyahın iki taşı arasına gir!',c:'info'},
+    fb_ok:'Kestik! Siyah artık iki ayrı grup.',fb_err:'Siyahın iki taşını birbirine bağlayan boşluğu bul.'},
+   {text:`<p><span class="term">Bağlama</span> — kendi taşlarının arasını kapatarak grubu güçlendirmek.</p><p>Siyah taşları birleştir.</p>`,
+    board:[{color:'B',x:3,y:3},{color:'B',x:3,y:5},{color:'W',x:2,y:4},{color:'W',x:4,y:4}],
+    answer:{x:3,y:4},turn:'black',size:9,
+    fb:{t:'Siyah taşlarını birleştir!',c:'info'},
+    fb_ok:'Güçlü bağlantı! Artık tek grup.',fb_err:'Siyah taşlar arasındaki boşluğu doldur.'},
+  ]},
+
+  {id:'l9',title:'Çift Atari',steps:[
+   {text:`<p><span class="term">Çift atari</span> — tek hamleyle iki ayrı grubu aynı anda atariye almak. Beyaz ikisini birden kurtaramaz.</p><p>Çift atari noktasını bul ve oyna!</p>`,
+    board:[{color:'W',x:5,y:3},{color:'W',x:4,y:4},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'B',x:4,y:5}],
+    answer:{x:4,y:3},turn:'black',size:9,
+    movesAfterAnswer:[{color:'W',x:5,y:2,capture:[]},{color:'B',x:3,y:4,capture:[{x:4,y:4}]}],
+    fb:{t:'İki beyazı aynı anda atariye alacak noktayı bul!',c:'info'},
+    fb_ok:'Çift atari! Sağdaki kurtarılırsa sol yakalanır.',fb_err:'Her iki beyaz gruba da atari yapacak noktayı bul.'},
+   {text:`<p>Şimdi <strong>beyaz olarak</strong> oyna — hangi taşı kurtarırsın?</p><div class="highlight-box">Hangisini seçersen seç, diğer taş yakalanır.</div>`,
+    board:[{color:'W',x:5,y:3},{color:'W',x:4,y:4},{color:'B',x:4,y:3},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'B',x:4,y:5}],
+    answers:[{x:5,y:2},{x:3,y:4}],turn:'white',size:9,
+    fb:{t:'Beyaz taşlardan birinin yanındaki boş noktaya oyna.',c:'info'},
+    fb_ok:'Bir taşı kurtardın — ama diğeri yakalandı. Çift atariden kaçış yoktur!',
+    fb_err:'Beyaz taşlardan birini kurtarmak için yanındaki boş noktaya oyna.'},
+  ]},
+
+  {id:'l10',title:'Merdiven (Shicho)',steps:[
+   {text:`<p><span class="term">Merdiven</span> (Japonca: <em>shicho</em>) — atariden kaçan taş her hamlede yeniden atariye girer ve köşeye doğru sürülür.</p>`,
+    board:[{color:'W',x:4,y:9},{color:'B',x:3,y:8},{color:'B',x:3,y:9},{color:'B',x:5,y:9},{color:'B',x:4,y:10}],
+    moves:[{color:'W',x:4,y:8},{color:'B',x:4,y:7},{color:'W',x:5,y:8},{color:'B',x:6,y:8},{color:'W',x:5,y:7},{color:'B',x:5,y:6},{color:'W',x:6,y:7},{color:'B',x:7,y:7},{color:'W',x:6,y:6},{color:'B',x:6,y:5},{color:'W',x:7,y:6},{color:'B',x:8,y:6},{color:'W',x:7,y:5},{color:'B',x:7,y:4},{color:'W',x:8,y:5},{color:'B',x:9,y:5},{color:'W',x:8,y:4},{color:'B',x:8,y:3},{color:'W',x:9,y:4},{color:'B',x:10,y:4},{color:'W',x:9,y:3},{color:'B',x:9,y:2},{color:'W',x:10,y:3},{color:'B',x:11,y:3},{color:'W',x:10,y:2},{color:'B',x:10,y:1},{color:'W',x:11,y:2},{color:'B',x:12,y:2},{color:'W',x:11,y:1},{color:'B',x:11,y:0},{color:'W',x:12,y:1},{color:'B',x:12,y:0,capture:[{x:4,y:9},{x:4,y:8},{x:5,y:8},{x:5,y:7},{x:6,y:7},{x:6,y:6},{x:7,y:6},{x:7,y:5},{x:8,y:5},{x:8,y:4},{x:9,y:4},{x:9,y:3},{x:10,y:3},{x:10,y:2},{x:11,y:2},{x:11,y:1},{x:12,y:1}]}],
+    auto:true,size:13,fb:{t:'Beyaz her kaçışta köşeye yaklaşıyor — merdiven sonunda sıkışır.',c:'info'}},
+   {text:`<p><strong>Merdiveni kıran taş</strong> — merdiven yolunda bir beyaz taş varsa, kaçan grup ona bağlanır ve kurtulur.</p><div class="highlight-box">Merdiven oynamadan önce taşın tüm yolunu kontrol et!</div>`,
+    board:[{color:'W',x:4,y:9},{color:'W',x:9,y:4},{color:'B',x:3,y:8},{color:'B',x:3,y:9},{color:'B',x:5,y:9},{color:'B',x:4,y:10}],
+    groupIndicators:[{x:9,y:4,color:'green'}],
+    moves:[{color:'W',x:4,y:8},{color:'B',x:4,y:7},{color:'W',x:5,y:8},{color:'B',x:6,y:8},{color:'W',x:5,y:7},{color:'B',x:5,y:6},{color:'W',x:6,y:7},{color:'B',x:7,y:7},{color:'W',x:6,y:6},{color:'B',x:6,y:5},{color:'W',x:7,y:6},{color:'B',x:8,y:6},{color:'W',x:7,y:5},{color:'B',x:7,y:4},{color:'W',x:8,y:5},{color:'B',x:9,y:5},{color:'W',x:8,y:4}],
+    auto:true,size:13,fb:{t:'Beyaz (8,4) merdiveni kıran taşa bağlandı — kurtuldu!',c:'info'}},
+  ]},
+
+  {id:'l11',title:'Ağ (Geta)',steps:[
+   {text:`<p><span class="term">Ağ</span> (Japonca: <em>geta</em>) — bir taşı atari yapmadan, kaçış yollarını keserek tuzağa düşürmek.</p><p>Beyazın kaçış yolunu kesen noktayı bul.</p>`,
+    board:[{color:'W',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:4,y:5},{color:'B',x:5,y:5}],
+    answer:{x:5,y:3},turn:'black',size:9,
+    movesAfterAnswer:[{color:'W',x:4,y:3},{color:'B',x:4,y:2},{color:'W',x:5,y:4},{color:'B',x:6,y:4,capture:[{x:4,y:4},{x:4,y:3},{x:5,y:4}]}],
+    fb:{t:'Beyazın tüm kaçış yollarını kapat!',c:'info'},
+    fb_ok:'Ağ kuruldu! Beyaz kaçmaya çalışıyor ama tuzakta.',fb_err:'Beyazın kaçış yollarını kapatan noktayı bul.'},
+  ]},
+
+  {id:'l12',title:'Snapback',steps:[
+   {text:`<p><span class="term">Snapback</span> — rakibe taş kurban vererek daha büyük bir grubu yakalama tekniği.</p><p>Kurban ver — D5 noktasına tıkla.</p>`,
+    board:[{color:'W',x:3,y:3},{color:'W',x:2,y:4},{color:'W',x:4,y:4},{color:'W',x:4,y:5},{color:'B',x:4,y:3},{color:'B',x:5,y:3},{color:'B',x:5,y:4},{color:'B',x:2,y:5},{color:'B',x:5,y:5},{color:'B',x:3,y:6},{color:'B',x:4,y:6}],
+    answer:{x:3,y:4},turn:'black',size:9,
+    movesAfterAnswer:[{color:'W',x:3,y:5,capture:[{x:3,y:4}]},{color:'B',x:3,y:4,capture:[{x:3,y:5},{x:4,y:4},{x:4,y:5}]}],
+    fb:{t:'Kurbanı ver — beyaz alacak ama daha büyük grubu kaybedecek!',c:'info'},
+    fb_ok:'Snapback başladı! Beyaz kurbanı aldı ama tuzağa düştü.',fb_err:'D5 noktasına tıkla — kurbanı ver.'},
+   {text:`<p>Bir snapback örneği daha. Kurban ver — A5 noktasına tıkla.</p>`,
+    board:[{color:'W',x:0,y:2},{color:'W',x:1,y:2},{color:'W',x:2,y:2},{color:'W',x:3,y:2},{color:'W',x:0,y:3},{color:'W',x:1,y:4},{color:'W',x:1,y:5},{color:'B',x:1,y:3},{color:'B',x:2,y:3},{color:'B',x:2,y:4},{color:'B',x:2,y:5},{color:'B',x:0,y:6},{color:'B',x:1,y:6}],
+    answer:{x:0,y:4},turn:'black',size:9,
+    movesAfterAnswer:[{color:'W',x:0,y:5,capture:[{x:0,y:4}]},{color:'B',x:0,y:4,capture:[{x:0,y:5},{x:1,y:4},{x:1,y:5}]}],
+    fb:{t:'Kurbanı ver — beyaz alacak ama grubu kaybedecek!',c:'info'},
+    fb_ok:'Snapback! Beyaz kurbanı aldı ama tuzağa düştü.',fb_err:'A5 noktasına tıkla — kurbanı ver.'},
+  ]},
+
+ ]},
+
+ {id:'c3',title:'Strateji',lessons:[
+
+  {id:'l13',title:'Açılış (Fuseki)',steps:[
+   {text:`<p>Gerçek bir Go maçından alınan açılış pozisyonu. Siyah ve Beyaz köşelere yerleşmiş, kenar kontrolü için rekabet ediyor.</p>`,
+    board:[{color:'W',x:15,y:5},{color:'W',x:16,y:5},{color:'W',x:2,y:6},{color:'W',x:15,y:8},{color:'W',x:3,y:9},{color:'W',x:2,y:12},{color:'W',x:1,y:13},{color:'W',x:16,y:13},{color:'W',x:1,y:14},{color:'W',x:2,y:14},{color:'W',x:16,y:14},{color:'W',x:3,y:15},{color:'W',x:4,y:15},{color:'W',x:16,y:15},{color:'W',x:2,y:16},{color:'W',x:5,y:16},{color:'W',x:14,y:16},{color:'W',x:15,y:16},{color:'B',x:8,y:2},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:13,y:3},{color:'B',x:15,y:3},{color:'B',x:16,y:4},{color:'B',x:14,y:9},{color:'B',x:2,y:13},{color:'B',x:3,y:14},{color:'B',x:15,y:14},{color:'B',x:1,y:15},{color:'B',x:2,y:15},{color:'B',x:9,y:15},{color:'B',x:12,y:15},{color:'B',x:14,y:15},{color:'B',x:1,y:16},{color:'B',x:3,y:16},{color:'B',x:13,y:16},{color:'B',x:3,y:17}],
+    auto:true,size:19,fb:{t:'Açılış tamamlandı — her iki taraf köşe ve kenarlara yerleşti.',c:'info'}},
+   {text:`<p><span class="term">Fuseki</span> — Go'nun açılış aşaması. Temel strateji: <strong>köşe → kenar → merkez</strong> sırasıyla bölge kurmak.</p>`,
+    board:[],auto:true,size:9,fb:{t:'Köşeler en değerli bölgelerdir.',c:'info'}},
+   {text:`<p>Standart açılış noktaları:<ul><li><strong>Hoshi (4-4)</strong> — dengeli, esnek</li><li><strong>Komoku (3-4)</strong> — bölge odaklı</li><li><strong>San-san (3-3)</strong> — köşe kesin, az etki</li></ul>Bir köşe noktasına tıkla.</p>`,
+    board:[],answers:[{x:2,y:2},{x:3,y:3},{x:2,y:3},{x:3,y:2}],turn:'black',size:9,
+    fb:{t:'Köşe noktalarından birini seç.',c:'info'},fb_ok:'İyi seçim! Köşeden açıldın.'},
+   {text:`<p><strong>Yüksek (4. çizgi)</strong> hamleler etki alanı, <strong>alçak (3. çizgi)</strong> hamleler bölge kontrolü sağlar.</p><div class="highlight-box">Açılışta ne kadar çok köşe alırsan başlangıç avantajın artar.</div>`,
+    board:[{color:'B',x:2,y:2},{color:'W',x:6,y:2},{color:'B',x:6,y:6},{color:'W',x:2,y:6}],
+    auto:true,size:9,fb:{t:'Dört köşe de alındı — denge.',c:'info'}},
+  ]},
+
+  {id:'l14',title:'Orta Oyun',steps:[
+   {text:`<p>Gerçek bir Go maçından alınan orta oyun pozisyonu. Gruplar şekillenmiş, mücadele tüm tahtaya yayılmış.</p>`,
+    board:[{color:'W',x:6,y:2},{color:'W',x:5,y:3},{color:'W',x:8,y:3},{color:'W',x:5,y:4},{color:'W',x:6,y:4},{color:'W',x:7,y:4},{color:'W',x:17,y:4},{color:'W',x:2,y:5},{color:'W',x:15,y:5},{color:'W',x:16,y:5},{color:'W',x:18,y:5},{color:'W',x:2,y:6},{color:'W',x:17,y:6},{color:'W',x:1,y:7},{color:'W',x:6,y:7},{color:'W',x:12,y:7},{color:'W',x:1,y:8},{color:'W',x:3,y:8},{color:'W',x:6,y:8},{color:'W',x:14,y:8},{color:'W',x:15,y:8},{color:'W',x:16,y:8},{color:'W',x:3,y:9},{color:'W',x:8,y:9},{color:'W',x:9,y:9},{color:'W',x:3,y:10},{color:'W',x:6,y:10},{color:'W',x:7,y:10},{color:'W',x:2,y:11},{color:'W',x:2,y:12},{color:'W',x:3,y:12},{color:'W',x:1,y:13},{color:'W',x:5,y:13},{color:'W',x:6,y:13},{color:'W',x:7,y:13},{color:'W',x:8,y:13},{color:'W',x:16,y:13},{color:'W',x:1,y:14},{color:'W',x:2,y:14},{color:'W',x:4,y:14},{color:'W',x:6,y:14},{color:'W',x:10,y:14},{color:'W',x:16,y:14},{color:'W',x:3,y:15},{color:'W',x:4,y:15},{color:'W',x:7,y:15},{color:'W',x:16,y:15},{color:'W',x:2,y:16},{color:'W',x:5,y:16},{color:'W',x:14,y:16},{color:'W',x:15,y:16},{color:'B',x:4,y:2},{color:'B',x:5,y:2},{color:'B',x:7,y:2},{color:'B',x:8,y:2},{color:'B',x:9,y:2},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:6,y:3},{color:'B',x:7,y:3},{color:'B',x:10,y:3},{color:'B',x:13,y:3},{color:'B',x:15,y:3},{color:'B',x:17,y:3},{color:'B',x:16,y:4},{color:'B',x:3,y:5},{color:'B',x:8,y:5},{color:'B',x:3,y:6},{color:'B',x:2,y:7},{color:'B',x:3,y:7},{color:'B',x:4,y:7},{color:'B',x:5,y:8},{color:'B',x:8,y:8},{color:'B',x:13,y:9},{color:'B',x:14,y:9},{color:'B',x:15,y:9},{color:'B',x:4,y:10},{color:'B',x:8,y:10},{color:'B',x:3,y:11},{color:'B',x:5,y:11},{color:'B',x:7,y:11},{color:'B',x:9,y:11},{color:'B',x:4,y:12},{color:'B',x:5,y:12},{color:'B',x:7,y:12},{color:'B',x:8,y:12},{color:'B',x:14,y:12},{color:'B',x:2,y:13},{color:'B',x:3,y:13},{color:'B',x:4,y:13},{color:'B',x:3,y:14},{color:'B',x:5,y:14},{color:'B',x:7,y:14},{color:'B',x:15,y:14},{color:'B',x:1,y:15},{color:'B',x:2,y:15},{color:'B',x:6,y:15},{color:'B',x:9,y:15},{color:'B',x:10,y:15},{color:'B',x:12,y:15},{color:'B',x:14,y:15},{color:'B',x:1,y:16},{color:'B',x:3,y:16},{color:'B',x:13,y:16},{color:'B',x:3,y:17}],
+    auto:true,size:19,fb:{t:'Orta oyun — gruplar her iki tarafta da şekillenmiş.',c:'info'}},
+   {text:`<p>Orta oyunda temel hedefler:</p><ul><li>Zayıf grupları <strong>güçlendir</strong></li><li>Rakibin zayıf gruplarına <strong>saldır</strong></li><li>Bölge sınırlarını <strong>netleştir</strong></li></ul>`,
+    board:[{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'W',x:6,y:2},{color:'W',x:6,y:3},{color:'B',x:4,y:6},{color:'B',x:5,y:6},{color:'W',x:2,y:6},{color:'W',x:2,y:5}],
+    auto:true,size:9,fb:{t:'Her iki taraf da bölge oluşturuyor.',c:'info'}},
+   {text:`<p><span class="term">Sente</span> — rakibin cevap vermek zorunda kaldığı hamle.</p><p><span class="term">Gote</span> — inisiyatifi rakibe bırakan hamle.</p><div class="highlight-box">Mümkün olduğunca sente hamleler yap.</div>`,
+    board:[],auto:true,size:9,fb:{t:'Sente = taarruz · Gote = savunma',c:'info'}},
+  ]},
+
+  {id:'l15',title:'Son Oyun (Yose)',steps:[
+   {text:`<p>Gerçek bir Go maçından alınan oyun sonu pozisyonu. Bölgeler şekillenmiş; sayılacak alan ve esir taşlar görülüyor.</p>`,
+    board:[{color:'W',x:6,y:1},{color:'W',x:0,y:2},{color:'W',x:6,y:2},{color:'W',x:0,y:3},{color:'W',x:1,y:3},{color:'W',x:5,y:3},{color:'W',x:8,y:3},{color:'W',x:1,y:4},{color:'W',x:2,y:4},{color:'W',x:5,y:4},{color:'W',x:6,y:4},{color:'W',x:7,y:4},{color:'W',x:8,y:4},{color:'W',x:10,y:4},{color:'W',x:11,y:4},{color:'W',x:12,y:4},{color:'W',x:14,y:4},{color:'W',x:17,y:4},{color:'W',x:18,y:4},{color:'W',x:2,y:5},{color:'W',x:4,y:5},{color:'W',x:5,y:5},{color:'W',x:7,y:5},{color:'W',x:10,y:5},{color:'W',x:12,y:5},{color:'W',x:13,y:5},{color:'W',x:14,y:5},{color:'W',x:15,y:5},{color:'W',x:16,y:5},{color:'W',x:18,y:5},{color:'W',x:2,y:6},{color:'W',x:5,y:6},{color:'W',x:7,y:6},{color:'W',x:10,y:6},{color:'W',x:17,y:6},{color:'W',x:1,y:7},{color:'W',x:5,y:7},{color:'W',x:6,y:7},{color:'W',x:9,y:7},{color:'W',x:12,y:7},{color:'W',x:13,y:7},{color:'W',x:1,y:8},{color:'W',x:2,y:8},{color:'W',x:3,y:8},{color:'W',x:6,y:8},{color:'W',x:9,y:8},{color:'W',x:12,y:8},{color:'W',x:14,y:8},{color:'W',x:15,y:8},{color:'W',x:16,y:8},{color:'W',x:3,y:9},{color:'W',x:5,y:9},{color:'W',x:7,y:9},{color:'W',x:8,y:9},{color:'W',x:9,y:9},{color:'W',x:12,y:9},{color:'W',x:16,y:9},{color:'W',x:3,y:10},{color:'W',x:5,y:10},{color:'W',x:6,y:10},{color:'W',x:7,y:10},{color:'W',x:10,y:10},{color:'W',x:11,y:10},{color:'W',x:12,y:10},{color:'W',x:13,y:10},{color:'W',x:15,y:10},{color:'W',x:16,y:10},{color:'W',x:2,y:11},{color:'W',x:17,y:11},{color:'W',x:1,y:12},{color:'W',x:2,y:12},{color:'W',x:3,y:12},{color:'W',x:6,y:12},{color:'W',x:9,y:12},{color:'W',x:11,y:12},{color:'W',x:12,y:12},{color:'W',x:17,y:12},{color:'W',x:0,y:13},{color:'W',x:1,y:13},{color:'W',x:5,y:13},{color:'W',x:6,y:13},{color:'W',x:7,y:13},{color:'W',x:8,y:13},{color:'W',x:9,y:13},{color:'W',x:10,y:13},{color:'W',x:16,y:13},{color:'W',x:1,y:14},{color:'W',x:2,y:14},{color:'W',x:4,y:14},{color:'W',x:6,y:14},{color:'W',x:8,y:14},{color:'W',x:10,y:14},{color:'W',x:16,y:14},{color:'W',x:3,y:15},{color:'W',x:4,y:15},{color:'W',x:5,y:15},{color:'W',x:7,y:15},{color:'W',x:8,y:15},{color:'W',x:15,y:15},{color:'W',x:16,y:15},{color:'W',x:2,y:16},{color:'W',x:5,y:16},{color:'W',x:6,y:16},{color:'W',x:14,y:16},{color:'W',x:15,y:16},{color:'W',x:13,y:17},{color:'W',x:14,y:17},{color:'W',x:13,y:18},{color:'B',x:0,y:1},{color:'B',x:1,y:1},{color:'B',x:1,y:2},{color:'B',x:2,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:2},{color:'B',x:7,y:2},{color:'B',x:8,y:2},{color:'B',x:9,y:2},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:6,y:3},{color:'B',x:7,y:3},{color:'B',x:9,y:3},{color:'B',x:10,y:3},{color:'B',x:11,y:3},{color:'B',x:12,y:3},{color:'B',x:13,y:3},{color:'B',x:14,y:3},{color:'B',x:15,y:3},{color:'B',x:17,y:3},{color:'B',x:18,y:3},{color:'B',x:3,y:4},{color:'B',x:4,y:4},{color:'B',x:9,y:4},{color:'B',x:13,y:4},{color:'B',x:15,y:4},{color:'B',x:16,y:4},{color:'B',x:3,y:5},{color:'B',x:8,y:5},{color:'B',x:9,y:5},{color:'B',x:3,y:6},{color:'B',x:4,y:6},{color:'B',x:8,y:6},{color:'B',x:9,y:6},{color:'B',x:11,y:6},{color:'B',x:2,y:7},{color:'B',x:3,y:7},{color:'B',x:4,y:7},{color:'B',x:7,y:7},{color:'B',x:8,y:7},{color:'B',x:10,y:7},{color:'B',x:4,y:8},{color:'B',x:5,y:8},{color:'B',x:7,y:8},{color:'B',x:8,y:8},{color:'B',x:10,y:8},{color:'B',x:4,y:9},{color:'B',x:10,y:9},{color:'B',x:13,y:9},{color:'B',x:14,y:9},{color:'B',x:15,y:9},{color:'B',x:4,y:10},{color:'B',x:8,y:10},{color:'B',x:9,y:10},{color:'B',x:14,y:10},{color:'B',x:3,y:11},{color:'B',x:4,y:11},{color:'B',x:5,y:11},{color:'B',x:6,y:11},{color:'B',x:7,y:11},{color:'B',x:9,y:11},{color:'B',x:10,y:11},{color:'B',x:11,y:11},{color:'B',x:12,y:11},{color:'B',x:13,y:11},{color:'B',x:14,y:11},{color:'B',x:15,y:11},{color:'B',x:16,y:11},{color:'B',x:4,y:12},{color:'B',x:5,y:12},{color:'B',x:7,y:12},{color:'B',x:8,y:12},{color:'B',x:10,y:12},{color:'B',x:14,y:12},{color:'B',x:16,y:12},{color:'B',x:2,y:13},{color:'B',x:3,y:13},{color:'B',x:4,y:13},{color:'B',x:11,y:13},{color:'B',x:15,y:13},{color:'B',x:0,y:14},{color:'B',x:3,y:14},{color:'B',x:9,y:14},{color:'B',x:11,y:14},{color:'B',x:15,y:14},{color:'B',x:0,y:15},{color:'B',x:1,y:15},{color:'B',x:2,y:15},{color:'B',x:9,y:15},{color:'B',x:10,y:15},{color:'B',x:12,y:15},{color:'B',x:14,y:15},{color:'B',x:1,y:16},{color:'B',x:3,y:16},{color:'B',x:4,y:16},{color:'B',x:7,y:16},{color:'B',x:8,y:16},{color:'B',x:13,y:16},{color:'B',x:3,y:17},{color:'B',x:5,y:17},{color:'B',x:6,y:17},{color:'B',x:12,y:17},{color:'B',x:12,y:18}],
+    deadStones:[{x:6,y:1},{x:6,y:2},{x:11,y:12},{x:12,y:12},{x:2,y:16},{x:11,y:6},{x:10,y:7},{x:10,y:8},{x:10,y:9}],
+    auto:true,size:19,fb:{t:'Oyun sonu — bölgeler ve esir taşlar sayılıyor.',c:'info'}},
+   {text:`<p><span class="term">Yose</span> — oyunun son aşaması. Sınırlar netleşir, her hamle doğrudan puana dönüşür.</p>`,
+    board:[{color:'B',x:0,y:0},{color:'B',x:1,y:0},{color:'B',x:2,y:0},{color:'B',x:0,y:1},{color:'B',x:0,y:2},{color:'B',x:0,y:3},{color:'W',x:5,y:5},{color:'W',x:6,y:5},{color:'W',x:7,y:5},{color:'W',x:8,y:5},{color:'W',x:8,y:6},{color:'W',x:8,y:7},{color:'W',x:8,y:8}],
+    auto:true,size:9,fb:{t:'Oyun sonunda sayılan puanlar kazananı belirler.',c:'info'}},
+   {text:`<p>Önem sırası:<ol><li><strong>Sente endgame</strong> — cevap gerektiren hamleler</li><li><strong>Büyük gote</strong> — en yüksek puanlı serbest hamleler</li><li><strong>Küçük gote</strong> — ince detay hamleler</li></ol></p>`,
+    board:[],auto:true,size:9,fb:{t:'Go öğrenme yolculuğun başlıyor!',c:'info'}},
+  ]},
+
+ ]},
 ];
 
-/* ════════════════
+/* ═══════════════════════════════════════
    DURUM
-   ════════════════ */
+═══════════════════════════════════════ */
 let curLesson = null, curStepIdx = 0;
-let boardStones = [];    // {color, x, y}
+let N = 9;
+let boardStones = [];
 let sheetOpen = false;
 let animFrame = null;
 let ghostPulse = 0;
+let moveAnimTimer = null;
 let completedLessons = new Set();
 
-/* ════════════════
+/* ═══════════════════════════════════════
    CANVAS
-   ════════════════ */
+═══════════════════════════════════════ */
 const canvas = document.getElementById('bc');
-const ctx    = canvas.getContext('2d');
-const N      = 9;
+const ctx = canvas.getContext('2d');
 
-function canvasSize() { return canvas.offsetWidth; }
-function pad(sz)  { return sz * 0.082; }
-function cell(sz) { return (sz - 2*pad(sz)) / (N-1); }
-function sx(col)  { const s=canvasSize(); return pad(s) + col*cell(s); }
-function sy(row)  { const s=canvasSize(); return pad(s) + row*cell(s); }
-function stoneR() { return cell(canvasSize()) * 0.46; }
+function csz() { return canvas.offsetWidth; }
+function padFor(n) { return csz() * (n <= 9 ? 0.08 : n <= 13 ? 0.07 : 0.055); }
+function cellFor(n) { const s=csz(), p=padFor(n); return (s-2*p)/(n-1); }
+function sx(col,n=N){ return padFor(n)+col*cellFor(n); }
+function sy(row,n=N){ return padFor(n)+row*cellFor(n); }
+function sr(n=N){ return cellFor(n)*0.46; }
 
-function resizeCanvas() {
+const STARS = {
+  9:  [[2,2],[6,2],[4,4],[2,6],[6,6]],
+  13: [[3,3],[9,3],[6,6],[3,9],[9,9]],
+  19: [[3,3],[9,3],[15,3],[3,9],[9,9],[15,9],[3,15],[9,15],[15,15]],
+};
+
+function resizeCanvas(){
   const w = canvas.offsetWidth;
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width  = w * dpr;
-  canvas.height = w * dpr;
-  ctx.scale(dpr, dpr);
+  const dpr = window.devicePixelRatio||1;
+  canvas.width = w*dpr; canvas.height = w*dpr;
+  ctx.scale(dpr,dpr);
 }
 
-function drawBoard() {
-  const s = canvasSize();
-  const p = pad(s), c = cell(s);
-
-  // Tahta zemin
-  ctx.clearRect(0, 0, s, s);
-  const bg = ctx.createRadialGradient(s*.45, s*.42, 0, s*.5, s*.5, s*.7);
-  bg.addColorStop(0, '#3a2810'); bg.addColorStop(1, '#1e1208');
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, s, s);
-
-  // Izgara
-  ctx.strokeStyle = 'rgba(120,80,20,.65)';
-  ctx.lineWidth = Math.max(.7, s/400);
-  for(let i=0; i<N; i++){
-    ctx.beginPath(); ctx.moveTo(p+i*c, p); ctx.lineTo(p+i*c, s-p); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(p, p+i*c); ctx.lineTo(s-p, p+i*c); ctx.stroke();
+function drawBoard(){
+  const s=csz(), n=N, p=padFor(n), c=cellFor(n);
+  ctx.clearRect(0,0,s,s);
+  // Wood background
+  const bg=ctx.createRadialGradient(s*.45,s*.42,0,s*.5,s*.5,s*.72);
+  bg.addColorStop(0,'#3a2810'); bg.addColorStop(1,'#1a0e04');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,s,s);
+  // Grid
+  ctx.strokeStyle='rgba(110,70,15,.6)';
+  ctx.lineWidth=Math.max(.6,s/500);
+  for(let i=0;i<n;i++){
+    ctx.beginPath(); ctx.moveTo(p+i*c,p); ctx.lineTo(p+i*c,s-p); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p,p+i*c); ctx.lineTo(s-p,p+i*c); ctx.stroke();
   }
-
-  // Yıldız noktaları (9×9: 2,2 / 6,2 / 4,4 / 2,6 / 6,6)
-  ctx.fillStyle = 'rgba(110,70,15,.8)';
-  [[2,2],[6,2],[4,4],[2,6],[6,6]].forEach(([ci,ri])=>{
-    ctx.beginPath(); ctx.arc(p+ci*c, p+ri*c, Math.max(2.5,s/130), 0, Math.PI*2); ctx.fill();
+  // Stars
+  ctx.fillStyle='rgba(100,60,10,.75)';
+  (STARS[n]||[]).forEach(([ci,ri])=>{
+    ctx.beginPath();
+    ctx.arc(p+ci*c,p+ri*c,Math.max(2,s/(n<=9?140:n<=13?160:190)),0,Math.PI*2);
+    ctx.fill();
   });
 }
 
-function drawStone(col, row, color) {
-  const x = sx(col), y = sy(row), r = stoneR();
-  const g = ctx.createRadialGradient(x-r*.3, y-r*.32, r*.04, x, y, r);
-  if(color === 'B') {
-    g.addColorStop(0,'#888'); g.addColorStop(.45,'#1a1a1a'); g.addColorStop(1,'#000');
-  } else {
-    g.addColorStop(0,'#fff'); g.addColorStop(.5,'#ebebeb'); g.addColorStop(1,'#bbb');
-  }
-  ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 2;
-  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
-  ctx.fillStyle = g; ctx.fill();
-  ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+function drawStone(col,row,color,alpha=1,n=N){
+  const x=sx(col,n),y=sy(row,n),r=sr(n);
+  ctx.globalAlpha=alpha;
+  const g=ctx.createRadialGradient(x-r*.3,y-r*.32,r*.04,x,y,r);
+  if(color==='B'){g.addColorStop(0,'#888');g.addColorStop(.45,'#1a1a1a');g.addColorStop(1,'#000');}
+  else{g.addColorStop(0,'#fff');g.addColorStop(.5,'#eee');g.addColorStop(1,'#bbb');}
+  ctx.shadowColor='rgba(0,0,0,.55)'; ctx.shadowBlur=4; ctx.shadowOffsetY=2;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=g; ctx.fill();
+  ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+  ctx.globalAlpha=1;
 }
 
-function drawLiberties(step) {
-  if(!step || !step.showLiberties) return;
-  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-  const occupied = new Set(boardStones.map(s=>`${s.x},${s.y}`));
+function drawLiberties(step){
+  if(!step||!step.showLiberties) return;
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  const occ=new Set(boardStones.map(s=>`${s.x},${s.y}`));
   boardStones.forEach(s=>{
     dirs.forEach(([dx,dy])=>{
-      const nx=s.x+dx, ny=s.y+dy;
-      if(nx>=0&&nx<N&&ny>=0&&ny<N&&!occupied.has(`${nx},${ny}`)){
-        const x=sx(nx), y=sy(ny), r=stoneR()*.28;
-        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
-        ctx.fillStyle='rgba(91,155,213,.7)'; ctx.fill();
+      const nx=s.x+dx,ny=s.y+dy;
+      if(nx>=0&&nx<N&&ny>=0&&ny<N&&!occ.has(`${nx},${ny}`)){
+        ctx.beginPath(); ctx.arc(sx(nx),sy(ny),sr()*0.28,0,Math.PI*2);
+        ctx.fillStyle='rgba(91,155,213,.72)'; ctx.fill();
       }
     });
   });
 }
 
-function drawGhost(step) {
-  if(!step || step.auto || !step.answer) return;
-  const {x,y} = step.answer;
-  const px=sx(x), py=sy(y), r=stoneR();
-  const alpha = 0.22 + 0.18*Math.sin(ghostPulse);
-  const sc    = 0.95 + 0.08*Math.sin(ghostPulse);
+function drawForbidden(pts){
+  if(!pts||!pts.length) return;
+  pts.forEach(({x,y})=>{
+    const px=sx(x),py=sy(y),r=sr()*0.38;
+    ctx.strokeStyle='rgba(220,60,60,.9)'; ctx.lineWidth=Math.max(1.5,r*.25);
+    ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(px-r,py-r); ctx.lineTo(px+r,py+r); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px+r,py-r); ctx.lineTo(px-r,py+r); ctx.stroke();
+  });
+}
+
+function drawTerritory(blackT,whiteT){
+  if(!blackT&&!whiteT) return;
+  (blackT||[]).forEach(({x,y})=>{
+    const px=sx(x),py=sy(y),r=sr()*0.28;
+    ctx.fillStyle='rgba(0,0,0,.55)';
+    ctx.fillRect(px-r,py-r,r*2,r*2);
+  });
+  (whiteT||[]).forEach(({x,y})=>{
+    const px=sx(x),py=sy(y),r=sr()*0.28;
+    ctx.strokeStyle='rgba(240,240,240,.6)'; ctx.lineWidth=1.5;
+    ctx.strokeRect(px-r,py-r,r*2,r*2);
+  });
+}
+
+function drawKo(pt){
+  if(!pt) return;
+  const px=sx(pt.x),py=sy(pt.y),r=sr()*0.44;
+  ctx.strokeStyle='rgba(220,60,60,.8)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.stroke();
+}
+
+function drawGroupIndicators(pts){
+  if(!pts||!pts.length) return;
+  pts.forEach(({x,y,color})=>{
+    const px=sx(x),py=sy(y),r=sr()*0.55;
+    const clr=color==='green'?'rgba(62,207,128,.85)':'rgba(220,60,60,.85)';
+    ctx.strokeStyle=clr; ctx.lineWidth=Math.max(1.5,r*.18);
+    ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.stroke();
+  });
+}
+
+function drawGhost(step){
+  if(!step||step.auto||!step.answer) return;
+  const {x,y}=step.answer;
+  const px=sx(x),py=sy(y),r=sr();
+  const alpha=0.2+0.18*Math.sin(ghostPulse);
+  const sc=0.95+0.08*Math.sin(ghostPulse);
   ctx.save();
-  ctx.translate(px, py); ctx.scale(sc, sc); ctx.translate(-px, -py);
-  ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
-  ctx.fillStyle   = `rgba(200,168,75,${alpha})`;
-  ctx.strokeStyle = `rgba(200,168,75,${alpha+0.3})`;
-  ctx.lineWidth   = 1.5; ctx.fill(); ctx.stroke();
+  ctx.translate(px,py); ctx.scale(sc,sc); ctx.translate(-px,-py);
+  ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2);
+  ctx.fillStyle=`rgba(200,168,75,${alpha})`;
+  ctx.strokeStyle=`rgba(200,168,75,${alpha+0.3})`;
+  ctx.lineWidth=1.5; ctx.fill(); ctx.stroke();
   ctx.restore();
 }
 
-function render(step) {
+function render(step){
   drawBoard();
-  boardStones.forEach(s => drawStone(s.x, s.y, s.color));
-  if(step) { drawLiberties(step); drawGhost(step); }
-}
-
-/* Animasyon döngüsü */
-function loop(step) {
-  if(animFrame) cancelAnimationFrame(animFrame);
-  function tick() {
-    ghostPulse += 0.055;
-    render(step);
-    animFrame = requestAnimationFrame(tick);
+  // Dead stones (semi-transparent)
+  const dead = step&&step.deadStones ? step.deadStones : [];
+  const deadSet = new Set(dead.map(d=>`${d.x},${d.y}`));
+  boardStones.forEach(s=>{
+    const alpha = deadSet.has(`${s.x},${s.y}`) ? 0.35 : 1;
+    drawStone(s.x,s.y,s.color,alpha);
+  });
+  if(step){
+    drawLiberties(step);
+    drawForbidden(step.forbidden);
+    drawTerritory(step.blackTerritory,step.whiteTerritory);
+    drawKo(step.koPoint);
+    drawGroupIndicators(step.groupIndicators);
+    drawGhost(step);
   }
-  animFrame = requestAnimationFrame(tick);
 }
 
-/* ════════════════
+function startLoop(step){
+  if(animFrame) cancelAnimationFrame(animFrame);
+  function tick(){ ghostPulse+=0.055; render(step); animFrame=requestAnimationFrame(tick); }
+  animFrame=requestAnimationFrame(tick);
+}
+
+/* ═══════════════════════════════════════
+   MOVES ANIMASYONU
+═══════════════════════════════════════ */
+function playMoves(moves, onDone, delay=700){
+  if(moveAnimTimer) clearTimeout(moveAnimTimer);
+  let i=0;
+  function next(){
+    if(i>=moves.length){ if(onDone) onDone(); return; }
+    const m=moves[i++];
+    boardStones.push({color:m.color,x:m.x,y:m.y});
+    if(m.capture) m.capture.forEach(c=>{
+      boardStones=boardStones.filter(s=>!(s.x===c.x&&s.y===c.y));
+    });
+    render(curLesson?curLesson.steps[curStepIdx]:null);
+    moveAnimTimer=setTimeout(next,delay);
+  }
+  next();
+}
+
+/* ═══════════════════════════════════════
    ADIM YÖNETİMİ
-   ════════════════ */
-function loadLesson(lesson) {
-  curLesson   = lesson;
-  curStepIdx  = 0;
+═══════════════════════════════════════ */
+function loadLesson(lesson){
+  curLesson=lesson; curStepIdx=0;
   loadStep(0);
   closeSidebar();
-  markActiveSidebarLesson();
-  updateProgress();
+  updateSidebar();
+  // Sheet'i aç — kullanıcı ders metnini hemen görsün
+  sheetOpen=true;
+  document.getElementById('sheet').className='open';
+  document.getElementById('sh-body').style.display='flex';
 }
 
-function loadStep(idx) {
+function loadStep(idx){
   if(!curLesson) return;
-  const step = curLesson.steps[idx];
+  if(moveAnimTimer){ clearTimeout(moveAnimTimer); moveAnimTimer=null; }
+  const step=curLesson.steps[idx];
   if(!step) return;
 
-  boardStones = step.board ? step.board.map(s=>({...s})) : [];
+  // Board size
+  N = step.size||9;
+  boardStones=step.board?step.board.map(s=>({...s})):[];
 
-  // Metni doldur
-  document.getElementById('lesson-text').innerHTML = step.text || '';
-
+  // Metin
+  document.getElementById('lesson-text').innerHTML=step.text||'';
   // Feedback
-  setFeedback(step.fb ? step.fb.t : '', 'info');
-
-  // Başlık ve yardım metni
-  document.getElementById('sh-ch').textContent   = getCurriculumLabel(curLesson.id);
-  document.getElementById('sh-title').textContent = curLesson.title + ' · Adım ' + (idx+1);
-  document.getElementById('sh-hint').textContent  = step.auto ? 'İzle' : step.turn==='black' ? 'Siyah oyna' : 'Beyaz oyna';
-
-  // Topbar başlık + adım noktaları
-  document.getElementById('tb-title').textContent = curLesson.title;
-  const dotsEl = document.getElementById('tb-dots');
-  dotsEl.innerHTML = '';
+  setFeedback(step.fb?step.fb.t:'','info');
+  // Başlık
+  document.getElementById('sh-ch').textContent=getCurriculumLabel(curLesson.id);
+  document.getElementById('sh-title').textContent=curLesson.title+' · Adım '+(idx+1);
+  document.getElementById('sh-hint').textContent=step.auto?'İzle':step.turn==='white'?'Beyaz oyna':'Siyah oyna';
+  document.getElementById('tb-title').textContent=curLesson.title;
+  // Dots
+  const dotsEl=document.getElementById('tb-dots');
+  dotsEl.innerHTML='';
   curLesson.steps.forEach((_,i)=>{
-    const d = document.createElement('div');
-    d.className = 'tb-dot' + (i<idx?' done':i===idx?' on':'');
+    const d=document.createElement('div');
+    d.className='tb-dot'+(i<idx?' done':i===idx?' on':'');
     dotsEl.appendChild(d);
   });
+  // Butonlar
+  document.getElementById('btn-prev').disabled=(idx===0);
+  document.getElementById('btn-next').disabled=false;
+  document.getElementById('cta-btn').textContent=(idx>=curLesson.steps.length-1)?'Dersi Tamamla ✓':'İleri →';
+  document.getElementById('cta-btn').onclick=nextStep;
 
-  // Prev/Next butonları
-  document.getElementById('btn-prev').disabled = (idx === 0 && !curLesson);
-  document.getElementById('btn-next').disabled = false;
-  document.getElementById('cta-btn').textContent = (idx >= curLesson.steps.length-1) ? 'Dersi Tamamla ✓' : 'İleri →';
+  // Ghost sıfırla
+  ghostPulse = 0;
 
-  loop(step);
+  // Resize & render
+  resizeCanvas();
+  startLoop(step);
+
+  // Auto moves
+  if(step.moves&&step.moves.length){
+    setTimeout(()=>playMoves(step.moves,null,700),800);
+  }
 }
 
-function nextStep() {
+function nextStep(){
   if(!curLesson) return;
-  if(curStepIdx < curLesson.steps.length - 1) {
+  if(curStepIdx<curLesson.steps.length-1){
     curStepIdx++;
     loadStep(curStepIdx);
   } else {
-    // Ders tamamlandı
     completedLessons.add(curLesson.id);
-    updateProgress();
-    markActiveSidebarLesson();
-    setFeedback('Ders tamamlandı! Menüden sonraki derse geç.', 'ok');
-    document.getElementById('cta-btn').textContent = 'Menüye Dön';
-    document.getElementById('cta-btn').onclick = openSidebar;
+    updateSidebar();
+    setFeedback('Ders tamamlandı! Menüden sonraki derse geç.','ok');
+    document.getElementById('cta-btn').textContent='Menüye Dön';
+    document.getElementById('cta-btn').onclick=openSidebar;
   }
 }
 
-function prevStep() {
-  if(!curLesson || curStepIdx <= 0) return;
+function prevStep(){
+  if(!curLesson||curStepIdx<=0) return;
   curStepIdx--;
   loadStep(curStepIdx);
 }
 
-/* ════════════════
+/* ═══════════════════════════════════════
    HAMLE
-   ════════════════ */
-function handleMove(col, row) {
+═══════════════════════════════════════ */
+canvas.addEventListener('pointerdown',function(e){
+  e.preventDefault();
+  const rect=canvas.getBoundingClientRect();
+  const cx=e.clientX-rect.left, cy=e.clientY-rect.top;
+  const p=padFor(N), c=cellFor(N);
+  const col=Math.round((cx-p)/c), row=Math.round((cy-p)/c);
+  if(col>=0&&col<N&&row>=0&&row<N) handleMove(col,row);
+},{passive:false});
+
+function handleMove(col,row){
   if(!curLesson) return;
-  const step = curLesson.steps[curStepIdx];
-  if(!step || step.auto) return;
-
-  // Dolu mu?
-  if(boardStones.find(s=>s.x===col&&s.y===row)) {
-    setFeedback('Bu noktada zaten bir taş var.', 'err');
-    return;
+  const step=curLesson.steps[curStepIdx];
+  if(!step||step.auto) return;
+  if(moveAnimTimer) return; // animasyon sırasında hamle yapma
+  if(boardStones.find(s=>s.x===col&&s.y===row)){
+    setFeedback('Bu noktada zaten bir taş var.','err'); return;
   }
+  const color=step.turn==='white'?'W':'B';
+  let correct=false;
+  if(step.answers==='any') correct=true;
+  else if(Array.isArray(step.answers)) correct=step.answers.some(a=>a.x===col&&a.y===row);
+  else if(step.answer) correct=(step.answer.x===col&&step.answer.y===row);
 
-  const color = step.turn === 'white' ? 'W' : 'B';
-
-  // Cevap kontrolü
-  let correct = false;
-  if(step.answers === 'any') {
-    correct = true;
-  } else if(step.answers) {
-    correct = step.answers.some(a=>a.x===col&&a.y===row);
-  } else if(step.answer) {
-    correct = (step.answer.x===col && step.answer.y===row);
-  }
-
-  if(correct) {
-    // Taşı koy
-    boardStones.push({color, x:col, y:row});
-    // Yakalananları kaldır
-    if(step.capture) {
-      step.capture.forEach(c=>{
-        boardStones = boardStones.filter(s=>!(s.x===c.x&&s.y===c.y));
-      });
+  if(correct){
+    boardStones.push({color,x:col,y:row});
+    if(step.capture) step.capture.forEach(c=>{
+      boardStones=boardStones.filter(s=>!(s.x===c.x&&s.y===c.y));
+    });
+    setFeedback(step.fb_ok||'Doğru!','ok');
+    render(step);
+    if(step.movesAfterAnswer&&step.movesAfterAnswer.length){
+      setTimeout(()=>playMoves(step.movesAfterAnswer,()=>setTimeout(nextStep,600),700),500);
+    } else {
+      setTimeout(nextStep,1100);
     }
-    setFeedback(step.fb_ok || 'Doğru!', 'ok');
-    render(curLesson.steps[curStepIdx]);
-    // Sonraki adıma geç
-    setTimeout(()=>nextStep(), 1100);
   } else {
-    setFeedback(step.fb_err || 'Yanlış nokta, tekrar dene.', 'err');
-    // Kısa sallama efekti
-    canvas.style.transition = 'transform .1s';
-    canvas.style.transform = 'translateX(-4px)';
-    setTimeout(()=>{ canvas.style.transform = 'translateX(4px)'; }, 100);
-    setTimeout(()=>{ canvas.style.transform = ''; }, 200);
+    setFeedback(step.fb_err||'Yanlış nokta, tekrar dene.','err');
+    canvas.style.transition='transform .08s';
+    canvas.style.transform='translateX(-5px)';
+    setTimeout(()=>{canvas.style.transform='translateX(5px)';},90);
+    setTimeout(()=>{canvas.style.transform='';},180);
   }
 }
 
-/* Canvas dokunma/tıklama */
-canvas.addEventListener('pointerdown', function(e){
-  const rect = canvas.getBoundingClientRect();
-  const cx = e.clientX - rect.left;
-  const cy = e.clientY - rect.top;
-  const s = canvasSize();
-  const col = Math.round((cx - pad(s)) / cell(s));
-  const row = Math.round((cy - pad(s)) / cell(s));
-  if(col>=0 && col<N && row>=0 && row<N) handleMove(col, row);
-}, { passive: true });
-
-/* ════════════════
+/* ═══════════════════════════════════════
    FEEDBACK
-   ════════════════ */
-function setFeedback(text, type) {
-  const el = document.getElementById('fb-badge');
-  const icons = { ok:'✓', err:'✗', info:'💡' };
-  el.className = type || 'info';
-  document.getElementById('fb-icon').textContent = icons[type] || '💡';
-  document.getElementById('fb-text').textContent = text;
+═══════════════════════════════════════ */
+function setFeedback(text,type){
+  const el=document.getElementById('fb-badge');
+  const icons={ok:'✓',err:'✗',info:'💡'};
+  el.className=type||'info';
+  document.getElementById('fb-icon').textContent=icons[type]||'💡';
+  document.getElementById('fb-text').textContent=text;
 }
 
-/* ════════════════
+/* ═══════════════════════════════════════
    SHEET
-   ════════════════ */
-function toggleSheet() {
-  sheetOpen = !sheetOpen;
-  document.getElementById('sheet').className = sheetOpen ? 'open' : 'peek';
-  document.getElementById('sh-body').style.display = sheetOpen ? 'flex' : 'none';
+═══════════════════════════════════════ */
+function toggleSheet(){
+  sheetOpen=!sheetOpen;
+  document.getElementById('sheet').className=sheetOpen?'open':'peek';
+  document.getElementById('sh-body').style.display=sheetOpen?'flex':'none';
 }
-document.getElementById('peek-row').addEventListener('pointerdown', function(e){
+document.getElementById('peek-row').addEventListener('pointerdown',function(e){
   if(!e.target.closest('.sh-nav')) toggleSheet();
-}, { passive: true });
+},{passive:true});
 
-/* ════════════════
+/* ═══════════════════════════════════════
    SIDEBAR
-   ════════════════ */
-function buildSidebar() {
-  const container = document.getElementById('sb-scroll');
-  container.innerHTML = '';
-  let total = 0, done = 0;
-  CURRICULUM.forEach((ch, ci) => {
-    const chDiv = document.createElement('div');
-    chDiv.className = 'sb-ch';
-    const hd = document.createElement('div');
-    hd.className = 'sb-ch-hd' + (ci===0?' expanded':'');
-    hd.innerHTML = `<div class="sb-ch-num">${ci+1}</div><span class="sb-ch-name">${ch.title}</span><span class="sb-ch-arr">▶</span>`;
-    hd.addEventListener('click', ()=>hd.classList.toggle('expanded'));
-    const lessons = document.createElement('div');
-    lessons.className = 'sb-lessons';
-    ch.lessons.forEach(lesson => {
+═══════════════════════════════════════ */
+function buildSidebar(){
+  const con=document.getElementById('sb-scroll');
+  con.innerHTML='';
+  let total=0;
+  CURRICULUM.forEach((ch,ci)=>{
+    const chDiv=document.createElement('div'); chDiv.className='sb-ch';
+    const hd=document.createElement('div');
+    hd.className='sb-ch-hd'+(ci===0?' expanded':'');
+    hd.innerHTML=`<div class="sb-ch-num">${ci+1}</div><span class="sb-ch-name">${ch.title}</span><span class="sb-ch-arr">▶</span>`;
+    hd.addEventListener('click',()=>hd.classList.toggle('expanded'));
+    const lessons=document.createElement('div'); lessons.className='sb-lessons';
+    ch.lessons.forEach(lesson=>{
       total++;
-      if(completedLessons.has(lesson.id)) done++;
-      const item = document.createElement('div');
-      item.className = 'sb-lesson' +
-        (curLesson&&curLesson.id===lesson.id?' active':'') +
-        (completedLessons.has(lesson.id)?' done':'');
-      item.textContent = (completedLessons.has(lesson.id)?'✓ ':'')+lesson.title;
-      item.dataset.lid = lesson.id;
-      item.addEventListener('click', ()=>loadLesson(lesson));
+      const item=document.createElement('div');
+      const done=completedLessons.has(lesson.id);
+      const active=curLesson&&curLesson.id===lesson.id;
+      item.className='sb-lesson'+(active?' active':'')+(done?' done':'');
+      item.textContent=(done?'✓ ':'')+lesson.title;
+      item.dataset.lid=lesson.id;
+      item.addEventListener('click',()=>loadLesson(lesson));
       lessons.appendChild(item);
     });
-    chDiv.appendChild(hd);
-    chDiv.appendChild(lessons);
-    container.appendChild(chDiv);
+    chDiv.appendChild(hd); chDiv.appendChild(lessons);
+    con.appendChild(chDiv);
   });
-  const pct = total>0 ? Math.round(done/total*100) : 0;
-  document.getElementById('sb-prog-fill').style.width = pct+'%';
-  document.getElementById('sb-prog-txt').textContent = done+' / '+total+' ders';
+  const done=completedLessons.size;
+  const pct=total>0?Math.round(done/total*100):0;
+  document.getElementById('sb-prog-fill').style.width=pct+'%';
+  document.getElementById('sb-prog-txt').textContent=done+' / '+total+' ders';
 }
 
-function markActiveSidebarLesson() {
-  document.querySelectorAll('.sb-lesson').forEach(el=>{
-    const lid = el.dataset.lid;
-    el.className = 'sb-lesson' +
-      (curLesson&&lid===curLesson.id?' active':'') +
-      (completedLessons.has(lid)?' done':'');
-    el.textContent = (completedLessons.has(lid)?'✓ ':'')+el.textContent.replace(/^✓ /,'');
+function updateSidebar(){
+  const items=document.querySelectorAll('.sb-lesson');
+  items.forEach(item=>{
+    const lid=item.dataset.lid;
+    const done=completedLessons.has(lid);
+    const active=curLesson&&lid===curLesson.id;
+    item.className='sb-lesson'+(active?' active':'')+(done?' done':'');
+    item.textContent=(done?'✓ ':'')+item.textContent.replace(/^✓ /,'');
   });
-  const pct = Math.round(completedLessons.size / countLessons() * 100);
-  document.getElementById('sb-prog-fill').style.width = pct+'%';
-  document.getElementById('sb-prog-txt').textContent = completedLessons.size+' / '+countLessons()+' ders';
+  const total=countLessons();
+  const pct=Math.round(completedLessons.size/total*100);
+  document.getElementById('sb-prog-fill').style.width=pct+'%';
+  document.getElementById('sb-prog-txt').textContent=completedLessons.size+' / '+total+' ders';
 }
 
-function countLessons() {
-  return CURRICULUM.reduce((a,c)=>a+c.lessons.length, 0);
-}
+function countLessons(){ return CURRICULUM.reduce((a,c)=>a+c.lessons.length,0); }
+function openSidebar(){ buildSidebar(); document.getElementById('sidebar').classList.add('open'); }
+function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); }
 
-function updateProgress() { markActiveSidebarLesson(); }
-
-function openSidebar()  {
-  buildSidebar();
-  document.getElementById('sidebar').classList.add('open');
-}
-function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); }
-
-/* ════════════════
-   YARDIMCI
-   ════════════════ */
-function getCurriculumLabel(lid) {
-  for(const ch of CURRICULUM) {
-    const idx = ch.lessons.findIndex(l=>l.id===lid);
-    if(idx>=0) return ch.title + ' · L'+(idx+1);
+function getCurriculumLabel(lid){
+  for(const ch of CURRICULUM){
+    const idx=ch.lessons.findIndex(l=>l.id===lid);
+    if(idx>=0) return ch.title+' · L'+(idx+1);
   }
   return '';
 }
 
-/* ════════════════
+/* ═══════════════════════════════════════
    BAŞLAT
-   ════════════════ */
-window.addEventListener('resize', ()=>{ resizeCanvas(); render(curLesson?curLesson.steps[curStepIdx]:null); });
+═══════════════════════════════════════ */
+let resizeTimer=null;
+window.addEventListener('resize',()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(()=>{
+    resizeCanvas();
+    render(curLesson?curLesson.steps[curStepIdx]:null);
+  },120);
+});
 resizeCanvas();
 render(null);
 setFeedback('☰ menüden bir ders seçin.','info');
