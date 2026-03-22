@@ -3,372 +3,366 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Antalyago Mobile — UI Mockup</title>
+<title>Antalyago Mobile</title>
 <style>
   :root {
-    --gold:    #c8a84b;
-    --gold2:   #e0c060;
-    --dark:    #08080e;
-    --glass:   rgba(10,10,18,.90);
-    --gborder: rgba(200,168,75,.22);
-    --text:    #e8e4de;
-    --muted:   rgba(232,228,222,.45);
-    --green:   #3ecf80;
-    --red:     #e05050;
-    --safe-b:  env(safe-area-inset-bottom, 0px);
+    --gold:   #c8a84b;
+    --gold2:  #e0c060;
+    --dark:   #08080e;
+    --glass:  rgba(10,10,18,.92);
+    --gb:     rgba(200,168,75,.22);
+    --text:   #e8e4de;
+    --muted:  rgba(232,228,222,.45);
+    --green:  #3ecf80;
+    --red:    #e05050;
+    --blue:   #5b9bd5;
+    --sb: env(safe-area-inset-bottom, 0px);
+    --st: env(safe-area-inset-top, 0px);
   }
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; overflow: hidden; background: var(--dark); font-family: 'Noto Sans', system-ui, sans-serif; color: var(--text); }
+  html, body {
+    height: 100%; overflow: hidden;
+    background: var(--dark);
+    font-family: system-ui, -apple-system, 'Noto Sans', sans-serif;
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+  }
 
-  /* ── CANVAS ARKA PLAN (simüle) ── */
-  #board-bg {
+  /* ── TAHTA ARKA PLAN ── */
+  #board-wrap {
     position: fixed; inset: 0; z-index: 0;
-    background: radial-gradient(ellipse at 50% 46%, #1a1508 0%, #08080e 70%);
     display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 50% 44%, #1c1608 0%, #08080e 72%);
   }
-  .board-sim {
-    width: min(72vw, 320px); aspect-ratio: 1;
-    border: 1.5px solid rgba(160,120,40,.35);
-    border-radius: 4px;
-    background: repeating-linear-gradient(
-      0deg, transparent, transparent calc(100%/8 - 1px), rgba(160,120,40,.22) calc(100%/8 - 1px), rgba(160,120,40,.22) calc(100%/8)
-    ),
-    repeating-linear-gradient(
-      90deg, transparent, transparent calc(100%/8 - 1px), rgba(160,120,40,.22) calc(100%/8 - 1px), rgba(160,120,40,.22) calc(100%/8)
-    ),
-    #1e1406;
+  .goban {
     position: relative;
+    width: min(80vw, 340px);
+    aspect-ratio: 1;
   }
-  /* Örnek taşlar */
-  .stone {
-    position: absolute; border-radius: 50%;
+  .goban-wood {
+    position: absolute; inset: 0;
+    background: #2a1e0a;
+    border-radius: 3px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.7), inset 0 0 0 1px rgba(160,120,40,.3);
+  }
+  .goban-grid {
+    position: absolute;
+    inset: 8%;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+  }
+  .grid-line-h, .grid-line-v {
+    position: absolute;
+    background: rgba(120,80,20,.55);
+  }
+  /* Yıldız noktaları */
+  .star {
+    position: absolute;
+    width: 5px; height: 5px;
+    background: rgba(120,80,20,.7);
+    border-radius: 50%;
     transform: translate(-50%, -50%);
   }
-  .stone.b { background: radial-gradient(circle at 35% 30%, #555, #000); box-shadow: 0 2px 6px rgba(0,0,0,.6); }
-  .stone.w { background: radial-gradient(circle at 35% 30%, #fff, #bbb); box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+  /* Taşlar */
+  .stone {
+    position: absolute;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 6px rgba(0,0,0,.5);
+  }
+  .stone.b {
+    background: radial-gradient(circle at 35% 28%, #777, #111 60%, #000);
+  }
+  .stone.w {
+    background: radial-gradient(circle at 35% 28%, #fff, #e0e0e0 55%, #bbb);
+  }
+  .stone.ghost {
+    background: rgba(200,168,75,.25);
+    border: 1.5px solid var(--gold);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: .5; transform: translate(-50%,-50%) scale(1); }
+    50%      { opacity: 1;  transform: translate(-50%,-50%) scale(1.08); }
+  }
 
   /* ── TOPBAR ── */
   #topbar {
     position: fixed; top: 0; left: 0; right: 0;
-    height: 48px; z-index: 40;
-    background: var(--glass); backdrop-filter: blur(18px);
-    border-bottom: 1px solid var(--gborder);
-    display: flex; align-items: center;
-    padding: 0 14px; gap: 10px;
+    padding-top: var(--st);
+    height: calc(52px + var(--st));
+    z-index: 40;
+    background: linear-gradient(to bottom, rgba(8,8,14,.95) 60%, transparent);
+    display: flex; align-items: flex-end;
+    padding-bottom: 8px; padding-left: 14px; padding-right: 14px;
+    gap: 10px;
   }
   .tb-menu {
-    width: 36px; height: 36px; border-radius: 8px;
-    border: 1px solid var(--gborder); background: transparent;
-    color: var(--gold); font-size: 16px; cursor: pointer;
+    width: 40px; height: 40px; border-radius: 10px;
+    border: 1px solid var(--gb); background: rgba(10,10,18,.7);
+    backdrop-filter: blur(12px);
+    color: var(--gold); font-size: 17px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+    flex-shrink: 0; transition: background .15s;
   }
-  .tb-title {
-    font-family: Georgia, serif; font-size: .92rem;
-    font-weight: 700; letter-spacing: .05em; flex: 1;
-  }
-  /* Pill progress */
-  .tb-progress {
-    display: flex; align-items: center; gap: 6px;
-    background: rgba(200,168,75,.07); border: 1px solid var(--gborder);
-    border-radius: 20px; padding: 4px 10px;
-  }
-  .tp-track { width: 60px; height: 4px; background: rgba(200,168,75,.15); border-radius: 2px; overflow: hidden; }
-  .tp-fill  { height: 100%; width: 40%; background: linear-gradient(90deg, var(--gold), var(--gold2)); border-radius: 2px; }
-  .tp-text  { font-size: .65rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  .tb-menu:active { background: rgba(200,168,75,.15); }
+  .tb-center { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .tb-title { font-size: .8rem; font-weight: 700; letter-spacing: .07em; color: var(--text); }
+  /* Adım noktaları — topbar'da ilerleyiş */
+  .tb-dots { display: flex; gap: 5px; }
+  .tb-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--gb); transition: all .25s; }
+  .tb-dot.done { background: rgba(62,207,128,.6); }
+  .tb-dot.on   { background: var(--gold); transform: scale(1.4); }
   .tb-lang {
-    background: transparent; border: 1px solid var(--gborder);
-    color: var(--muted); border-radius: 5px;
-    padding: 3px 7px; font-size: .65rem; font-weight: 700;
-    cursor: pointer;
-  }
-
-  /* ── SOL YAN PANEL (Feedback araçları) ── */
-  #left-tools {
-    position: fixed; left: 12px; top: 50%;
-    transform: translateY(-50%);
-    z-index: 30;
-    display: flex; flex-direction: column; gap: 8px;
-  }
-  .lt-btn {
-    width: 44px; height: 44px; border-radius: 50%;
-    border: 1px solid var(--gborder);
-    background: var(--glass); backdrop-filter: blur(14px);
+    width: 40px; height: 40px; border-radius: 10px;
+    border: 1px solid var(--gb); background: rgba(10,10,18,.7);
+    backdrop-filter: blur(12px);
+    color: var(--muted); font-size: .68rem; font-weight: 800;
+    cursor: pointer; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px; cursor: pointer;
-    transition: all .2s;
-    box-shadow: 0 2px 12px rgba(0,0,0,.4);
   }
-  .lt-btn.notif { border-color: var(--red); color: var(--red); }
-  .lt-btn.info  { border-color: var(--gborder); color: var(--gold); }
-  .lt-btn.ok    { border-color: var(--green); color: var(--green); }
-  .lt-btn:hover { transform: scale(1.1); }
-  /* Aktif feedback state */
-  .lt-btn.active-ok    { background: rgba(62,207,128,.18); }
-  .lt-btn.active-notif { background: rgba(224,80,80,.18); }
 
-  /* Tooltip */
-  .lt-btn::after {
-    content: attr(data-tip);
-    position: absolute; left: 54px;
-    background: var(--glass); backdrop-filter: blur(10px);
-    border: 1px solid var(--gborder); border-radius: 5px;
-    padding: 3px 8px; font-size: .65rem; white-space: nowrap;
-    color: var(--text); opacity: 0; pointer-events: none;
-    transition: opacity .15s;
+  /* ── FEEDBACK BANNER — sağ üst köşe ── */
+  #fb-badge {
+    position: fixed; top: calc(60px + var(--st)); right: 14px;
+    z-index: 38;
+    display: flex; align-items: center; gap: 7px;
+    padding: 8px 13px; border-radius: 20px;
+    background: rgba(10,10,18,.85); backdrop-filter: blur(14px);
+    border: 1px solid var(--gb);
+    font-size: .75rem; font-weight: 600; color: var(--muted);
+    transition: all .28s cubic-bezier(.32,.72,0,1);
+    cursor: pointer;
+    max-width: calc(100vw - 28px);
   }
-  .lt-btn:hover::after { opacity: 1; }
+  #fb-badge.ok  { border-color: var(--green); color: var(--green); background: rgba(62,207,128,.1); }
+  #fb-badge.err { border-color: var(--red);   color: var(--red);   background: rgba(224,80,80,.1); }
+  #fb-badge.info{ border-color: var(--blue);  color: var(--blue);  background: rgba(91,155,213,.1); }
+  .fb-icon { font-size: 1rem; flex-shrink: 0; }
+  .fb-text { line-height: 1.35; }
 
   /* ── BOTTOM SHEET ── */
   #sheet {
     position: fixed; bottom: 0; left: 0; right: 0;
     z-index: 35;
-    background: var(--glass); backdrop-filter: blur(20px);
-    border-top: 1px solid var(--gborder);
-    border-radius: 18px 18px 0 0;
-    padding-bottom: max(var(--safe-b), 12px);
-    transition: transform .32s cubic-bezier(.32,.72,0,1);
+    border-radius: 20px 20px 0 0;
+    background: var(--glass);
+    backdrop-filter: blur(24px);
+    border-top: 1px solid var(--gb);
+    transition: transform .35s cubic-bezier(.32,.72,0,1);
+    padding-bottom: max(var(--sb), 16px);
   }
+  #sheet.peek  { transform: translateY(calc(100% - 90px)); }
+  #sheet.open  { transform: translateY(0); }
 
   /* Handle */
-  .sheet-handle {
-    width: 40px; height: 4px; border-radius: 2px;
-    background: rgba(200,168,75,.3);
-    margin: 10px auto 0;
+  .sh-handle {
+    width: 44px; height: 5px; border-radius: 3px;
+    background: rgba(200,168,75,.28);
+    margin: 12px auto 0;
     cursor: pointer;
   }
 
-  /* Collapsed: sadece handle + ctrl + başlık satırı */
-  .sheet-peek {
+  /* Peek satırı — her zaman görünür */
+  .sh-peek {
     display: flex; align-items: center;
-    padding: 8px 14px 10px;
-    gap: 10px;
+    padding: 10px 16px 12px;
+    gap: 12px; cursor: pointer;
   }
-  .sp-nav {
-    width: 38px; height: 38px; border-radius: 50%;
-    border: 1px solid var(--gborder); background: transparent;
-    color: var(--gold); font-size: 22px; cursor: pointer;
+  .sh-nav {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 1.5px solid var(--gb); background: transparent;
+    color: var(--gold); font-size: 26px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; transition: background .15s;
+    flex-shrink: 0; transition: background .15s, transform .1s;
+    -webkit-tap-highlight-color: transparent;
   }
-  .sp-nav:hover { background: rgba(200,168,75,.12); }
-  .sp-nav:disabled { opacity: .25; pointer-events: none; }
-  .sp-info { flex: 1; min-width: 0; }
-  .sp-lesson { font-size: .72rem; color: var(--gold); font-weight: 700; letter-spacing: .05em; }
-  .sp-title  { font-size: .9rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sp-dots   { display: flex; gap: 5px; margin-top: 3px; }
-  .sp-dot    { width: 7px; height: 7px; border-radius: 50%; background: var(--gborder); }
-  .sp-dot.on { background: var(--gold); transform: scale(1.3); }
-  .sp-dot.done { background: rgba(62,207,128,.6); }
+  .sh-nav:active { background: rgba(200,168,75,.15); transform: scale(.92); }
+  .sh-nav:disabled { opacity: .25; pointer-events: none; }
+  .sh-meta { flex: 1; min-width: 0; }
+  .sh-chapter { font-size: .63rem; color: var(--gold); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 2px; }
+  .sh-title   { font-size: .95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sh-hint    { font-size: .68rem; color: var(--muted); margin-top: 2px; }
 
   /* Geniş içerik */
-  .sheet-body {
-    padding: 0 16px 8px;
-    max-height: 40vh; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 10px;
+  .sh-body {
+    padding: 0 18px 12px;
+    overflow-y: auto; max-height: 44vh;
+    display: flex; flex-direction: column; gap: 12px;
   }
-  .sheet-body::-webkit-scrollbar { width: 2px; }
-  .sheet-body::-webkit-scrollbar-thumb { background: var(--gborder); }
+  .sh-body::-webkit-scrollbar { width: 2px; }
+  .sh-body::-webkit-scrollbar-thumb { background: var(--gb); }
 
-  .lesson-text { font-size: .85rem; line-height: 1.75; color: rgba(232,228,222,.88); }
-  .lesson-text p { margin-bottom: .6rem; }
-  .lesson-text strong { color: var(--text); }
+  .lesson-text { font-size: .875rem; line-height: 1.8; color: rgba(232,228,222,.88); }
+  .lesson-text p { margin-bottom: .65rem; }
+  .lesson-text p:last-child { margin-bottom: 0; }
+  .lesson-text strong { color: var(--text); font-weight: 700; }
   .lesson-text em { color: var(--gold); font-style: italic; }
-
   .hbox {
-    background: rgba(200,168,75,.08); border-left: 2px solid var(--gold);
-    padding: .5rem .75rem; border-radius: 0 5px 5px 0;
-    font-size: .8rem; line-height: 1.6; color: rgba(232,228,222,.8);
+    background: rgba(200,168,75,.07); border-left: 2px solid var(--gold);
+    padding: .55rem .85rem; border-radius: 0 6px 6px 0;
+    font-size: .82rem; line-height: 1.65; color: rgba(232,228,222,.8);
   }
-
-  /* Feedback satırı */
-  #feedback {
-    display: flex; align-items: center; gap: 8px;
-    border-radius: 7px; padding: .5rem .8rem;
-    font-size: .78rem; font-weight: 600; line-height: 1.4;
-    border: 1px solid var(--gborder); background: rgba(200,168,75,.06); color: var(--muted);
-    transition: all .22s;
-  }
-  #feedback.ok    { background: rgba(62,207,128,.1);  border-color: var(--green); color: var(--green); }
-  #feedback.err   { background: rgba(224,80,80,.1);   border-color: var(--red);   color: var(--red); }
-  .fb-icon { font-size: 1rem; flex-shrink: 0; }
-
-  /* İleri butonu */
-  .sheet-cta {
-    display: flex; justify-content: flex-end; padding: 2px 0 4px;
+  .sh-cta {
+    display: flex; justify-content: stretch;
   }
   .cta-btn {
-    padding: .5rem 1.2rem; border-radius: 7px;
-    background: rgba(200,168,75,.18); border: 1px solid var(--gold);
-    color: var(--gold); font-size: .82rem; font-weight: 700;
-    cursor: pointer; transition: all .15s;
-    font-family: inherit;
+    flex: 1; padding: .75rem 1rem; border-radius: 10px;
+    background: rgba(200,168,75,.18); border: 1.5px solid var(--gold);
+    color: var(--gold); font-size: .88rem; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    transition: all .15s; letter-spacing: .03em;
   }
-  .cta-btn:hover { background: var(--gold); color: var(--dark); }
+  .cta-btn:active { background: var(--gold); color: var(--dark); transform: scale(.98); }
 
   /* ── SIDEBAR OVERLAY ── */
   #sidebar {
     position: fixed; inset: 0; z-index: 50;
-    display: flex; pointer-events: none; opacity: 0;
+    display: flex; opacity: 0; pointer-events: none;
     transition: opacity .25s;
   }
-  #sidebar.open { pointer-events: all; opacity: 1; }
-  .sb-scrim { flex: 1; background: rgba(0,0,0,.55); }
+  #sidebar.open { opacity: 1; pointer-events: all; }
   .sb-panel {
-    width: 82vw; max-width: 300px;
-    background: var(--glass); backdrop-filter: blur(20px);
-    border-right: 1px solid var(--gborder);
+    width: 82vw; max-width: 300px; height: 100%;
+    background: rgba(8,8,14,.97); backdrop-filter: blur(24px);
+    border-right: 1px solid var(--gb);
     display: flex; flex-direction: column;
-    transform: translateX(-100%); transition: transform .28s cubic-bezier(.32,.72,0,1);
+    transform: translateX(-100%);
+    transition: transform .3s cubic-bezier(.32,.72,0,1);
+    padding-top: var(--st);
   }
   #sidebar.open .sb-panel { transform: translateX(0); }
+  .sb-scrim { flex: 1; background: rgba(0,0,0,.5); }
   .sb-head {
-    padding: 14px 16px; border-bottom: 1px solid var(--gborder);
-    font-size: .68rem; font-weight: 800; letter-spacing: .14em;
-    text-transform: uppercase; color: var(--gold);
+    padding: 16px 18px; border-bottom: 1px solid var(--gb);
     display: flex; align-items: center; justify-content: space-between;
   }
-  .sb-close {
-    background: none; border: none; color: var(--muted);
-    font-size: 20px; cursor: pointer; line-height: 1;
+  .sb-head-title { font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+  .sb-close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; line-height: 1; padding: 4px; }
+
+  /* İlerleme özeti */
+  .sb-progress {
+    padding: 12px 18px; border-bottom: 1px solid var(--gb);
+    display: flex; align-items: center; gap: 10px;
   }
-  .sb-content { overflow-y: auto; flex: 1; }
-  .sb-chapter { border-bottom: 1px solid var(--gborder); }
-  .sb-ch-title {
-    padding: 10px 16px; font-size: .74rem; font-weight: 700;
-    display: flex; align-items: center; gap: 8px; cursor: pointer;
-    background: rgba(200,168,75,.04);
+  .sbp-bar { flex: 1; height: 4px; background: rgba(200,168,75,.12); border-radius: 2px; overflow: hidden; }
+  .sbp-fill { height: 100%; width: 40%; background: linear-gradient(90deg, var(--gold), var(--gold2)); border-radius: 2px; }
+  .sbp-text { font-size: .68rem; color: var(--muted); font-weight: 700; white-space: nowrap; }
+
+  .sb-scroll { overflow-y: auto; flex: 1; }
+  .sb-chapter { border-bottom: 1px solid rgba(200,168,75,.1); }
+  .sb-ch-hd {
+    padding: 12px 18px; display: flex; align-items: center; gap: 10px;
+    cursor: pointer; background: rgba(200,168,75,.03);
   }
   .sb-ch-num {
-    width: 20px; height: 20px; border-radius: 50%;
+    width: 22px; height: 22px; border-radius: 50%;
     background: var(--gold); color: var(--dark);
-    font-size: .6rem; font-weight: 800;
+    font-size: .62rem; font-weight: 800;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-  .sb-lessons { padding: 4px 0 8px; }
+  .sb-ch-name { font-size: .76rem; font-weight: 700; flex: 1; }
+  .sb-ch-arr  { font-size: .6rem; color: var(--muted); transition: transform .2s; }
+  .sb-ch-hd.open .sb-ch-arr { transform: rotate(90deg); }
+  .sb-lessons { }
   .sb-lesson {
-    padding: 8px 16px 8px 44px; font-size: .74rem;
-    color: var(--muted); cursor: pointer; transition: background .12s;
+    padding: 9px 18px 9px 50px; font-size: .75rem;
+    color: var(--muted); cursor: pointer;
     border-left: 2px solid transparent;
-    display: flex; align-items: center; gap: 6px;
+    display: flex; align-items: center; gap: 7px;
+    transition: background .12s;
   }
-  .sb-lesson.active {
-    background: rgba(200,168,75,.1); color: var(--text);
-    font-weight: 600; border-left-color: var(--gold);
-  }
-  .sb-lesson.done { color: rgba(62,207,128,.7); }
+  .sb-lesson:active { background: rgba(200,168,75,.08); }
+  .sb-lesson.active { color: var(--text); font-weight: 600; border-left-color: var(--gold); background: rgba(200,168,75,.08); }
+  .sb-lesson.done   { color: rgba(62,207,128,.7); }
 
-  /* ── DEMO TOGGLE ── */
-  .demo-bar {
-    position: fixed; top: 56px; left: 50%; transform: translateX(-50%);
-    z-index: 45; display: flex; gap: 6px;
-    background: var(--glass); backdrop-filter: blur(12px);
-    border: 1px solid var(--gborder); border-radius: 20px;
-    padding: 5px 10px;
+  /* ── DURUM SEÇICI (test için, köşede küçük) ── */
+  #demo {
+    position: fixed; bottom: 100px; right: 14px;
+    z-index: 36;
+    display: flex; flex-direction: column; gap: 6px;
+    align-items: flex-end;
   }
-  .demo-btn {
-    padding: 4px 12px; border-radius: 15px;
-    border: none; background: transparent;
-    color: var(--muted); font-size: .65rem; font-weight: 700;
-    cursor: pointer; transition: all .15s; font-family: inherit;
+  .dm-btn {
+    padding: 5px 10px; border-radius: 14px;
+    border: 1px solid var(--gb);
+    background: rgba(10,10,18,.8); backdrop-filter: blur(10px);
+    color: var(--muted); font-size: .6rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; transition: all .15s;
   }
-  .demo-btn.on { background: rgba(200,168,75,.18); color: var(--gold); }
-
-  /* Anotasyon (tasarım notları) */
-  .anno {
-    position: fixed; z-index: 5;
-    font-size: .58rem; color: rgba(200,168,75,.55);
-    letter-spacing: .06em; pointer-events: none; font-style: italic;
-  }
+  .dm-btn.on { background: rgba(200,168,75,.15); border-color: var(--gold); color: var(--gold); }
 </style>
 </head>
 <body>
 
-<!-- Simüle tahta arka planı -->
-<div id="board-bg">
-  <div class="board-sim" id="board">
-    <!-- Taşlar JS ile ekleniyor -->
+<!-- Tahta -->
+<div id="board-wrap">
+  <div class="goban">
+    <div class="goban-wood"></div>
+    <canvas id="bc"></canvas>
   </div>
 </div>
 
-<!-- TOPBAR -->
+<!-- Topbar -->
 <div id="topbar">
-  <button class="tb-menu" onclick="toggleSidebar()">☰</button>
-  <span class="tb-title">Go Öğren 3D</span>
-  <div class="tb-progress">
-    <div class="tp-track"><div class="tp-fill"></div></div>
-    <span class="tp-text">6 / 15</span>
+  <button class="tb-menu" onclick="openSidebar()">☰</button>
+  <div class="tb-center">
+    <div class="tb-title">Go Öğren 3D</div>
+    <div class="tb-dots" id="tb-dots"></div>
   </div>
   <button class="tb-lang">TR</button>
 </div>
 
-<!-- Demo durum seçici -->
-<div class="demo-bar">
-  <button class="demo-btn on" onclick="setDemo('default')">Varsayılan</button>
-  <button class="demo-btn" onclick="setDemo('ok')">Doğru</button>
-  <button class="demo-btn" onclick="setDemo('err')">Yanlış</button>
-  <button class="demo-btn" onclick="setDemo('info')">Bilgi</button>
+<!-- Feedback badge — sağ üst -->
+<div id="fb-badge" class="info" onclick="toggleSheet()">
+  <span class="fb-icon" id="fb-icon">ℹ</span>
+  <span class="fb-text" id="fb-text">Beyaz grubun son özgür noktasına oyna.</span>
 </div>
 
-<!-- SOL ARAÇLAR: Notification / Info / OK -->
-<div id="left-tools">
-  <button class="lt-btn notif" id="lt-notif" data-tip="Uyarı"     onclick="triggerFb('err')">⚠</button>
-  <button class="lt-btn info"  id="lt-info"  data-tip="Bilgi"      onclick="triggerFb('info')">ℹ</button>
-  <button class="lt-btn ok"    id="lt-ok"    data-tip="Tamamlandı" onclick="triggerFb('ok')">✓</button>
-</div>
+<!-- Bottom sheet -->
+<div id="sheet" class="peek">
+  <div class="sh-handle" onclick="toggleSheet()"></div>
 
-<!-- BOTTOM SHEET -->
-<div id="sheet">
-  <div class="sheet-handle" onclick="toggleSheet()"></div>
-
-  <!-- Collapsed peek satırı — her zaman görünür -->
-  <div class="sheet-peek">
-    <button class="sp-nav" onclick="prevStep()">‹</button>
-    <div class="sp-info">
-      <div class="sp-lesson">B1 · L3 — Taş Alma</div>
-      <div class="sp-title" id="sp-title">Adım 2: Grubu yakala</div>
-      <div class="sp-dots">
-        <div class="sp-dot done"></div>
-        <div class="sp-dot on"></div>
-        <div class="sp-dot"></div>
-        <div class="sp-dot"></div>
-      </div>
+  <div class="sh-peek">
+    <button class="sh-nav" onclick="nav(-1)">‹</button>
+    <div class="sh-meta">
+      <div class="sh-chapter">B1 · L3 — Taş Alma</div>
+      <div class="sh-title" id="sh-title">Adım 2: Grubu yakala</div>
+      <div class="sh-hint" id="sh-hint">Dokunarak oyna</div>
     </div>
-    <button class="sp-nav" onclick="nextStep()">›</button>
+    <button class="sh-nav" onclick="nav(1)">›</button>
   </div>
 
-  <!-- Genişletilmiş içerik -->
-  <div class="sheet-body" id="sheet-body">
+  <div class="sh-body" id="sh-body">
     <div class="lesson-text">
       <p>Siyah taşlar <strong>nefes noktası kalmamış</strong> beyaz grubunu yakalayabilir.</p>
       <p>Tahtadaki beyaz grubunun son nefes noktasını bulup <em>oraya oyna</em>.</p>
     </div>
     <div class="hbox">Bir grubu yakalamak için tüm nefes noktalarını kapatman gerekir.</div>
-
-    <div id="feedback">
-      <span class="fb-icon">💡</span>
-      <span id="fb-text">Beyaz grubun son özgür noktasına oyna.</span>
-    </div>
-
-    <div class="sheet-cta">
-      <button class="cta-btn" id="cta" onclick="nextStep()">İleri →</button>
+    <div class="sh-cta">
+      <button class="cta-btn" onclick="nav(1)">Sonraki Adım →</button>
     </div>
   </div>
 </div>
 
-<!-- SIDEBAR OVERLAY -->
-<div id="sidebar" onclick="handleSidebarClick(event)">
+<!-- Sidebar -->
+<div id="sidebar">
   <div class="sb-panel">
     <div class="sb-head">
-      Müfredat
-      <button class="sb-close" onclick="toggleSidebar()">✕</button>
+      <span class="sb-head-title">Müfredat</span>
+      <button class="sb-close" onclick="closeSidebar()">✕</button>
     </div>
-    <div class="sb-content">
+    <div class="sb-progress">
+      <div class="sbp-bar"><div class="sbp-fill"></div></div>
+      <span class="sbp-text">6 / 15 ders</span>
+    </div>
+    <div class="sb-scroll">
       <div class="sb-chapter">
-        <div class="sb-ch-title">
+        <div class="sb-ch-hd open" onclick="this.classList.toggle('open')">
           <div class="sb-ch-num">1</div>
-          B1 — Temel Kurallar
+          <span class="sb-ch-name">Temel Kurallar</span>
+          <span class="sb-ch-arr">▶</span>
         </div>
         <div class="sb-lessons">
           <div class="sb-lesson done">✓ l1 Tahta ve Taşlar</div>
@@ -380,9 +374,10 @@
         </div>
       </div>
       <div class="sb-chapter">
-        <div class="sb-ch-title">
+        <div class="sb-ch-hd" onclick="this.classList.toggle('open')">
           <div class="sb-ch-num">2</div>
-          B2 — Temel Teknikler
+          <span class="sb-ch-name">Temel Teknikler</span>
+          <span class="sb-ch-arr">▶</span>
         </div>
         <div class="sb-lessons">
           <div class="sb-lesson">l7 Canlı Gruplar</div>
@@ -394,9 +389,10 @@
         </div>
       </div>
       <div class="sb-chapter">
-        <div class="sb-ch-title">
+        <div class="sb-ch-hd" onclick="this.classList.toggle('open')">
           <div class="sb-ch-num">3</div>
-          B3 — Strateji
+          <span class="sb-ch-name">Strateji</span>
+          <span class="sb-ch-arr">▶</span>
         </div>
         <div class="sb-lessons">
           <div class="sb-lesson">l13 Açılış / Fuseki</div>
@@ -406,75 +402,117 @@
       </div>
     </div>
   </div>
-  <div class="sb-scrim"></div>
+  <div class="sb-scrim" onclick="closeSidebar()"></div>
+</div>
+
+<!-- Test butonları -->
+<div id="demo">
+  <button class="dm-btn" onclick="setFb('info','ℹ','Beyaz grubun son özgür noktasına oyna.', this)">💡 Bilgi</button>
+  <button class="dm-btn" onclick="setFb('ok','✓','Harika! Grubu başarıyla yakaladın.', this)">✓ Doğru</button>
+  <button class="dm-btn" onclick="setFb('err','✗','Bu noktada nefes noktası yok. Tekrar dene.', this)">✗ Yanlış</button>
 </div>
 
 <script>
-  /* ── Tahta simülasyonu ── */
-  const board = document.getElementById('board');
-  const S = 9;
-  const stones = [
-    {c:'b',r:3,col:3},{c:'b',r:3,col:4},{c:'b',r:4,col:2},
-    {c:'b',r:5,col:3},{c:'b',r:4,col:4},
-    {c:'w',r:3,col:5},{c:'w',r:4,col:3},{c:'w',r:4,col:5},{c:'w',r:5,col:4},
-  ];
-  stones.forEach(s => {
-    const el = document.createElement('div');
-    el.className = 'stone ' + s.c;
-    const pct = 100 / (S - 1);
-    el.style.cssText = `width:9%;height:9%;left:${s.col*pct}%;top:${s.r*pct}%`;
-    board.appendChild(el);
-  });
+/* ── Goban canvas ── */
+(function(){
+  const wrap = document.querySelector('.goban');
+  const canvas = document.getElementById('bc');
+  const N = 9;
+  function draw() {
+    const size = wrap.offsetWidth;
+    canvas.width = size; canvas.height = size;
+    canvas.style.position = 'absolute';
+    canvas.style.inset = '0';
+    const ctx = canvas.getContext('2d');
+    const pad = size * 0.09;
+    const cell = (size - pad*2) / (N-1);
 
-  /* ── Sheet toggle ── */
-  let sheetOpen = false;
-  function toggleSheet() {
-    sheetOpen = !sheetOpen;
-    document.getElementById('sheet-body').style.display = sheetOpen ? 'flex' : 'none';
-  }
-  // Varsayılan: kapalı
-  document.getElementById('sheet-body').style.display = 'none';
-  // Handle veya peek'e dokununca aç
-  document.querySelector('.sheet-peek').addEventListener('click', function(e){
-    if (!e.target.classList.contains('sp-nav')) toggleSheet();
-  });
+    // Izgara
+    ctx.strokeStyle = 'rgba(120,80,20,.6)';
+    ctx.lineWidth = .8;
+    for(let i=0;i<N;i++){
+      const x = pad + i*cell, y = pad + i*cell;
+      ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, size-pad); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(size-pad, y); ctx.stroke();
+    }
 
-  /* ── Sidebar ── */
-  function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('open');
-  }
-  function handleSidebarClick(e) {
-    if (e.target.classList.contains('sb-scrim')) toggleSidebar();
-  }
+    // Yıldız noktaları
+    ctx.fillStyle = 'rgba(120,80,20,.7)';
+    [[2,2],[6,2],[4,4],[2,6],[6,6]].forEach(([c,r])=>{
+      ctx.beginPath();
+      ctx.arc(pad+c*cell, pad+r*cell, 3, 0, Math.PI*2);
+      ctx.fill();
+    });
 
-  /* ── Feedback durumları ── */
-  const fbStates = {
-    default: { cls:'',      icon:'💡', text:'Beyaz grubun son özgür noktasına oyna.' },
-    ok:      { cls:'ok',    icon:'✓',  text:'Harika! Grubu başarıyla yakaladın.' },
-    err:     { cls:'err',   icon:'✗',  text:'Bu noktada nefes noktası yok. Tekrar dene.' },
-    info:    { cls:'',      icon:'ℹ',  text:'İpucu: Grubun etrafındaki boş noktaları say.' },
-  };
-  function setDemo(state) {
-    document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('on'));
-    event.target.classList.add('on');
-    applyFb(state);
-    if (!sheetOpen) toggleSheet();
-  }
-  function triggerFb(state) { applyFb(state); if (!sheetOpen) toggleSheet(); }
-  function applyFb(state) {
-    const fb = document.getElementById('feedback');
-    const s = fbStates[state] || fbStates.default;
-    fb.className = s.cls ? `${s.cls}` : '';
-    fb.querySelector('.fb-icon').textContent = s.icon;
-    document.getElementById('fb-text').textContent = s.text;
-    // Sol araçlar highlight
-    document.querySelectorAll('.lt-btn').forEach(b => b.classList.remove('active-ok','active-notif'));
-    if (state === 'ok')  document.getElementById('lt-ok').classList.add('active-ok');
-    if (state === 'err') document.getElementById('lt-notif').classList.add('active-notif');
-  }
+    // Taşlar
+    const stones = [
+      {c:'b',col:2,row:3},{c:'b',col:3,row:2},{c:'b',col:4,row:3},{c:'b',col:3,row:4},
+      {c:'w',col:3,row:3},
+      {c:'b',col:5,row:5},{c:'b',col:6,row:4},{c:'b',col:6,row:6},{c:'b',col:7,row:5},
+      {c:'w',col:6,row:5},
+    ];
+    stones.forEach(s=>{
+      const x = pad + s.col*cell, y = pad + s.row*cell;
+      const r = cell * 0.44;
+      const g = ctx.createRadialGradient(x-r*.3, y-r*.3, r*.05, x, y, r);
+      if(s.c==='b'){
+        g.addColorStop(0,'#666'); g.addColorStop(.6,'#111'); g.addColorStop(1,'#000');
+      } else {
+        g.addColorStop(0,'#fff'); g.addColorStop(.6,'#e8e8e8'); g.addColorStop(1,'#bbb');
+      }
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+      ctx.fillStyle = g; ctx.fill();
+      ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 2;
+      ctx.fill(); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    });
 
-  function prevStep() { alert('← Önceki adım'); }
-  function nextStep() { alert('Sonraki adım →'); }
+    // Ghost taş — hedef nokta
+    const gx = pad + 5*cell, gy = pad + 3*cell;
+    const gr = cell * 0.44;
+    ctx.beginPath(); ctx.arc(gx, gy, gr, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(200,168,75,.2)';
+    ctx.strokeStyle = 'rgba(200,168,75,.7)';
+    ctx.lineWidth = 1.5; ctx.fill(); ctx.stroke();
+  }
+  draw();
+  window.addEventListener('resize', draw);
+})();
+
+/* ── Adım noktaları ── */
+const steps = 4, cur = 1;
+const dotsEl = document.getElementById('tb-dots');
+for(let i=0;i<steps;i++){
+  const d = document.createElement('div');
+  d.className = 'tb-dot' + (i<cur?' done':i===cur?' on':'');
+  dotsEl.appendChild(d);
+}
+
+/* ── Sheet toggle ── */
+let sheetOpen = false;
+function toggleSheet(){
+  sheetOpen = !sheetOpen;
+  document.getElementById('sheet').className = 'sheet ' + (sheetOpen ? 'open' : 'peek');
+  document.getElementById('sh-body').style.display = sheetOpen ? 'flex' : 'none';
+}
+document.getElementById('sh-body').style.display = 'none';
+document.querySelector('.sh-peek').addEventListener('click', function(e){
+  if(!e.target.classList.contains('sh-nav')) toggleSheet();
+});
+
+/* ── Sidebar ── */
+function openSidebar()  { document.getElementById('sidebar').classList.add('open'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); }
+
+/* ── Feedback ── */
+function setFb(type, icon, text, btn){
+  document.getElementById('fb-badge').className = type;
+  document.getElementById('fb-icon').textContent = icon;
+  document.getElementById('fb-text').textContent = text;
+  document.querySelectorAll('.dm-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function nav(d){ alert(d > 0 ? 'Sonraki adım →' : '← Önceki adım'); }
 </script>
 </body>
 </html>
