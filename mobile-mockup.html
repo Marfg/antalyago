@@ -208,7 +208,7 @@
     <div class="tb-title" id="tb-title">Go Öğren</div>
     <div class="tb-dots" id="tb-dots"></div>
   </div>
-  <button class="tb-btn" id="btn-home" onclick="openSidebar()" title="Müfredatı aç">⊞</button>
+  <button class="tb-btn" onclick="toggleSheet()" title="Ders metni">≡</button>
 </div>
 
 <div id="fb-badge" class="info">
@@ -657,10 +657,6 @@ function loadLesson(lesson){
   loadStep(0);
   closeSidebar();
   updateSidebar();
-  // Sheet'i aç — kullanıcı ders metnini hemen görsün
-  sheetOpen=true;
-  document.getElementById('sheet').className='open';
-  document.getElementById('sh-body').style.display='flex';
 }
 
 function loadStep(idx){
