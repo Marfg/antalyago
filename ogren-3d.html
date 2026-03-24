@@ -1847,6 +1847,7 @@ const ALL_LESSONS   = CURRICULUM.flatMap(c=>c.lessons);
 const TOTAL_LESSONS = ALL_LESSONS.length;
 let doneLessons = new Set(JSON.parse(localStorage.getItem('go_done_3d')||'[]'));
 let CUR_LESSON = null, CUR_STEP = 0, stepDone = false, CUR_STEP_DATA = null;
+let moveGen = 0; // her loadStep'te artar; playMoves eski callback'leri iptal eder
 let koPoint = null;
 let nextMoveHint = null;
 
@@ -1903,15 +1904,17 @@ function loadStep(idx) {
     document.getElementById('rotate-toggle').style.display='block';
   }
 
-  if(step.moves?.length) playMoves(step.moves, step);
+  moveGen++; // önceki playMoves zincirini geçersiz kıl
+  if(step.moves?.length) playMoves(step.moves, step, moveGen);
 
   updateNextBtn(step);
 }
 
-function playMoves(moves, step) {
+function playMoves(moves, step, gen) {
   const defaultSp = step?.moveSpeed || 1;
   let i = 0;
   function next() {
+    if(gen !== moveGen) return; // adım değişti, bu zinciri durdur
     if(i >= moves.length) {
       if(step?.koPoint) koPoint = step.koPoint;
       nextMoveHint = null;
@@ -1923,6 +1926,7 @@ function playMoves(moves, step) {
     game.seed(mv.x, mv.y, mv.color);
     if(i < moves.length) nextMoveHint = {x: moves[i].x, y: moves[i].y};
     setTimeout(() => {
+      if(gen !== moveGen) return; // adım değişti, bu zinciri durdur
       if(mv.capture) mv.capture.forEach(c => game.removeStone(c.x, c.y));
       if('indicatorAfter' in mv) koPoint = mv.indicatorAfter;
       setTimeout(next, 2400 * sp);
@@ -1951,10 +1955,11 @@ function onClick3D(gx,gz) {
       setTimeout(()=>{ step.capture.forEach(c=>game.removeStone(c.x,c.y)); },380);
     }
     if(step.movesAfterAnswer) {
-      setTimeout(()=>playMoves(step.movesAfterAnswer, step), 500);
+      const g = moveGen;
+      setTimeout(()=>playMoves(step.movesAfterAnswer, step, g), 500);
     } else if(step.movesAfterAnswerMap) {
       const movesAfter = step.movesAfterAnswerMap[`${gx},${gz}`];
-      if(movesAfter) setTimeout(()=>playMoves(movesAfter, step), 500);
+      if(movesAfter) { const g = moveGen; setTimeout(()=>playMoves(movesAfter, step, g), 500); }
     }
     updateNextBtn(step);
   } else {
