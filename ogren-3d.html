@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Go Öğren 3D – Antalya GO</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&family=Noto+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -17,6 +17,10 @@
       --muted:  rgba(232,228,222,.45);
       --green:  #3ecf80;
       --red:    #e05050;
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
+      --sar: env(safe-area-inset-right, 0px);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -27,12 +31,16 @@
 
     /* ── TOPBAR ── */
     #topbar {
-      position: fixed; top: 0; left: 0; right: 0; height: 46px; z-index: 30;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 30;
+      height: calc(46px + var(--sat));
       background: var(--glass); backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--gborder);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem; gap: 1rem;
+      display: flex; align-items: flex-end; justify-content: space-between;
+      padding: 0 max(1rem, var(--sal)) 0 max(1rem, var(--sar)); gap: 1rem;
+      padding-top: var(--sat);
     }
+    /* Topbar içerik satırı: safe area altında hizalanır */
+    #topbar > * { margin-bottom: 0; padding-bottom: 6px; }
     .tb-left { display: flex; align-items: center; gap: .7rem; }
     .back-btn {
       color: var(--gold); font-size: 11px; letter-spacing: .07em;
@@ -292,6 +300,13 @@
     .bp-desc { font-size: .74rem; color: var(--muted); line-height: 1.6; padding: .3rem .5rem;
       background: rgba(200,168,75,.05); border-radius: 4px; border-left: 2px solid var(--gborder); }
 
+    /* Topbar adım noktaları — sadece mobilde görünür */
+    #tb-dots {
+      display: none; gap: 5px; align-items: center;
+      position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+    }
+    #tb-dots .sdot { width: 6px; height: 6px; }
+
     /* Hamburger butonu — sadece mobilde görünür */
     .mob-menu-btn {
       display: none; background: none; border: 1px solid var(--gborder);
@@ -314,16 +329,21 @@
 
     @media (max-width: 640px) {
       /* Topbar */
+      #topbar { position: relative; }
       .mob-menu-btn { display: flex; align-items: center; }
       .prog-wrap { display: none; }
+      .lang-switcher { display: none; }
       .page-title { font-size: .85rem; }
+      #tb-dots { display: flex; }
 
       /* Sidebar overlay */
       #sidebar {
         display: block;
+        top: 0;
         width: 82vw; max-width: 300px;
         transform: translateX(-100%);
         z-index: 21;
+        padding-top: var(--sat);
       }
       #sidebar.mob-open { transform: translateX(0); }
 
@@ -341,28 +361,27 @@
         overflow: hidden;
         border-left: none;
         border-top: 1px solid rgba(200,168,75,.18);
-        padding: .5rem 1rem .5rem;
+        padding: .5rem max(1rem, var(--sar)) max(0.5rem, var(--sab)) max(1rem, var(--sal));
         gap: .4rem;
-        background: rgba(8,8,14,.48);
-        transition: max-height .3s ease;
+        background: rgba(8,8,14,.92);
+        backdrop-filter: blur(16px);
+        transition: max-height .32s cubic-bezier(.32,.72,0,1);
       }
       /* Açık durum */
       #lesson-panel.expanded {
-        max-height: 46vh;
+        max-height: calc(52vh + var(--sab));
         overflow-y: auto;
       }
 
       /* Bölüm etiketi gizle */
       .ch-tag { display: none; }
 
-      /* Nav bar tamamen gizle */
+      /* Nav bar ve rotate toggle gizle */
       #nav-bar { display: none; }
+      #rotate-toggle { display: none; }
 
       /* Canvas nav pill: mobilde gizle (ctrl-zone devraldı) */
       #canvas-nav { display: none; }
-
-      /* Rotate toggle */
-      #rotate-toggle { bottom: auto; top: 56px; left: 10px; }
 
       /* Adım noktaları */
       .sdot { width: 11px; height: 11px; }
@@ -405,6 +424,7 @@
     <a class="back-btn" href="index.html">← Ana</a>
     <span class="page-title">Go Öğren 3D</span>
   </div>
+  <div id="tb-dots"></div>
   <div class="prog-wrap">
     <span class="prog-text" id="prog-text">0 / 0</span>
     <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
@@ -484,7 +504,10 @@ let W, H, projCY = 0;
 function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; updateProjCenter(); }
 resize(); window.addEventListener('resize', resize);
 
-let camYaw = 0.50, camPitch = 0.88, camDist = 500;
+/* Mobil algılama — 640px veya dokunmatik ekran */
+const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
+
+let camYaw = 0.50, camPitch = isMobile ? 1.45 : 0.88, camDist = 500;
 let camTarget = null, camStart = null, camLerpT = 1;
 const CAM_DUR = 0.65;
 
@@ -497,8 +520,9 @@ function togglePanel() {
 
 function updateProjCenter() {
   if(innerWidth <= 640) {
-    const panelH = panelExpanded ? innerHeight * 0.46 : 68;
-    projCY = 46 + (innerHeight - 46 - panelH) / 2;
+    const topbarH = document.getElementById('topbar').getBoundingClientRect().height || 46;
+    const panelH = panelExpanded ? innerHeight * 0.52 : 68;
+    projCY = topbarH + (innerHeight - topbarH - panelH) / 2;
   } else {
     projCY = H / 2;
   }
@@ -1092,7 +1116,8 @@ function screenToGrid(mx,my) {
     const d=Math.hypot(mx-p.sx,my-p.sy);
     if(d<bestD){bestD=d;best={gx,gz};bestSc=p.scale;}
   }
-  return bestD<CELL*.55*bestSc?best:null;
+  const hitMult = isMobile ? 0.72 : 0.55;
+  return bestD < CELL * hitMult * bestSc ? best : null;
 }
 
 /* Camera animation trigger */
@@ -1195,7 +1220,7 @@ canvas.addEventListener('touchmove',e=>{
     const dx=t.clientX-lastM.x, dy=t.clientY-lastM.y;
     if(Math.hypot(t.clientX-dragFrom.x,t.clientY-dragFrom.y)>6){
       isDrag=true;
-      if(!CUR_STEP_DATA||CUR_STEP_DATA.auto||rotateMode){
+      if(!isMobile && (!CUR_STEP_DATA||CUR_STEP_DATA.auto||rotateMode)){
         camYaw+=dx*.007; camPitch+=dy*.007;
         camPitch=Math.max(.08,Math.min(1.48,camPitch));
       }
@@ -1890,7 +1915,12 @@ function loadStep(idx) {
   (step.board||[]).forEach(s=>game.seed(s.x,s.y,s.color));
 
   /* Camera */
-  if(step.camera) animateCamera(step.camera);
+  if(step.camera) {
+    const cam = isMobile
+      ? {yaw:0.50, pitch:1.45, dist: step.camera.dist}
+      : step.camera;
+    animateCamera(cam);
+  }
 
   /* Feedback */
   setFb(stepT(CUR_LESSON.id,idx,'fb')||step.fb?.t||t('defaultFb'), step.fb?.c||'info');
@@ -1901,7 +1931,7 @@ function loadStep(idx) {
     document.getElementById('rotate-toggle').style.display='none';
   } else {
     ghostActive=true;
-    document.getElementById('rotate-toggle').style.display='block';
+    document.getElementById('rotate-toggle').style.display = isMobile ? 'none' : 'block';
   }
 
   moveGen++; // önceki playMoves zincirini geçersiz kıl
@@ -2051,13 +2081,16 @@ function setFb(text,type) {
   icon.textContent=type==='correct'?'✓':type==='wrong'?'✗':'💡';
 }
 function renderDots() {
-  const el=document.getElementById('step-dots'); el.innerHTML='';
-  if(!CUR_LESSON) return;
-  CUR_LESSON.steps.forEach((_,i)=>{
-    const d=document.createElement('div');
-    d.className='sdot'+(i===CUR_STEP?' active':i<CUR_STEP?' done':'');
-    d.onclick=()=>{ if(i<CUR_STEP) loadStep(i); };
-    el.appendChild(d);
+  [document.getElementById('step-dots'), document.getElementById('tb-dots')].forEach(el=>{
+    if(!el) return;
+    el.innerHTML='';
+    if(!CUR_LESSON) return;
+    CUR_LESSON.steps.forEach((_,i)=>{
+      const d=document.createElement('div');
+      d.className='sdot'+(i===CUR_STEP?' active':i<CUR_STEP?' done':'');
+      d.onclick=()=>{ if(i<CUR_STEP) loadStep(i); };
+      el.appendChild(d);
+    });
   });
 }
 function flashFeedback(type) {
