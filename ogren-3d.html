@@ -1029,7 +1029,211 @@ function drawParticles(ps) {
 
 let ghostGrid=null, ghostActive=false;
 
+/* ══════════════════════════════════════════════════════
+   2D RENDERER — mobil (≤640px)
+══════════════════════════════════════════════════════ */
+const STARS2D={
+  9:[[2,2],[6,2],[4,4],[2,6],[6,6]],
+  13:[[3,3],[9,3],[6,6],[3,9],[9,9]],
+  19:[[3,3],[9,3],[15,3],[3,9],[9,9],[15,9],[3,15],[9,15],[15,15]],
+};
+
+function calcB2(){
+  const topH=document.getElementById('topbar')?.getBoundingClientRect().height||46;
+  const sheetH=panelExpanded?H*.52:68;
+  const avW=W, avH=H-topH-sheetH;
+  const s=Math.min(avW,avH)*.88;
+  const pad=s*(SIZE<=9?.08:SIZE<=13?.07:.055);
+  const cell=(s-2*pad)/(SIZE-1);
+  const cx=W/2, cy=topH+avH/2;
+  const ox=cx-s/2, oy=cy-s/2;
+  const r=cell*.46;
+  return {ox,oy,sz:s,pad,cell,r};
+}
+function gx2(col,b){return b.ox+b.pad+col*b.cell;}
+function gy2(row,b){return b.oy+b.pad+row*b.cell;}
+
+function drawBoard2D(b){
+  const {ox,oy,sz}=b;
+  const bg=ctx.createRadialGradient(ox+sz*.45,oy+sz*.42,0,ox+sz*.5,oy+sz*.5,sz*.72);
+  bg.addColorStop(0,'#3a2810'); bg.addColorStop(1,'#1a0e04');
+  ctx.fillStyle=bg; ctx.fillRect(ox,oy,sz,sz);
+  ctx.strokeStyle='rgba(110,70,15,.6)';
+  ctx.lineWidth=Math.max(.6,sz/500);
+  for(let i=0;i<SIZE;i++){
+    ctx.beginPath(); ctx.moveTo(gx2(i,b),gy2(0,b)); ctx.lineTo(gx2(i,b),gy2(SIZE-1,b)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(gx2(0,b),gy2(i,b)); ctx.lineTo(gx2(SIZE-1,b),gy2(i,b)); ctx.stroke();
+  }
+  ctx.fillStyle='rgba(100,60,10,.75)';
+  (STARS2D[SIZE]||[]).forEach(([ci,ri])=>{
+    ctx.beginPath();
+    ctx.arc(gx2(ci,b),gy2(ri,b),Math.max(2,sz/(SIZE<=9?140:SIZE<=13?160:190)),0,Math.PI*2);
+    ctx.fill();
+  });
+}
+
+function drawStone2D(col,row,color,alpha,b){
+  const x=gx2(col,b),y=gy2(row,b),r=b.r;
+  ctx.globalAlpha=alpha;
+  const g=ctx.createRadialGradient(x-r*.3,y-r*.32,r*.04,x,y,r);
+  if(color==='B'||color==='black'){
+    g.addColorStop(0,'#888');g.addColorStop(.45,'#1a1a1a');g.addColorStop(1,'#000');
+  } else {
+    g.addColorStop(0,'#fff');g.addColorStop(.5,'#eee');g.addColorStop(1,'#bbb');
+  }
+  ctx.shadowColor='rgba(0,0,0,.55)'; ctx.shadowBlur=4; ctx.shadowOffsetY=2;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=g; ctx.fill();
+  ctx.shadowBlur=0; ctx.shadowOffsetY=0; ctx.globalAlpha=1;
+}
+
+function drawHighlights2D(step,b){
+  if(!step||step.auto) return;
+  const ans=step.answers==='any'?[]:
+    step.answer?[step.answer]:
+    Array.isArray(step.answers)?step.answers:[];
+  if(!ans.length) return;
+  const pulse=.55+.45*Math.sin(hlTime*4);
+  ans.forEach(({x,y})=>{
+    ctx.beginPath(); ctx.arc(gx2(x,b),gy2(y,b),b.r*1.45,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(62,207,128,${.70*pulse})`; ctx.lineWidth=2; ctx.stroke();
+  });
+}
+
+function drawLiberties2D(step,b){
+  if(!step||!step.showLiberties) return;
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  const occ=new Set(game.stones.map(s=>`${s.gx},${s.gz}`));
+  game.stones.forEach(s=>{
+    dirs.forEach(([dx,dy])=>{
+      const nx=s.gx+dx,ny=s.gz+dy;
+      if(nx>=0&&nx<SIZE&&ny>=0&&ny<SIZE&&!occ.has(`${nx},${ny}`)){
+        ctx.beginPath(); ctx.arc(gx2(nx,b),gy2(ny,b),b.r*.28,0,Math.PI*2);
+        ctx.fillStyle='rgba(91,155,213,.72)'; ctx.fill();
+      }
+    });
+  });
+}
+
+function drawTerritory2D(pts,side,b){
+  if(!pts||!pts.length) return;
+  pts.forEach(({x,y})=>{
+    const px=gx2(x,b),py=gy2(y,b),r=b.r*.28;
+    if(side==='black'){
+      ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(px-r,py-r,r*2,r*2);
+    } else {
+      ctx.strokeStyle='rgba(240,240,240,.6)'; ctx.lineWidth=1.5;
+      ctx.strokeRect(px-r,py-r,r*2,r*2);
+    }
+  });
+}
+
+function drawKo2D(pt,b){
+  if(!pt) return;
+  const px=gx2(pt.x,b),py=gy2(pt.y,b),r=b.r*.44;
+  ctx.strokeStyle='rgba(220,60,60,.8)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.stroke();
+}
+
+function drawForbidden2D(pts,b){
+  if(!pts||!pts.length) return;
+  pts.forEach(({x,y})=>{
+    const px=gx2(x,b),py=gy2(y,b),r=b.r*.38;
+    ctx.strokeStyle='rgba(220,60,60,.9)'; ctx.lineWidth=Math.max(1.5,r*.25); ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(px-r,py-r); ctx.lineTo(px+r,py+r); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px+r,py-r); ctx.lineTo(px-r,py+r); ctx.stroke();
+  });
+}
+
+function drawGroupIndicators2D(step,b){
+  if(!step||!step.groupIndicators||!step.groupIndicators.length) return;
+  const pulse=.7+.3*Math.sin(hlTime*3);
+  step.groupIndicators.forEach(({x,y,color})=>{
+    const px=gx2(x,b),py=gy2(y,b),r=b.r*.55;
+    const clr=color==='green'?`rgba(62,207,128,${.85*pulse})`:`rgba(220,60,60,${.85*pulse})`;
+    ctx.strokeStyle=clr; ctx.lineWidth=Math.max(1.5,r*.18);
+    ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.stroke();
+  });
+}
+
+function drawMarkers2D(step,b){
+  if(!step||!step.markers||!step.markers.length) return;
+  step.markers.forEach(({x,y,type})=>{
+    const px=gx2(x,b),py=gy2(y,b),r=b.r*.42;
+    ctx.strokeStyle='rgba(230,230,230,.85)'; ctx.lineWidth=1.5;
+    if(type==='triangle'){
+      const h=r*1.1;
+      ctx.beginPath(); ctx.moveTo(px,py-h); ctx.lineTo(px-h*.87,py+h*.5); ctx.lineTo(px+h*.87,py+h*.5);
+      ctx.closePath(); ctx.stroke();
+    } else if(type==='square'){
+      ctx.strokeRect(px-r,py-r,r*2,r*2);
+    } else if(type==='circle'){
+      ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.stroke();
+    }
+  });
+}
+
+function drawGhost2D(b){
+  if(!ghostActive||!ghostGrid) return;
+  const {gx,gz}=ghostGrid;
+  if(game.grid[gz][gx]) return;
+  const step=CUR_STEP_DATA;
+  const isCorrect=step&&(
+    (step.answer&&step.answer.x===gx&&step.answer.y===gz)||
+    (Array.isArray(step.answers)&&step.answers.some(a=>a.x===gx&&a.y===gz))||
+    step.answers==='any'
+  );
+  const pulse=.55+.45*Math.sin(hlTime*4);
+  if(isCorrect){
+    drawStone2D(gx,gz,game.turn,.60,b);
+    ctx.beginPath(); ctx.arc(gx2(gx,b),gy2(gz,b),b.r*1.45,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(62,207,128,${.70*pulse})`; ctx.lineWidth=2; ctx.stroke();
+  } else {
+    drawStone2D(gx,gz,game.turn,.22,b);
+  }
+}
+
+function render2D(){
+  const bg=ctx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.5,Math.max(W,H)*.75);
+  bg.addColorStop(0,'#141420'); bg.addColorStop(1,'#060608');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  const b=calcB2();
+  drawBoard2D(b);
+
+  const step=CUR_STEP_DATA;
+  if(step&&!step.auto) drawHighlights2D(step,b);
+  if(step) drawLiberties2D(step,b);
+  if(step) drawMarkers2D(step,b);
+  if(step) drawGroupIndicators2D(step,b);
+  if(koPoint) drawKo2D(koPoint,b);
+  if(step?.blackTerritory?.length) drawTerritory2D(step.blackTerritory,'black',b);
+  if(step?.whiteTerritory?.length) drawTerritory2D(step.whiteTerritory,'white',b);
+  if(step) drawForbidden2D(step.forbidden,b);
+  drawGhost2D(b);
+
+  const deadSet=new Set((step?.deadStones||[]).map(p=>`${p.x},${p.y}`));
+  game.stones.forEach(s=>{
+    if(s.removing){
+      const al=Math.max(0,1-s.removeT);
+      if(al>0) drawStone2D(s.gx,s.gz,s.color,al,b);
+    } else {
+      drawStone2D(s.gx,s.gz,s.color,deadSet.has(`${s.gx},${s.gz}`)?0.28:1,b);
+    }
+  });
+}
+
+function screenToGrid2D(mx,my){
+  const b=calcB2();
+  const col=Math.round((mx-b.ox-b.pad)/b.cell);
+  const row=Math.round((my-b.oy-b.pad)/b.cell);
+  if(col<0||col>=SIZE||row<0||row>=SIZE) return null;
+  return Math.hypot(mx-gx2(col,b),my-gy2(row,b))<b.cell*.55?{gx:col,gz:row}:null;
+}
+/* ══ end 2D renderer ══ */
+
 function render() {
+  if(isMobile){ render2D(); return; }
   const bg=ctx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.5,Math.max(W,H)*.75);
   bg.addColorStop(0,'#141420'); bg.addColorStop(1,'#060608');
   ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
@@ -1221,7 +1425,7 @@ canvas.addEventListener('touchmove',e=>{
         camPitch=Math.max(.08,Math.min(1.48,camPitch));
       }
     }
-    ghostGrid=screenToGrid(t.clientX,t.clientY);
+    ghostGrid=isMobile?screenToGrid2D(t.clientX,t.clientY):screenToGrid(t.clientX,t.clientY);
     lastM={x:t.clientX,y:t.clientY};
   } else if(e.touches.length===2 && pinchDist0){
     const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
@@ -1236,7 +1440,7 @@ canvas.addEventListener('touchend',e=>{
   pinchDist0=null;
   if(!isDrag && e.changedTouches.length===1){
     const t=e.changedTouches[0];
-    const g=screenToGrid(t.clientX,t.clientY);
+    const g=isMobile?screenToGrid2D(t.clientX,t.clientY):screenToGrid(t.clientX,t.clientY);
     if(g) onClick3D(g.gx,g.gz);
   }
   ghostGrid=null;
