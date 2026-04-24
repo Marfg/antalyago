@@ -392,6 +392,57 @@
       #lesson-title { font-size: 1.05rem; line-height: 1.2; }
       #lesson-body  { font-size: .83rem; line-height: 1.68; }
       #feedback     { display: none; } /* floating badge devraldı */
+      #mob-counter  { font-size: .85rem; } /* S5: 11.5px → 13.6px */
+
+      /* S3: Dokunma hedefleri ≥44px */
+      .mob-menu-btn { min-width: 44px; min-height: 44px; padding: 0 10px; }
+      .back-btn     { min-height: 44px; display: inline-flex; align-items: center; }
+      .panel-handle { position: relative; cursor: pointer; }
+      .panel-handle::before {
+        content: ''; position: absolute;
+        inset: -20px 0; /* 4px görsel + 20px üst + 20px alt = 44px hit */
+      }
+      .bp-arrow { min-width: 44px; min-height: 44px; }
+
+      /* S11: tb-dots — absolute yerine flex item */
+      #tb-dots {
+        position: static;
+        transform: none; bottom: auto; left: auto;
+        flex: 1; justify-content: center;
+      }
+      .tb-left { flex-shrink: 0; }
+
+      /* S6: ctrl-zone floating pill — panelden bağımsız, her zaman thumb zone'da */
+      #ctrl-zone {
+        position: fixed;
+        bottom: calc(68px + 8px + var(--sab));
+        left: 12px; right: 12px;
+        z-index: 28;
+        background: rgba(8,8,14,.88);
+        backdrop-filter: blur(14px);
+        border: 1px solid var(--gborder);
+        border-radius: 50px;
+        padding: 4px 6px;
+        transition: bottom .32s cubic-bezier(.32,.72,0,1);
+        gap: 4px;
+      }
+      /* Panel açıkken pill yukarı kayar */
+      #ctrl-zone.panel-up {
+        bottom: calc(52vh + 8px + var(--sab));
+      }
+      /* S4: Lesson adı ve sayaç dikey dizilim */
+      #mob-ctx {
+        flex: 1; display: flex; flex-direction: column;
+        align-items: center; gap: 1px; min-width: 0;
+      }
+      #mob-lesson-name {
+        font-size: .65rem; font-weight: 700; color: var(--gold);
+        letter-spacing: .03em; opacity: .85;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        max-width: 200px;
+      }
+      /* S8: Panel scroll açık durumda aktif */
+      #lesson-panel.expanded { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
       /* ── Floating feedback badge ── */
       #mob-feedback {
@@ -517,14 +568,19 @@
   <div id="curriculum"></div>
 </div>
 
+<!-- Mobil floating nav pill (lesson-panel dışında, sabit konumda) -->
+<div id="ctrl-zone">
+  <button class="cc-btn" id="mprev" onclick="prevStep()">‹</button>
+  <div id="mob-ctx">
+    <span id="mob-lesson-name"></span>
+    <span id="mob-counter"></span>
+  </div>
+  <button class="cc-btn" id="mnext" onclick="nextStep()">›</button>
+</div>
+
 <!-- Lesson panel -->
 <div id="lesson-panel">
   <div class="panel-handle" onclick="togglePanel()"></div>
-  <div id="ctrl-zone">
-    <button class="cc-btn" id="mprev" onclick="prevStep()">‹</button>
-    <span id="mob-counter"></span>
-    <button class="cc-btn" id="mnext" onclick="nextStep()">›</button>
-  </div>
   <div class="ch-tag"  id="chapter-tag"></div>
   <div id="lesson-title">Ders Seç</div>
   <div class="step-dots" id="step-dots"></div>
@@ -582,8 +638,16 @@ let camTarget = null, camStart = null, camLerpT = 1;
 const CAM_DUR = 0.65;
 
 function togglePanel() {
+  /* S10: Drawer açıksa önce onu kapat */
+  const sb = document.getElementById('sidebar');
+  if(sb && sb.classList.contains('mob-open')) {
+    document.getElementById('mob-overlay').classList.remove('show');
+    sb.classList.remove('mob-open');
+  }
   panelExpanded = !panelExpanded;
   document.getElementById('lesson-panel').classList.toggle('expanded', panelExpanded);
+  /* S6: floating pill panel açılınca yukarı kayar */
+  document.getElementById('ctrl-zone')?.classList.toggle('panel-up', panelExpanded);
   updateProjCenter();
 }
 
@@ -1114,11 +1178,14 @@ const STARS2D={
 function calcB2(){
   const topH=document.getElementById('topbar')?.getBoundingClientRect().height||46;
   const sheetH=panelExpanded?H*.52:68;
-  const avW=W, avH=H-topH-sheetH;
-  const s=Math.min(avW,avH)*.88;
+  const pillH=60; /* floating nav pill yüksekliği */
+  const avW=W, avH=H-topH-sheetH-pillH;
+  const s=Math.min(avW,avH)*.92;
   const pad=s*(SIZE<=9?.08:SIZE<=13?.07:.055);
   const cell=(s-2*pad)/(SIZE-1);
-  const cx=W/2, cy=topH+avH/2;
+  const cx=W/2;
+  /* S7: Optik merkez — matematiksel merkezin biraz üstü */
+  const cy=topH+pillH/2+(avH)*0.46;
   const ox=cx-s/2, oy=cy-s/2;
   const r=cell*.46;
   return {ox,oy,sz:s,pad,cell,r};
@@ -1580,6 +1647,15 @@ window.toggleSidebar = function() {
 };
 
 window.toggleMobileMenu = function() {
+  /* S2: Badge drawer'ı örtmesin */
+  hideMobFb();
+  /* S10: Panel açıksa kapat */
+  if(panelExpanded) {
+    panelExpanded = false;
+    document.getElementById('lesson-panel').classList.remove('expanded');
+    document.getElementById('ctrl-zone')?.classList.remove('panel-up');
+    updateProjCenter();
+  }
   const sb=document.getElementById('sidebar');
   const ov=document.getElementById('mob-overlay');
   const open=sb.classList.toggle('mob-open');
@@ -2188,6 +2264,20 @@ function loadStep(idx) {
   document.getElementById('step-counter').textContent  = `${t('step')} ${counterTxt}`;
   document.getElementById('cc-counter').textContent    = counterTxt;
   document.getElementById('mob-counter').textContent   = counterTxt;
+  /* S4: Floating pill'de lesson adı */
+  const lessonNameEl = document.getElementById('mob-lesson-name');
+  if(lessonNameEl && CUR_LESSON) {
+    const title = (currentLang!=='tr'&&TITLE_T[CUR_LESSON.id]?.[currentLang])||CUR_LESSON.title;
+    lessonNameEl.textContent = title.length > 22 ? title.substring(0,21)+'…' : title;
+  }
+  /* S12: Topbar'da aktif ders adı (mobil) */
+  if(isMobile && CUR_LESSON) {
+    const pt = document.querySelector('.page-title');
+    if(pt) {
+      const title = (currentLang!=='tr'&&TITLE_T[CUR_LESSON.id]?.[currentLang])||CUR_LESSON.title;
+      pt.textContent = title.length > 18 ? title.substring(0,17)+'…' : title;
+    }
+  }
   document.getElementById('btn-prev').disabled  = (idx===0);
   document.getElementById('cnav-prev').disabled = (idx===0);
   document.getElementById('mprev').disabled     = (idx===0);
@@ -2261,6 +2351,8 @@ function onClick3D(gx,gz) {
   if(!step||stepDone) return;
   if(!step.answer&&step.answers!=='any'&&!Array.isArray(step.answers)) return;
   if(game.grid[gz][gx]) return;
+  /* S9: Kullanıcı harekete geçti → info talimatı kapat */
+  hideMobFb();
 
   let ok=false;
   if(step.answers==='any') ok=true;
@@ -2382,7 +2474,7 @@ function showMobFb(text,type){
 
   if(type==='correct'){
     btn.style.display='block';
-    _mobFbTimer=setTimeout(hideMobFb,4000);
+    _mobFbTimer=setTimeout(hideMobFb,4500);
   } else if(type==='wrong'){
     btn.style.display='none';
     void badge.offsetWidth; /* reflow — shake sıfırla */
@@ -2390,8 +2482,9 @@ function showMobFb(text,type){
     setTimeout(()=>badge.classList.remove('mob-fb-shake'),320);
     _mobFbTimer=setTimeout(hideMobFb,3500);
   } else {
+    /* S9: info — auto-dismiss yok, kullanıcı etkileşiminde kapanır */
     btn.style.display='none';
-    _mobFbTimer=setTimeout(hideMobFb,5000);
+    _mobFbTimer=null;
   }
 }
 
