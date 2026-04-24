@@ -145,6 +145,11 @@
       padding: .02rem .3rem; font-family: monospace; font-size: .78rem; color: var(--gold); font-weight: 600;
     }
 
+    /* ── MOBİL FLOATING FEEDBACK BADGE ── */
+    #mob-feedback {
+      display: none; /* masaüstünde gizli */
+    }
+
     /* ── FEEDBACK BOX ── */
     #feedback {
       border-radius: 5px; padding: .5rem .8rem;
@@ -386,7 +391,65 @@
       /* Font */
       #lesson-title { font-size: 1.05rem; line-height: 1.2; }
       #lesson-body  { font-size: .83rem; line-height: 1.68; }
-      #feedback     { font-size: .76rem; padding: .5rem .75rem; }
+      #feedback     { display: none; } /* floating badge devraldı */
+
+      /* ── Floating feedback badge ── */
+      #mob-feedback {
+        display: flex;
+        position: fixed;
+        top: calc(46px + var(--sat) + 6px);
+        left: 12px; right: 12px;
+        z-index: 39;
+        align-items: center; gap: 9px;
+        padding: 10px 14px;
+        border-radius: 13px;
+        background: rgba(10,10,18,.93);
+        backdrop-filter: blur(18px);
+        border: 1px solid var(--gborder);
+        font-size: .84rem; font-weight: 600; line-height: 1.45;
+        color: var(--muted);
+        transform: translateY(-140%);
+        opacity: 0;
+        transition: transform .26s cubic-bezier(.32,.72,0,1), opacity .2s;
+        pointer-events: none;
+      }
+      #mob-feedback.show {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+      #mob-feedback.correct { border-color: var(--green); color: var(--green); background: rgba(62,207,128,.1); }
+      #mob-feedback.wrong   { border-color: var(--red);   color: var(--red);   background: rgba(224,80,80,.1);  }
+      #mob-feedback.info    { border-color: var(--gborder); color: var(--muted); }
+      .mob-fb-icon { font-size: 1.05rem; flex-shrink: 0; }
+      #mob-fb-content { flex: 1; min-width: 0; }
+      #mob-fb-btn {
+        flex-shrink: 0;
+        background: rgba(62,207,128,.18); border: 1px solid var(--green);
+        border-radius: 8px; color: var(--green);
+        font-size: .78rem; font-weight: 700; letter-spacing: .03em;
+        padding: 4px 11px; cursor: pointer;
+        font-family: 'Noto Sans', sans-serif; white-space: nowrap;
+        transition: background .15s;
+      }
+      #mob-fb-btn:active { background: rgba(62,207,128,.32); }
+      @keyframes mob-shake {
+        0%,100%{ transform: translateX(0) translateY(0); }
+        25%{ transform: translateX(-5px) translateY(0); }
+        75%{ transform: translateX( 5px) translateY(0); }
+      }
+      .mob-fb-shake { animation: mob-shake .3s ease; }
+
+      /* Canvas swipe yön göstergesi */
+      #swipe-hint {
+        position: fixed; top: 50%; left: 50%; z-index: 10;
+        transform: translate(-50%,-50%);
+        font-size: 2.4rem; opacity: 0;
+        pointer-events: none;
+        transition: opacity .15s;
+        text-shadow: 0 0 20px rgba(200,168,75,.6);
+      }
+      #swipe-hint.show { opacity: 1; }
     }
   </style>
 </head>
@@ -412,6 +475,16 @@
 
 <!-- Feedback flash overlay -->
 <div id="flash"></div>
+
+<!-- Mobil floating feedback badge -->
+<div id="mob-feedback" aria-live="polite">
+  <span class="mob-fb-icon">💡</span>
+  <span id="mob-fb-content"></span>
+  <button id="mob-fb-btn" onclick="nextStep()" style="display:none">Devam →</button>
+</div>
+
+<!-- Canvas swipe yön göstergesi -->
+<div id="swipe-hint"></div>
 
 <!-- Topbar -->
 <div id="topbar">
@@ -1438,13 +1511,31 @@ canvas.addEventListener('touchmove',e=>{
 canvas.addEventListener('touchend',e=>{
   e.preventDefault();
   pinchDist0=null;
-  if(!isDrag && e.changedTouches.length===1){
+  if(e.changedTouches.length===1){
     const t=e.changedTouches[0];
-    const g=isMobile?screenToGrid2D(t.clientX,t.clientY):screenToGrid(t.clientX,t.clientY);
-    if(g) onClick3D(g.gx,g.gz);
+    if(!isDrag){
+      /* Tap → taş koy */
+      const g=isMobile?screenToGrid2D(t.clientX,t.clientY):screenToGrid(t.clientX,t.clientY);
+      if(g) onClick3D(g.gx,g.gz);
+    } else if(isMobile && dragFrom){
+      /* Swipe → adım geçişi (yatay baskın, min 45px) */
+      const dx=t.clientX-dragFrom.x, dy=t.clientY-dragFrom.y;
+      if(Math.abs(dx)>45 && Math.abs(dx)>Math.abs(dy)*1.6){
+        showSwipeHint(dx<0?'›':'‹');
+        dx<0 ? nextStep() : prevStep();
+      }
+    }
   }
   ghostGrid=null;
 },{passive:false});
+
+function showSwipeHint(ch){
+  const el=document.getElementById('swipe-hint');
+  if(!el) return;
+  el.textContent=ch;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),300);
+}
 
 const BP_SIZES = [9, 13, 19];
 const BP_DESCS = {
@@ -2272,6 +2363,44 @@ function updateProgress() {
   document.getElementById('prog-text').textContent=`${done} / ${TOTAL_LESSONS}`;
   document.getElementById('prog-fill').style.width=pct+'%';
 }
+/* ── Mobil floating feedback badge ── */
+let _mobFbTimer=null;
+
+function showMobFb(text,type){
+  if(!isMobile) return;
+  const badge=document.getElementById('mob-feedback');
+  const content=document.getElementById('mob-fb-content');
+  const btn=document.getElementById('mob-fb-btn');
+  const icon=badge.querySelector('.mob-fb-icon');
+
+  if(_mobFbTimer){ clearTimeout(_mobFbTimer); _mobFbTimer=null; }
+  badge.classList.remove('mob-fb-shake');
+
+  content.textContent=text;
+  icon.textContent=type==='correct'?'✓':type==='wrong'?'✗':'💡';
+  badge.className='show '+type;
+
+  if(type==='correct'){
+    btn.style.display='block';
+    _mobFbTimer=setTimeout(hideMobFb,4000);
+  } else if(type==='wrong'){
+    btn.style.display='none';
+    void badge.offsetWidth; /* reflow — shake sıfırla */
+    badge.classList.add('mob-fb-shake');
+    setTimeout(()=>badge.classList.remove('mob-fb-shake'),320);
+    _mobFbTimer=setTimeout(hideMobFb,3500);
+  } else {
+    btn.style.display='none';
+    _mobFbTimer=setTimeout(hideMobFb,5000);
+  }
+}
+
+function hideMobFb(){
+  if(_mobFbTimer){ clearTimeout(_mobFbTimer); _mobFbTimer=null; }
+  const badge=document.getElementById('mob-feedback');
+  badge.classList.remove('show');
+}
+
 function setFb(text,type) {
   const box=document.getElementById('feedback');
   const icon=box.querySelector('.fb-icon');
@@ -2279,6 +2408,7 @@ function setFb(text,type) {
   box.id='feedback';
   document.getElementById('fb-text').textContent=text;
   icon.textContent=type==='correct'?'✓':type==='wrong'?'✗':'💡';
+  showMobFb(text,type);
 }
 function renderDots() {
   [document.getElementById('step-dots'), document.getElementById('tb-dots')].forEach(el=>{
