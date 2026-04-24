@@ -225,6 +225,7 @@
       align-items: center; justify-content: space-between;
       gap: .5rem; flex-shrink: 0;
     }
+    #theme-fab { display: none; }
     #mob-counter {
       font-size: .72rem; color: var(--muted); font-family: monospace;
       min-width: 5.5ch; text-align: center;
@@ -353,6 +354,7 @@
 
       /* Ctrl zone */
       #ctrl-zone { display: flex; }
+      #theme-fab { display: flex; }
 
       /* Lesson panel: saydam bottom sheet — varsayılan kapalı */
       #lesson-panel {
@@ -429,6 +431,27 @@
       /* Panel açıkken pill yukarı kayar */
       #ctrl-zone.panel-up {
         bottom: calc(52vh + 8px + var(--sab));
+      }
+      /* Tema değiştirme düğmesi — sağ alt FAB */
+      #theme-fab {
+        position: fixed;
+        bottom: calc(68px + 60px + 16px + var(--sab));
+        right: 14px;
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        background: rgba(8,8,14,.82);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--gborder);
+        color: var(--muted);
+        font-size: 1rem; line-height: 1;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; z-index: 29;
+        transition: bottom .32s cubic-bezier(.32,.72,0,1), opacity .2s;
+        opacity: .75;
+      }
+      #theme-fab:active { opacity: 1; }
+      #theme-fab.panel-up {
+        bottom: calc(52vh + 60px + 16px + var(--sab));
       }
       /* S4: Lesson adı ve sayaç dikey dizilim */
       #mob-ctx {
@@ -577,6 +600,8 @@
   </div>
   <button class="cc-btn" id="mnext" onclick="nextStep()">›</button>
 </div>
+<!-- Mobil tema değiştirme FAB -->
+<button id="theme-fab" onclick="toggleBoardTheme()" title="Aydınlık tema">☀</button>
 
 <!-- Lesson panel -->
 <div id="lesson-panel">
@@ -648,6 +673,7 @@ function togglePanel() {
   document.getElementById('lesson-panel').classList.toggle('expanded', panelExpanded);
   /* S6: floating pill panel açılınca yukarı kayar */
   document.getElementById('ctrl-zone')?.classList.toggle('panel-up', panelExpanded);
+  document.getElementById('theme-fab')?.classList.toggle('panel-up', panelExpanded);
   updateProjCenter();
 }
 
@@ -1169,6 +1195,32 @@ let ghostGrid=null, ghostActive=false;
 /* ══════════════════════════════════════════════════════
    2D RENDERER — mobil (≤640px)
 ══════════════════════════════════════════════════════ */
+const BOARD_THEMES={
+  dark:{
+    canvasBg0:'#0e0e1a', canvasBg1:'#060608',
+    boardBg0:'#3e2c0e', boardBg1:'#1e1205',
+    grid:'rgba(155,100,22,.65)',
+    hoshi:'rgba(145,92,20,.82)',
+    whiteStrokeFactor: 0,   /* 0 = gizle */
+  },
+  light:{
+    canvasBg0:'#1a1a28', canvasBg1:'#060608',
+    boardBg0:'#e8c870', boardBg1:'#c09030',
+    grid:'rgba(44,24,4,.72)',
+    hoshi:'rgba(40,22,4,.85)',
+    whiteStrokeFactor: 1,   /* beyaz taşlara ince kahve kenarlık */
+  },
+};
+let boardTheme=localStorage.getItem('go_board_theme')||'dark';
+function getBT(){ return BOARD_THEMES[boardTheme]; }
+window.toggleBoardTheme=function(){
+  boardTheme=boardTheme==='dark'?'light':'dark';
+  localStorage.setItem('go_board_theme',boardTheme);
+  const btn=document.getElementById('theme-fab');
+  if(btn) btn.title=boardTheme==='dark'?'Aydınlık tema':'Koyu tema';
+  render();
+};
+
 const STARS2D={
   9:[[2,2],[6,2],[4,4],[2,6],[6,6]],
   13:[[3,3],[9,3],[6,6],[3,9],[9,9]],
@@ -1195,16 +1247,18 @@ function gy2(row,b){return b.oy+b.pad+row*b.cell;}
 
 function drawBoard2D(b){
   const {ox,oy,sz}=b;
+  const t=getBT();
   const bg=ctx.createRadialGradient(ox+sz*.45,oy+sz*.42,0,ox+sz*.5,oy+sz*.5,sz*.72);
-  bg.addColorStop(0,'#3a2810'); bg.addColorStop(1,'#1a0e04');
+  bg.addColorStop(0,t.boardBg0); bg.addColorStop(1,t.boardBg1);
   ctx.fillStyle=bg; ctx.fillRect(ox,oy,sz,sz);
-  ctx.strokeStyle='rgba(110,70,15,.6)';
-  ctx.lineWidth=Math.max(.6,sz/500);
+  /* İnce kenar çerçevesi */
+  ctx.strokeStyle=t.grid; ctx.lineWidth=Math.max(.6,sz/500);
+  ctx.strokeRect(ox+.5,oy+.5,sz-1,sz-1);
   for(let i=0;i<SIZE;i++){
     ctx.beginPath(); ctx.moveTo(gx2(i,b),gy2(0,b)); ctx.lineTo(gx2(i,b),gy2(SIZE-1,b)); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(gx2(0,b),gy2(i,b)); ctx.lineTo(gx2(SIZE-1,b),gy2(i,b)); ctx.stroke();
   }
-  ctx.fillStyle='rgba(100,60,10,.75)';
+  ctx.fillStyle=t.hoshi;
   (STARS2D[SIZE]||[]).forEach(([ci,ri])=>{
     ctx.beginPath();
     ctx.arc(gx2(ci,b),gy2(ri,b),Math.max(2,sz/(SIZE<=9?140:SIZE<=13?160:190)),0,Math.PI*2);
@@ -1216,6 +1270,7 @@ function drawStone2D(col,row,color,alpha,b){
   const x=gx2(col,b),y=gy2(row,b),r=b.r;
   ctx.globalAlpha=alpha;
   const g=ctx.createRadialGradient(x-r*.3,y-r*.32,r*.04,x,y,r);
+  const isWhite=color==='W'||color==='white';
   if(color==='B'||color==='black'){
     g.addColorStop(0,'#888');g.addColorStop(.45,'#1a1a1a');g.addColorStop(1,'#000');
   } else {
@@ -1224,6 +1279,12 @@ function drawStone2D(col,row,color,alpha,b){
   ctx.shadowColor='rgba(0,0,0,.55)'; ctx.shadowBlur=4; ctx.shadowOffsetY=2;
   ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
   ctx.fillStyle=g; ctx.fill();
+  /* Aydınlık temada beyaz taşlara ince kahve kenarlık */
+  if(isWhite && getBT().whiteStrokeFactor){
+    ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+    ctx.strokeStyle='rgba(120,70,10,.55)'; ctx.lineWidth=Math.max(.8,r*.06);
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke();
+  }
   ctx.shadowBlur=0; ctx.shadowOffsetY=0; ctx.globalAlpha=1;
 }
 
@@ -1334,8 +1395,9 @@ function drawGhost2D(b){
 }
 
 function render2D(){
+  const t=getBT();
   const bg=ctx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.5,Math.max(W,H)*.75);
-  bg.addColorStop(0,'#141420'); bg.addColorStop(1,'#060608');
+  bg.addColorStop(0,t.canvasBg0); bg.addColorStop(1,t.canvasBg1);
   ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
 
   const b=calcB2();
