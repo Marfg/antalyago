@@ -644,7 +644,11 @@
 <!-- Hint -->
 <div id="hint" id="hint">Sol tık · Hamle &nbsp;·&nbsp; Sürükle · Döndür &nbsp;·&nbsp; Tekerlek · Yaklaştır</div>
 
-<script>
+<script type="module">
+import { BoardState }                           from './core/boardState.js';
+import { LessonEngine, stepRequiresAnswer }     from './core/lessonEngine.js';
+import { ActionHandler }                        from './core/actionHandler.js';
+
 /* ═══════════════════════════════════════════════════════
    3D ENGINE
 ═══════════════════════════════════════════════════════ */
@@ -662,7 +666,7 @@ let camYaw = 0.50, camPitch = isMobile ? 1.45 : 0.88, camDist = 500;
 let camTarget = null, camStart = null, camLerpT = 1;
 const CAM_DUR = 0.65;
 
-function togglePanel() {
+window.togglePanel = function togglePanel() {
   /* S10: Drawer açıksa önce onu kapat */
   const sb = document.getElementById('sidebar');
   if(sb && sb.classList.contains('mob-open')) {
@@ -1694,12 +1698,12 @@ window.bpStep = function(dir) {
   if(next) setBoardSize(next);
 };
 
-function toggleRotate() {
+window.toggleRotate = function() {
   rotateMode = !rotateMode;
   const btn=document.getElementById('rotate-toggle');
   btn.classList.toggle('active',rotateMode);
   btn.textContent = rotateMode ? t('rotateModeOff') : t('rotateModeOn');
-}
+};
 
 window.toggleSidebar = function() {
   const sb=document.getElementById('sidebar'), t=document.getElementById('sb-toggle');
@@ -2295,93 +2299,166 @@ const CURRICULUM = [
 ];
 
 /* ═══════════════════════════════════════════════════════
-   LESSON ENGINE
+   CORE — ActionHandler wiring
 ═══════════════════════════════════════════════════════ */
 const ALL_LESSONS   = CURRICULUM.flatMap(c=>c.lessons);
 const TOTAL_LESSONS = ALL_LESSONS.length;
-let doneLessons = new Set(JSON.parse(localStorage.getItem('go_done_3d')||'[]'));
+
+const boardSt    = new BoardState(SIZE);
+const lessonEng  = new LessonEngine(CURRICULUM);
+const actionHndl = new ActionHandler(boardSt, lessonEng);
+
+// Bridge variables — render fonksiyonları hâlâ bunları okur
 let CUR_LESSON = null, CUR_STEP = 0, stepDone = false, CUR_STEP_DATA = null;
-let moveGen = 0; // her loadStep'te artar; playMoves eski callback'leri iptal eder
+let moveGen = 0;
 let koPoint = null;
 let nextMoveHint = null;
 
-function loadLesson(lesson) {
-  CUR_LESSON=lesson; CUR_STEP=0;
-  loadStep(0); updateSidebar(); updateProgress();
+// doneLessons → lessonEng üzerinden — sidebar/progress fonksiyonları bu getter'ı kullanır
+const doneLessons = { has: id => lessonEng.doneLessons.has(id), get size() { return lessonEng.doneLessons.size; } };
+
+/* ── Effect processor ──────────────────────────────────────────── */
+function processEffects(effects) {
+  for (const eff of (effects || [])) {
+    switch (eff.type) {
+      case 'RESET_BOARD': {
+        moveGen++; // önceki playMoves zincirini geçersiz kıl
+        const ns = eff.size || 9;
+        if (ns !== SIZE) { SIZE=ns; CELL=ns===9?48:ns===13?32:22; HALF=(SIZE-1)*CELL/2; STONE_R=CELL*(20/48); }
+        game.reset();
+        break;
+      }
+      case 'SEED_BOARD':
+        eff.stones.forEach(s => game.seed(s.x, s.y, s.color));
+        break;
+      case 'PLACE_STONE':
+        game.seed(eff.x, eff.y, eff.color);
+        game.turn = boardSt.turn;
+        break;
+      case 'REMOVE_STONES': {
+        const pts = eff.points;
+        if (eff.delay) setTimeout(() => pts.forEach(c => game.removeStone(c.x, c.y)), eff.delay);
+        else           pts.forEach(c => game.removeStone(c.x, c.y));
+        break;
+      }
+      case 'PLAY_MOVES': {
+        const g = moveGen, sp = eff.speed || 1;
+        if (eff.delay) setTimeout(() => playMoves(eff.moves, {moveSpeed:sp}, g), eff.delay);
+        else           playMoves(eff.moves, {moveSpeed:sp}, g);
+        break;
+      }
+      case 'CAMERA_PRESET':
+        if (eff.preset) {
+          const cam = isMobile ? {...eff.preset, yaw:0.50, pitch:1.45} : eff.preset;
+          animateCamera(cam);
+        }
+        break;
+      case 'SHOW_COMPLETION':
+        updateSidebar(); updateProgress();
+        if (eff.chapComplete) {
+          document.getElementById('complete-msg').textContent = `"${eff.chapTitle}" bölümünü tamamladın! 🎊`;
+          document.getElementById('complete-screen').classList.add('show');
+        } else if (eff.nextLesson) {
+          setTimeout(() => loadLesson(eff.nextLesson), 0);
+        }
+        break;
+      case 'UPDATE_LESSON':
+        updateLessonDOM(eff.lessonState);
+        break;
+    }
+  }
 }
 
-function loadStep(idx) {
-  const step = CUR_LESSON.steps[idx];
-  if(!step) return;
-  CUR_STEP=idx; CUR_STEP_DATA=step; stepDone=false;
-  ghostActive=false; rotateMode=false;
-  koPoint = step.initialKoIndicator || null;
-  nextMoveHint = null;
+function processResult(result) {
+  if (!result) return;
+  processEffects(result.effects);
+  const fb = result.feedback;
+  if (fb) {
+    setFb(fb.text, fb.type);
+    if (fb.type === 'correct' || fb.type === 'wrong') flashFeedback(fb.type);
+    if (fb.type === 'wrong') {
+      const fbEl = document.getElementById('feedback');
+      fbEl.classList.add('shake');
+      setTimeout(() => fbEl.classList.remove('shake'), 320);
+    }
+  }
+}
 
-  const chap = CURRICULUM.find(c=>c.lessons.some(l=>l.id===CUR_LESSON.id));
+/* ── Lesson DOM update ─────────────────────────────────────────── */
+function updateLessonDOM(ls) {
+  if (!ls || !ls.lesson) return;
+  const { lesson, chapter, stepIdx, step, stepDone: done, isFirst, isLast, canAdvance, totalSteps } = ls;
+
+  CUR_LESSON    = lesson;
+  CUR_STEP      = stepIdx;
+  CUR_STEP_DATA = step;
+  stepDone      = done;
+  koPoint       = step?.initialKoIndicator || null;
+  nextMoveHint  = null;
+  rotateMode    = false;
+  ghostActive   = !!(step && !done && stepRequiresAnswer(step));
+
+  const chap = chapter;
   document.getElementById('chapter-tag').textContent   = (currentLang!=='tr'&&TITLE_T[chap?.id]?.[currentLang])||chap?.title||'';
-  document.getElementById('lesson-title').textContent  = (currentLang!=='tr'&&TITLE_T[CUR_LESSON.id]?.[currentLang])||CUR_LESSON.title;
-  document.getElementById('lesson-body').innerHTML     = stepT(CUR_LESSON.id,idx,'text')||step.text;
-  const counterTxt = `${idx+1} / ${CUR_LESSON.steps.length}`;
+  document.getElementById('lesson-title').textContent  = (currentLang!=='tr'&&TITLE_T[lesson.id]?.[currentLang])||lesson.title;
+  document.getElementById('lesson-body').innerHTML     = stepT(lesson.id, stepIdx, 'text') || step?.text || '';
+  const counterTxt = `${stepIdx+1} / ${totalSteps}`;
   document.getElementById('step-counter').textContent  = `${t('step')} ${counterTxt}`;
   document.getElementById('cc-counter').textContent    = counterTxt;
   document.getElementById('mob-counter').textContent   = counterTxt;
-  /* S4: Floating pill'de lesson adı */
+
   const lessonNameEl = document.getElementById('mob-lesson-name');
-  if(lessonNameEl && CUR_LESSON) {
-    const title = (currentLang!=='tr'&&TITLE_T[CUR_LESSON.id]?.[currentLang])||CUR_LESSON.title;
+  if (lessonNameEl) {
+    const title = (currentLang!=='tr'&&TITLE_T[lesson.id]?.[currentLang])||lesson.title;
     lessonNameEl.textContent = title.length > 22 ? title.substring(0,21)+'…' : title;
   }
-  /* S12: Topbar'da aktif ders adı (mobil) */
-  if(isMobile && CUR_LESSON) {
+  if (isMobile) {
     const pt = document.querySelector('.page-title');
-    if(pt) {
-      const title = (currentLang!=='tr'&&TITLE_T[CUR_LESSON.id]?.[currentLang])||CUR_LESSON.title;
+    if (pt) {
+      const title = (currentLang!=='tr'&&TITLE_T[lesson.id]?.[currentLang])||lesson.title;
       pt.textContent = title.length > 18 ? title.substring(0,17)+'…' : title;
     }
   }
-  document.getElementById('btn-prev').disabled  = (idx===0);
-  document.getElementById('cnav-prev').disabled = (idx===0);
-  document.getElementById('mprev').disabled     = (idx===0);
+  document.getElementById('btn-prev').disabled  = isFirst;
+  document.getElementById('cnav-prev').disabled = isFirst;
+  document.getElementById('mprev').disabled     = isFirst;
   renderDots();
 
-  /* Board size — adıma özgü boyutu uygula, sonra tahtayı sıfırla */
-  if(!step.boardSelector) {
-    const ns = step.size || 9;
-    if(ns !== SIZE) { SIZE=ns; CELL=ns===9?48:ns===13?32:22; HALF=(SIZE-1)*CELL/2; STONE_R=CELL*(20/48); }
-  }
-  document.getElementById('board-picker').classList.toggle('show', !!step.boardSelector);
+  document.getElementById('board-picker').classList.toggle('show', !!step?.boardSelector);
 
-  /* Clear board, then seed */
-  game.reset();
-  if(step.turn) game.turn = step.turn==='black'?'black':'white';
-  (step.board||[]).forEach(s=>game.seed(s.x,s.y,s.color));
-
-  /* Camera */
-  if(step.camera) {
-    const cam = isMobile
-      ? {yaw:0.50, pitch:1.45, dist: step.camera.dist}
-      : step.camera;
-    animateCamera(cam);
-  }
-
-  /* Feedback */
-  setFb(stepT(CUR_LESSON.id,idx,'fb')||step.fb?.t||t('defaultFb'), step.fb?.c||'info');
-
-  /* Mode */
-  if(step.auto || step.moves?.length) {
-    stepDone=true; ghostActive=false;
-    document.getElementById('rotate-toggle').style.display='none';
+  if (step?.auto || step?.moves?.length) {
+    ghostActive = false;
+    document.getElementById('rotate-toggle').style.display = 'none';
   } else {
-    ghostActive=true;
     document.getElementById('rotate-toggle').style.display = isMobile ? 'none' : 'block';
   }
 
-  moveGen++; // önceki playMoves zincirini geçersiz kıl
-  if(step.moves?.length) playMoves(step.moves, step, moveGen);
-
-  updateNextBtn(step);
+  setFb(stepT(lesson.id, stepIdx, 'fb') || step?.fb?.t || t('defaultFb'), step?.fb?.c || 'info');
+  updateNextBtn(step, done, isLast, canAdvance);
 }
+
+/* ── Navigation ────────────────────────────────────────────────── */
+function loadLesson(lesson) {
+  const result = actionHndl.handle({ type: 'LESSON_SELECT', payload: { lessonId: lesson.id } });
+  processResult(result);
+  updateSidebar(); updateProgress();
+}
+
+function loadStep(idx) {
+  const result = actionHndl.handle({ type: 'STEP_GOTO', payload: { idx } });
+  processResult(result);
+}
+
+window.nextStep = function() {
+  const result = actionHndl.handle({ type: 'STEP_NEXT' });
+  processResult(result);
+  updateSidebar(); updateProgress();
+};
+
+window.prevStep = function() {
+  const result = actionHndl.handle({ type: 'STEP_PREV' });
+  processResult(result);
+};
 
 function playMoves(moves, step, gen) {
   const defaultSp = step?.moveSpeed || 1;
@@ -2408,78 +2485,34 @@ function playMoves(moves, step, gen) {
   setTimeout(next, 1200 * defaultSp);
 }
 
-function onClick3D(gx,gz) {
-  const step=CUR_STEP_DATA;
-  if(!step||stepDone) return;
-  if(!step.answer&&step.answers!=='any'&&!Array.isArray(step.answers)) return;
-  if(game.grid[gz][gx]) return;
+/* ── Board tap ─────────────────────────────────────────────────── */
+function onClick3D(gx, gz) {
   /* S9: Kullanıcı harekete geçti → info talimatı kapat */
   hideMobFb();
-
-  let ok=false;
-  if(step.answers==='any') ok=true;
-  else if(Array.isArray(step.answers)) ok=step.answers.some(a=>a.x===gx&&a.y===gz);
-  else if(step.answer) ok=(step.answer.x===gx&&step.answer.y===gz);
-
-  if(ok) {
-    game.seed(gx, gz, step.turn||'black');
-    setFb(stepT(CUR_LESSON.id,CUR_STEP,'fb_ok')||step.fb_ok||t('defaultOk'),'correct');
-    flashFeedback('correct');
-    stepDone=true; ghostActive=false;
-    if(step.capture) {
-      setTimeout(()=>{ step.capture.forEach(c=>game.removeStone(c.x,c.y)); },380);
-    }
-    if(step.movesAfterAnswer) {
-      const g = moveGen;
-      setTimeout(()=>playMoves(step.movesAfterAnswer, step, g), 500);
-    } else if(step.movesAfterAnswerMap) {
-      const movesAfter = step.movesAfterAnswerMap[`${gx},${gz}`];
-      if(movesAfter) { const g = moveGen; setTimeout(()=>playMoves(movesAfter, step, g), 500); }
-    }
-    updateNextBtn(step);
-  } else {
-    setFb(stepT(CUR_LESSON.id,CUR_STEP,'fb_err')||step.fb_err||t('defaultErr'),'wrong');
-    flashFeedback('wrong');
-    const fb=document.getElementById('feedback');
-    fb.classList.add('shake');
-    setTimeout(()=>fb.classList.remove('shake'),320);
-  }
+  const result = actionHndl.handle({ type: 'BOARD_TAP', payload: { x: gx, y: gz } });
+  processResult(result);
 }
 
-function nextStep() {
-  if(!CUR_LESSON) return;
-  if(CUR_STEP<CUR_LESSON.steps.length-1){ loadStep(CUR_STEP+1); return; }
-  doneLessons.add(CUR_LESSON.id);
-  localStorage.setItem('go_done_3d',JSON.stringify([...doneLessons]));
-  updateSidebar(); updateProgress();
-  const chap=CURRICULUM.find(c=>c.lessons.some(l=>l.id===CUR_LESSON.id));
-  if(chap&&chap.lessons.every(l=>doneLessons.has(l.id))){
-    document.getElementById('complete-msg').textContent=`"${chap.title}" bölümünü tamamladın! 🎊`;
-    document.getElementById('complete-screen').classList.add('show');
-    return;
-  }
-  const idx=ALL_LESSONS.findIndex(l=>l.id===CUR_LESSON.id);
-  if(idx<ALL_LESSONS.length-1) loadLesson(ALL_LESSONS[idx+1]);
-}
-window.closeComplete = function(){
+window.closeComplete = function() {
   document.getElementById('complete-screen').classList.remove('show');
-  const idx=ALL_LESSONS.findIndex(l=>l.id===CUR_LESSON.id);
-  if(idx<ALL_LESSONS.length-1) loadLesson(ALL_LESSONS[idx+1]);
+  const idx = lessonEng.allLessons.findIndex(l => l.id === lessonEng.curLesson?.id);
+  const next = lessonEng.allLessons[idx + 1];
+  if (next) loadLesson(next);
 };
-function prevStep(){ if(CUR_STEP>0) loadStep(CUR_STEP-1); }
 
-function updateNextBtn(step) {
-  const btn=document.getElementById('btn-next');
-  const cnext=document.getElementById('cnav-next');
-  const mnext=document.getElementById('mnext');
-  const isLast=(CUR_STEP===CUR_LESSON.steps.length-1);
-  const enabled=!!(step.auto||stepDone);
-  btn.disabled=!enabled;
-  btn.textContent=isLast?'Dersi Bitir ✓':'İleri →';
-  cnext.disabled=!enabled;
-  cnext.textContent=isLast?'✓':'›';
-  mnext.disabled=!enabled;
-  mnext.textContent=isLast?'✓':'›';
+function updateNextBtn(step, done, isLast, canAdvance) {
+  done       = done       ?? stepDone;
+  isLast     = isLast     ?? (CUR_STEP === CUR_LESSON?.steps.length - 1);
+  canAdvance = canAdvance ?? !!(step?.auto || done);
+  const btn   = document.getElementById('btn-next');
+  const cnext = document.getElementById('cnav-next');
+  const mnext = document.getElementById('mnext');
+  btn.disabled    = !canAdvance;
+  btn.textContent = isLast ? 'Dersi Bitir ✓' : 'İleri →';
+  cnext.disabled    = !canAdvance;
+  cnext.textContent = isLast ? '✓' : '›';
+  mnext.disabled    = !canAdvance;
+  mnext.textContent = isLast ? '✓' : '›';
 }
 
 /* Sidebar */
