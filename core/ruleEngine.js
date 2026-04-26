@@ -77,11 +77,16 @@ export function getLibertyCount(board, x, y) {
 export function computeCaptures(board, x, y, color) {
   const opponent = color === 'black' ? 'white' : 'black';
   const captured = [];
+  const seen = new Set(); // aynı grubu birden fazla komşudan bulmayı önle
 
   // Hamleden sonra komşu rakip grupları kontrol et
   board.neighbors(x, y).forEach(n => {
     if (board.colorAt(n.x, n.y) !== opponent) return;
+    const rootKey = `${n.x},${n.y}`;
+    if (seen.has(rootKey)) return;
+
     const group = getGroup(board, n.x, n.y);
+    group.forEach(k => seen.add(k)); // grubun tüm taşlarını işaretle
 
     // Bu grubun şu anki libertylerini hesapla.
     // Yeni taşın konulacağı (x,y) noktası artık boş değil — bunu çıkar.

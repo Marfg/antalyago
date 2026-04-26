@@ -646,7 +646,7 @@
 
 <script type="module">
 import { BoardState }                           from './core/boardState.js';
-import { LessonEngine, stepRequiresAnswer }     from './core/lessonEngine.js';
+import { LessonEngine, isCorrectAnswer, stepRequiresAnswer } from './core/lessonEngine.js';
 import { ActionHandler }                        from './core/actionHandler.js';
 
 /* ═══════════════════════════════════════════════════════
@@ -1097,9 +1097,9 @@ function drawTerritory(points, side) {
 let hlTime = 0;
 function drawHighlights(step) {
   if(!step) return;
-  const targets=[];
-  if(step.answer) targets.push(step.answer);
-  else if(Array.isArray(step.answers)) targets.push(...step.answers);
+  const targets = step.answers==='any' ? [] :
+    step.answer ? [step.answer] :
+    Array.isArray(step.answers) ? step.answers : [];
   if(!targets.length) return;
 
   const Y   = -BOARD_H/2 - .3;
@@ -1294,9 +1294,9 @@ function drawStone2D(col,row,color,alpha,b){
 
 function drawHighlights2D(step,b){
   if(!step||step.auto) return;
-  const ans=step.answers==='any'?[]:
-    step.answer?[step.answer]:
-    Array.isArray(step.answers)?step.answers:[];
+  const ans = step.answers==='any' ? [] :
+    step.answer ? [step.answer] :
+    Array.isArray(step.answers) ? step.answers : [];
   if(!ans.length) return;
   const pulse=.55+.45*Math.sin(hlTime*4);
   ans.forEach(({x,y})=>{
@@ -1383,11 +1383,7 @@ function drawGhost2D(b){
   const {gx,gz}=ghostGrid;
   if(game.grid[gz][gx]) return;
   const step=CUR_STEP_DATA;
-  const isCorrect=step&&(
-    (step.answer&&step.answer.x===gx&&step.answer.y===gz)||
-    (Array.isArray(step.answers)&&step.answers.some(a=>a.x===gx&&a.y===gz))||
-    step.answers==='any'
-  );
+  const isCorrect = isCorrectAnswer(step, gx, gz);
   const pulse=.55+.45*Math.sin(hlTime*4);
   if(isCorrect){
     drawStone2D(gx,gz,game.turn,.60,b);
@@ -1483,11 +1479,7 @@ function render() {
       const wy=-(BOARD_H/2)-STONE_R*ASPECT_3D-1;
       const step=CUR_STEP_DATA;
       /* Doğru hamle mi? */
-      const isCorrect = step && (
-        (step.answer && step.answer.x===gx && step.answer.y===gz) ||
-        (Array.isArray(step.answers) && step.answers.some(a=>a.x===gx&&a.y===gz)) ||
-        step.answers==='any'
-      );
+      const isCorrect = isCorrectAnswer(step, gx, gz);
       if(isCorrect) {
         /* Belirgin ghost + pulsing yeşil halka */
         drawStone(-HALF+gx*CELL,wy,-HALF+gz*CELL,game.turn,.60,1);
@@ -1998,9 +1990,9 @@ const CURRICULUM = [
     ]},
 
     { id:'l3', title:'Taş Alma', steps:[
-      { text:`<p>Bir taşın <strong>tüm nefes noktaları doldurulursa</strong>, o taş yakalanır ve tahtadan kalkar.</p><p>Beyaz taşın tek boş noktası var — oraya siyah taş koyarak beyazı yakala! <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}], answer:{x:4,y:5}, turn:'black', size:9, fb:{t:'Beyaz taşın son nefes noktasına tıkla!',c:'info'}, fb_ok:'Yakaladın! Beyaz taş tahtadan kalkar.', fb_err:'Beyaz taşın çevresindeki boş noktayı bul.', capture:[{x:4,y:4}] },
-      { text:`<p>Bir <strong>grubu</strong> yakalamak için grubun tüm nefes noktalarını doldurman gerekir.</p><p>İki beyaz taşın son nefes noktasını doldur — <strong>D5 noktasına tıkla.</strong></p>`, board:[{color:'W',x:3,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:3},{color:'B',x:4,y:4}], answer:{x:3,y:4}, turn:'black', size:9, fb:{t:'İki beyaz taşın son boş noktasını bul.',c:'info'}, fb_ok:'Grubu yakaladın!', fb_err:'Beyaz grubun son nefes noktasını bul.', capture:[{x:3,y:3},{x:4,y:3}] },
-      { text:`<p>Bir örnek daha! <strong>3 taşlı beyaz grup</strong> siyahlarla çevrilmiş.</p><p>Beyaz grubun tek nefes noktasını bul ve grubu yakala — <strong>E6 noktasına tıkla.</strong></p>`, board:[{color:'B',x:4,y:1},{color:'B',x:5,y:1},{color:'B',x:3,y:2},{color:'B',x:6,y:2},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'W',x:4,y:2},{color:'W',x:5,y:2},{color:'W',x:5,y:3}], answer:{x:4,y:3}, capture:[{x:4,y:2},{x:5,y:2},{x:5,y:3}], turn:'black', size:9, fb:{t:'3 taşlı beyaz grubun tek boş noktasını bul.',c:'info'}, fb_ok:'Mükemmel! Üç beyaz taş birden yakalandı.', fb_err:'E6 noktasına tıkla — beyazın tek boş komşusu.' },
+      { text:`<p>Bir taşın <strong>tüm nefes noktaları doldurulursa</strong>, o taş yakalanır ve tahtadan kalkar.</p><p>Beyaz taşın tek boş noktası var — oraya siyah taş koyarak beyazı yakala! <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}], answer:{x:4,y:5}, turn:'black', size:9, fb:{t:'Beyaz taşın son nefes noktasına tıkla!',c:'info'}, fb_ok:'Yakaladın! Beyaz taş tahtadan kalkar.', fb_err:'Beyaz taşın çevresindeki boş noktayı bul.' },
+      { text:`<p>Bir <strong>grubu</strong> yakalamak için grubun tüm nefes noktalarını doldurman gerekir.</p><p>İki beyaz taşın son nefes noktasını doldur — <strong>D5 noktasına tıkla.</strong></p>`, board:[{color:'W',x:3,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:3},{color:'B',x:4,y:4}], answer:{x:3,y:4}, turn:'black', size:9, fb:{t:'İki beyaz taşın son boş noktasını bul.',c:'info'}, fb_ok:'Grubu yakaladın!', fb_err:'Beyaz grubun son nefes noktasını bul.' },
+      { text:`<p>Bir örnek daha! <strong>3 taşlı beyaz grup</strong> siyahlarla çevrilmiş.</p><p>Beyaz grubun tek nefes noktasını bul ve grubu yakala — <strong>E6 noktasına tıkla.</strong></p>`, board:[{color:'B',x:4,y:1},{color:'B',x:5,y:1},{color:'B',x:3,y:2},{color:'B',x:6,y:2},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'W',x:4,y:2},{color:'W',x:5,y:2},{color:'W',x:5,y:3}], answer:{x:4,y:3}, turn:'black', size:9, fb:{t:'3 taşlı beyaz grubun tek boş noktasını bul.',c:'info'}, fb_ok:'Mükemmel! Üç beyaz taş birden yakalandı.', fb_err:'E6 noktasına tıkla — beyazın tek boş komşusu.' },
     ]},
 
     { id:'l4', title:'Yasak Hamleler', steps:[
