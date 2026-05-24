@@ -18,7 +18,7 @@ const MAX_PLY   = 200;  // rollout hamle sınırı (döngü koruması)
 const _seen = new Int32Array(19 * 19); // 19×19 maksimum
 let   _gen  = 0;
 
-// ── Komşu tablosu (bir kez üretilir) ─────────────────────────────────
+// ── Komşu tablosu (boyut değişmediği sürece önbelleğe alınır) ────────
 
 function buildNeighborTable(size) {
   const t = [];
@@ -32,6 +32,12 @@ function buildNeighborTable(size) {
     t.push(ns);
   }
   return t;
+}
+
+let _nbrCache = null, _nbrSize = 0;
+function getNeighborTable(size) {
+  if (size !== _nbrSize) { _nbrCache = buildNeighborTable(size); _nbrSize = size; }
+  return _nbrCache;
 }
 
 // ── Board işlemleri ───────────────────────────────────────────────────
@@ -146,7 +152,21 @@ function scoreBoard(grid, nbr, size) {
 
 // ── Rollout hamle seçimi ──────────────────────────────────────────────
 
-function pickMove(grid, nbr, moves, color) {
+function isOwnEye(grid, nbr, i, color) {
+  for (const n of nbr[i]) {
+    if (grid[n] !== color) return false;
+  }
+  return true;
+}
+
+function isSelfAtari(grid, nbr, size, i, color, ko) {
+  const res = placeStone(grid, nbr, size, i, color, ko);
+  if (!res) return true;
+  const { libs } = groupAndLibs(res.grid, nbr, i);
+  return libs.size === 1;
+}
+
+function pickMove(grid, nbr, size, moves, color, ko) {
   const opp = color === 1 ? 2 : 1;
 
   // Öncelik 1: atari'deki rakip grubu yakala
@@ -169,7 +189,17 @@ function pickMove(grid, nbr, moves, color) {
     }
   }
 
-  return moves[(Math.random() * moves.length) | 0];
+  // Kendi gözünü doldurmayan hamleleri seç
+  let pool = moves.filter(i => !isOwnEye(grid, nbr, i, color));
+  if (!pool.length) pool = moves;
+
+  // Self-atari olmayan hamleleri tercih et
+  if (pool.length > 1) {
+    const nonSA = pool.filter(i => !isSelfAtari(grid, nbr, size, i, color, ko));
+    if (nonSA.length) pool = nonSA;
+  }
+
+  return pool[(Math.random() * pool.length) | 0];
 }
 
 // ── MCTS Düğümü ───────────────────────────────────────────────────────
@@ -196,7 +226,7 @@ class Node {
       const j = (Math.random() * (i + 1)) | 0;
       [m[i], m[j]] = [m[j], m[i]];
     }
-    m.push(-1); // pas her zaman seçenek
+    m.unshift(-1); // pas en son denenir
     this._untried = m;
   }
 
@@ -255,7 +285,7 @@ function rollout(node, nbr, size, rootColor) {
       passes++; ko = -1;
     } else {
       passes = 0;
-      const mi  = pickMove(grid, nbr, legal, color);
+      const mi  = pickMove(grid, nbr, size, legal, color, ko);
       const res = placeStone(grid, nbr, size, mi, color, ko);
       if (res) { grid = res.grid; ko = res.ko; }
       else     { passes++; ko = -1; }
@@ -290,7 +320,7 @@ function backprop(node, win) {
  */
 export function getBestMove(boardData, color, timeMs = 2000) {
   const { grid, ko, size } = boardData;
-  const nbr = buildNeighborTable(size);
+  const nbr = getNeighborTable(size);
 
   const root    = new Node(grid.slice(), ko, color, null, null);
   const endTime = Date.now() + timeMs;
@@ -318,7 +348,7 @@ export function getBestMove(boardData, color, timeMs = 2000) {
  */
 export function finalScore(boardData) {
   const { grid, size } = boardData;
-  const nbr = buildNeighborTable(size);
+  const nbr = getNeighborTable(size);
   const raw = scoreBoard(grid, nbr, size);
   const black = raw > 0 ? raw + KOMI : 0;
   const white = raw < 0 ? -raw : 0;
