@@ -319,6 +319,120 @@
       .cards { grid-template-columns:1fr; gap:1.25rem; }
       .card  { padding:1.5rem 1.25rem; }
     }
+
+    /* ── ROBOT KARTI ── */
+    .card-robot {
+      grid-column: 1 / -1;
+      flex-direction: row;
+      align-items: center;
+      gap: 1.4rem;
+      padding: 1.4rem 1.5rem;
+      background:
+        linear-gradient(135deg, rgba(200,168,75,.06) 0%, transparent 60%),
+        var(--bg);
+      border: 1px solid rgba(200,168,75,.22);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Sağdan sola kayan ışık taraması */
+    .card-robot::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(110deg,
+        transparent 20%,
+        rgba(200,168,75,.07) 50%,
+        transparent 80%);
+      transform: translateX(-100%);
+      transition: transform .7s ease;
+      pointer-events: none;
+    }
+    .card-robot:hover::after { transform: translateX(100%); }
+
+    /* Üst kenar çizgisi — robot kartı için tam genişlik */
+    .card-robot::before { left: 5%; right: 5%; opacity: .75; }
+
+    /* Mini tahta */
+    .robot-board-wrap {
+      flex-shrink: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--nm-in);
+      background: rgba(200,160,60,.06);
+      line-height: 0;
+    }
+
+    /* Metin bloğu */
+    .robot-meta {
+      display: flex; flex-direction: column;
+      gap: .55rem; flex: 1; min-width: 0;
+    }
+
+    .robot-header {
+      display: flex; align-items: center; gap: .55rem; flex-wrap: wrap;
+    }
+
+    .robot-title {
+      font-size: 1rem; font-weight: 600; color: var(--text);
+    }
+
+    .robot-badge {
+      font-size: .58rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase;
+      background: rgba(200,168,75,.14);
+      border: 1px solid rgba(200,168,75,.32);
+      color: var(--gold); padding: .14rem .42rem; border-radius: 3px;
+    }
+
+    .robot-desc {
+      font-size: .78rem; color: var(--text2); line-height: 1.65;
+    }
+
+    /* Düşünüyor noktaları */
+    .robot-thinking {
+      display: flex; align-items: center; gap: .38rem;
+      font-size: .68rem; font-weight: 500; color: var(--gold);
+      opacity: .8;
+    }
+    .think-dot {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--gold);
+      animation: think 1.5s ease-in-out infinite;
+    }
+    .think-dot:nth-child(2) { animation-delay: .22s; }
+    .think-dot:nth-child(3) { animation-delay: .44s; }
+    @keyframes think {
+      0%,80%,100% { transform: scale(.5); opacity: .3; }
+      40% { transform: scale(1.2); opacity: 1; }
+    }
+
+    /* CTA butonu */
+    .robot-cta {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .48rem 1.1rem;
+      background: rgba(200,168,75,.1);
+      border: 1px solid rgba(200,168,75,.3);
+      border-radius: 7px;
+      color: var(--gold);
+      font-size: .76rem; font-weight: 600; letter-spacing: .05em;
+      transition: background .22s, border-color .22s, box-shadow .22s;
+      align-self: flex-start;
+    }
+    .card-robot:hover .robot-cta {
+      background: rgba(200,168,75,.2);
+      border-color: var(--gold2);
+      box-shadow: 0 0 18px rgba(200,168,75,.18);
+    }
+
+    /* Mobil: dikey düzen */
+    @media(max-width:560px) {
+      .card-robot {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+      .robot-board-wrap { align-self: center; }
+    }
   </style>
 </head>
 <body>
@@ -341,6 +455,27 @@
 
   <!-- KARTLAR -->
   <div class="cards">
+
+    <!-- Robot ile Oyna — Öne Çıkan Kart -->
+    <a class="card card-robot" href="robot.html">
+      <div class="robot-board-wrap">
+        <canvas id="rb-canvas" width="96" height="96"></canvas>
+      </div>
+      <div class="robot-meta">
+        <div class="robot-header">
+          <span class="robot-title">Robot ile Oyna</span>
+          <span class="robot-badge">Yeni</span>
+        </div>
+        <div class="robot-desc">9×9 tahtada yapay zekaya karşı Go oyna. Temel kuralları öğrendikten sonra robota meydan oku!</div>
+        <div class="robot-thinking" id="robot-thinking">
+          <span class="think-dot"></span>
+          <span class="think-dot"></span>
+          <span class="think-dot"></span>
+          <span id="think-label">Yapay Zeka hazır</span>
+        </div>
+        <div class="robot-cta">Hemen Oyna →</div>
+      </div>
+    </a>
 
     <a class="card" href="ogren-3d.html">
       <div class="card-icon"><span style="font-size:19px">📖</span></div>
@@ -421,5 +556,149 @@
   </div>
 
 </div>
+<script>
+/* ── Mini Robot Tahta Animasyonu ── */
+(function() {
+  const cv = document.getElementById('rb-canvas');
+  if (!cv) return;
+  const cx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const N = 7, PAD = 8;
+  const CELL = (W - PAD * 2) / (N - 1);
+  const R = CELL * 0.40;
+
+  /* Önceden belirlenmiş hamle dizisi — görsel amaçlı */
+  const MOVES = [
+    {x:3,y:3,c:'B'}, {x:2,y:2,c:'W'}, {x:4,y:2,c:'B'},
+    {x:2,y:4,c:'W'}, {x:4,y:4,c:'B'}, {x:3,y:1,c:'W'},
+    {x:1,y:3,c:'B'}, {x:5,y:3,c:'W'}, {x:1,y:2,c:'B'},
+    {x:5,y:4,c:'W'}, {x:2,y:5,c:'B'}, {x:4,y:1,c:'W'},
+    {x:3,y:5,c:'B'}, {x:1,y:4,c:'W'}, {x:5,y:2,c:'B'},
+    {x:0,y:3,c:'W'}, {x:6,y:3,c:'B'}, {x:3,y:6,c:'W'},
+  ];
+
+  let placed = [];
+  let idx    = 0;
+  let hovered = false;
+  let thinkTimer = null;
+  const label = document.getElementById('think-label');
+  const wrap  = cv.closest('.card-robot');
+
+  if (wrap) {
+    wrap.addEventListener('mouseenter', () => { hovered = true; });
+    wrap.addEventListener('mouseleave', () => { hovered = false; });
+  }
+
+  function draw(highlightLast) {
+    cx.clearRect(0, 0, W, H);
+
+    /* Zemin */
+    const bg = cx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, 'rgba(200,160,60,.12)');
+    bg.addColorStop(1, 'rgba(200,160,60,.04)');
+    cx.fillStyle = bg;
+    cx.beginPath();
+    cx.roundRect(0, 0, W, H, 6);
+    cx.fill();
+
+    /* Izgara */
+    cx.strokeStyle = 'rgba(200,168,75,.30)';
+    cx.lineWidth = 0.6;
+    for (let i = 0; i < N; i++) {
+      const p = PAD + i * CELL;
+      cx.beginPath(); cx.moveTo(p, PAD); cx.lineTo(p, H - PAD); cx.stroke();
+      cx.beginPath(); cx.moveTo(PAD, p); cx.lineTo(W - PAD, p); cx.stroke();
+    }
+
+    /* Hoshi */
+    const hoshi = [[1,1],[5,1],[3,3],[1,5],[5,5]];
+    cx.fillStyle = 'rgba(200,168,75,.50)';
+    for (const [hx, hy] of hoshi) {
+      if (hx < N && hy < N) {
+        cx.beginPath();
+        cx.arc(PAD + hx * CELL, PAD + hy * CELL, 1.6, 0, Math.PI * 2);
+        cx.fill();
+      }
+    }
+
+    /* Taşlar */
+    placed.forEach((s, i) => {
+      const sx = PAD + s.x * CELL;
+      const sy = PAD + s.y * CELL;
+      const isLast = highlightLast && i === placed.length - 1;
+
+      /* Gölge */
+      cx.beginPath();
+      cx.arc(sx + 1, sy + 1.8, R, 0, Math.PI * 2);
+      cx.fillStyle = 'rgba(0,0,0,.38)';
+      cx.fill();
+
+      /* Taş */
+      const gr = cx.createRadialGradient(sx - R*.28, sy - R*.28, R*.06, sx, sy, R);
+      if (s.c === 'B') {
+        gr.addColorStop(0, '#50505a');
+        gr.addColorStop(1, '#0c0c12');
+      } else {
+        gr.addColorStop(0, '#ffffff');
+        gr.addColorStop(1, '#c4c0ba');
+      }
+      cx.beginPath();
+      cx.arc(sx, sy, R, 0, Math.PI * 2);
+      cx.fillStyle = gr;
+      cx.fill();
+
+      /* Son taş üçgen işareti */
+      if (isLast) {
+        cx.beginPath();
+        cx.arc(sx, sy, R * .36, 0, Math.PI * 2);
+        cx.fillStyle = s.c === 'B' ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.38)';
+        cx.fill();
+      }
+    });
+  }
+
+  function showThinking(on) {
+    if (!label) return;
+    label.textContent = on ? 'Yapay Zeka düşünüyor…' : 'Yapay Zeka hazır';
+  }
+
+  function tick() {
+    if (idx >= MOVES.length) {
+      /* Sıfırla — kısa bekleme sonrası */
+      showThinking(false);
+      thinkTimer = setTimeout(() => {
+        placed = []; idx = 0;
+        draw(false);
+        schedule();
+      }, 3000);
+      return;
+    }
+
+    /* Hamle öncesi "düşünüyor" efekti */
+    const isRobot = MOVES[idx].c === 'W';
+    if (isRobot) showThinking(true);
+
+    const thinkDelay = isRobot
+      ? (hovered ? 300 : 900) + Math.random() * (hovered ? 200 : 400)
+      : 0;
+
+    thinkTimer = setTimeout(() => {
+      showThinking(false);
+      placed.push(MOVES[idx++]);
+      draw(true);
+      schedule();
+    }, thinkDelay);
+  }
+
+  function schedule() {
+    const base = hovered ? 350 : 1100;
+    const jitter = hovered ? 150 : 500;
+    thinkTimer = setTimeout(tick, base + Math.random() * jitter);
+  }
+
+  draw(false);
+  setTimeout(schedule, 1400);
+})();
+</script>
 </body>
 </html>

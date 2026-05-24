@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Robot ile Oyna – Antalya GO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@700&family=Noto+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:    #1c1c20;
+      --bg-l:  #232328;
+      --gold:  #c8a84b;
+      --gold2: #e0be68;
+      --text:  #e8e4de;
+      --muted: rgba(232,228,222,.45);
+      --glass: rgba(10,10,18,.88);
+      --gb:    rgba(200,168,75,.22);
+      --green: #3ecf80;
+      --red:   #e05050;
+      --sat: env(safe-area-inset-top,0px);
+      --sab: env(safe-area-inset-bottom,0px);
+    }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    body { background:var(--bg); color:var(--text); font-family:'Noto Sans',sans-serif; overflow:hidden; }
+
+    /* Canvas */
+    #c { position:fixed; inset:0; display:block; z-index:0; }
+
+    /* Topbar */
+    #topbar {
+      position:fixed; top:0; left:0; right:0; z-index:30;
+      height:calc(50px + var(--sat));
+      background:var(--glass); backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--gb);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:var(--sat) 1rem 0; gap:.8rem;
+    }
+    .back-btn {
+      color:var(--gold); font-size:.72rem; letter-spacing:.07em; font-weight:600;
+      text-decoration:none; padding:5px 12px;
+      border:1px solid var(--gb); border-radius:6px;
+      transition:all .18s; white-space:nowrap;
+    }
+    .back-btn:hover { background:var(--gold); color:var(--bg); }
+
+    .tb-title {
+      font-family:'Noto Serif',serif; font-size:.95rem; font-weight:700;
+      letter-spacing:.05em;
+    }
+
+    /* Status pill */
+    .status-pill {
+      display:flex; align-items:center; gap:.45rem;
+      padding:.3rem .85rem;
+      background:rgba(200,168,75,.08);
+      border:1px solid var(--gb); border-radius:50px;
+      font-size:.72rem; font-weight:600;
+    }
+    .s-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .s-dot.black { background:#222; box-shadow:0 0 4px rgba(0,0,0,.8); }
+    .s-dot.white { background:#ddd; box-shadow:0 0 4px rgba(255,255,255,.4); }
+    #s-turn { color:var(--text); }
+    #s-msg  { color:var(--muted); font-size:.68rem; }
+
+    /* Side panel */
+    #panel {
+      position:fixed; top:calc(50px + var(--sat)); right:0; bottom:0; width:260px; z-index:20;
+      background:var(--glass); backdrop-filter:blur(16px);
+      border-left:1px solid var(--gb);
+      display:flex; flex-direction:column; gap:.8rem;
+      padding:1.2rem 1rem;
+      overflow-y:auto;
+    }
+
+    .section-label {
+      font-size:.62rem; font-weight:700; letter-spacing:.14em;
+      text-transform:uppercase; color:var(--gold);
+    }
+
+    /* Renk seçici */
+    .color-pick {
+      display:flex; gap:.5rem;
+    }
+    .cp-btn {
+      flex:1; padding:.55rem .5rem; border-radius:8px;
+      border:1.5px solid var(--gb);
+      background:transparent; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; gap:.4rem;
+      font-family:'Noto Sans',sans-serif; font-size:.75rem; font-weight:600;
+      color:var(--muted); transition:all .18s;
+    }
+    .cp-btn.active-b {
+      border-color:rgba(100,100,120,.8); color:var(--text);
+      background:rgba(30,30,40,.6);
+      box-shadow:0 0 12px rgba(0,0,0,.4);
+    }
+    .cp-btn.active-w {
+      border-color:rgba(220,216,210,.6); color:var(--text);
+      background:rgba(220,216,210,.08);
+      box-shadow:0 0 12px rgba(220,216,210,.1);
+    }
+    .stone-preview {
+      width:14px; height:14px; border-radius:50%;
+    }
+    .sp-b { background:radial-gradient(circle at 36% 34%, #555, #0c0c12); }
+    .sp-w { background:radial-gradient(circle at 36% 34%, #fff, #c4c0ba); }
+
+    /* Hamle sayacı */
+    #move-count {
+      font-size:1.5rem; font-weight:700; color:var(--gold);
+      font-family:'Noto Serif',serif;
+    }
+    .mc-label { font-size:.7rem; color:var(--muted); }
+
+    /* Geçici banner */
+    .coming-banner {
+      background:rgba(200,168,75,.07);
+      border:1px solid rgba(200,168,75,.2);
+      border-radius:8px; padding:.9rem;
+      display:flex; flex-direction:column; gap:.4rem;
+    }
+    .cb-title {
+      font-size:.8rem; font-weight:700; color:var(--gold);
+      display:flex; align-items:center; gap:.4rem;
+    }
+    .cb-body {
+      font-size:.73rem; color:var(--muted); line-height:1.65;
+    }
+    .progress-bar {
+      height:4px; background:rgba(200,168,75,.12);
+      border-radius:2px; overflow:hidden; margin-top:.3rem;
+    }
+    .progress-fill {
+      height:100%; width:38%;
+      background:linear-gradient(90deg, var(--gold), var(--gold2));
+      border-radius:2px;
+      animation:prog 3s ease-in-out infinite alternate;
+    }
+    @keyframes prog {
+      from { width:25%; } to { width:55%; }
+    }
+
+    /* Butonlar */
+    .action-btn {
+      width:100%; padding:.55rem; border-radius:7px;
+      border:1px solid var(--gb);
+      background:transparent; cursor:pointer;
+      font-family:'Noto Sans',sans-serif; font-size:.78rem; font-weight:600;
+      color:var(--text); transition:all .18s;
+    }
+    .action-btn:hover { background:rgba(200,168,75,.08); border-color:var(--gold); color:var(--gold); }
+    .action-btn.danger:hover { background:rgba(224,80,80,.08); border-color:var(--red); color:var(--red); }
+
+    /* Feedback */
+    #feedback {
+      font-size:.76rem; font-weight:600;
+      padding:.4rem .7rem; border-radius:5px;
+      background:rgba(200,168,75,.06); border:1px solid var(--gb);
+      color:var(--muted); transition:all .22s;
+      line-height:1.5; display:none;
+    }
+    #feedback.show { display:block; }
+    #feedback.ok   { background:rgba(62,207,128,.1); border-color:var(--green); color:var(--green); }
+    #feedback.err  { background:rgba(224,80,80,.1);  border-color:var(--red);   color:var(--red); }
+
+    /* Mobil */
+    @media(max-width:640px) {
+      #panel {
+        top:auto; bottom:0; right:0; left:0; width:100%;
+        max-height:52vh; flex-direction:row; flex-wrap:wrap;
+        padding:.7rem; gap:.6rem;
+        border-left:none; border-top:1px solid var(--gb);
+      }
+      #panel > * { flex:1 1 40%; min-width:120px; }
+      .color-pick { flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<!-- Topbar -->
+<div id="topbar">
+  <a class="back-btn" href="index.html">← Ana</a>
+  <span class="tb-title">Robot ile Oyna</span>
+  <div class="status-pill">
+    <span class="s-dot black" id="s-dot"></span>
+    <span id="s-turn">Siyah'ın sırası</span>
+  </div>
+</div>
+
+<!-- Sağ panel -->
+<div id="panel">
+
+  <div>
+    <div class="section-label" style="margin-bottom:.5rem">Renk Seç</div>
+    <div class="color-pick">
+      <button class="cp-btn active-b" id="cp-black" onclick="pickColor('black')">
+        <div class="stone-preview sp-b"></div>Siyah
+      </button>
+      <button class="cp-btn" id="cp-white" onclick="pickColor('white')">
+        <div class="stone-preview sp-w"></div>Beyaz
+      </button>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Hamle Sayısı</div>
+    <div id="move-count">0</div>
+    <div class="mc-label">toplam hamle</div>
+  </div>
+
+  <div class="coming-banner">
+    <div class="cb-title">🤖 Yapay Zeka Geliyor</div>
+    <div class="cb-body">9×9 Go robotu geliştiriliyor. Şimdilik serbest deney tahtasını kullanabilirsin.</div>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+  </div>
+
+  <div id="feedback"></div>
+
+  <button class="action-btn" onclick="passTurn()">Pas Geç</button>
+  <button class="action-btn danger" onclick="resetBoard()">Tahtayı Sıfırla</button>
+
+</div>
+
+<script type="module">
+import { BoardState } from './core/boardState.js';
+import { isValidMove, applyMove } from './core/ruleEngine.js';
+
+/* ── 3D Motor ── */
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+let W, H;
+function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+resize(); window.addEventListener('resize', resize);
+
+const SIZE = 9, CELL = 48, HALF = (SIZE - 1) * CELL / 2;
+const BOARD_H = 14, STONE_R = 20, ASPECT_3D = 0.36;
+let camYaw = 0.50, camPitch = 1.10, camDist = 490;
+
+/* Kamera sürükleme */
+let drag = null;
+canvas.addEventListener('mousedown',  e => { drag = {x:e.clientX, y:e.clientY, yaw:camYaw, pitch:camPitch}; });
+canvas.addEventListener('mousemove',  e => {
+  if (drag) {
+    camYaw   = drag.yaw   + (e.clientX - drag.x) * .004;
+    camPitch = Math.max(.5, Math.min(Math.PI*.48,
+               drag.pitch - (e.clientY - drag.y) * .004));
+  }
+  updateGhost(e.clientX, e.clientY);
+});
+canvas.addEventListener('mouseup',   () => { drag = null; });
+canvas.addEventListener('mouseleave',() => { drag = null; ghost = null; });
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  camDist = Math.max(HALF*.8, Math.min(HALF*2.8, camDist + e.deltaY * .55));
+}, {passive:false});
+canvas.addEventListener('click', e => { if (!drag || Math.abs(e.clientX - (drag?.x||e.clientX)) < 3) onBoardClick(e.clientX, e.clientY); });
+
+/* Dokunmatik */
+let touch0 = null;
+canvas.addEventListener('touchstart',  e => { if (e.touches.length===1) touch0={x:e.touches[0].clientX,y:e.touches[0].clientY,yaw:camYaw,pitch:camPitch}; });
+canvas.addEventListener('touchmove',   e => { e.preventDefault(); if(touch0&&e.touches.length===1){ camYaw=touch0.yaw+(e.touches[0].clientX-touch0.x)*.005; camPitch=Math.max(.5,Math.min(Math.PI*.48,touch0.pitch-(e.touches[0].clientY-touch0.y)*.005)); } },{passive:false});
+canvas.addEventListener('touchend',    e => { if(touch0&&e.changedTouches.length===1){ const dx=e.changedTouches[0].clientX-touch0.x,dy=e.changedTouches[0].clientY-touch0.y; if(Math.hypot(dx,dy)<8) onBoardClick(e.changedTouches[0].clientX,e.changedTouches[0].clientY); } touch0=null; });
+
+function project(x,y,z) {
+  const rx=x*Math.cos(camYaw)+z*Math.sin(camYaw);
+  const rz=-x*Math.sin(camYaw)+z*Math.cos(camYaw);
+  const ry2=y*Math.cos(camPitch)-rz*Math.sin(camPitch);
+  const rz2=y*Math.sin(camPitch)+rz*Math.cos(camPitch);
+  const fov=700, sc=fov/Math.max(fov+rz2,1)*(camDist/500);
+  return {sx:W/2+rx*sc, sy:H/2+ry2*sc, scale:sc};
+}
+
+/* Wood doku */
+const woodCv=document.createElement('canvas'); woodCv.width=woodCv.height=512;
+(function(){ const wc=woodCv.getContext('2d'),g=wc.createLinearGradient(0,0,512,0);
+  g.addColorStop(0,'#c8a84a');g.addColorStop(.38,'#c2a040');g.addColorStop(1,'#c8a444');
+  wc.fillStyle=g;wc.fillRect(0,0,512,512);wc.globalAlpha=.055;
+  for(let i=0;i<120;i++){const y=Math.random()*512,dk=i%7===0;wc.strokeStyle=dk?'#5a2e00':'#e8d060';wc.lineWidth=dk?Math.random()*1.2+.4:Math.random()*.8+.2;wc.beginPath();wc.moveTo(0,y);wc.bezierCurveTo(128,y+(Math.random()-.5)*3,384,y+(Math.random()-.5)*3,512,y);wc.stroke();}
+  wc.globalAlpha=1;
+})();
+const woodPat=ctx.createPattern(woodCv,'repeat');
+
+/* Board state */
+let board = new BoardState(SIZE);
+let playerColor = 'black';
+let moveCount = 0;
+let ghost = null;
+
+window.pickColor = function(c) {
+  playerColor = c;
+  document.getElementById('cp-black').className='cp-btn'+(c==='black'?' active-b':'');
+  document.getElementById('cp-white').className='cp-btn'+(c==='white'?' active-w':'');
+};
+
+window.passTurn = function() {
+  board.turn = board.turn === 'black' ? 'white' : 'black';
+  showFeedback('Pas geçildi.','ok');
+  updateStatus();
+};
+
+window.resetBoard = function() {
+  board = new BoardState(SIZE);
+  moveCount = 0;
+  document.getElementById('move-count').textContent = '0';
+  showFeedback('Tahta sıfırlandı.','ok');
+  updateStatus();
+};
+
+function showFeedback(msg, type) {
+  const el = document.getElementById('feedback');
+  el.textContent = msg;
+  el.className = 'show ' + (type||'');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+function updateStatus() {
+  const t = board.turn;
+  document.getElementById('s-turn').textContent = t === 'black' ? "Siyah'ın sırası" : "Beyaz'ın sırası";
+  const dot = document.getElementById('s-dot');
+  dot.className = 's-dot ' + t;
+}
+
+/* Ekran → grid dönüşümü */
+function screenToGrid(sx, sy) {
+  let best = null, bestD = Infinity;
+  for (let gx = 0; gx < SIZE; gx++) {
+    for (let gz = 0; gz < SIZE; gz++) {
+      const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
+      const wy = -(BOARD_H/2) - STONE_R * ASPECT_3D - 1;
+      const p = project(wx, wy, wz);
+      const d = Math.hypot(p.sx - sx, p.sy - sy);
+      if (d < bestD) { bestD = d; best = {gx, gz, p}; }
+    }
+  }
+  return best && bestD < CELL * best.p.scale * 1.1 ? best : null;
+}
+
+function updateGhost(mx, my) {
+  ghost = screenToGrid(mx, my);
+}
+
+function onBoardClick(mx, my) {
+  const hit = screenToGrid(mx, my);
+  if (!hit) return;
+  const {gx, gz} = hit;
+  const color = board.turn;
+
+  if (board.isOccupied(gx, gz)) {
+    showFeedback('Bu nokta dolu.', 'err'); return;
+  }
+  const check = isValidMove(board, gx, gz, color);
+  if (!check.valid) {
+    const msg = check.reason === 'KO' ? 'Ko kuralı — yasak hamle.' : 'Geçersiz hamle (intihar).';
+    showFeedback(msg, 'err'); return;
+  }
+  const {newState} = applyMove(board, gx, gz, color);
+  board.grid   = newState.grid;
+  board.stones = newState.stones;
+  board.turn   = newState.turn;
+  board.koPoint= newState.koPoint;
+  board.size   = newState.size;
+
+  moveCount++;
+  document.getElementById('move-count').textContent = moveCount;
+  updateStatus();
+}
+
+/* ── Çizim ── */
+function stoneRx(p) { return STONE_R * p.scale; }
+function stoneRy(p) {
+  const sp=Math.sin(camPitch), cp=Math.cos(camPitch);
+  return stoneRx(p) * Math.sqrt(sp*sp + ASPECT_3D*ASPECT_3D*cp*cp);
+}
+
+function drawBoard() {
+  const bh=BOARD_H/2, bw=HALF+CELL*.82;
+  function face(corners,fill,stroke){
+    const pts=corners.map(([x,y,z])=>project(x,y,z));
+    ctx.beginPath(); pts.forEach((p,i)=>i===0?ctx.moveTo(p.sx,p.sy):ctx.lineTo(p.sx,p.sy));
+    ctx.closePath(); ctx.fillStyle=fill; ctx.fill();
+    ctx.strokeStyle=stroke||fill; ctx.lineWidth=1; ctx.stroke();
+  }
+  face([[-bw,-bh,-bw],[-bw,-bh,bw],[-bw,bh,bw],[-bw,bh,-bw]],'#7a4e0e','#5e3a08');
+  face([[-bw,-bh,bw],[bw,-bh,bw],[bw,bh,bw],[-bw,bh,bw]],'#8a5a12','#6a4408');
+  face([[bw,-bh,-bw],[bw,-bh,bw],[bw,bh,bw],[bw,bh,-bw]],'#966014','#724808');
+  const top=[[-bw,-bh,-bw],[bw,-bh,-bw],[bw,-bh,bw],[-bw,-bh,bw]];
+  const tpts=top.map(([x,y,z])=>project(x,y,z));
+  ctx.save(); ctx.beginPath(); tpts.forEach((p,i)=>i===0?ctx.moveTo(p.sx,p.sy):ctx.lineTo(p.sx,p.sy));
+  ctx.closePath(); ctx.clip();
+  ctx.fillStyle=woodPat; ctx.globalAlpha=.96; ctx.fill();
+  ctx.globalAlpha=.06; ctx.fillStyle='#2a1200'; ctx.fill();
+  ctx.globalAlpha=1; ctx.strokeStyle='#6a4008'; ctx.lineWidth=1.6; ctx.stroke();
+  ctx.restore();
+}
+
+function drawGrid() {
+  const Y=-BOARD_H/2-.4;
+  const corners=[[-HALF,Y,-HALF],[HALF,Y,-HALF],[HALF,Y,HALF],[-HALF,Y,HALF]];
+  ctx.strokeStyle='rgba(55,24,0,.92)'; ctx.lineWidth=1.9;
+  for(let i=0;i<4;i++){const a=project(...corners[i]),b=project(...corners[(i+1)%4]);ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);ctx.stroke();}
+  ctx.strokeStyle='rgba(55,24,0,.68)'; ctx.lineWidth=.8;
+  for(let i=1;i<SIZE-1;i++){
+    const p=-HALF+i*CELL;
+    const a=project(p,Y,-HALF),b=project(p,Y,HALF);ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);ctx.stroke();
+    const c=project(-HALF,Y,p),d=project(HALF,Y,p);ctx.beginPath();ctx.moveTo(c.sx,c.sy);ctx.lineTo(d.sx,d.sy);ctx.stroke();
+  }
+  const HOSHI=[[2,2],[6,2],[4,4],[2,6],[6,6]];
+  HOSHI.forEach(([sx,sz])=>{
+    const p=project(-HALF+sx*CELL,Y,-HALF+sz*CELL);
+    ctx.beginPath();ctx.arc(p.sx,p.sy,3.8*p.scale,0,Math.PI*2);
+    ctx.fillStyle='rgba(48,20,0,.88)';ctx.fill();
+  });
+  const LTRS='ABCDEFGHJ';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(let i=0;i<SIZE;i++){
+    const pos=-HALF+i*CELL;
+    const lb=project(pos,Y,HALF+CELL*.72), nl=project(-HALF-CELL*.72,Y,pos);
+    const fs=Math.round(9*lb.scale); if(fs<6) continue;
+    ctx.font=`bold ${fs}px monospace`; ctx.fillStyle='rgba(75,36,6,.78)';
+    ctx.fillText(LTRS[i],lb.sx,lb.sy); ctx.fillText(String(SIZE-i),nl.sx,nl.sy);
+  }
+}
+
+function drawStone(gx, gz, color, alpha) {
+  const wx=-HALF+gx*CELL, wz=-HALF+gz*CELL;
+  const wy=-(BOARD_H/2)-STONE_R*ASPECT_3D-1;
+  const p=project(wx,wy,wz);
+  const rx=stoneRx(p), ry=stoneRy(p);
+
+  ctx.save(); ctx.globalAlpha = alpha || 1;
+
+  /* Gölge */
+  ctx.beginPath(); ctx.ellipse(p.sx+1,p.sy+ry*.35,rx*.92,ry*.4,0,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fill();
+
+  /* Taş */
+  const gr=ctx.createRadialGradient(p.sx-rx*.28,p.sy-ry*.28,rx*.05,p.sx,p.sy,rx);
+  if(color==='black'){gr.addColorStop(0,'#50505a');gr.addColorStop(1,'#0c0c12');}
+  else{gr.addColorStop(0,'#ffffff');gr.addColorStop(1,'#c4c0ba');}
+  ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry,0,0,Math.PI*2);
+  ctx.fillStyle=gr; ctx.fill();
+
+  ctx.restore();
+}
+
+function drawGhost() {
+  if (!ghost) return;
+  if (board.isOccupied(ghost.gx, ghost.gz)) return;
+  const check = isValidMove(board, ghost.gx, ghost.gz, board.turn);
+  if (!check.valid) return;
+  drawStone(ghost.gx, ghost.gz, board.turn, 0.38);
+}
+
+function drawStones() {
+  const Y = -(BOARD_H/2) - STONE_R*ASPECT_3D - 1;
+  const sorted = [...board.stones].sort((a,b) => {
+    const pa=project(-HALF+a.x*CELL,Y,-HALF+a.y*CELL);
+    const pb=project(-HALF+b.x*CELL,Y,-HALF+b.y*CELL);
+    return pa.z - pb.z;
+  });
+  for (const s of sorted) drawStone(s.x, s.y, s.color, 1);
+}
+
+/* Ko noktası vurgusu */
+function drawKoHint() {
+  if (!board.koPoint) return;
+  const gx=board.koPoint.x, gz=board.koPoint.y;
+  const wx=-HALF+gx*CELL, wz=-HALF+gz*CELL;
+  const wy=-(BOARD_H/2)-STONE_R*ASPECT_3D-1;
+  const p=project(wx,wy,wz);
+  ctx.save();
+  ctx.globalAlpha=.7+.3*Math.sin(Date.now()*.004);
+  ctx.strokeStyle='#e05050'; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.arc(p.sx,p.sy,stoneRx(p)*.55,0,Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* Ana döngü */
+function frame() {
+  ctx.clearRect(0,0,W,H);
+  drawBoard();
+  drawGrid();
+  drawGhost();
+  drawStones();
+  drawKoHint();
+  requestAnimationFrame(frame);
+}
+frame();
+updateStatus();
+</script>
+</body>
+</html>
