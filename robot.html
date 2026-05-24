@@ -281,7 +281,7 @@ function project(x, y, z) {
   const ry2 =  y * Math.cos(camPitch) - rz * Math.sin(camPitch);
   const rz2 =  y * Math.sin(camPitch) + rz * Math.cos(camPitch);
   const sc  = 700 / Math.max(700 + rz2, 1) * (camDist / 500);
-  return { sx: W / 2 + rx * sc, sy: H / 2 + ry2 * sc, scale: sc };
+  return { sx: W / 2 + rx * sc, sy: H / 2 + ry2 * sc, scale: sc, rz: rz2 };
 }
 
 /* Kamera sürükleme — masaüstü */
@@ -729,7 +729,7 @@ function drawStones() {
   const sorted = [...board.stones].sort((a, b) => {
     const pa = project(-HALF + a.x * CELL, Y, -HALF + a.y * CELL);
     const pb = project(-HALF + b.x * CELL, Y, -HALF + b.y * CELL);
-    return pa.z - pb.z;
+    return pb.rz - pa.rz; // uzaktaki önce çizilir (painter's algorithm)
   });
   for (const s of sorted) {
     const isLast = lastAIMoveXY && s.x === lastAIMoveXY.x && s.y === lastAIMoveXY.y;
