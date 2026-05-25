@@ -8,726 +8,575 @@
   <meta property="og:title" content="Antalya Go Topluluğu" />
   <meta property="og:description" content="Antalya'da Go oynayan topluluk. Öğren, oyna, buluşmalara katıl." />
   <meta property="og:type" content="website" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+
   <style>
+    /* ── RESET ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* ── TOKENS ── */
     :root {
-      /* Koyu neumorphic taban */
-      --bg:       #1c1c20;
-      --bg-l:     #232328;
-      --bg-d:     #141417;
-
-      /* Neumorphic gölgeler — koyu zemin için ters */
-      --sh-l:     rgba(38,38,44,0.9);
-      --sh-d:     rgba(10,10,12,0.9);
-      --nm-out:   6px 6px 16px var(--sh-d), -6px -6px 16px var(--sh-l);
-      --nm-out-h: 10px 10px 22px var(--sh-d), -10px -10px 22px var(--sh-l);
-      --nm-out-s: 4px 4px 10px var(--sh-d), -4px -4px 10px var(--sh-l);
-      --nm-in:    inset 4px 4px 10px var(--sh-d), inset -4px -4px 10px var(--sh-l);
-      --nm-in-s:  inset 2px 2px 6px var(--sh-d), inset -2px -2px 6px var(--sh-l);
-
-      /* Renkler */
-      --text:     #e8e4de;
-      --text2:    #7a7670;
-      --text3:    #484540;
-      --gold:     #c8a84b;
-      --gold2:    #e0be68;
-      --gold-glow:rgba(200,168,75,.18);
-      --r:        20px;
-      --r2:       12px;
+      --bg:         #0E0D0B;
+      --bg-surface: #161411;
+      --fg:         #F2EFE9;
+      --fg-muted:   #9A9187;
+      --accent:     #B8955A;
+      --border:     rgba(242, 239, 233, 0.10);
+      --grid-line:  rgba(242, 239, 233, 0.03);
     }
 
+    /* ── BASE ── */
     html, body {
       min-height: 100vh;
       background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', system-ui, sans-serif;
+      color: var(--fg);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
+      font-size: 16px;
+      line-height: 1.6;
     }
 
-    body::before {
-      content: '';
-      position: fixed; inset: 0;
+    /* ── GRID BACKGROUND ── */
+    .grid-bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
       background-image:
-        linear-gradient(rgba(200,168,75,.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(200,168,75,.04) 1px, transparent 1px);
-      background-size: 44px 44px;
-      pointer-events: none; z-index: 0;
+        repeating-linear-gradient(0deg,   var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent 48px),
+        repeating-linear-gradient(90deg,  var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent 48px);
+    }
+    @media (max-width: 768px) { .grid-bg { display: none; } }
+
+    /* ── SITE WRAPPER ── */
+    .site { position: relative; z-index: 1; }
+
+    /* ── INNER ── */
+    .inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
     }
 
-    .page { position: relative; z-index: 1; }
-
-    /* ── SAYFA ── */
-    .page {
-      min-height: 100vh;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 3rem 1.5rem;
-      gap: 3.5rem;
+    /* ── SECTION LABEL ── */
+    .section-label {
+      display: block;
+      font-size: 0.7rem; font-weight: 500;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--fg-muted);
+      margin-bottom: 1.75rem;
     }
 
-    /* ── HEADER ── */
-    .header { text-align: center; }
-
-    .logo-row {
-      display: flex; align-items: center; justify-content: center;
-      gap: .85rem; margin-bottom: 1.5rem;
+    /* ── DIVIDER ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
     }
 
-    /* Neumorphic taş çifti */
-    .nm-stones { display: flex; gap: 8px; align-items: center; }
-
-    .nm-stone {
-      width: 16px; height: 16px; border-radius: 50%;
-    }
-    .nm-stone.b {
-      background: #0e0e10;
-      box-shadow: var(--nm-out-s);
-    }
-    .nm-stone.w {
-      background: #d0ccc6;
-      box-shadow: var(--nm-out-s);
+    /* ══════════════════════════════════════
+       HERO
+    ══════════════════════════════════════ */
+    .hero {
+      min-height: 100svh;
+      display: flex; align-items: center;
+      padding: 7rem 1.5rem 4rem;
+      max-width: 960px; margin: 0 auto;
     }
 
-    .logo-sep {
-      width: 1px; height: 18px;
-      background: linear-gradient(to bottom, transparent, var(--sh-l), transparent);
+    .hero__content { max-width: 620px; }
+
+    .hero__heading {
+      font-size: clamp(2.4rem, 5.5vw, 4.8rem);
+      font-weight: 500;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      color: var(--fg);
+      margin-bottom: 1.5rem;
+      will-change: transform, opacity;
+      animation: fadeUp 0.4s ease-out 0.15s both;
     }
 
-    .logo-tag {
-      font-size: 12px; font-weight: 700;
-      letter-spacing: .22em; text-transform: uppercase;
-      color: var(--gold);
+    .hero__tagline {
+      font-size: 1rem; font-weight: 400;
+      color: var(--fg-muted); line-height: 1.6;
+      margin-bottom: 2.5rem;
+      will-change: transform, opacity;
+      animation: fadeUp 0.4s ease-out 0.28s both;
     }
 
-    h1 {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-size: clamp(3.2rem, 8vw, 5.2rem);
-      font-weight: 700;
-      letter-spacing: -.02em;
-      color: var(--text);
-      line-height: 1;
-      margin-bottom: .65rem;
-      text-shadow:
-        3px 3px 8px var(--sh-d),
-        -1px -1px 3px var(--sh-l);
+    .hero__cta {
+      display: flex; gap: 0.75rem; flex-wrap: wrap;
+      will-change: transform, opacity;
+      animation: fadeUp 0.4s ease-out 0.38s both;
     }
 
-    .tagline {
-      font-size: .95rem; font-weight: 300;
-      color: var(--text2); letter-spacing: .04em;
-      line-height: 1.55; margin-top: .3rem;
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── KART IZGARASI ── */
-    .cards {
+    /* ══════════════════════════════════════
+       BUTONLAR
+    ══════════════════════════════════════ */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 0.72rem 1.5rem;
+      border-radius: 6px;
+      font-family: inherit; font-size: 0.9rem; font-weight: 500;
+      text-decoration: none; cursor: pointer; border: none;
+      transition: background 200ms ease, color 200ms ease, border-color 200ms ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--fg); color: var(--bg);
+    }
+    .btn-primary:hover { background: var(--accent); }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--fg);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    .btn-accent {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+    }
+    .btn-accent:hover { background: var(--accent); color: var(--bg); }
+
+    @media (max-width: 768px) {
+      .hero__cta { flex-direction: column; }
+      .btn { width: 100%; padding: 1rem 1.5rem; }
+    }
+
+    /* ══════════════════════════════════════
+       ARAÇLAR
+    ══════════════════════════════════════ */
+    .tools {
+      padding: 4rem 1.5rem;
+      max-width: 960px; margin: 0 auto;
+    }
+
+    /* Robot — öne çıkan kart */
+    .tool-featured {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px 8px 0 0;
+      padding: 1.5rem 1.75rem;
+      display: flex; align-items: center; gap: 1.5rem;
+      text-decoration: none; color: var(--fg);
+      opacity: 0; transform: translateY(24px);
+      transition: background 200ms ease, transform 200ms ease;
+      will-change: transform, opacity;
+    }
+    .tool-featured.visible { opacity: 1; transform: translateY(0); }
+    .tool-featured:hover { background: #1a1814; transform: translateY(-2px); }
+
+    .tool-featured__canvas {
+      flex-shrink: 0;
+      border-radius: 5px;
+      overflow: hidden;
+      opacity: 0.88;
+      line-height: 0;
+    }
+
+    .tool-featured__body {
+      display: flex; flex-direction: column; gap: 0.4rem;
+    }
+
+    .tool-featured__title {
+      font-size: 1rem; font-weight: 500; color: var(--fg);
+    }
+
+    .tool-featured__desc {
+      font-size: 0.82rem; color: var(--fg-muted); line-height: 1.55;
+    }
+
+    .tool-featured__cta {
+      font-size: 0.78rem; font-weight: 500;
+      color: var(--accent); margin-top: 0.25rem;
+    }
+
+    @media (max-width: 560px) {
+      .tool-featured { flex-direction: column; align-items: flex-start; }
+    }
+
+    /* 4 araç grid */
+    .tool-grid {
       display: grid;
-      grid-template-columns: repeat(2, 256px);
-      gap: 1.5rem;
-    }
-
-    /* ── KART ── */
-    .card {
-      position: relative;
-      background: var(--bg);
-      border-radius: var(--r);
-      padding: 1.75rem 1.5rem 1.5rem;
-      text-decoration: none; color: var(--text);
-      display: flex; flex-direction: column; gap: 1rem;
-      box-shadow: var(--nm-out);
-      transition: box-shadow .28s ease, transform .22s ease;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
       overflow: hidden;
     }
 
-    /* Altın üst kenar çizgisi */
-    .card::before {
-      content: '';
-      position: absolute; top: 0; left: 12%; right: 12%;
-      height: 1px;
-      background: linear-gradient(90deg,
-        transparent,
-        rgba(200,168,75,.35) 30%,
-        rgba(200,168,75,.35) 70%,
-        transparent);
-      transition: opacity .25s;
-      opacity: .5;
+    .tool-card {
+      background: var(--bg-surface);
+      padding: 1.25rem 1.4rem;
+      display: flex; flex-direction: column; gap: 0.6rem;
+      text-decoration: none; color: var(--fg);
+      border-right: 1px solid var(--border);
+      opacity: 0; transform: translateY(24px);
+      transition: background 200ms ease, transform 200ms ease;
+      will-change: transform, opacity;
+    }
+    .tool-card:last-child { border-right: none; }
+    .tool-card.visible { opacity: 1; transform: translateY(0); }
+    .tool-card:hover { background: #1a1814; transform: translateY(-2px); }
+
+    .tool-card__icon {
+      width: 22px; height: 22px;
+      color: var(--fg-muted); flex-shrink: 0;
     }
 
-    .card:hover {
-      box-shadow: var(--nm-out-h);
-      transform: scale(1.035);
-    }
-    .card:hover::before { opacity: 1; }
-
-    .card:active {
-      box-shadow: var(--nm-in);
-      transform: scale(0.97);
-      transition: box-shadow .12s ease, transform .1s ease;
+    .tool-card__title {
+      font-size: 0.88rem; font-weight: 500; color: var(--fg);
     }
 
-    /* ── İKON ── */
-    .card-icon {
-      width: 46px; height: 46px; border-radius: var(--r2);
-      background: var(--bg);
-      box-shadow: var(--nm-in-s);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      transition: box-shadow .22s;
-    }
-    .card:hover .card-icon {
-      box-shadow:
-        inset 3px 3px 8px var(--sh-d),
-        inset -3px -3px 8px var(--sh-l),
-        0 0 12px var(--gold-glow);
+    .tool-card__desc {
+      font-size: 0.76rem; color: var(--fg-muted); line-height: 1.5; flex: 1;
     }
 
-    /* Mini board */
-    .mini-board {
-      display: grid; grid-template-columns: repeat(4,1fr);
-      gap: 1.5px; width: 26px; height: 26px; padding: 3px;
-    }
-    .mc { position:relative; display:flex; align-items:center; justify-content:center; }
-    .mc::before,.mc::after { content:''; position:absolute; background:rgba(200,168,75,.2); }
-    .mc::before { width:100%; height:.5px; top:50%; }
-    .mc::after  { width:.5px; height:100%; left:50%; }
-    .ms { width:6px; height:6px; border-radius:50%; position:relative; z-index:1; }
-    .ms.b {
-      background:#0a0a0c;
-      box-shadow: 1px 1px 2px rgba(0,0,0,.6), -0.5px -0.5px 1px rgba(255,255,255,.06);
-    }
-    .ms.w {
-      background:#c8c4be;
-      box-shadow: 1px 1px 2px rgba(0,0,0,.5), -0.5px -0.5px 1px rgba(255,255,255,.6);
+    .tool-card__cta {
+      font-size: 0.72rem; font-weight: 500;
+      color: var(--accent); margin-top: auto;
     }
 
-    /* Live dot */
-    .live-dot-wrap { position:relative; width:20px; height:20px; display:flex; align-items:center; justify-content:center; }
-    .live-dot { width:8px; height:8px; border-radius:50%; background:var(--gold); box-shadow:0 0 8px rgba(200,168,75,.5); }
-    .live-ring { position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(200,168,75,.3); animation:ring 2.4s ease-out infinite; }
-    .live-ring:nth-child(2) { animation-delay:.9s; }
-    @keyframes ring { 0%{transform:scale(.3);opacity:.9} 100%{transform:scale(2.1);opacity:0} }
-
-    /* ── KART BODY ── */
-    .card-body { display:flex; flex-direction:column; gap:.32rem; flex:1; }
-
-    .card-title {
-      font-size:.94rem; font-weight:600; color:var(--text); letter-spacing:-.01em;
+    @media (max-width: 768px) {
+      .tool-grid { grid-template-columns: repeat(2, 1fr); border-radius: 0 0 8px 8px; }
+      .tool-card:nth-child(2) { border-right: none; }
+      .tool-card:nth-child(1),
+      .tool-card:nth-child(2) { border-bottom: 1px solid var(--border); }
     }
 
-    .card-desc {
-      font-size:.78rem; font-weight:300; color:var(--text2); line-height:1.68;
+    @media (max-width: 440px) {
+      .tool-grid { grid-template-columns: 1fr; }
+      .tool-card { border-right: none; border-bottom: 1px solid var(--border); }
+      .tool-card:last-child { border-bottom: none; }
     }
 
-    /* ── KART ALT ── */
-    .card-foot {
-      display:flex; align-items:center; justify-content:space-between;
-      padding-top:.9rem; margin-top:auto;
-      border-top:.5px solid rgba(255,255,255,.05);
+    /* ══════════════════════════════════════
+       ETKİNLİK
+    ══════════════════════════════════════ */
+    .event {
+      padding: 4rem 1.5rem;
+      max-width: 960px; margin: 0 auto;
     }
 
-    .card-cta {
-      font-size:.72rem; font-weight:500; letter-spacing:.08em;
-      text-transform:uppercase; color:var(--gold);
-      transition:letter-spacing .2s;
-    }
-    .card:hover .card-cta { letter-spacing:.12em; }
-
-    .card-btn {
-      width:26px; height:26px; border-radius:50%;
-      background:var(--bg);
-      box-shadow:var(--nm-out-s);
-      display:flex; align-items:center; justify-content:center;
-      font-size:11px; color:var(--gold);
-      transition:box-shadow .22s;
-    }
-    .card:hover .card-btn { box-shadow:var(--nm-in-s); }
-
-    /* ── FOOTER ── */
-    .footer { display:flex; flex-direction:column; align-items:center; gap:.7rem; }
-
-    /* Nefes alan taş — yandan görünüm, beyaz */
-    .breath-wrap {
-      position:relative;
-      width:48px; height:24px;
-      animation:breathe 7s ease-in-out infinite;
+    .event__card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2rem 2.25rem;
+      display: flex; align-items: center;
+      gap: 2.5rem; flex-wrap: wrap;
     }
 
-    .breath-stone {
-      position:absolute; inset:0; border-radius:50%;
-      background:
-        radial-gradient(ellipse 58% 44% at 34% 28%,
-          #ffffff 0%,
-          #d8d4ce 40%,
-          #b0aca6 100%);
-      box-shadow:
-        0 5px 18px rgba(0,0,0,.55),
-        0 2px 6px rgba(0,0,0,.35),
-        inset 0 -3px 7px rgba(0,0,0,.25),
-        inset 2px 2px 5px rgba(255,255,255,.9),
-        inset -1px -2px 4px rgba(140,130,120,.4);
+    .event__date {
+      display: flex; flex-direction: column; gap: 0.1rem;
+      min-width: 70px;
     }
 
-    /* Üst yansıma */
-    .breath-stone::before {
-      content:'';
-      position:absolute;
-      top:14%; left:16%;
-      width:34%; height:18%;
-      border-radius:50%;
-      background:radial-gradient(ellipse, rgba(255,255,255,.95) 0%, transparent 100%);
-      transform:rotate(-16deg);
+    .event__day {
+      font-size: clamp(3rem, 6vw, 4.5rem);
+      font-weight: 700; line-height: 1;
+      color: var(--accent); letter-spacing: -0.03em;
     }
 
-    /* Zemin gölgesi */
-    .breath-stone::after {
-      content:'';
-      position:absolute;
-      bottom:-9px; left:10%; right:10%;
-      height:6px; border-radius:50%;
-      background:rgba(0,0,0,.28);
-      filter:blur(4px);
+    .event__when {
+      font-size: 0.78rem; font-weight: 400;
+      color: var(--fg-muted); letter-spacing: 0.05em;
     }
 
-    @keyframes breathe {
-      0%   { opacity:.08; transform:scale(.84); filter:drop-shadow(0 2px 4px rgba(0,0,0,.15)); }
-      50%  { opacity:.9;  transform:scale(1);   filter:drop-shadow(0 8px 18px rgba(0,0,0,.5)) drop-shadow(0 0 12px rgba(255,255,255,.08)); }
-      100% { opacity:.08; transform:scale(.84); filter:drop-shadow(0 2px 4px rgba(0,0,0,.15)); }
+    .event__info {
+      flex: 1; min-width: 180px;
+      display: flex; flex-direction: column; gap: 0.3rem;
     }
 
-    /* Ayraç */
-    .nm-divider {
-      width:48px; height:3px; border-radius:2px;
-      background:var(--bg);
-      box-shadow:var(--nm-in-s);
+    .event__title {
+      font-size: 1.05rem; font-weight: 500; color: var(--fg);
     }
 
-    .footer-text {
-      font-size:.68rem; font-weight:300;
-      color:var(--text3); letter-spacing:.1em;
-    }
-    .footer-text a { color:var(--text2); text-decoration:none; transition:color .15s; }
-    .footer-text a:hover { color:var(--gold); }
-
-    /* ── ANİMASYONLAR ── */
-    @keyframes fadeUp {
-      from { opacity:0; transform:translateY(22px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
-    .header { animation:fadeUp .7s ease both; }
-    .cards  { animation:fadeUp .7s .14s ease both; }
-    .footer { animation:fadeUp .7s .26s ease both; }
-
-    /* ── RESPONSIVE ── */
-    @media(max-width:560px) {
-      .cards { grid-template-columns:1fr; gap:1.25rem; }
-      .card  { padding:1.5rem 1.25rem; }
+    .event__location {
+      font-size: 0.82rem; color: var(--fg-muted);
     }
 
-    /* ── HERO CTA BUTONLARI ── */
-    .hero-ctas {
-      display: flex; gap: .85rem;
-      justify-content: center; flex-wrap: wrap;
-      margin-top: 1.6rem;
+    .event__note {
+      font-size: 0.7rem; color: var(--fg-muted); opacity: 0.55;
+      letter-spacing: 0.04em; margin-top: 0.15rem;
     }
 
-    .hero-cta {
-      display: inline-flex; align-items: center;
-      padding: .64rem 1.5rem;
-      border-radius: 9px;
-      font-size: .82rem; font-weight: 600; letter-spacing: .04em;
-      text-decoration: none;
-      transition: all .22s ease;
+    @media (max-width: 560px) {
+      .event__card { flex-direction: column; align-items: flex-start; gap: 1.25rem; }
+      .event__card .btn { width: 100%; }
     }
 
-    .hero-cta-primary {
-      background: rgba(200,168,75,.13);
-      border: 1px solid rgba(200,168,75,.45);
-      color: var(--gold2);
-      box-shadow: 0 0 22px rgba(200,168,75,.08);
-    }
-    .hero-cta-primary:hover {
-      background: rgba(200,168,75,.22);
-      border-color: var(--gold2);
-      box-shadow: 0 0 28px rgba(200,168,75,.18);
+    /* ══════════════════════════════════════
+       TOPLULUK
+    ══════════════════════════════════════ */
+    .community {
+      padding: 4rem 1.5rem 6rem;
+      max-width: 960px; margin: 0 auto;
     }
 
-    .hero-cta-ghost {
-      background: transparent;
-      border: 1px solid rgba(255,255,255,.11);
-      color: var(--text2);
-    }
-    .hero-cta-ghost:hover {
-      border-color: rgba(255,255,255,.24);
-      color: var(--text);
+    .community__body {
+      display: flex; gap: 4rem; align-items: flex-start; flex-wrap: wrap;
     }
 
-    /* ── ETKİNLİK BÖLÜMÜ ── */
-    .event-section {
-      width: 100%; max-width: 532px;
-      display: flex; flex-direction: column; gap: .7rem;
+    .community__text {
+      flex: 1; min-width: 240px;
+      display: flex; flex-direction: column; gap: 0.6rem;
     }
 
-    .event-label {
-      font-size: .65rem; font-weight: 600;
-      letter-spacing: .22em; text-transform: uppercase;
-      color: var(--text3); text-align: center;
+    .community__text p {
+      font-size: 0.95rem; font-weight: 400;
+      color: var(--fg-muted); line-height: 1.75;
     }
 
-    .event-card {
-      background: var(--bg);
-      border-radius: var(--r2);
-      padding: 1.1rem 1.4rem;
-      display: flex; align-items: center; gap: 1.1rem;
-      box-shadow: var(--nm-out-s);
-      border: 1px solid rgba(200,168,75,.1);
-      text-decoration: none; color: var(--text);
-      transition: box-shadow .25s, border-color .25s;
-    }
-    .event-card:hover {
-      box-shadow: var(--nm-out);
-      border-color: rgba(200,168,75,.28);
+    .community__links {
+      display: flex; flex-direction: column; gap: 0.1rem;
+      min-width: 160px;
     }
 
-    .event-date {
-      display: flex; flex-direction: column;
-      align-items: center; min-width: 40px; gap: .08rem;
+    .community__link {
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      font-size: 0.85rem; font-weight: 500;
+      color: var(--fg-muted); text-decoration: none;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid transparent;
+      transition: color 180ms ease, border-color 180ms ease;
     }
-    .event-day {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-size: 1.7rem; font-weight: 700;
-      color: var(--gold); line-height: 1;
-    }
-    .event-month {
-      font-size: .6rem; font-weight: 600;
-      letter-spacing: .12em; text-transform: uppercase;
-      color: var(--text3);
+    .community__link:hover { color: var(--fg); border-bottom-color: var(--border); }
+
+    .community__link svg { flex-shrink: 0; opacity: 0.7; }
+
+    /* ══════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════ */
+    .site-footer {
+      border-top: 1px solid var(--border);
+      padding: 1.75rem 1.5rem;
+      max-width: 960px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 0.75rem;
     }
 
-    .event-divider {
-      width: 1px; height: 36px; flex-shrink: 0;
-      background: linear-gradient(to bottom,
-        transparent, rgba(200,168,75,.22), transparent);
+    .site-footer__brand {
+      font-size: 0.82rem; font-weight: 500; color: var(--fg-muted);
     }
 
-    .event-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .22rem; }
-    .event-title { font-size: .88rem; font-weight: 600; color: var(--text); }
-    .event-meta  { font-size: .72rem; color: var(--text2); }
-
-    .event-join {
-      font-size: .72rem; font-weight: 600;
-      letter-spacing: .06em; color: var(--gold);
-      white-space: nowrap; transition: letter-spacing .2s;
+    .site-footer__link {
+      font-size: 0.75rem; color: var(--fg-muted);
+      text-decoration: none; transition: color 150ms;
     }
-    .event-card:hover .event-join { letter-spacing: .1em; }
+    .site-footer__link:hover { color: var(--fg); }
 
-    /* ── SOSYAL BAĞLANTILAR ── */
-    .social-links {
-      display: flex; gap: .75rem; align-items: center; justify-content: center;
-    }
-    .social-link {
-      font-size: .68rem; font-weight: 500; letter-spacing: .08em;
-      color: var(--text3); text-decoration: none;
-      padding: .3rem .72rem; border-radius: 5px;
-      border: .5px solid rgba(255,255,255,.07);
-      transition: color .18s, border-color .18s;
-    }
-    .social-link:hover { color: var(--gold); border-color: rgba(200,168,75,.32); }
-
-    /* ── MOBİL STICKY BAR ── */
+    /* ══════════════════════════════════════
+       MOBİL STICKY BAR
+    ══════════════════════════════════════ */
     .sticky-bar {
       display: none;
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-      padding: .7rem 1rem calc(.7rem + env(safe-area-inset-bottom));
-      background: rgba(18,18,21,.93);
+      padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom));
+      background: rgba(14, 13, 11, 0.96);
       backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      border-top: .5px solid rgba(255,255,255,.07);
-      gap: .65rem;
+      border-top: 1px solid var(--border);
+      gap: 0.65rem;
     }
-    @media(max-width:768px) {
+    @media (max-width: 768px) {
       .sticky-bar { display: flex; }
-      .page { padding-bottom: 5.5rem; }
+      body { padding-bottom: 5.5rem; }
     }
 
     .sticky-btn {
       flex: 1; display: flex; align-items: center; justify-content: center;
-      padding: .78rem 1rem; border-radius: 10px;
-      font-size: .8rem; font-weight: 600; letter-spacing: .03em;
-      text-decoration: none; transition: all .18s ease;
+      padding: 0.78rem 1rem; border-radius: 6px;
+      font-family: inherit; font-size: 0.82rem; font-weight: 600;
+      text-decoration: none; transition: all 0.18s ease;
     }
+
     .sticky-community {
-      background: rgba(200,168,75,.12);
-      border: 1px solid rgba(200,168,75,.32);
-      color: var(--gold);
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--fg-muted);
     }
-    .sticky-community:active { background: rgba(200,168,75,.22); }
+    .sticky-community:active { border-color: var(--accent); color: var(--accent); }
+
     .sticky-play {
-      background: var(--gold); color: #0e0e10; font-weight: 700;
+      background: var(--fg); color: var(--bg); font-weight: 700;
     }
-    .sticky-play:active { background: var(--gold2); }
+    .sticky-play:active { background: var(--accent); }
 
-    /* ── ROBOT KARTI ── */
-    .card-robot {
-      grid-column: 1 / -1;
-      flex-direction: row;
-      align-items: center;
-      gap: 1.4rem;
-      padding: 1.4rem 1.5rem;
-      background:
-        linear-gradient(135deg, rgba(200,168,75,.06) 0%, transparent 60%),
-        var(--bg);
-      border: 1px solid rgba(200,168,75,.22);
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* Sağdan sola kayan ışık taraması */
-    .card-robot::after {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(110deg,
-        transparent 20%,
-        rgba(200,168,75,.07) 50%,
-        transparent 80%);
-      transform: translateX(-100%);
-      transition: transform .7s ease;
-      pointer-events: none;
-    }
-    .card-robot:hover::after { transform: translateX(100%); }
-
-    /* Üst kenar çizgisi — robot kartı için tam genişlik */
-    .card-robot::before { left: 5%; right: 5%; opacity: .75; }
-
-    /* Mini tahta */
-    .robot-board-wrap {
-      flex-shrink: 0;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: var(--nm-in);
-      background: rgba(200,160,60,.06);
-      line-height: 0;
-    }
-
-    /* Metin bloğu */
-    .robot-meta {
-      display: flex; flex-direction: column;
-      gap: .55rem; flex: 1; min-width: 0;
-    }
-
-    .robot-header {
-      display: flex; align-items: center; gap: .55rem; flex-wrap: wrap;
-    }
-
-    .robot-title {
-      font-size: 1rem; font-weight: 600; color: var(--text);
-    }
-
-    .robot-badge {
-      font-size: .58rem; font-weight: 700; letter-spacing: .1em;
-      text-transform: uppercase;
-      background: rgba(200,168,75,.14);
-      border: 1px solid rgba(200,168,75,.32);
-      color: var(--gold); padding: .14rem .42rem; border-radius: 3px;
-    }
-
-    .robot-desc {
-      font-size: .78rem; color: var(--text2); line-height: 1.65;
-    }
-
-    /* Düşünüyor noktaları */
-    .robot-thinking {
-      display: flex; align-items: center; gap: .38rem;
-      font-size: .68rem; font-weight: 500; color: var(--gold);
-      opacity: .8;
-    }
-    .think-dot {
-      width: 4px; height: 4px; border-radius: 50%;
-      background: var(--gold);
-      animation: think 1.5s ease-in-out infinite;
-    }
-    .think-dot:nth-child(2) { animation-delay: .22s; }
-    .think-dot:nth-child(3) { animation-delay: .44s; }
-    @keyframes think {
-      0%,80%,100% { transform: scale(.5); opacity: .3; }
-      40% { transform: scale(1.2); opacity: 1; }
-    }
-
-    /* CTA butonu */
-    .robot-cta {
-      display: inline-flex; align-items: center; gap: .4rem;
-      padding: .48rem 1.1rem;
-      background: rgba(200,168,75,.1);
-      border: 1px solid rgba(200,168,75,.3);
-      border-radius: 7px;
-      color: var(--gold);
-      font-size: .76rem; font-weight: 600; letter-spacing: .05em;
-      transition: background .22s, border-color .22s, box-shadow .22s;
-      align-self: flex-start;
-    }
-    .card-robot:hover .robot-cta {
-      background: rgba(200,168,75,.2);
-      border-color: var(--gold2);
-      box-shadow: 0 0 18px rgba(200,168,75,.18);
-    }
-
-    /* Mobil: dikey düzen */
-    @media(max-width:560px) {
-      .card-robot {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
+    /* ══════════════════════════════════════
+       REDUCED MOTION
+    ══════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
       }
-      .robot-board-wrap { align-self: center; }
+      .tool-featured, .tool-card { opacity: 1; transform: none; }
     }
   </style>
 </head>
 <body>
-<div class="page">
 
-  <!-- HEADER -->
-  <div class="header">
-    <div class="logo-row">
-      <div class="nm-stones">
-        <div class="nm-stone b"></div>
-        <div class="nm-stone w"></div>
-        <div class="nm-stone b"></div>
+<div class="grid-bg"></div>
+
+<div class="site">
+
+  <!-- ══ HERO ══ -->
+  <section class="hero" id="hero">
+    <div class="hero__content">
+      <h1 class="hero__heading">
+        Bir tahta.<br>İki renk.<br>Sonsuz olasılık.
+      </h1>
+      <p class="hero__tagline">Antalya Go Topluluğu — Herkese açık. Ücretsiz. Gerçek.</p>
+      <div class="hero__cta">
+        <a href="ogren-3d.html" class="btn btn-primary">Öğrenmeye Başla</a>
+        <a href="robot.html"    class="btn btn-secondary">Robot ile Oyna →</a>
       </div>
-      <div class="logo-sep"></div>
-      <span class="logo-tag">Antalya GO Topluluğu</span>
     </div>
-    <h1>GO</h1>
-    <p class="tagline">Antalya'da bir masa, iki taş, sonsuz olasılık.</p>
-    <div class="hero-ctas">
-      <a class="hero-cta hero-cta-ghost" href="go-nedir.html">Go Nedir? Keşfet</a>
-      <a class="hero-cta hero-cta-primary" href="#topluluk">Topluluğa Katıl →</a>
-    </div>
-  </div>
+  </section>
 
-  <!-- KARTLAR -->
-  <div class="cards">
+  <hr class="divider">
 
-    <!-- Robot ile Oyna — Öne Çıkan Kart -->
-    <a class="card card-robot" href="robot.html">
-      <div class="robot-board-wrap">
+  <!-- ══ ARAÇLAR ══ -->
+  <div class="tools">
+    <span class="section-label">Araçlar</span>
+
+    <!-- Robot — öne çıkan -->
+    <a class="tool-featured" href="robot.html">
+      <div class="tool-featured__canvas">
         <canvas id="rb-canvas" width="96" height="96"></canvas>
       </div>
-      <div class="robot-meta">
-        <div class="robot-header">
-          <span class="robot-title">Yapay Zekaya Karşı</span>
-        </div>
-        <div class="robot-desc">Antalya Go Topluluğu'nun yapay zeka motoruyla 9×9 tahtada oyna. Tecrübe gerekmez.</div>
-        <div class="robot-thinking" id="robot-thinking">
-          <span class="think-dot"></span>
-          <span class="think-dot"></span>
-          <span class="think-dot"></span>
-          <span id="think-label">Yapay Zeka hazır</span>
-        </div>
-        <div class="robot-cta">Hemen Oyna →</div>
+      <div class="tool-featured__body">
+        <div class="tool-featured__title">Yapay Zekaya Karşı</div>
+        <div class="tool-featured__desc">Antalya Go Topluluğu'nun yapay zeka motoruyla 9×9 tahtada oyna. Tecrübe gerekmez.</div>
+        <span class="tool-featured__cta">Hemen Oyna →</span>
       </div>
     </a>
 
-    <a class="card" href="ogren-3d.html">
-      <div class="card-icon"><span style="font-size:19px">📖</span></div>
-      <div class="card-body">
-        <div class="card-title">Go'yu Öğren</div>
-        <div class="card-desc">3D interaktif derslerle, adım adım, sıfırdan öğren. 15 ders, kendi hızında.</div>
-      </div>
-      <div class="card-foot">
-        <span class="card-cta">Derse Başla</span>
-        <div class="card-btn">→</div>
-      </div>
-    </a>
+    <!-- 4 kart -->
+    <div class="tool-grid">
 
-    <a class="card" href="etud.html">
-      <div class="card-icon">
-        <div class="mini-board">
-          <div class="mc"><div class="ms b"></div></div><div class="mc"></div>
-          <div class="mc"><div class="ms w"></div></div><div class="mc"></div>
-          <div class="mc"></div><div class="mc"><div class="ms b"></div></div>
-          <div class="mc"></div><div class="mc"><div class="ms w"></div></div>
-          <div class="mc"><div class="ms w"></div></div><div class="mc"></div>
-          <div class="mc"><div class="ms b"></div></div><div class="mc"></div>
-          <div class="mc"></div><div class="mc"><div class="ms b"></div></div>
-          <div class="mc"></div><div class="mc"><div class="ms w"></div></div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-title">Partini Analiz Et</div>
-        <div class="card-desc">Oyunlarını incele, yapay zeka önerileri al, zayıf noktalarını bul.</div>
-      </div>
-      <div class="card-foot">
-        <span class="card-cta">Analize Başla</span>
-        <div class="card-btn">→</div>
-      </div>
-    </a>
+      <a class="tool-card" href="ogren-3d.html">
+        <svg class="tool-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        <div class="tool-card__title">Go'yu Öğren</div>
+        <div class="tool-card__desc">3D interaktif derslerle sıfırdan öğren. 15 ders, kendi hızında.</div>
+        <span class="tool-card__cta">Derse Başla →</span>
+      </a>
 
-    <a class="card" href="problem.html">
-      <div class="card-icon"><span style="font-size:19px">🧩</span></div>
-      <div class="card-body">
-        <div class="card-title">Zihnini Çalıştır</div>
-        <div class="card-desc">Günlük tsumego problemleriyle Go reflekslerini geliştir.</div>
-      </div>
-      <div class="card-foot">
-        <span class="card-cta">Probleme Bak</span>
-        <div class="card-btn">→</div>
-      </div>
-    </a>
+      <a class="tool-card" href="etud.html">
+        <svg class="tool-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          <line x1="8" y1="11" x2="14" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/>
+        </svg>
+        <div class="tool-card__title">Partini Analiz Et</div>
+        <div class="tool-card__desc">Oyunlarını incele, yapay zeka önerileri al.</div>
+        <span class="tool-card__cta">Analize Başla →</span>
+      </a>
 
-    <a class="card" href="oyna.html">
-      <div class="card-icon">
-        <div class="live-dot-wrap">
-          <div class="live-ring"></div>
-          <div class="live-ring"></div>
-          <div class="live-dot"></div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-title">İnsanlarla Oyna</div>
-        <div class="card-desc">Gerçek oyunculara karşı maç yap. Google hesabınla saniyeler içinde giriş.</div>
-      </div>
-      <div class="card-foot">
-        <span class="card-cta">Maça Katıl</span>
-        <div class="card-btn">→</div>
-      </div>
-    </a>
+      <a class="tool-card" href="problem.html">
+        <svg class="tool-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <div class="tool-card__title">Zihnini Çalıştır</div>
+        <div class="tool-card__desc">Tsumego problemleriyle Go reflekslerini geliştir.</div>
+        <span class="tool-card__cta">Probleme Bak →</span>
+      </a>
 
-  </div>
+      <a class="tool-card" href="oyna.html">
+        <svg class="tool-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <div class="tool-card__title">İnsanlarla Oyna</div>
+        <div class="tool-card__desc">Gerçek oyunculara karşı maç yap. Google hesabınla giriş.</div>
+        <span class="tool-card__cta">Maça Katıl →</span>
+      </a>
 
-  <!-- ETKİNLİK -->
-  <div class="event-section">
-    <div class="event-label">Bir Sonraki Buluşma</div>
-    <a class="event-card" href="#topluluk">
-      <div class="event-date">
-        <span class="event-day">07</span>
-        <span class="event-month">Haz</span>
-      </div>
-      <div class="event-divider"></div>
-      <div class="event-info">
-        <div class="event-title">Haftalık Go Buluşması</div>
-        <div class="event-meta">Cumartesi · 15:00 · Antalya</div>
-      </div>
-      <span class="event-join">Katıl →</span>
-    </a>
-  </div>
-
-  <!-- FOOTER -->
-  <div class="footer" id="topluluk">
-    <div class="social-links">
-      <a class="social-link" href="https://wa.me/905000000000" target="_blank" rel="noopener">WhatsApp Grubu</a>
-      <a class="social-link" href="https://instagram.com/antalyago" target="_blank" rel="noopener">Instagram</a>
-      <a class="social-link" href="mailto:info@antalyago.org">İletişim</a>
     </div>
-    <div class="breath-wrap">
-      <div class="breath-stone"></div>
-    </div>
-    <div class="nm-divider"></div>
-    <p class="footer-text">
-      <a href="https://antalyago.org" target="_blank">AntalyaGO.org</a> · Antalya Go Topluluğu
-    </p>
   </div>
 
-</div>
+  <hr class="divider">
+
+  <!-- ══ ETKİNLİK ══ -->
+  <div class="event" id="etkinlik">
+    <span class="section-label">Bir Sonraki Buluşma</span>
+    <div class="event__card">
+      <div class="event__date">
+        <span class="event__day">07</span>
+        <span class="event__when">Haz · Cmt · 15:00</span>
+      </div>
+      <div class="event__info">
+        <div class="event__title">Haftalık Go Buluşması</div>
+        <div class="event__location">Antalya</div>
+        <div class="event__note">Sadece gel. Üyelik yok.</div>
+      </div>
+      <a href="https://wa.me/905000000000" target="_blank" rel="noopener" class="btn btn-accent">
+        WhatsApp Grubuna Katıl
+      </a>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ══ TOPLULUK ══ -->
+  <div class="community" id="topluluk">
+    <span class="section-label">Topluluk</span>
+    <div class="community__body">
+      <div class="community__text">
+        <p>Antalya'da 2018'den beri her cumartesi buluşuyoruz.</p>
+        <p>İlk dersinden profesyonel turnuvaya, herkes aynı masada oturur.</p>
+        <p>Go öğrenmek için bir neden yeterli: merak.</p>
+      </div>
+      <div class="community__links">
+        <a class="community__link" href="https://wa.me/905000000000" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+          </svg>
+          WhatsApp
+        </a>
+        <a class="community__link" href="https://instagram.com/antalyago" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+          </svg>
+          Instagram
+        </a>
+        <a class="community__link" href="mailto:info@antalyago.org">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+          E-posta
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FOOTER ══ -->
+  <footer>
+    <hr class="divider">
+    <div class="site-footer">
+      <span class="site-footer__brand">Antalya Go Topluluğu</span>
+      <a href="https://antalyago.org" target="_blank" class="site-footer__link">AntalyaGO.org</a>
+    </div>
+  </footer>
+
+</div><!-- /site -->
 
 <!-- MOBİL STICKY BAR -->
 <div class="sticky-bar">
@@ -736,143 +585,113 @@
 </div>
 
 <script>
+/* ── Tool Card Scroll Stagger ── */
+(function () {
+  const featured = document.querySelector('.tool-featured');
+  const cards    = document.querySelectorAll('.tool-card');
+  const all      = [featured, ...cards].filter(Boolean);
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      const idx = all.indexOf(entry.target);
+      setTimeout(() => entry.target.classList.add('visible'), idx * 80);
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.1 });
+
+  all.forEach(el => observer.observe(el));
+})();
+
 /* ── Mini Robot Tahta Animasyonu ── */
-(function() {
+(function () {
   const cv = document.getElementById('rb-canvas');
   if (!cv) return;
   const cx = cv.getContext('2d');
   const W = cv.width, H = cv.height;
   const N = 7, PAD = 8;
   const CELL = (W - PAD * 2) / (N - 1);
-  const R = CELL * 0.40;
+  const R    = CELL * 0.40;
 
-  /* Önceden belirlenmiş hamle dizisi — görsel amaçlı */
   const MOVES = [
-    {x:3,y:3,c:'B'}, {x:2,y:2,c:'W'}, {x:4,y:2,c:'B'},
-    {x:2,y:4,c:'W'}, {x:4,y:4,c:'B'}, {x:3,y:1,c:'W'},
-    {x:1,y:3,c:'B'}, {x:5,y:3,c:'W'}, {x:1,y:2,c:'B'},
-    {x:5,y:4,c:'W'}, {x:2,y:5,c:'B'}, {x:4,y:1,c:'W'},
-    {x:3,y:5,c:'B'}, {x:1,y:4,c:'W'}, {x:5,y:2,c:'B'},
-    {x:0,y:3,c:'W'}, {x:6,y:3,c:'B'}, {x:3,y:6,c:'W'},
+    {x:3,y:3,c:'B'},{x:2,y:2,c:'W'},{x:4,y:2,c:'B'},
+    {x:2,y:4,c:'W'},{x:4,y:4,c:'B'},{x:3,y:1,c:'W'},
+    {x:1,y:3,c:'B'},{x:5,y:3,c:'W'},{x:1,y:2,c:'B'},
+    {x:5,y:4,c:'W'},{x:2,y:5,c:'B'},{x:4,y:1,c:'W'},
+    {x:3,y:5,c:'B'},{x:1,y:4,c:'W'},{x:5,y:2,c:'B'},
+    {x:0,y:3,c:'W'},{x:6,y:3,c:'B'},{x:3,y:6,c:'W'},
   ];
 
-  let placed = [];
-  let idx    = 0;
-  let hovered = false;
-  let thinkTimer = null;
-  const label = document.getElementById('think-label');
-  const wrap  = cv.closest('.card-robot');
-
+  let placed = [], idx = 0, hovered = false, timer = null;
+  const wrap = cv.closest('.tool-featured');
   if (wrap) {
     wrap.addEventListener('mouseenter', () => { hovered = true; });
     wrap.addEventListener('mouseleave', () => { hovered = false; });
   }
 
-  function draw(highlightLast) {
+  function draw(hl) {
     cx.clearRect(0, 0, W, H);
 
     /* Zemin */
     const bg = cx.createLinearGradient(0, 0, W, H);
-    bg.addColorStop(0, 'rgba(200,160,60,.12)');
-    bg.addColorStop(1, 'rgba(200,160,60,.04)');
+    bg.addColorStop(0, 'rgba(184,149,90,.10)');
+    bg.addColorStop(1, 'rgba(184,149,90,.03)');
     cx.fillStyle = bg;
-    cx.beginPath();
-    cx.roundRect(0, 0, W, H, 6);
-    cx.fill();
+    cx.beginPath(); cx.roundRect(0, 0, W, H, 4); cx.fill();
 
     /* Izgara */
-    cx.strokeStyle = 'rgba(200,168,75,.30)';
-    cx.lineWidth = 0.6;
+    cx.strokeStyle = 'rgba(242,239,233,.12)'; cx.lineWidth = 0.6;
     for (let i = 0; i < N; i++) {
       const p = PAD + i * CELL;
-      cx.beginPath(); cx.moveTo(p, PAD); cx.lineTo(p, H - PAD); cx.stroke();
-      cx.beginPath(); cx.moveTo(PAD, p); cx.lineTo(W - PAD, p); cx.stroke();
+      cx.beginPath(); cx.moveTo(p, PAD);   cx.lineTo(p, H - PAD); cx.stroke();
+      cx.beginPath(); cx.moveTo(PAD, p);   cx.lineTo(W - PAD, p); cx.stroke();
     }
 
     /* Hoshi */
-    const hoshi = [[1,1],[5,1],[3,3],[1,5],[5,5]];
-    cx.fillStyle = 'rgba(200,168,75,.50)';
-    for (const [hx, hy] of hoshi) {
+    cx.fillStyle = 'rgba(184,149,90,.45)';
+    [[1,1],[5,1],[3,3],[1,5],[5,5]].forEach(([hx,hy]) => {
       if (hx < N && hy < N) {
         cx.beginPath();
-        cx.arc(PAD + hx * CELL, PAD + hy * CELL, 1.6, 0, Math.PI * 2);
+        cx.arc(PAD + hx * CELL, PAD + hy * CELL, 1.5, 0, Math.PI * 2);
         cx.fill();
       }
-    }
+    });
 
     /* Taşlar */
     placed.forEach((s, i) => {
-      const sx = PAD + s.x * CELL;
-      const sy = PAD + s.y * CELL;
-      const isLast = highlightLast && i === placed.length - 1;
+      const sx = PAD + s.x * CELL, sy = PAD + s.y * CELL;
+      const isLast = hl && i === placed.length - 1;
 
-      /* Gölge */
-      cx.beginPath();
-      cx.arc(sx + 1, sy + 1.8, R, 0, Math.PI * 2);
-      cx.fillStyle = 'rgba(0,0,0,.38)';
-      cx.fill();
+      cx.beginPath(); cx.arc(sx + 1, sy + 1.8, R, 0, Math.PI * 2);
+      cx.fillStyle = 'rgba(0,0,0,.38)'; cx.fill();
 
-      /* Taş */
       const gr = cx.createRadialGradient(sx - R*.28, sy - R*.28, R*.06, sx, sy, R);
-      if (s.c === 'B') {
-        gr.addColorStop(0, '#50505a');
-        gr.addColorStop(1, '#0c0c12');
-      } else {
-        gr.addColorStop(0, '#ffffff');
-        gr.addColorStop(1, '#c4c0ba');
-      }
-      cx.beginPath();
-      cx.arc(sx, sy, R, 0, Math.PI * 2);
-      cx.fillStyle = gr;
-      cx.fill();
+      if (s.c === 'B') { gr.addColorStop(0,'#50505a'); gr.addColorStop(1,'#0c0c12'); }
+      else             { gr.addColorStop(0,'#ffffff'); gr.addColorStop(1,'#c4c0ba'); }
+      cx.beginPath(); cx.arc(sx, sy, R, 0, Math.PI * 2);
+      cx.fillStyle = gr; cx.fill();
 
-      /* Son taş üçgen işareti */
       if (isLast) {
-        cx.beginPath();
-        cx.arc(sx, sy, R * .36, 0, Math.PI * 2);
+        cx.beginPath(); cx.arc(sx, sy, R * .36, 0, Math.PI * 2);
         cx.fillStyle = s.c === 'B' ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.38)';
         cx.fill();
       }
     });
   }
 
-  function showThinking(on) {
-    if (!label) return;
-    label.textContent = on ? 'Yapay Zeka düşünüyor…' : 'Yapay Zeka hazır';
-  }
-
   function tick() {
     if (idx >= MOVES.length) {
-      /* Sıfırla — kısa bekleme sonrası */
-      showThinking(false);
-      thinkTimer = setTimeout(() => {
-        placed = []; idx = 0;
-        draw(false);
-        schedule();
-      }, 3000);
+      timer = setTimeout(() => { placed = []; idx = 0; draw(false); schedule(); }, 3000);
       return;
     }
-
-    /* Hamle öncesi "düşünüyor" efekti */
-    const isRobot = MOVES[idx].c === 'W';
-    if (isRobot) showThinking(true);
-
-    const thinkDelay = isRobot
-      ? (hovered ? 300 : 900) + Math.random() * (hovered ? 200 : 400)
-      : 0;
-
-    thinkTimer = setTimeout(() => {
-      showThinking(false);
-      placed.push(MOVES[idx++]);
-      draw(true);
-      schedule();
-    }, thinkDelay);
+    const delay = MOVES[idx].c === 'W'
+      ? (hovered ? 300 : 900) + Math.random() * (hovered ? 200 : 400) : 0;
+    timer = setTimeout(() => { placed.push(MOVES[idx++]); draw(true); schedule(); }, delay);
   }
 
   function schedule() {
     const base = hovered ? 350 : 1100;
-    const jitter = hovered ? 150 : 500;
-    thinkTimer = setTimeout(tick, base + Math.random() * jitter);
+    timer = setTimeout(tick, base + Math.random() * (hovered ? 150 : 500));
   }
 
   draw(false);
