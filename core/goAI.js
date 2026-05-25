@@ -150,11 +150,12 @@ function scoreBoard(grid, nbr, size) {
   return b - w - KOMI; // pozitif → siyah kazanır
 }
 
-// scoreBoard'un bölge noktalarını da döndüren versiyonu (finalScore için)
+// scoreBoard'un bölge noktalarını ve ölü taşları da döndüren versiyonu (finalScore için)
 function scoreBoardDetailed(grid, nbr, size) {
   const seen = new Uint8Array(size * size);
   let b = 0, w = 0;
   const bT = [], wT = [];
+  const bRegions = [], wRegions = []; // ölü taş tespiti için bölge indisleri
 
   for (let i = 0; i < size * size; i++) {
     if (grid[i] === 1) { b++; continue; }
@@ -174,11 +175,39 @@ function scoreBoardDetailed(grid, nbr, size) {
       for (const n of nbr[cur]) if (!seen[n]) stack.push(n);
     }
 
-    if (tB && !tW)      { b += region.length; region.forEach(r => bT.push({ x: r % size, y: (r / size) | 0 })); }
-    else if (tW && !tB) { w += region.length; region.forEach(r => wT.push({ x: r % size, y: (r / size) | 0 })); }
+    if (tB && !tW)      { b += region.length; region.forEach(r => bT.push({ x: r % size, y: (r / size) | 0 })); bRegions.push(region); }
+    else if (tW && !tB) { w += region.length; region.forEach(r => wT.push({ x: r % size, y: (r / size) | 0 })); wRegions.push(region); }
   }
 
-  return { score: b - w - KOMI, blackTerritory: bT, whiteTerritory: wT };
+  // Bölge noktalarından komşu düşman taşlara BFS → ölü taş listesi
+  function deadFrom(regionList, enemyColor) {
+    const dead = [];
+    const vis   = new Uint8Array(size * size);
+    const queue = [];
+    for (const region of regionList)
+      for (const i of region) { if (!vis[i]) { vis[i] = 1; queue.push(i); } }
+    let qi = 0;
+    while (qi < queue.length) {
+      const i = queue[qi++];
+      for (const n of nbr[i]) {
+        if (vis[n]) continue;
+        vis[n] = 1;
+        if (grid[n] === enemyColor) {
+          dead.push({ x: n % size, y: (n / size) | 0 });
+          queue.push(n); // bağlı düşman taşlara da yay
+        }
+      }
+    }
+    return dead;
+  }
+
+  return {
+    score:           b - w - KOMI,
+    blackTerritory:  bT,
+    whiteTerritory:  wT,
+    blackDead:       deadFrom(wRegions, 1), // beyaz bölgedeki siyah taşlar
+    whiteDead:       deadFrom(bRegions, 2), // siyah bölgedeki beyaz taşlar
+  };
 }
 
 // ── Rollout hamle seçimi ──────────────────────────────────────────────
@@ -380,7 +409,7 @@ export function getBestMove(boardData, color, timeMs = 2000) {
 export function finalScore(boardData) {
   const { grid, size } = boardData;
   const nbr = getNeighborTable(size);
-  const { score: raw, blackTerritory, whiteTerritory } = scoreBoardDetailed(grid, nbr, size);
+  const { score: raw, blackTerritory, whiteTerritory, blackDead, whiteDead } = scoreBoardDetailed(grid, nbr, size);
   return {
     rawDiff: raw,
     winner:  raw > 0 ? 'black' : 'white',
@@ -388,5 +417,7 @@ export function finalScore(boardData) {
     komi:    KOMI,
     blackTerritory,
     whiteTerritory,
+    blackDead,
+    whiteDead,
   };
 }

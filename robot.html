@@ -422,9 +422,15 @@ function showFeedback(msg, type) {
 }
 
 function showGameOver(scoreInfo) {
-  // Bölge görselini kaydet
+  // Bölge görselini ve ölü taş setlerini kaydet
   if (scoreInfo.blackTerritory || scoreInfo.whiteTerritory) {
-    territory = { black: scoreInfo.blackTerritory || [], white: scoreInfo.whiteTerritory || [] };
+    const mkSet = arr => new Set((arr || []).map(p => p.x + ',' + p.y));
+    territory = {
+      black:     scoreInfo.blackTerritory || [],
+      white:     scoreInfo.whiteTerritory || [],
+      deadBlack: mkSet(scoreInfo.blackDead),
+      deadWhite: mkSet(scoreInfo.whiteDead),
+    };
   }
 
   const el = document.getElementById('gameover');
@@ -765,7 +771,9 @@ function drawStones() {
   });
   for (const s of sorted) {
     const isLast = lastAIMoveXY && s.x === lastAIMoveXY.x && s.y === lastAIMoveXY.y;
-    drawStone(s.x, s.y, s.color, 1, isLast);
+    const deadSet = territory && (s.color === 1 ? territory.deadBlack : territory.deadWhite);
+    const alpha = deadSet && deadSet.has(s.x + ',' + s.y) ? 0.25 : 1;
+    drawStone(s.x, s.y, s.color, alpha, isLast);
   }
 }
 
@@ -787,7 +795,7 @@ function drawTerritory() {
   if (!territory) return;
   const Y   = -BOARD_H / 2 - 0.3;
   const ARM = CELL * 0.22;
-  const pulse = 0.55 + 0.45 * Math.sin(hlTime * 2.8);
+  const pulse = 0.55 + 0.45 * Math.sin(hlTime * 1.4);
 
   [
     [territory.black, '#1a1a2e'],
