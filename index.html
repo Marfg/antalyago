@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Antalya GO</title>
+  <title>Antalya Go Topluluğu</title>
+  <meta name="description" content="Antalya'da Go oynayan topluluk. Öğren, oyna, buluşmalara katıl." />
+  <meta property="og:title" content="Antalya Go Topluluğu" />
+  <meta property="og:description" content="Antalya'da Go oynayan topluluk. Öğren, oyna, buluşmalara katıl." />
+  <meta property="og:type" content="website" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
   <style>
@@ -93,8 +97,8 @@
     }
 
     .logo-tag {
-      font-size: 10px; font-weight: 600;
-      letter-spacing: .25em; text-transform: uppercase;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: .22em; text-transform: uppercase;
       color: var(--gold);
     }
 
@@ -112,8 +116,9 @@
     }
 
     .tagline {
-      font-size: .82rem; font-weight: 300;
-      color: var(--text2); letter-spacing: .18em; text-transform: uppercase;
+      font-size: .95rem; font-weight: 300;
+      color: var(--text2); letter-spacing: .04em;
+      line-height: 1.55; margin-top: .3rem;
     }
 
     /* ── KART IZGARASI ── */
@@ -320,6 +325,148 @@
       .card  { padding:1.5rem 1.25rem; }
     }
 
+    /* ── HERO CTA BUTONLARI ── */
+    .hero-ctas {
+      display: flex; gap: .85rem;
+      justify-content: center; flex-wrap: wrap;
+      margin-top: 1.6rem;
+    }
+
+    .hero-cta {
+      display: inline-flex; align-items: center;
+      padding: .64rem 1.5rem;
+      border-radius: 9px;
+      font-size: .82rem; font-weight: 600; letter-spacing: .04em;
+      text-decoration: none;
+      transition: all .22s ease;
+    }
+
+    .hero-cta-primary {
+      background: rgba(200,168,75,.13);
+      border: 1px solid rgba(200,168,75,.45);
+      color: var(--gold2);
+      box-shadow: 0 0 22px rgba(200,168,75,.08);
+    }
+    .hero-cta-primary:hover {
+      background: rgba(200,168,75,.22);
+      border-color: var(--gold2);
+      box-shadow: 0 0 28px rgba(200,168,75,.18);
+    }
+
+    .hero-cta-ghost {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.11);
+      color: var(--text2);
+    }
+    .hero-cta-ghost:hover {
+      border-color: rgba(255,255,255,.24);
+      color: var(--text);
+    }
+
+    /* ── ETKİNLİK BÖLÜMÜ ── */
+    .event-section {
+      width: 100%; max-width: 532px;
+      display: flex; flex-direction: column; gap: .7rem;
+    }
+
+    .event-label {
+      font-size: .65rem; font-weight: 600;
+      letter-spacing: .22em; text-transform: uppercase;
+      color: var(--text3); text-align: center;
+    }
+
+    .event-card {
+      background: var(--bg);
+      border-radius: var(--r2);
+      padding: 1.1rem 1.4rem;
+      display: flex; align-items: center; gap: 1.1rem;
+      box-shadow: var(--nm-out-s);
+      border: 1px solid rgba(200,168,75,.1);
+      text-decoration: none; color: var(--text);
+      transition: box-shadow .25s, border-color .25s;
+    }
+    .event-card:hover {
+      box-shadow: var(--nm-out);
+      border-color: rgba(200,168,75,.28);
+    }
+
+    .event-date {
+      display: flex; flex-direction: column;
+      align-items: center; min-width: 40px; gap: .08rem;
+    }
+    .event-day {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.7rem; font-weight: 700;
+      color: var(--gold); line-height: 1;
+    }
+    .event-month {
+      font-size: .6rem; font-weight: 600;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: var(--text3);
+    }
+
+    .event-divider {
+      width: 1px; height: 36px; flex-shrink: 0;
+      background: linear-gradient(to bottom,
+        transparent, rgba(200,168,75,.22), transparent);
+    }
+
+    .event-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .22rem; }
+    .event-title { font-size: .88rem; font-weight: 600; color: var(--text); }
+    .event-meta  { font-size: .72rem; color: var(--text2); }
+
+    .event-join {
+      font-size: .72rem; font-weight: 600;
+      letter-spacing: .06em; color: var(--gold);
+      white-space: nowrap; transition: letter-spacing .2s;
+    }
+    .event-card:hover .event-join { letter-spacing: .1em; }
+
+    /* ── SOSYAL BAĞLANTILAR ── */
+    .social-links {
+      display: flex; gap: .75rem; align-items: center; justify-content: center;
+    }
+    .social-link {
+      font-size: .68rem; font-weight: 500; letter-spacing: .08em;
+      color: var(--text3); text-decoration: none;
+      padding: .3rem .72rem; border-radius: 5px;
+      border: .5px solid rgba(255,255,255,.07);
+      transition: color .18s, border-color .18s;
+    }
+    .social-link:hover { color: var(--gold); border-color: rgba(200,168,75,.32); }
+
+    /* ── MOBİL STICKY BAR ── */
+    .sticky-bar {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      padding: .7rem 1rem calc(.7rem + env(safe-area-inset-bottom));
+      background: rgba(18,18,21,.93);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-top: .5px solid rgba(255,255,255,.07);
+      gap: .65rem;
+    }
+    @media(max-width:768px) {
+      .sticky-bar { display: flex; }
+      .page { padding-bottom: 5.5rem; }
+    }
+
+    .sticky-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: .78rem 1rem; border-radius: 10px;
+      font-size: .8rem; font-weight: 600; letter-spacing: .03em;
+      text-decoration: none; transition: all .18s ease;
+    }
+    .sticky-community {
+      background: rgba(200,168,75,.12);
+      border: 1px solid rgba(200,168,75,.32);
+      color: var(--gold);
+    }
+    .sticky-community:active { background: rgba(200,168,75,.22); }
+    .sticky-play {
+      background: var(--gold); color: #0e0e10; font-weight: 700;
+    }
+    .sticky-play:active { background: var(--gold2); }
+
     /* ── ROBOT KARTI ── */
     .card-robot {
       grid-column: 1 / -1;
@@ -450,7 +597,11 @@
       <span class="logo-tag">Antalya GO Topluluğu</span>
     </div>
     <h1>GO</h1>
-    <p class="tagline">Öğren · Etüd Yap · Canlı Oyna</p>
+    <p class="tagline">Antalya'da bir masa, iki taş, sonsuz olasılık.</p>
+    <div class="hero-ctas">
+      <a class="hero-cta hero-cta-ghost" href="go-nedir.html">Go Nedir? Keşfet</a>
+      <a class="hero-cta hero-cta-primary" href="#topluluk">Topluluğa Katıl →</a>
+    </div>
   </div>
 
   <!-- KARTLAR -->
@@ -463,10 +614,9 @@
       </div>
       <div class="robot-meta">
         <div class="robot-header">
-          <span class="robot-title">Robot ile Oyna</span>
-          <span class="robot-badge">Yeni</span>
+          <span class="robot-title">Yapay Zekaya Karşı</span>
         </div>
-        <div class="robot-desc">9×9 tahtada yapay zekaya karşı Go oyna. Temel kuralları öğrendikten sonra robota meydan oku!</div>
+        <div class="robot-desc">Antalya Go Topluluğu'nun yapay zeka motoruyla 9×9 tahtada oyna. Tecrübe gerekmez.</div>
         <div class="robot-thinking" id="robot-thinking">
           <span class="think-dot"></span>
           <span class="think-dot"></span>
@@ -480,11 +630,11 @@
     <a class="card" href="ogren-3d.html">
       <div class="card-icon"><span style="font-size:19px">📖</span></div>
       <div class="card-body">
-        <div class="card-title">Öğren</div>
-        <div class="card-desc">Adım adım interaktif derslerle Go'yu sıfırdan öğren.</div>
+        <div class="card-title">Go'yu Öğren</div>
+        <div class="card-desc">3D interaktif derslerle, adım adım, sıfırdan öğren. 15 ders, kendi hızında.</div>
       </div>
       <div class="card-foot">
-        <span class="card-cta">Derse başla</span>
+        <span class="card-cta">Derse Başla</span>
         <div class="card-btn">→</div>
       </div>
     </a>
@@ -503,11 +653,11 @@
         </div>
       </div>
       <div class="card-body">
-        <div class="card-title">Etüd</div>
-        <div class="card-desc">Yapay zekaya karşı antrenman yap, seviyeni geliştir.</div>
+        <div class="card-title">Partini Analiz Et</div>
+        <div class="card-desc">Oyunlarını incele, yapay zeka önerileri al, zayıf noktalarını bul.</div>
       </div>
       <div class="card-foot">
-        <span class="card-cta">Antrenmana başla</span>
+        <span class="card-cta">Analize Başla</span>
         <div class="card-btn">→</div>
       </div>
     </a>
@@ -515,11 +665,11 @@
     <a class="card" href="problem.html">
       <div class="card-icon"><span style="font-size:19px">🧩</span></div>
       <div class="card-body">
-        <div class="card-title">Problem</div>
-        <div class="card-desc">Tsumego, joseki, tesuji gibi problemlerle kendini sına.</div>
+        <div class="card-title">Zihnini Çalıştır</div>
+        <div class="card-desc">Günlük tsumego problemleriyle Go reflekslerini geliştir.</div>
       </div>
       <div class="card-foot">
-        <span class="card-cta">Problemlere bak</span>
+        <span class="card-cta">Probleme Bak</span>
         <div class="card-btn">→</div>
       </div>
     </a>
@@ -533,29 +683,58 @@
         </div>
       </div>
       <div class="card-body">
-        <div class="card-title">Canlı Maç</div>
-        <div class="card-desc">Google hesabınla giriş yap, arkadaşlarınla oyna.</div>
+        <div class="card-title">İnsanlarla Oyna</div>
+        <div class="card-desc">Gerçek oyunculara karşı maç yap. Google hesabınla saniyeler içinde giriş.</div>
       </div>
       <div class="card-foot">
-        <span class="card-cta">Maça katıl</span>
+        <span class="card-cta">Maça Katıl</span>
         <div class="card-btn">→</div>
       </div>
     </a>
 
   </div>
 
+  <!-- ETKİNLİK -->
+  <div class="event-section">
+    <div class="event-label">Bir Sonraki Buluşma</div>
+    <a class="event-card" href="#topluluk">
+      <div class="event-date">
+        <span class="event-day">07</span>
+        <span class="event-month">Haz</span>
+      </div>
+      <div class="event-divider"></div>
+      <div class="event-info">
+        <div class="event-title">Haftalık Go Buluşması</div>
+        <div class="event-meta">Cumartesi · 15:00 · Antalya</div>
+      </div>
+      <span class="event-join">Katıl →</span>
+    </a>
+  </div>
+
   <!-- FOOTER -->
-  <div class="footer">
+  <div class="footer" id="topluluk">
+    <div class="social-links">
+      <a class="social-link" href="https://wa.me/905000000000" target="_blank" rel="noopener">WhatsApp Grubu</a>
+      <a class="social-link" href="https://instagram.com/antalyago" target="_blank" rel="noopener">Instagram</a>
+      <a class="social-link" href="mailto:info@antalyago.org">İletişim</a>
+    </div>
     <div class="breath-wrap">
       <div class="breath-stone"></div>
     </div>
     <div class="nm-divider"></div>
     <p class="footer-text">
-      Powered by <a href="https://antalyago.org" target="_blank">AntalyaGO.org</a>
+      <a href="https://antalyago.org" target="_blank">AntalyaGO.org</a> · Antalya Go Topluluğu
     </p>
   </div>
 
 </div>
+
+<!-- MOBİL STICKY BAR -->
+<div class="sticky-bar">
+  <a class="sticky-btn sticky-community" href="#topluluk">Topluluğa Katıl</a>
+  <a class="sticky-btn sticky-play" href="robot.html">Hemen Oyna →</a>
+</div>
+
 <script>
 /* ── Mini Robot Tahta Animasyonu ── */
 (function() {

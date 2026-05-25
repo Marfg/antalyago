@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Go Nedir? — Antalya Go Topluluğu</title>
+  <meta name="description" content="Go nedir, nasıl oynanır, neden öğrenilir? Antalya Go Topluluğu ile tanış." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #1c1c20;
+      --bg-l:     #232328;
+      --bg-d:     #141417;
+      --sh-l:     rgba(38,38,44,0.9);
+      --sh-d:     rgba(10,10,12,0.9);
+      --nm-out:   6px 6px 16px var(--sh-d), -6px -6px 16px var(--sh-l);
+      --nm-out-s: 4px 4px 10px var(--sh-d), -4px -4px 10px var(--sh-l);
+      --nm-in-s:  inset 2px 2px 6px var(--sh-d), inset -2px -2px 6px var(--sh-l);
+      --text:     #e8e4de;
+      --text2:    #7a7670;
+      --text3:    #484540;
+      --gold:     #c8a84b;
+      --gold2:    #e0be68;
+      --r:        20px;
+      --r2:       12px;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(200,168,75,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(200,168,75,.04) 1px, transparent 1px);
+      background-size: 44px 44px;
+      pointer-events: none; z-index: 0;
+    }
+
+    .page {
+      position: relative; z-index: 1;
+      max-width: 680px; margin: 0 auto;
+      padding: 3rem 1.5rem 5rem;
+      display: flex; flex-direction: column; gap: 3rem;
+    }
+
+    /* ── NAV ── */
+    .nav-back {
+      display: inline-flex; align-items: center; gap: .5rem;
+      font-size: .78rem; font-weight: 500; color: var(--text3);
+      text-decoration: none; letter-spacing: .04em;
+      transition: color .18s;
+    }
+    .nav-back:hover { color: var(--gold); }
+    .nav-back::before { content: '←'; font-size: .9rem; }
+
+    /* ── HERO ── */
+    .hero { text-align: center; padding: 1rem 0; }
+
+    .hero-label {
+      font-size: .65rem; font-weight: 700;
+      letter-spacing: .25em; text-transform: uppercase;
+      color: var(--text3); margin-bottom: 1rem;
+      display: block;
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(2.4rem, 7vw, 3.8rem);
+      font-weight: 700; letter-spacing: -.02em;
+      color: var(--text); line-height: 1.1; margin-bottom: .8rem;
+      text-shadow: 3px 3px 8px var(--sh-d), -1px -1px 3px var(--sh-l);
+    }
+
+    .hero p {
+      font-size: 1rem; font-weight: 300;
+      color: var(--text2); line-height: 1.7; max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── BÖLÜM KARTI ── */
+    .section-card {
+      background: var(--bg);
+      border-radius: var(--r);
+      padding: 1.8rem 1.6rem;
+      box-shadow: var(--nm-out-s);
+      display: flex; flex-direction: column; gap: 1rem;
+      position: relative; overflow: hidden;
+    }
+
+    .section-card::before {
+      content: '';
+      position: absolute; top: 0; left: 12%; right: 12%; height: 1px;
+      background: linear-gradient(90deg,
+        transparent, rgba(200,168,75,.28) 30%, rgba(200,168,75,.28) 70%, transparent);
+    }
+
+    .section-num {
+      font-size: .62rem; font-weight: 700;
+      letter-spacing: .2em; text-transform: uppercase;
+      color: var(--gold); opacity: .7;
+    }
+
+    .section-card h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.45rem; font-weight: 700;
+      color: var(--text); line-height: 1.2; letter-spacing: -.01em;
+    }
+
+    .section-card p {
+      font-size: .88rem; font-weight: 300;
+      color: var(--text2); line-height: 1.85;
+    }
+
+    .section-card p + p { margin-top: .5rem; }
+
+    /* Taş ikilisi */
+    .stone-pair {
+      display: flex; gap: 10px; align-items: center;
+      margin: .5rem 0;
+    }
+    .stone-b, .stone-w {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    }
+    .stone-b {
+      background: radial-gradient(circle at 38% 32%, #50505a, #0c0c12);
+      box-shadow: 2px 2px 5px rgba(0,0,0,.6), -1px -1px 2px rgba(255,255,255,.06);
+    }
+    .stone-w {
+      background: radial-gradient(circle at 38% 32%, #ffffff, #c4c0ba);
+      box-shadow: 2px 2px 5px rgba(0,0,0,.45), -1px -1px 2px rgba(255,255,255,.8);
+    }
+
+    /* Liste */
+    .fact-list {
+      display: flex; flex-direction: column; gap: .55rem;
+      padding: 0; list-style: none;
+    }
+    .fact-list li {
+      display: flex; gap: .75rem; align-items: flex-start;
+      font-size: .86rem; font-weight: 300; color: var(--text2); line-height: 1.65;
+    }
+    .fact-list li::before {
+      content: '—';
+      color: var(--gold); opacity: .6; flex-shrink: 0;
+      margin-top: .05rem;
+    }
+
+    /* Vurgu metin */
+    .highlight {
+      font-weight: 500; color: var(--text);
+    }
+
+    /* Alıntı */
+    .quote {
+      border-left: 2px solid rgba(200,168,75,.3);
+      padding: .6rem 1rem;
+      margin: .5rem 0;
+    }
+    .quote p {
+      font-size: .9rem !important;
+      font-style: italic;
+    }
+
+    /* ── SONUÇ / CTA ── */
+    .cta-section {
+      text-align: center;
+      display: flex; flex-direction: column; gap: 1.4rem;
+      align-items: center;
+    }
+
+    .cta-section h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.7rem; font-weight: 700;
+      color: var(--text);
+    }
+
+    .cta-section p {
+      font-size: .9rem; font-weight: 300;
+      color: var(--text2); line-height: 1.7;
+      max-width: 440px;
+    }
+
+    .cta-buttons {
+      display: flex; gap: .85rem; flex-wrap: wrap; justify-content: center;
+    }
+
+    .cta-btn {
+      display: inline-flex; align-items: center;
+      padding: .7rem 1.6rem; border-radius: 10px;
+      font-size: .84rem; font-weight: 600; letter-spacing: .04em;
+      text-decoration: none; transition: all .22s ease;
+    }
+    .cta-primary {
+      background: rgba(200,168,75,.13);
+      border: 1px solid rgba(200,168,75,.45);
+      color: var(--gold2);
+    }
+    .cta-primary:hover {
+      background: rgba(200,168,75,.22);
+      border-color: var(--gold2);
+      box-shadow: 0 0 24px rgba(200,168,75,.16);
+    }
+    .cta-ghost {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.11);
+      color: var(--text2);
+    }
+    .cta-ghost:hover { border-color: rgba(255,255,255,.24); color: var(--text); }
+
+    /* ── ANİMASYON ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .hero         { animation: fadeUp .65s ease both; }
+    .section-card { animation: fadeUp .65s ease both; }
+    .section-card:nth-child(2) { animation-delay: .08s; }
+    .section-card:nth-child(3) { animation-delay: .14s; }
+    .section-card:nth-child(4) { animation-delay: .20s; }
+    .section-card:nth-child(5) { animation-delay: .26s; }
+    .cta-section  { animation: fadeUp .65s .3s ease both; }
+
+    @media(max-width:480px) {
+      .cta-buttons { flex-direction: column; align-items: stretch; }
+      .cta-btn { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <a class="nav-back" href="index.html">Ana Sayfa</a>
+
+  <!-- HERO -->
+  <div class="hero">
+    <span class="hero-label">Antalya Go Topluluğu</span>
+    <h1>Go Nedir?</h1>
+    <p>İki taş, bir tahta, sonsuz olasılık. Go, insanlığın bildiği en derin oyunlardan biri — ve öğrenmesi sandığınızdan çok daha kolay.</p>
+  </div>
+
+  <!-- 1 — TEMEL -->
+  <div class="section-card">
+    <span class="section-num">01</span>
+    <h2>Basit kurallar, derin strateji</h2>
+    <div class="stone-pair">
+      <div class="stone-b"></div>
+      <div class="stone-w"></div>
+    </div>
+    <p>Go'da iki oyuncu vardır: <span class="highlight">Siyah ve Beyaz</span>. Siyah taş koyarak başlar. Taşlar tahta üzerine konulur ve yerleştirildikten sonra hareket etmez. Amaç, taş grupları oluşturarak tahtada daha fazla <span class="highlight">alan kontrol etmek</span>.</p>
+    <p>Kurallar bir saatte öğrenilir. Ama bu oyun binlerce yıldır oynuyor — çünkü derinliğinin sonu yok.</p>
+  </div>
+
+  <!-- 2 — TARİH -->
+  <div class="section-card">
+    <span class="section-num">02</span>
+    <h2>2500 yıllık bir gelenek</h2>
+    <p>Go, MÖ yaklaşık 2000 yılında Çin'de ortaya çıktı. Yüzyıllar içinde Japonya ve Kore'ye yayıldı. Bugün dünya genelinde milyonlarca insan tarafından oynuyor.</p>
+    <div class="quote">
+      <p>"Satranç bir savaştır. Go ise savaşın yapıldığı arazi."</p>
+    </div>
+    <p>Satranç gibi ama farklı: Taşlar hareket etmez, alan kazanılır. Simetri yoktur. Her oyun benzersizdir.</p>
+  </div>
+
+  <!-- 3 — NEDEN -->
+  <div class="section-card">
+    <span class="section-num">03</span>
+    <h2>Neden Go oynanır?</h2>
+    <ul class="fact-list">
+      <li>Stratejik düşünme ve uzun vadeli planlama geliştirir.</li>
+      <li>Her oyun farklıdır — öğrenme hiç bitmez.</li>
+      <li>Oyun süreci meditasyona benzer: Sessizlik, odak, an'da kalma.</li>
+      <li>Her seviyeden oyuncuyla dengeli maç yapılabilir — handicap sistemi sayesinde.</li>
+      <li>Dünya genelinde güçlü bir topluluk var. Antalya'da da.</li>
+    </ul>
+  </div>
+
+  <!-- 4 — ÖĞRENMEK -->
+  <div class="section-card">
+    <span class="section-num">04</span>
+    <h2>Öğrenmesi ne kadar sürer?</h2>
+    <p><span class="highlight">İlk oyun:</span> 15-30 dakika yeterli. Temel kuralları öğrenip küçük bir tahtada oynayabilirsiniz.</p>
+    <p><span class="highlight">İlk aylar:</span> Her oyundan bir şeyler öğrenirsiniz. Stratejik kavramlar yavaş yavaş netleşir.</p>
+    <p><span class="highlight">Uzun vade:</span> Go dünyasında "ömür boyu öğrenci" olmak bir öneri değil, kuralın kendisi. Profesyonel oyuncular bile her gün yeni şeyler keşfeder.</p>
+    <p>Bu derinlik, oyunu yorucu değil — büyüleyici yapar.</p>
+  </div>
+
+  <!-- 5 — ANTALYA -->
+  <div class="section-card">
+    <span class="section-num">05</span>
+    <h2>Antalya'da Go</h2>
+    <p>Antalya Go Topluluğu, Go oynayan ve öğrenmek isteyen herkese açık, düzenli buluşmalar yapan bir topluluk. Yeni başlayanlar her zaman hoş karşılanır.</p>
+    <ul class="fact-list">
+      <li>Haftalık buluşmalar, kafe ortamında, samimi bir atmosfer.</li>
+      <li>Her seviyeden oyuncu — tecrübe şartı yok.</li>
+      <li>Online araçlar: interaktif dersler, yapay zeka antrenmanı, canlı maçlar.</li>
+      <li>WhatsApp grubu üzerinden etkinlik takibi ve iletişim.</li>
+    </ul>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <h2>Hazır mısın?</h2>
+    <p>Hemen online olarak öğrenmeye başlayabilir, ya da bir sonraki buluşmada bizi tanıyabilirsin. İkisi de harika bir başlangıç.</p>
+    <div class="cta-buttons">
+      <a class="cta-btn cta-primary" href="ogren-3d.html">Derse Başla →</a>
+      <a class="cta-btn cta-ghost" href="index.html#topluluk">Topluluğa Katıl</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
