@@ -219,10 +219,22 @@
     .diff-kyu  { font-size:.58rem; color:var(--muted); margin-top:.1rem; }
 
     /* Gelişmiş oyun sonu */
-    .go-winner { font-size:1.05rem; font-weight:700; color:var(--gold); }
-    .go-komi   { font-size:.63rem; color:var(--muted); margin-top:.2rem; line-height:1.4; }
-    .go-actions { display:flex; gap:.4rem; }
+    .go-winner    { font-size:1.05rem; font-weight:700; color:var(--gold); }
+    .go-komi      { font-size:.63rem; color:var(--muted); margin-top:.2rem; line-height:1.4; }
+    .go-territory { font-size:.68rem; color:var(--muted); margin-top:.15rem; }
+    .go-actions   { display:flex; gap:.4rem; }
     .go-actions .action-btn { flex:1; }
+
+    /* Model yükleyici iyileştirme */
+    .ml-phase { animation: ml-text-pulse 2s ease-in-out infinite; }
+    @keyframes ml-text-pulse { 0%,100%{opacity:.7} 50%{opacity:1} }
+    #model-loader.done .ml-phase { animation:none; opacity:1; }
+    .ml-learn {
+      display:block; margin-top:.5rem;
+      font-size:.62rem; color:var(--blue);
+      text-decoration:none; opacity:.8; transition:opacity .15s;
+    }
+    .ml-learn:hover { opacity:1; }
 
     /* Ko işareti yok sayılır (canvas'ta çizilir) */
 
@@ -265,6 +277,9 @@
     <div class="ml-phase" id="ml-phase">Ağırlıklar indiriliyor…</div>
     <div class="ml-bar"><div class="ml-bar-fill"></div></div>
     <div class="ml-tip" id="ml-tip"></div>
+    <a class="ml-learn" href="ogren-3d.html">
+      Model hazırlanırken kuralları gözden geçir →
+    </a>
   </div>
 
   <div>
@@ -311,9 +326,10 @@
     <div class="go-winner" id="go-winner">Oyun Bitti</div>
     <div class="go-score" id="go-score"></div>
     <div class="go-komi" id="go-komi"></div>
+    <div class="go-territory" id="go-territory"></div>
     <div class="go-actions">
       <button class="action-btn" onclick="resetBoard()">Yeniden Oyna</button>
-      <button class="action-btn" onclick="window.location='index.html'">Ana Sayfa</button>
+      <button class="action-btn" onclick="openLearnFeedback()">Ne öğrendim?</button>
     </div>
   </div>
 
@@ -714,6 +730,8 @@ function showFeedback(msg, type) {
 }
 
 function showGameOver(scoreInfo) {
+  lastScoreInfo = scoreInfo;
+
   if (scoreInfo.blackTerritory || scoreInfo.whiteTerritory) {
     const mkSet = arr => new Set((arr || []).map(p => p.x + ',' + p.y));
     territory = {
@@ -731,8 +749,8 @@ function showGameOver(scoreInfo) {
   const winner    = scoreInfo.winner;
   const winnerTr  = winner === 'black' ? 'Siyah' : 'Beyaz';
   const margin    = Math.abs(scoreInfo.rawDiff).toFixed(1);
-
   const isPlayerWin = winner === playerColor;
+
   document.getElementById('go-winner').textContent =
     isPlayerWin ? 'Kazandın' : 'Robot kazandı';
   if (isPlayerWin && window.mascotCelebrate) { mascotCelebrate(); mascotSay('Tebrikler!', 3000); }
@@ -740,7 +758,21 @@ function showGameOver(scoreInfo) {
     `${winnerTr} galip — ${margin} puan farkıyla.`;
   document.getElementById('go-komi').textContent =
     `Komi ${scoreInfo.komi}: beyaza verilen avantaj puanı.`;
+
+  const bLen = (scoreInfo.blackTerritory || []).length;
+  const wLen = (scoreInfo.whiteTerritory || []).length;
+  document.getElementById('go-territory').textContent =
+    `Siyah bölgesi: ${bLen} · Beyaz: ${wLen}`;
 }
+
+window.openLearnFeedback = function() {
+  if (!window.mascotSay) return;
+  const diff = lastScoreInfo ? Math.abs(lastScoreInfo.rawDiff).toFixed(1) : '?';
+  mascotSay(
+    `Bu oyunda alan farkı ${diff} puandı. Köşeleri erkenden kapatmayı dene. Dersler için: Öğrenme Motoru.`,
+    8000
+  );
+};
 
 /* ══════════════════════════════════════════════════════
    AI WORKERS
@@ -750,8 +782,9 @@ const mctsWorker = new Worker('./workers/goAI.worker.js', { type: 'module' });
 // KataGo: CDN'den model yükler, hazır olunca MOVE için devreye girer
 const kataWorker = new Worker('./workers/kataWorker.js');
 
-let aiThinking = false;
-let kataReady  = false;
+let aiThinking   = false;
+let kataReady    = false;
+let lastScoreInfo = null;
 
 function handleWorkerMessage(data) {
   aiThinking = false;
@@ -793,6 +826,7 @@ kataWorker.addEventListener('message', ({ data }) => {
       renderDifficultyCards();
     } else {
       updateEngineBadge('mcts');
+      showFeedback('KataGo yuklenemedi. Temel AI ile devam ediliyor.', 'info');
       console.warn('KataGo yuklenemedi — MCTS ile devam:', data.error);
     }
     return;
