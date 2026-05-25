@@ -166,6 +166,64 @@
     .action-btn:hover { background:rgba(200,168,75,.08); border-color:var(--gold); color:var(--gold); }
     .action-btn.danger:hover { background:rgba(224,80,80,.08); border-color:var(--red); color:var(--red); }
 
+    /* Engine badge */
+    .engine-badge {
+      font-size:.6rem; font-weight:700; letter-spacing:.08em;
+      padding:3px 8px; border-radius:4px;
+      border:1px solid var(--gb); color:var(--muted);
+      background:rgba(200,168,75,.04);
+      white-space:nowrap; flex-shrink:0; transition:all .3s;
+    }
+    .engine-badge.ready {
+      border-color:rgba(62,207,128,.4); color:var(--green);
+      background:rgba(62,207,128,.06);
+    }
+
+    /* Model yükleyici */
+    #model-loader {
+      padding:.6rem .7rem;
+      background:rgba(74,158,255,.05);
+      border:1px solid rgba(74,158,255,.18); border-radius:7px;
+      font-size:.68rem; color:var(--muted);
+      display:none;
+    }
+    #model-loader.show { display:block; }
+    .ml-phase { color:var(--blue); font-weight:600; margin-bottom:.3rem; }
+    .ml-bar { height:3px; border-radius:2px; background:rgba(74,158,255,.12); overflow:hidden; }
+    .ml-bar-fill {
+      height:100%; background:var(--blue); border-radius:2px;
+      animation:indeterminate 1.6s ease-in-out infinite; transform-origin:left;
+    }
+    .ml-tip { margin-top:.45rem; font-size:.63rem; line-height:1.4; opacity:0; transition:opacity .5s; }
+    .ml-tip.show { opacity:1; }
+    #model-loader.done .ml-phase { color:var(--green); }
+    #model-loader.done .ml-bar-fill { animation:none; transform:scaleX(1); background:var(--green); }
+    @keyframes indeterminate {
+      0%   { transform:scaleX(0) translateX(0%); }
+      50%  { transform:scaleX(.55) translateX(90%); }
+      100% { transform:scaleX(0) translateX(600%); }
+    }
+
+    /* Zorluk kartları */
+    .diff-grid { display:grid; grid-template-columns:1fr 1fr; gap:.35rem; }
+    .diff-card {
+      padding:.45rem .5rem; border-radius:6px;
+      border:1.5px solid var(--gb); background:transparent;
+      cursor:pointer; text-align:center;
+      font-family:'Noto Sans',sans-serif; transition:all .18s;
+    }
+    .diff-card:hover:not(.unavail) { border-color:var(--gold); background:rgba(200,168,75,.06); }
+    .diff-card.active { border-color:var(--gold); background:rgba(200,168,75,.12); }
+    .diff-card.unavail { opacity:.38; cursor:not-allowed; }
+    .diff-name { font-size:.68rem; font-weight:700; color:var(--text); }
+    .diff-kyu  { font-size:.58rem; color:var(--muted); margin-top:.1rem; }
+
+    /* Gelişmiş oyun sonu */
+    .go-winner { font-size:1.05rem; font-weight:700; color:var(--gold); }
+    .go-komi   { font-size:.63rem; color:var(--muted); margin-top:.2rem; line-height:1.4; }
+    .go-actions { display:flex; gap:.4rem; }
+    .go-actions .action-btn { flex:1; }
+
     /* Ko işareti yok sayılır (canvas'ta çizilir) */
 
     /* ── MOBİL ── */
@@ -196,10 +254,18 @@
     <div class="s-stone white" id="stone-w"></div>
   </div>
   <span id="last-move-tag">—</span>
+  <span class="engine-badge" id="engine-badge">Motor Yükleniyor</span>
 </div>
 
 <!-- Sağ Panel -->
 <div id="panel">
+
+  <!-- Model Loader -->
+  <div id="model-loader">
+    <div class="ml-phase" id="ml-phase">Ağırlıklar indiriliyor…</div>
+    <div class="ml-bar"><div class="ml-bar-fill"></div></div>
+    <div class="ml-tip" id="ml-tip"></div>
+  </div>
 
   <div>
     <div class="sec-label">Rengin</div>
@@ -211,6 +277,12 @@
         <div class="sp w"></div>Beyaz
       </button>
     </div>
+  </div>
+
+  <!-- Zorluk -->
+  <div>
+    <div class="sec-label">Zorluk</div>
+    <div class="diff-grid" id="diff-grid"></div>
   </div>
 
   <!-- Düşünüyor göstergesi -->
@@ -236,9 +308,13 @@
 
   <!-- Oyun sonu ekranı -->
   <div id="gameover">
-    <div class="go-title" id="go-title">Oyun Bitti!</div>
+    <div class="go-winner" id="go-winner">Oyun Bitti</div>
     <div class="go-score" id="go-score"></div>
-    <button class="action-btn" onclick="resetBoard()">Yeniden Oyna</button>
+    <div class="go-komi" id="go-komi"></div>
+    <div class="go-actions">
+      <button class="action-btn" onclick="resetBoard()">Yeniden Oyna</button>
+      <button class="action-btn" onclick="window.location='index.html'">Ana Sayfa</button>
+    </div>
   </div>
 
   <button class="action-btn" id="btn-pass" onclick="playerPass()">Pas Geç</button>
@@ -360,6 +436,27 @@ const woodPat = ctx.createPattern(woodCv, 'repeat');
 ══════════════════════════════════════════════════════ */
 const COL_LABELS = 'ABCDEFGHJ'; // I atlanır
 
+const DIFFICULTY_LEVELS = [
+  { id:1, name:'Başlangıç', kyu:'25–20 kyu', timeMs:600,  engine:'mcts' },
+  { id:2, name:'Acemi',     kyu:'20–15 kyu', timeMs:1200, engine:'mcts' },
+  { id:3, name:'Orta',      kyu:'15–10 kyu', timeMs:2400, engine:'mcts' },
+  { id:4, name:'İleri',     kyu:'10–5 kyu',  timeMs:null, engine:'kata' },
+  { id:5, name:'Uzman',     kyu:'5 kyu–dan', timeMs:null, engine:'kata' },
+];
+let currentLevel = 1;
+
+const GO_TIPS = [
+  'İki göz yapan grup ölmez.',
+  'Köşeler önce, kenarlar sonra, merkez en son.',
+  'Pas geçmek de stratejik bir hamledir.',
+  'Bağlı taşlar birlikte nefes alır.',
+  'Atari durumunda kaçmak ya da feda etmek arasında seç.',
+  'Ko savaşları tehdit yaratmakla kazanılır.',
+  'Düşmanın en güçlü hamlesi senin hamlendir.',
+];
+let tipIndex = 0;
+let tipTimer = null;
+
 let board       = new BoardState(SIZE);
 let playerColor = 'black';
 let aiColor     = 'white';
@@ -412,6 +509,69 @@ function updateMoveTag(label) {
   document.getElementById('last-move-tag').textContent = label || '—';
 }
 
+function updateEngineBadge(state) {
+  const el = document.getElementById('engine-badge');
+  if (state === 'loading') {
+    el.textContent = 'Motor Yükleniyor';
+    el.classList.remove('ready');
+  } else if (state === 'mcts') {
+    el.textContent = 'Temel Motor';
+    el.classList.remove('ready');
+  } else if (state === 'kata') {
+    el.textContent = 'KataGo';
+    el.classList.add('ready');
+  }
+}
+
+function initModelLoader() {
+  const phases = ['Ağırlıklar indiriliyor…', 'Model derleniyor…', 'GPU hazırlanıyor…'];
+  let ph = 0;
+  const phEl = document.getElementById('ml-phase');
+  const tipEl = document.getElementById('ml-tip');
+  const loEl  = document.getElementById('model-loader');
+
+  loEl.classList.add('show');
+  phEl.textContent = phases[ph];
+  tipEl.textContent = GO_TIPS[0];
+  setTimeout(() => tipEl.classList.add('show'), 100);
+
+  tipTimer = setInterval(() => {
+    tipEl.classList.remove('show');
+    setTimeout(() => {
+      tipIndex = (tipIndex + 1) % GO_TIPS.length;
+      tipEl.textContent = GO_TIPS[tipIndex];
+      tipEl.classList.add('show');
+    }, 500);
+  }, 5000);
+
+  const phTimer = setInterval(() => {
+    ph++;
+    if (ph < phases.length) phEl.textContent = phases[ph];
+    else clearInterval(phTimer);
+  }, 4000);
+}
+
+function renderDifficultyCards() {
+  const grid = document.getElementById('diff-grid');
+  grid.innerHTML = DIFFICULTY_LEVELS.map(lv => {
+    const unavail = lv.engine === 'kata' && !kataReady;
+    const active  = lv.id === currentLevel;
+    return `<button class="diff-card${active ? ' active' : ''}${unavail ? ' unavail' : ''}"
+      onclick="selectDifficulty(${lv.id})"${unavail ? ' disabled' : ''}>
+      <div class="diff-name">${lv.name}</div>
+      <div class="diff-kyu">${lv.kyu}</div>
+    </button>`;
+  }).join('');
+}
+
+window.selectDifficulty = function(id) {
+  if (aiThinking) return;
+  const lv = DIFFICULTY_LEVELS.find(l => l.id === id);
+  if (!lv || (lv.engine === 'kata' && !kataReady)) return;
+  currentLevel = id;
+  renderDifficultyCards();
+};
+
 let _fbTimer = null;
 function showFeedback(msg, type) {
   const el = document.getElementById('feedback');
@@ -422,7 +582,6 @@ function showFeedback(msg, type) {
 }
 
 function showGameOver(scoreInfo) {
-  // Bölge görselini ve ölü taş setlerini kaydet
   if (scoreInfo.blackTerritory || scoreInfo.whiteTerritory) {
     const mkSet = arr => new Set((arr || []).map(p => p.x + ',' + p.y));
     territory = {
@@ -437,14 +596,16 @@ function showGameOver(scoreInfo) {
   el.classList.add('show');
   document.getElementById('btn-pass').disabled = true;
 
-  const winner = scoreInfo.winner;
-  document.getElementById('go-title').textContent =
-    winner === playerColor ? '🎉 Tebrikler, kazandın!' : '🤖 Robot kazandı.';
+  const winner    = scoreInfo.winner;
+  const winnerTr  = winner === 'black' ? 'Siyah' : 'Beyaz';
+  const margin    = Math.abs(scoreInfo.rawDiff).toFixed(1);
 
-  const margin = Math.abs(scoreInfo.rawDiff).toFixed(1);
-  document.getElementById('go-score').innerHTML =
-    `Fark: <strong>${margin}</strong> puan (Komi: ${scoreInfo.komi})<br>
-     ${winner === 'black' ? 'Siyah' : 'Beyaz'} galip.`;
+  document.getElementById('go-winner').textContent =
+    winner === playerColor ? 'Kazandın' : 'Robot kazandı';
+  document.getElementById('go-score').textContent =
+    `${winnerTr} galip — ${margin} puan farkıyla.`;
+  document.getElementById('go-komi').textContent =
+    `Komi ${scoreInfo.komi}: beyaza verilen avantaj puanı.`;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -485,10 +646,19 @@ kataWorker.addEventListener('message', ({ data }) => {
   if (data.type === 'READY') {
     if (data.ok) {
       kataReady = true;
+      const loEl = document.getElementById('model-loader');
+      const phEl = document.getElementById('ml-phase');
+      loEl.classList.add('done');
+      phEl.textContent = 'KataGo Hazır';
+      clearInterval(tipTimer);
+      setTimeout(() => loEl.classList.remove('show'), 3000);
+      updateEngineBadge('kata');
       document.getElementById('iter-lbl').textContent = 'KataGo';
-      showFeedback(`KataGo hazır (${data.backend}).`, 'ok');
+      showFeedback(`KataGo hazir (${data.backend}).`, 'ok');
+      renderDifficultyCards();
     } else {
-      console.warn('KataGo yüklenemedi — MCTS ile devam:', data.error);
+      updateEngineBadge('mcts');
+      console.warn('KataGo yuklenemedi — MCTS ile devam:', data.error);
     }
     return;
   }
@@ -496,7 +666,8 @@ kataWorker.addEventListener('message', ({ data }) => {
 });
 kataWorker.addEventListener('error', e => console.warn('kataWorker error:', e));
 
-showFeedback('KataGo yükleniyor…', 'info');
+updateEngineBadge('loading');
+initModelLoader();
 
 function triggerAI() {
   if (aiThinking || gameEnded) return;
@@ -513,12 +684,14 @@ function triggerAI() {
   const ko     = board.koPoint
     ? board.koPoint.y * size + board.koPoint.x : -1;
   const colNum = aiColor === 'black' ? 1 : 2;
+  const lv     = DIFFICULTY_LEVELS.find(l => l.id === currentLevel);
 
-  if (kataReady) {
+  if (kataReady && lv.engine === 'kata') {
     kataWorker.postMessage({ type: 'MOVE', boardData: { grid, ko, size }, color: colNum });
   } else {
+    const timeMs = lv.engine === 'mcts' ? lv.timeMs : 2000;
     mctsWorker.postMessage(
-      { type: 'MOVE', boardData: { grid, ko, size }, color: colNum, timeMs: 2000 },
+      { type: 'MOVE', boardData: { grid, ko, size }, color: colNum, timeMs },
       [grid.buffer]
     );
   }
@@ -838,6 +1011,7 @@ function frame() {
 
 frame();
 updateStatus();
+renderDifficultyCards();
 showFeedback('Siyah oyuncusun. Hamle yap!', 'info');
 </script>
 </body>
