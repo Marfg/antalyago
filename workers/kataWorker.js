@@ -130,9 +130,9 @@ async function getBestMove(boardData, color) {
 
   let policyTensor;
   try {
-    policyTensor = model.execute(
+    policyTensor = await model.executeAsync(
       { 'swa_model/bin_inputs': binT, 'swa_model/global_inputs': glbT },
-      'policy_output'
+      'swa_model/policy_output'
     );
   } finally {
     tf.dispose([binT, glbT]);
