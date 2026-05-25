@@ -1370,38 +1370,93 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 <!-- ── MASKOT ── -->
 <style>
   .mascot-btn {
-    position: fixed; bottom: 24px; right: 24px;
+    position: fixed;
+    bottom: max(24px, env(safe-area-inset-bottom, 24px));
+    right:  max(20px, env(safe-area-inset-right,  20px));
     width: 64px; height: 64px;
-    cursor: pointer; z-index: 9000; outline: none;
-  }
-  @supports (bottom: env(safe-area-inset-bottom)) {
-    .mascot-btn { bottom: calc(24px + env(safe-area-inset-bottom)); }
+    cursor: pointer; z-index: 9000;
+    background: none; border: none; padding: 0;
+    -webkit-tap-highlight-color: transparent;
   }
   .mascot-wrap { width: 64px; height: 64px; position: relative; }
-  .mascot-svg {
-    width: 64px; height: 64px;
-    animation: mascot-bob 3s ease-in-out infinite;
+  .mascot-svg  {
+    width: 64px; height: 64px; overflow: visible;
     filter: drop-shadow(0 4px 14px rgba(0,0,0,.55));
   }
-  .mascot-svg .eye-l, .mascot-svg .eye-r {
-    animation: mascot-blink 4s ease-in-out infinite;
-    transform-origin: center;
+  .mascot-btn:hover .mascot-wrap { transform: scale(1.06); transition: transform .18s ease; }
+
+  /* Body breathe */
+  .m-body {
+    transform-box: fill-box; transform-origin: center;
+    animation: m-breathe 3s ease-in-out infinite;
   }
-  .mascot-svg .amber-glow { animation: mascot-glow-pulse 3s ease-in-out infinite; }
-  .mascot-btn:hover .mascot-svg { animation: mascot-pulse .6s ease-in-out infinite; }
-  .mascot-btn.is-speaking .mascot-svg .amber-glow { animation: mascot-glow-pulse 1.2s ease-in-out infinite; }
-  .mascot-btn.is-excited .mascot-svg { animation: mascot-jump .6s cubic-bezier(.36,.07,.19,.97) 1; }
-  @keyframes mascot-bob    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
-  @keyframes mascot-blink  { 0%,90%,100%{transform:scaleY(1)} 94%{transform:scaleY(.08)} }
-  @keyframes mascot-pulse  { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
-  @keyframes mascot-glow-pulse { 0%,100%{opacity:.18} 50%{opacity:.55} }
-  @keyframes mascot-jump {
-    0%  {transform:translateY(0) scale(1,1)}
-    30% {transform:translateY(-12px) scale(.95,1.08)}
-    60% {transform:translateY(0) scale(1.08,.92)}
-    80% {transform:translateY(-4px) scale(.98,1.04)}
-    100%{transform:translateY(0) scale(1,1)}
+  @keyframes m-breathe { 0%,100%{transform:scaleY(1)} 50%{transform:scaleY(1.04)} }
+
+  /* Glow pulse */
+  .m-glow { animation: m-glow-idle 3s ease-in-out infinite; }
+  @keyframes m-glow-idle { 0%,100%{opacity:.20} 50%{opacity:.50} }
+
+  /* Eye blink */
+  .m-eye {
+    transform-box: fill-box; transform-origin: center;
+    animation: m-blink 5s ease-in-out infinite;
   }
+  .m-eye-r { animation-delay: .22s; }
+  @keyframes m-blink {
+    0%,86%,100%{transform:scaleY(1)}
+    90%{transform:scaleY(.08)}
+    93%{transform:scaleY(1)}
+  }
+
+  /* Click squash */
+  .mascot-btn.is-clicking .mascot-svg {
+    animation: m-click .35s cubic-bezier(.36,.07,.19,.97) 1;
+  }
+  @keyframes m-click {
+    0%  {transform:scale(1,1)}
+    20% {transform:scale(1.15,.82)}
+    55% {transform:scale(.92,1.10)}
+    80% {transform:scale(1.04,.97)}
+    100%{transform:scale(1,1)}
+  }
+
+  /* Celebrate jump */
+  .mascot-btn.is-celebrating .mascot-svg {
+    animation: m-jump .6s cubic-bezier(.36,.07,.19,.97) 1;
+  }
+  @keyframes m-jump {
+    0%  {transform:translateY(0)     scale(1,1)}
+    30% {transform:translateY(-14px) scale(.95,1.08)}
+    60% {transform:translateY(0)     scale(1.08,.92)}
+    80% {transform:translateY(-4px)  scale(.98,1.04)}
+    100%{transform:translateY(0)     scale(1,1)}
+  }
+
+  /* Thinking */
+  .mascot-btn.is-thinking .m-body {
+    animation: m-think-breathe 2s ease-in-out infinite;
+  }
+  .mascot-btn.is-thinking .m-glow {
+    animation: m-glow-idle 1.5s ease-in-out infinite;
+  }
+  @keyframes m-think-breathe {
+    0%,100%{transform:scaleY(1)} 50%{transform:scaleY(1.02)}
+  }
+
+  /* Speaking — faster glow */
+  .mascot-btn.is-speaking .m-glow {
+    animation: m-glow-idle 1.2s ease-in-out infinite;
+  }
+
+  /* Wide eyes */
+  .mascot-btn.is-wide .m-eye {
+    animation: m-wide-eyes .4s ease-out 1;
+  }
+  @keyframes m-wide-eyes {
+    0%{transform:scaleY(1)} 40%{transform:scaleY(1.35)} 100%{transform:scaleY(1)}
+  }
+
+  /* Badge */
   @keyframes badge-pulse {
     0%,100%{box-shadow:0 0 0 0 rgba(224,90,90,.4)}
     50%    {box-shadow:0 0 0 6px rgba(224,90,90,0)}
@@ -1412,13 +1467,15 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
     background: #e05a5a; border-radius: 50%;
     font-size: 11px; color: white;
     display: flex; align-items: center; justify-content: center;
-    border: 2px solid #1c1c20;
+    border: 2px solid var(--bg, #1c1c20);
     animation: badge-pulse 2s ease-in-out infinite;
   }
+
+  /* Bubble */
   .mascot-bubble {
     position: absolute; bottom: 72px; right: 0;
     min-width: 180px; max-width: 240px;
-    background: #24242c; border: 1px solid rgba(200,168,75,.28);
+    background: #1e1e28; border: 1px solid rgba(200,168,75,.28);
     border-radius: 12px 12px 2px 12px;
     padding: 10px 14px; font-size: 13px; line-height: 1.5;
     color: #e8e4de; font-family: 'Noto Sans', sans-serif;
@@ -1430,65 +1487,131 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
   .mascot-bubble.is-visible {
     opacity: 1; transform: translateY(0) scale(1); pointer-events: auto;
   }
+
   @media (prefers-reduced-motion: reduce) {
-    .mascot-svg, .mascot-svg *, .mascot-badge { animation: none !important; }
+    .m-body, .m-glow, .m-eye, .mascot-badge,
+    .mascot-btn.is-clicking .mascot-svg,
+    .mascot-btn.is-celebrating .mascot-svg { animation: none !important; }
   }
 </style>
 
-<div class="mascot-btn" id="mascot-btn" role="button"
-     aria-label="Asistan — yardım için tıkla" tabindex="0">
+<button class="mascot-btn" id="mascot-btn"
+        aria-label="Asistan — yardım için tıkla">
   <div class="mascot-wrap">
     <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" class="mascot-svg">
       <defs>
-        <radialGradient id="mstone-shine" cx="30%" cy="30%" r="70%">
-          <stop offset="0%" stop-color="white" stop-opacity=".85"/>
+        <radialGradient id="stone-grad" cx="35%" cy="28%" r="70%">
+          <stop offset="0%"   stop-color="#3a3a48"/>
+          <stop offset="55%"  stop-color="#18181f"/>
+          <stop offset="100%" stop-color="#0a0a12"/>
+        </radialGradient>
+        <radialGradient id="shine-grad" cx="30%" cy="30%" r="70%">
+          <stop offset="0%"   stop-color="white" stop-opacity=".80"/>
           <stop offset="100%" stop-color="white" stop-opacity="0"/>
         </radialGradient>
-        <filter id="mstone-glow" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="3"/>
+        <filter id="glow-blur" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="3.5"/>
         </filter>
       </defs>
-      <ellipse cx="32" cy="35" rx="27" ry="23" fill="#111118"/>
-      <ellipse cx="24" cy="26" rx="11" ry="7" fill="url(#mstone-shine)" opacity=".26"/>
-      <ellipse cx="32" cy="14" rx="14" ry="6"
-               fill="#B8955A" opacity=".18" filter="url(#mstone-glow)" class="amber-glow"/>
-      <ellipse cx="22" cy="33" rx="5.5" ry="6.5" fill="white" class="eye-l"/>
-      <ellipse cx="23" cy="33" rx="2.8" ry="3.2" fill="#0a0a12" class="pupil-l"/>
-      <ellipse cx="42" cy="33" rx="5.5" ry="6.5" fill="white" class="eye-r"/>
-      <ellipse cx="43" cy="33" rx="2.8" ry="3.2" fill="#0a0a12" class="pupil-r"/>
+      <ellipse class="m-glow" cx="32" cy="12" rx="16" ry="7"
+               fill="#B8955A" opacity=".20" filter="url(#glow-blur)"/>
+      <ellipse class="m-body" cx="32" cy="35" rx="26" ry="22"
+               fill="url(#stone-grad)"/>
+      <ellipse cx="24" cy="26" rx="10" ry="6"
+               fill="url(#shine-grad)" opacity=".22"/>
+      <g class="m-eye m-eye-l">
+        <ellipse cx="22" cy="33"   rx="5.5" ry="6"   fill="white"/>
+        <ellipse cx="23" cy="33.5" rx="2.8" ry="3"   fill="#0a0a12"/>
+        <ellipse cx="24.2" cy="31.8" rx="1.2" ry="1" fill="white" opacity=".85"/>
+      </g>
+      <g class="m-eye m-eye-r">
+        <ellipse cx="42" cy="33"   rx="5.5" ry="6"   fill="white"/>
+        <ellipse cx="43" cy="33.5" rx="2.8" ry="3"   fill="#0a0a12"/>
+        <ellipse cx="44.2" cy="31.8" rx="1.2" ry="1" fill="white" opacity=".85"/>
+      </g>
+      <path id="m-smile"    d="M25,44 Q32,50 39,44"
+            stroke="rgba(255,255,255,.50)" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path id="m-neutral"  d="M26,45 L38,45"
+            stroke="rgba(255,255,255,.40)" stroke-width="2" fill="none" stroke-linecap="round"
+            style="display:none"/>
+      <path id="m-thinking" d="M27,44 Q30,48 33,45 Q36,42 39,46"
+            stroke="rgba(255,255,255,.45)" stroke-width="2" fill="none" stroke-linecap="round"
+            style="display:none"/>
     </svg>
   </div>
   <span class="mascot-badge" aria-hidden="true" hidden>1</span>
   <div class="mascot-bubble" id="mascot-bubble" aria-live="polite"></div>
-</div>
+</button>
 
 <script>
 (function() {
   const btn    = document.getElementById('mascot-btn');
   const bubble = document.getElementById('mascot-bubble');
   let _hideTimer = null;
+
+  function setMouth(type) {
+    const s = btn.querySelector('#m-smile');
+    const n = btn.querySelector('#m-neutral');
+    const t = btn.querySelector('#m-thinking');
+    if (!s) return;
+    s.style.display = type === 'smile'    ? '' : 'none';
+    n.style.display = type === 'neutral'  ? '' : 'none';
+    t.style.display = type === 'thinking' ? '' : 'none';
+  }
+  window.setMouth = setMouth;
+
   window.mascotSay = function(text, durationMs) {
-    if (durationMs === undefined) durationMs = 4000;
+    durationMs = durationMs === undefined ? 4500 : durationMs;
     bubble.textContent = text;
     bubble.classList.add('is-visible');
     btn.classList.add('is-speaking');
+    setMouth('smile');
     clearTimeout(_hideTimer);
     _hideTimer = setTimeout(function() {
       bubble.classList.remove('is-visible');
       btn.classList.remove('is-speaking');
+      setMouth('neutral');
     }, durationMs);
   };
+
   window.mascotCelebrate = function() {
-    btn.classList.remove('is-excited');
+    btn.classList.remove('is-celebrating');
     void btn.offsetWidth;
-    btn.classList.add('is-excited');
+    btn.classList.add('is-celebrating');
+    setMouth('smile');
     btn.addEventListener('animationend', function() {
-      btn.classList.remove('is-excited');
+      btn.classList.remove('is-celebrating');
     }, { once: true });
   };
-  btn.addEventListener('click', function() { mascotSay('Sana nasil yardimci olabilirim?'); });
+
+  window.mascotThink = function(text) {
+    btn.classList.add('is-thinking');
+    setMouth('thinking');
+    if (text) {
+      bubble.textContent = text;
+      bubble.classList.add('is-visible');
+    }
+  };
+
+  window.mascotStopThink = function() {
+    btn.classList.remove('is-thinking');
+    bubble.classList.remove('is-visible');
+    setMouth('neutral');
+  };
+
+  btn.addEventListener('click', function() {
+    btn.classList.add('is-clicking');
+    btn.addEventListener('animationend', function() {
+      btn.classList.remove('is-clicking');
+    }, { once: true });
+    mascotSay('Sana nasıl yardımcı olabilirim?');
+  });
+
   btn.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); mascotSay('Sana nasil yardimci olabilirim?'); }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      mascotSay('Sana nasıl yardımcı olabilirim?');
+    }
   });
 })();
 </script>
