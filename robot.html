@@ -227,7 +227,7 @@
     </div>
     <div class="stat-box">
       <div class="stat-val" id="iter-count">—</div>
-      <div class="stat-lbl">iterasyon</div>
+      <div class="stat-lbl" id="iter-lbl">iterasyon</div>
     </div>
   </div>
 
@@ -435,12 +435,17 @@ function showGameOver(scoreInfo) {
 }
 
 /* ══════════════════════════════════════════════════════
-   AI WORKER
+   AI WORKERS
 ══════════════════════════════════════════════════════ */
-const aiWorker = new Worker('./workers/goAI.worker.js', { type: 'module' });
-let aiThinking = false;
+// MCTS (yedek): her zaman hazır; SCORE için de kullanılır
+const mctsWorker = new Worker('./workers/goAI.worker.js', { type: 'module' });
+// KataGo: CDN'den model yükler, hazır olunca MOVE için devreye girer
+const kataWorker = new Worker('./workers/kataWorker.js');
 
-aiWorker.addEventListener('message', ({ data }) => {
+let aiThinking = false;
+let kataReady  = false;
+
+function handleWorkerMessage(data) {
   aiThinking = false;
   document.getElementById('think-bar').classList.remove('show');
 
@@ -450,20 +455,35 @@ aiWorker.addEventListener('message', ({ data }) => {
     return;
   }
 
-  if (data.type === 'SCORE') {
-    showGameOver(data.score);
-    return;
-  }
+  if (data.type === 'SCORE') { showGameOver(data.score); return; }
 
   applyAIMove(data.move);
-});
+}
 
-aiWorker.addEventListener('error', e => {
+mctsWorker.addEventListener('message', ({ data }) => handleWorkerMessage(data));
+mctsWorker.addEventListener('error', e => {
   aiThinking = false;
   document.getElementById('think-bar').classList.remove('show');
   showFeedback('Robot bağlanamadı.', 'err');
   console.error('Worker error:', e);
 });
+
+kataWorker.addEventListener('message', ({ data }) => {
+  if (data.type === 'READY') {
+    if (data.ok) {
+      kataReady = true;
+      document.getElementById('iter-lbl').textContent = 'KataGo';
+      showFeedback(`KataGo hazır (${data.backend}).`, 'ok');
+    } else {
+      console.warn('KataGo yüklenemedi — MCTS ile devam:', data.error);
+    }
+    return;
+  }
+  handleWorkerMessage(data);
+});
+kataWorker.addEventListener('error', e => console.warn('kataWorker error:', e));
+
+showFeedback('KataGo yükleniyor…', 'info');
 
 function triggerAI() {
   if (aiThinking || gameEnded) return;
@@ -481,10 +501,14 @@ function triggerAI() {
     ? board.koPoint.y * size + board.koPoint.x : -1;
   const colNum = aiColor === 'black' ? 1 : 2;
 
-  aiWorker.postMessage(
-    { type: 'MOVE', boardData: { grid, ko, size }, color: colNum, timeMs: 2000 },
-    [grid.buffer]
-  );
+  if (kataReady) {
+    kataWorker.postMessage({ type: 'MOVE', boardData: { grid, ko, size }, color: colNum });
+  } else {
+    mctsWorker.postMessage(
+      { type: 'MOVE', boardData: { grid, ko, size }, color: colNum, timeMs: 2000 },
+      [grid.buffer]
+    );
+  }
 }
 
 function requestFinalScore() {
@@ -494,7 +518,7 @@ function requestFinalScore() {
     grid[s.y * size + s.x] = s.color === 'black' ? 1 : 2;
   }
   const ko = board.koPoint ? board.koPoint.y * size + board.koPoint.x : -1;
-  aiWorker.postMessage(
+  mctsWorker.postMessage(
     { type: 'SCORE', boardData: { grid, ko, size } },
     [grid.buffer]
   );
