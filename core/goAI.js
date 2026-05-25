@@ -150,6 +150,37 @@ function scoreBoard(grid, nbr, size) {
   return b - w - KOMI; // pozitif → siyah kazanır
 }
 
+// scoreBoard'un bölge noktalarını da döndüren versiyonu (finalScore için)
+function scoreBoardDetailed(grid, nbr, size) {
+  const seen = new Uint8Array(size * size);
+  let b = 0, w = 0;
+  const bT = [], wT = [];
+
+  for (let i = 0; i < size * size; i++) {
+    if (grid[i] === 1) { b++; continue; }
+    if (grid[i] === 2) { w++; continue; }
+    if (seen[i]) continue;
+
+    const region = [], stack = [i];
+    let tB = false, tW = false;
+
+    while (stack.length) {
+      const cur = stack.pop();
+      if (seen[cur]) continue;
+      seen[cur] = 1;
+      if (grid[cur] === 1) { tB = true; continue; }
+      if (grid[cur] === 2) { tW = true; continue; }
+      region.push(cur);
+      for (const n of nbr[cur]) if (!seen[n]) stack.push(n);
+    }
+
+    if (tB && !tW)      { b += region.length; region.forEach(r => bT.push({ x: r % size, y: (r / size) | 0 })); }
+    else if (tW && !tB) { w += region.length; region.forEach(r => wT.push({ x: r % size, y: (r / size) | 0 })); }
+  }
+
+  return { score: b - w - KOMI, blackTerritory: bT, whiteTerritory: wT };
+}
+
 // ── Rollout hamle seçimi ──────────────────────────────────────────────
 
 function isOwnEye(grid, nbr, i, color) {
@@ -349,13 +380,13 @@ export function getBestMove(boardData, color, timeMs = 2000) {
 export function finalScore(boardData) {
   const { grid, size } = boardData;
   const nbr = getNeighborTable(size);
-  const raw = scoreBoard(grid, nbr, size);
-  const black = raw > 0 ? raw + KOMI : 0;
-  const white = raw < 0 ? -raw : 0;
+  const { score: raw, blackTerritory, whiteTerritory } = scoreBoardDetailed(grid, nbr, size);
   return {
     rawDiff: raw,
     winner:  raw > 0 ? 'black' : 'white',
     margin:  Math.abs(raw),
     komi:    KOMI,
+    blackTerritory,
+    whiteTerritory,
   };
 }

@@ -368,6 +368,8 @@ let passCount   = 0; // ardışık pas sayısı
 let ghost       = null;
 let lastAIMoveXY = null; // AI'nın son hamlesi (vurgulama için)
 let gameEnded   = false;
+let territory   = null;   // { black:[{x,y}…], white:[{x,y}…] } oyun bitince dolar
+let hlTime      = 0;
 
 /* ── Board sync yardımcısı ── */
 function syncBoard(newState) {
@@ -420,6 +422,11 @@ function showFeedback(msg, type) {
 }
 
 function showGameOver(scoreInfo) {
+  // Bölge görselini kaydet
+  if (scoreInfo.blackTerritory || scoreInfo.whiteTerritory) {
+    territory = { black: scoreInfo.blackTerritory || [], white: scoreInfo.whiteTerritory || [] };
+  }
+
   const el = document.getElementById('gameover');
   el.classList.add('show');
   document.getElementById('btn-pass').disabled = true;
@@ -618,6 +625,7 @@ window.resetBoard = function () {
   board      = new BoardState(SIZE);
   moveCount  = 0; passCount = 0;
   gameEnded  = false;
+  territory  = null;
   lastAIMoveXY = null;
   document.getElementById('move-count').textContent = '0';
   document.getElementById('iter-count').textContent = '—';
@@ -775,14 +783,48 @@ function drawKo() {
   ctx.restore();
 }
 
+function drawTerritory() {
+  if (!territory) return;
+  const Y   = -BOARD_H / 2 - 0.3;
+  const ARM = CELL * 0.22;
+  const pulse = 0.55 + 0.45 * Math.sin(hlTime * 2.8);
+
+  [
+    [territory.black, '#1a1a2e'],
+    [territory.white, '#f5f0e8'],
+  ].forEach(([pts, col]) => {
+    if (!pts?.length) return;
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.lineWidth   = Math.max(1, 2.0);
+    ctx.lineCap     = 'round';
+    ctx.globalAlpha = 0.90 * pulse;
+    pts.forEach(({ x, y }) => {
+      const wx = -HALF + x * CELL;
+      const wz = -HALF + y * CELL;
+      const p  = project(wx, Y, wz);
+      if (p.scale < 0.15) return;
+      const pL = project(wx - ARM, Y, wz);
+      const pR = project(wx + ARM, Y, wz);
+      const pU = project(wx, Y, wz - ARM);
+      const pD = project(wx, Y, wz + ARM);
+      ctx.beginPath(); ctx.moveTo(pL.sx, pL.sy); ctx.lineTo(pR.sx, pR.sy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pU.sx, pU.sy); ctx.lineTo(pD.sx, pD.sy); ctx.stroke();
+    });
+    ctx.restore();
+  });
+}
+
 /* Ana render döngüsü */
 function frame() {
+  hlTime += 0.04;
   ctx.clearRect(0, 0, W, H);
   drawBoard();
   drawGrid();
   drawGhost();
   drawStones();
   drawKo();
+  drawTerritory();
   requestAnimationFrame(frame);
 }
 
