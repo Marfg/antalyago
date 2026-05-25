@@ -19,7 +19,18 @@ export const CURRICULUM = [
   { id:'c1', title:'Temel Kurallar', lessons:[
 
     { id:'l1', title:'Tahta ve Taşlar', steps:[
-      { text:`<p>Go, <strong>19×19'luk</strong> bir tahta üzerinde oynanan iki kişilik bir strateji oyunudur. <strong>9×9</strong> tahta başlangıç için daha uygundur.</p><p>Sıralı bir hamle oyunudur, <strong>siyah</strong> önce oynar.</p>`, board:[], auto:true, boardSelector:true, size:9, camera:CAM.overview, fb:{t:'Tahta boyutunu seçerek farkı inceleyin.',c:'info'} },
+      { text:`<p>Go, <strong>19×19'luk</strong> bir tahta üzerinde oynanan iki kişilik bir strateji oyunudur. <strong>9×9</strong> tahta başlangıç için daha uygundur.</p><p>Sıralı bir hamle oyunudur, <strong>siyah</strong> önce oynar.</p>`,
+        assistant: [
+          { msg: 'Bu, bir Go tahtası.', delay: 0 },
+          { msg: 'Go iki kişilik bir oyun. Biri siyah, biri beyaz taşlarla oynar.', delay: 1200 },
+          { msg: '9×9 ile 19×19 arasında fark var — görmek ister misin?', delay: 1400 },
+        ],
+        ctxButtons: [
+          { label: 'Devam et', action: 'next_step' },
+          { label: '19×19 göster', action: 'board19' },
+          { label: 'Tekrar anlat', action: 'replay', muted: true },
+        ],
+        board:[], auto:true, boardSelector:true, size:9, camera:CAM.overview, fb:{t:'Tahta boyutunu seçerek farkı inceleyin.',c:'info'} },
       { text:`<p>Taşlar karelerin içine değil, <strong>çizgilerin kesişim noktalarına</strong> yerleştirilir.</p><p>Aşağıdaki tahtaya herhangi bir noktaya tıklayarak <strong>siyah taş koy.</strong></p>`, board:[], answers:'any', turn:'black', size:9, fb:{t:'Herhangi bir noktaya tıkla!',c:'info'}, fb_ok:'Mükemmel! Taşı doğru noktaya koydun.' },
       { text:`<p>Taşlar bir kez konulduktan sonra <strong>hareket ettirilemez</strong> — sadece yakalanarak kaldırılabilir.</p><div class="highlight-box">Go'da taşlar hareket etmez, sadece eklenir veya kaldırılır.</div>`, board:[{color:'W',x:4,y:4}], auto:true, size:9, fb:{t:'Bu beyaz taş artık o noktada sabit.',c:'info'} },
     ]},

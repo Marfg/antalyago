@@ -165,6 +165,26 @@
     @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
     .shake { animation: shake .3s ease; }
 
+    /* ── ASISTAN DİYALOĞU ── */
+    .assistant-bubble {
+      background: rgba(200,168,75,.06); border: 1px solid var(--gborder);
+      border-radius: 4px 12px 12px 12px;
+      padding: .8rem 1rem; font-size: .9rem; line-height: 1.7; color: var(--text);
+      opacity: 0; transform: translateY(6px);
+      transition: opacity .3s ease, transform .3s ease; margin-bottom: .4rem;
+    }
+    .assistant-bubble.visible { opacity: 1; transform: translateY(0); }
+    #ctx-buttons { display: none; flex-direction: column; gap: .4rem; margin-top: .4rem; }
+    .ctx-btn {
+      padding: .55rem 1rem; border: 1px solid var(--gborder); border-radius: 6px;
+      background: transparent; color: var(--text);
+      font-family: 'Noto Sans', sans-serif; font-size: .82rem; font-weight: 600;
+      cursor: pointer; text-align: left; transition: all .15s;
+    }
+    .ctx-btn:hover { border-color: var(--gold); background: rgba(200,168,75,.08); color: var(--gold); }
+    .ctx-btn--muted { opacity: .45; font-weight: 400; font-size: .76rem; border-color: transparent; }
+    .ctx-btn--muted:hover { opacity: 1; border-color: var(--gborder); }
+
     /* ── NAV BAR ── */
     #nav-bar {
       position: fixed; bottom: 0; right: 0; width: 330px; height: 56px; z-index: 25;
@@ -624,6 +644,8 @@
     </div>
     <div class="bp-desc" id="bp-desc">Yeni başlayanlar için 9×9 tahtasıyla başlamak önerilir.</div>
   </div>
+
+  <div id="ctx-buttons"></div>
 
   <div id="feedback" class="info">
     <span class="fb-icon">💡</span>
@@ -2049,6 +2071,63 @@ function processResult(result) {
   }
 }
 
+/* ── Asistan diyaloğu ──────────────────────────────────────────── */
+let _assistantTimer = null;
+
+function cancelAssistantDialog() {
+  clearTimeout(_assistantTimer);
+  _assistantTimer = null;
+}
+
+function renderAssistantDialog(messages, ctxButtons) {
+  cancelAssistantDialog();
+  const body  = document.getElementById('lesson-body');
+  const ctxEl = document.getElementById('ctx-buttons');
+  ctxEl.style.display = 'none';
+  ctxEl.innerHTML = '';
+
+  body.innerHTML = '<div class="assistant-bubble" id="assistant-bubble"></div>';
+  const bubble = document.getElementById('assistant-bubble');
+
+  let i = 0;
+  function showNext() {
+    if (i >= messages.length) { renderCtxButtons(ctxButtons || []); return; }
+    bubble.textContent = messages[i].msg;
+    bubble.classList.add('visible');
+    i++;
+    if (i < messages.length) {
+      _assistantTimer = setTimeout(showNext, messages[i-1].delay || 1200);
+    } else {
+      _assistantTimer = setTimeout(() => renderCtxButtons(ctxButtons || []), 800);
+    }
+  }
+  _assistantTimer = setTimeout(showNext, 0);
+}
+
+function renderCtxButtons(buttons) {
+  const container = document.getElementById('ctx-buttons');
+  container.innerHTML = '';
+  (buttons || []).forEach(btn => {
+    const el = document.createElement('button');
+    el.className = 'ctx-btn' + (btn.muted ? ' ctx-btn--muted' : '');
+    el.textContent = btn.label;
+    el.addEventListener('click', () => handleCtxAction(btn.action));
+    container.appendChild(el);
+  });
+  container.style.display = 'flex';
+}
+
+window.handleCtxAction = function(action) {
+  if (action === 'next_step') { nextStep(); return; }
+  if (action === 'board19')   { setBoardSize(19); return; }
+  if (action === 'board9')    { setBoardSize(9); return; }
+  if (action === 'replay') {
+    const step = CUR_STEP_DATA;
+    if (step?.assistant) renderAssistantDialog(step.assistant, step.ctxButtons || []);
+    return;
+  }
+};
+
 /* ── Lesson DOM update ─────────────────────────────────────────── */
 function updateLessonDOM(ls) {
   if (!ls || !ls.lesson) return;
@@ -2066,7 +2145,15 @@ function updateLessonDOM(ls) {
   const chap = chapter;
   document.getElementById('chapter-tag').textContent   = (currentLang!=='tr'&&TITLE_T[chap?.id]?.[currentLang])||chap?.title||'';
   document.getElementById('lesson-title').textContent  = (currentLang!=='tr'&&TITLE_T[lesson.id]?.[currentLang])||lesson.title;
-  document.getElementById('lesson-body').innerHTML     = stepT(lesson.id, stepIdx, 'text') || step?.text || '';
+  const _hasAssistant = !!step?.assistant;
+  if (_hasAssistant) {
+    renderAssistantDialog(step.assistant, step.ctxButtons || []);
+  } else {
+    cancelAssistantDialog();
+    document.getElementById('lesson-body').innerHTML = stepT(lesson.id, stepIdx, 'text') || step?.text || '';
+    const ctxEl = document.getElementById('ctx-buttons');
+    if (ctxEl) { ctxEl.style.display = 'none'; ctxEl.innerHTML = ''; }
+  }
   const counterTxt = `${stepIdx+1} / ${totalSteps}`;
   document.getElementById('step-counter').textContent  = `${t('step')} ${counterTxt}`;
   document.getElementById('cc-counter').textContent    = counterTxt;
@@ -2099,6 +2186,7 @@ function updateLessonDOM(ls) {
   }
 
   setFb(stepT(lesson.id, stepIdx, 'fb') || step?.fb?.t || t('defaultFb'), step?.fb?.c || 'info');
+  document.getElementById('feedback').style.display = _hasAssistant ? 'none' : '';
   updateNextBtn(step, done, isLast, canAdvance);
 }
 
