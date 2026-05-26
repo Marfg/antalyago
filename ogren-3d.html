@@ -2446,6 +2446,10 @@ requestAnimationFrame(loop);
     cursor: pointer; z-index: 9000;
     background: none; border: none; padding: 0;
     -webkit-tap-highlight-color: transparent;
+    transition: bottom .48s cubic-bezier(.34,1.56,.64,1),
+                top    .48s cubic-bezier(.34,1.56,.64,1),
+                left   .48s cubic-bezier(.34,1.56,.64,1),
+                right  .48s cubic-bezier(.34,1.56,.64,1);
   }
   .mascot-wrap { width: 64px; height: 64px; position: relative; }
   .mascot-svg  {
@@ -2540,22 +2544,44 @@ requestAnimationFrame(loop);
     animation: badge-pulse 2s ease-in-out infinite;
   }
 
-  /* Bubble */
+  /* ── Konuşma Balonu ── */
   .mascot-bubble {
-    position: absolute; bottom: 72px; right: 0;
-    min-width: 180px; max-width: 240px;
-    background: #1e1e28; border: 1px solid rgba(200,168,75,.28);
-    border-radius: 12px 12px 2px 12px;
-    padding: 10px 14px; font-size: 13px; line-height: 1.5;
+    position: fixed;
+    width: 260px;
+    background: rgba(14,14,22,.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1.5px solid rgba(200,168,75,.30);
+    border-radius: 14px;
+    padding: 13px 16px 12px;
+    font-size: 14px; line-height: 1.65;
     color: #e8e4de; font-family: 'Noto Sans', sans-serif;
-    opacity: 0; transform: translateY(8px) scale(.95);
-    transform-origin: bottom right;
-    transition: opacity .2s ease, transform .2s ease;
-    pointer-events: none;
+    box-shadow: 0 8px 28px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.04);
+    z-index: 8999;
+    opacity: 0; pointer-events: none;
+    transform: scale(.90);
+    transition: opacity .22s ease, transform .22s ease;
   }
   .mascot-bubble.is-visible {
-    opacity: 1; transform: translateY(0) scale(1); pointer-events: auto;
+    opacity: 1; pointer-events: auto; transform: scale(1);
   }
+
+  /* Kuyruk: iki katmanlı CSS üçgeni (dış=border, iç=fill) */
+  .mascot-bubble::before,
+  .mascot-bubble::after { content:''; position:absolute; width:0; height:0; }
+
+  /* tail-br → balon maskotun üst-solunda, kuyruk sağ-alta */
+  .mascot-bubble.tail-br::before { bottom:-11px; right:18px; border:10px solid transparent; border-top:10px solid rgba(200,168,75,.32); border-bottom:none; }
+  .mascot-bubble.tail-br::after  { bottom: -8px; right:19px; border: 9px solid transparent; border-top: 9px solid rgba(14,14,22,.94);   border-bottom:none; }
+  /* tail-bl → balon maskotun üst-sağında, kuyruk sol-alta */
+  .mascot-bubble.tail-bl::before { bottom:-11px; left:18px;  border:10px solid transparent; border-top:10px solid rgba(200,168,75,.32); border-bottom:none; }
+  .mascot-bubble.tail-bl::after  { bottom: -8px; left:19px;  border: 9px solid transparent; border-top: 9px solid rgba(14,14,22,.94);   border-bottom:none; }
+  /* tail-tr → balon maskotun alt-solunda, kuyruk sağ-üste */
+  .mascot-bubble.tail-tr::before { top:-11px; right:18px; border:10px solid transparent; border-bottom:10px solid rgba(200,168,75,.32); border-top:none; }
+  .mascot-bubble.tail-tr::after  { top: -8px; right:19px; border: 9px solid transparent; border-bottom: 9px solid rgba(14,14,22,.94);   border-top:none; }
+  /* tail-tl → balon maskotun alt-sağında, kuyruk sol-üste */
+  .mascot-bubble.tail-tl::before { top:-11px; left:18px; border:10px solid transparent; border-bottom:10px solid rgba(200,168,75,.32); border-top:none; }
+  .mascot-bubble.tail-tl::after  { top: -8px; left:19px; border: 9px solid transparent; border-bottom: 9px solid rgba(14,14,22,.94);   border-top:none; }
 
   /* ── State animations ── */
   .mascot-btn.is-idle .mascot-svg {
@@ -2664,8 +2690,8 @@ requestAnimationFrame(loop);
     </svg>
   </div>
   <span class="mascot-badge" aria-hidden="true" hidden>1</span>
-  <div class="mascot-bubble" id="mascot-bubble" aria-live="polite"></div>
 </button>
+<div class="mascot-bubble" id="mascot-bubble" aria-live="polite" role="status"></div>
 
 <script>
 (function() {
@@ -2673,10 +2699,10 @@ requestAnimationFrame(loop);
   const bubble = document.getElementById('mascot-bubble');
   let _hideTimer = null;
   let _idleTimer = null;
-  let _seqData   = null;
   let _seqAbort  = false;
+  let _curDock   = 'home';
 
-  /* ── Mouth ─────────────────────────────────── */
+  /* ── Ağız ───────────────────────────────────── */
   function setMouth(type) {
     const s = btn.querySelector('#m-smile');
     const n = btn.querySelector('#m-neutral');
@@ -2697,8 +2723,89 @@ requestAnimationFrame(loop);
   }
   window.mascotSetState = mascotSetState;
 
-  /* ── Bubble helpers ─────────────────────────── */
-  function showBubble() { bubble.classList.add('is-visible'); }
+  /* ── Hareket sistemi ───────────────────────── */
+  function getMascotDock(name) {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const isMob  = vw < 700;
+    const panelW = isMob ? 0 : 284;
+    const cW     = vw - panelW;
+    // Tutunan noktalar (canvas içi)
+    const docks  = {
+      home:        { right:  20,              bottom: 24              },
+      board_bl:    { left:   Math.round(cW*.07),  bottom: Math.round(vh*.10) },
+      board_bc:    { left:   Math.round(cW*.46),  bottom: Math.round(vh*.06) },
+      board_br:    { left:   Math.round(cW*.82),  bottom: Math.round(vh*.10) },
+      board_tl:    { left:   Math.round(cW*.07),  bottom: Math.round(vh*.52) },
+      board_tc:    { left:   Math.round(cW*.46),  bottom: Math.round(vh*.52) },
+      board_tr:    { left:   Math.round(cW*.82),  bottom: Math.round(vh*.52) },
+      panel_mid:   { right:  20,              bottom: Math.round(vh*.42) },
+    };
+    return docks[name] || docks.home;
+  }
+
+  function mascotMoveTo(name) {
+    if (_curDock === name) { _updateBubblePos(); return; }
+    _curDock = name;
+    const pos = getMascotDock(name);
+    // Inline style tüm 4 tarafı sıfırla, sonra hedef değerleri yaz
+    ['top','bottom','left','right'].forEach(p => btn.style[p] = 'auto');
+    Object.entries(pos).forEach(([k,v]) => {
+      btn.style[k] = typeof v === 'number' ? v + 'px' : v;
+    });
+    // Geçiş bitince balon konumunu güncelle
+    setTimeout(_updateBubblePos, 140);
+  }
+  window.mascotMoveTo = mascotMoveTo;
+
+  /* ── Balon konumlandırma ────────────────────── */
+  const TAIL_CLS = ['tail-br','tail-bl','tail-tr','tail-tl'];
+
+  function _updateBubblePos() {
+    if (!bubble.classList.contains('is-visible')) return;
+    const r   = btn.getBoundingClientRect();
+    const bw  = 260;
+    const bh  = bubble.offsetHeight || 100;
+    const vw  = window.innerWidth;
+    const vh  = window.innerHeight;
+    const PAD = 12;
+    const mCx = r.left + r.width  / 2;
+    const mCy = r.top  + r.height / 2;
+
+    let bl, bt, tail;
+    if (mCy > vh * 0.52) {
+      // Maskot altta → balon yukarı
+      bt   = r.top - bh - PAD;
+      bl   = mCx > vw * 0.52 ? r.right - bw : r.left;
+      tail = mCx > vw * 0.52 ? 'tail-br' : 'tail-bl';
+    } else {
+      // Maskot üstte → balon aşağı
+      bt   = r.bottom + PAD;
+      bl   = mCx > vw * 0.52 ? r.right - bw : r.left;
+      tail = mCx > vw * 0.52 ? 'tail-tr' : 'tail-tl';
+    }
+    bl = Math.max(PAD, Math.min(bl, vw - bw - PAD));
+    bt = Math.max(PAD, Math.min(bt, vh - bh - PAD));
+
+    bubble.style.left   = bl + 'px';
+    bubble.style.top    = bt + 'px';
+    bubble.style.bottom = 'auto';
+    bubble.style.right  = 'auto';
+    TAIL_CLS.forEach(c => bubble.classList.remove(c));
+    bubble.classList.add(tail);
+  }
+  window.updateBubblePos = _updateBubblePos;
+
+  /* ── Tahta koordinatı → hareket ────────────── */
+  function mascotPointAt(boardXY) {
+    window._mascotPointTarget = boardXY;
+    const mid = (window.SIZE || 9) / 2;
+    // Maskot işaret ettiği noktanın karşı tarafına geçer (engel olmasın)
+    mascotMoveTo(boardXY.x < mid ? 'board_br' : 'board_bl');
+  }
+  window.mascotPointAt = mascotPointAt;
+
+  /* ── Balon göster/gizle ─────────────────────── */
+  function showBubble() { bubble.classList.add('is-visible'); _updateBubblePos(); }
   function hideBubble() { bubble.classList.remove('is-visible'); bubble.innerHTML = ''; }
 
   /* ── Typed-out text ─────────────────────────── */
@@ -2709,8 +2816,9 @@ requestAnimationFrame(loop);
     bubble.appendChild(span);
     let i = 0;
     function tick() {
-      if (i >= text.length) { if (onDone) onDone(); return; }
+      if (i >= text.length) { _updateBubblePos(); if (onDone) onDone(); return; }
       span.textContent = text.slice(0, ++i);
+      if (i % 24 === 0) _updateBubblePos(); // balon büyüdükçe konumu güncelle
       setTimeout(tick, 1000 / SPEED);
     }
     tick();
@@ -2762,16 +2870,18 @@ requestAnimationFrame(loop);
   function _seqRun(frames, idx, step) {
     if (_seqAbort || idx >= frames.length) {
       window._mascotPointTarget = null;
+      mascotMoveTo('home');
       mascotSetState('is-idle');
       return;
     }
     const frame = frames[idx];
 
     if (frame.point) {
-      window._mascotPointTarget = frame.point;
+      mascotPointAt(frame.point);
       mascotSetState('is-pointing');
     } else {
       window._mascotPointTarget = null;
+      if (_curDock !== 'home') mascotMoveTo('home');
       mascotSetState('is-talking');
     }
     setMouth('smile');
@@ -2779,15 +2889,13 @@ requestAnimationFrame(loop);
 
     mascotType(frame.text, function() {
       if (_seqAbort) return;
-      if (frame.waitForTap) {
-        // board tap will resume via mascotReactCorrect/Wrong
-        return;
-      }
+      if (frame.waitForTap) return; // board tap resumes via mascotReactCorrect/Wrong
       if (frame.waitForContinue) {
         const cont = document.createElement('button');
         cont.className = 'mascot-continue';
         cont.textContent = 'Devam →';
         bubble.appendChild(cont);
+        _updateBubblePos();
         cont.addEventListener('click', function() { _seqRun(frames, idx + 1, step); }, { once: true });
         return;
       }
@@ -2827,13 +2935,12 @@ requestAnimationFrame(loop);
     _seqAbort = true;
     clearTimeout(_hideTimer);
     window._mascotPointTarget = null;
+    mascotMoveTo('home');
     if (step.mascot && step.mascot.sequence) {
-      runMascotSequence(step.mascot.sequence, step);
+      setTimeout(function() { runMascotSequence(step.mascot.sequence, step); }, 120);
       return;
     }
-    if (step.mascotHook) {
-      typeSay(step.mascotHook);
-    }
+    if (step.mascotHook) { typeSay(step.mascotHook); }
   };
 
   /* ── React to correct/wrong ─────────────────── */
@@ -2841,6 +2948,7 @@ requestAnimationFrame(loop);
     _seqAbort = true;
     clearTimeout(_hideTimer);
     window._mascotPointTarget = null;
+    mascotMoveTo('home');
     const onC = stepData && stepData.mascot && stepData.mascot.onCorrect;
     mascotSetState('is-happy');
     setMouth('smile');
@@ -2863,6 +2971,7 @@ requestAnimationFrame(loop);
   window.mascotReactWrong = function(stepData) {
     _seqAbort = true;
     clearTimeout(_hideTimer);
+    mascotMoveTo('home');
     const onW = stepData && stepData.mascot && stepData.mascot.onIncorrect;
     mascotSetState('is-encouraging');
     setMouth('neutral');
@@ -2910,7 +3019,14 @@ requestAnimationFrame(loop);
     }
   });
 
-  /* ── Initial greeting ───────────────────────── */
+  /* ── Resize → yeni konumları hesapla ───────── */
+  window.addEventListener('resize', function() {
+    mascotMoveTo(_curDock);
+    _updateBubblePos();
+  });
+
+  /* ── Başlangıç ──────────────────────────────── */
+  mascotMoveTo('home');
   setTimeout(function() {
     mascotSetState('is-idle');
     setTimeout(function() { mascotSay('Merhaba! Go öğrenmeye hazır mısın?', 5000); }, 800);
