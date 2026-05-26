@@ -2910,20 +2910,22 @@ requestAnimationFrame(loop);
   window.runMascotSequence = runMascotSequence;
 
   /* ── Type-then-stay helper ──────────────────── */
-  function typeSay(text, durationMs) {
+  // dock: opsiyonel — maskot o noktaya gider, geçiş bittikten sonra yazar
+  function typeSay(text, durationMs, dock) {
     clearTimeout(_hideTimer);
-    showBubble();
+    const delay = dock ? (mascotMoveTo(dock), 420) : 0;
     mascotSetState('is-talking');
     setMouth('smile');
-    mascotType(text, function() {
-      if ((durationMs || 0) > 0) {
-        _hideTimer = setTimeout(function() {
-          hideBubble();
-          mascotSetState('is-idle');
-          setMouth('neutral');
-        }, durationMs);
-      }
-    });
+    setTimeout(function() {
+      showBubble();
+      mascotType(text, function() {
+        if ((durationMs || 0) > 0) {
+          _hideTimer = setTimeout(function() {
+            hideBubble(); mascotMoveTo('home'); mascotSetState('is-idle'); setMouth('neutral');
+          }, durationMs);
+        }
+      });
+    }, delay);
   }
 
   /* ── Initiate ───────────────────────────────── */
@@ -2937,7 +2939,7 @@ requestAnimationFrame(loop);
       setTimeout(function() { runMascotSequence(step.mascot.sequence, step); }, 120);
       return;
     }
-    if (step.mascotHook) { typeSay(step.mascotHook); }
+    if (step.mascotHook) { typeSay(step.mascotHook, 0, 'board_bc'); }
   };
 
   /* ── React to correct/wrong ─────────────────── */
@@ -3026,7 +3028,10 @@ requestAnimationFrame(loop);
   mascotMoveTo('home');
   setTimeout(function() {
     mascotSetState('is-idle');
-    setTimeout(function() { mascotSay('Merhaba! Go öğrenmeye hazır mısın?', 5000); }, 800);
+    // Selamlama: tahtanın altına in, yaz, 3sn sonra köşeye dön
+    setTimeout(function() {
+      typeSay('Merhaba! Go öğrenmeye hazır mısın?', 3000, 'board_bc');
+    }, 800);
   }, 200);
 })();
 </script>
