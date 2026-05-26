@@ -1009,6 +1009,31 @@ function drawMarkers(step) {
   });
 }
 
+/* Maskot işaret noktası — çift altın halka */
+function drawMascotPoint({x, y}) {
+  const Y  = -BOARD_H/2 - .3;
+  const wx = -HALF + x*CELL;
+  const wz = -HALF + y*CELL;
+  const p  = project(wx, Y, wz);
+  if(p.scale < 0.12) return;
+  const pulse  = .5 + .5*Math.abs(Math.sin(hlTime * 2.5));
+  const rBase  = STONE_R * p.scale * 1.28;
+  const sp     = Math.abs(Math.sin(camPitch));
+  const ry     = rBase * Math.sqrt(sp*sp + ASPECT_3D*ASPECT_3D*(1-sp*sp));
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(p.sx, p.sy, rBase*(1+.15*pulse), ry*(1+.15*pulse), 0, 0, Math.PI*2);
+  ctx.strokeStyle = `rgba(200,168,75,${(.55+.35*pulse).toFixed(2)})`;
+  ctx.lineWidth = Math.max(1.5, 2*p.scale);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(p.sx, p.sy, rBase*.72, ry*.72, 0, 0, Math.PI*2);
+  ctx.strokeStyle = `rgba(200,168,75,${(.28+.22*pulse).toFixed(2)})`;
+  ctx.lineWidth = Math.max(1, 1.4*p.scale);
+  ctx.stroke();
+  ctx.restore();
+}
+
 /* Grup durum imleci — nefes noktası (+) stili, yeşil=canlı göz, kırmızı=ölü */
 function drawGroupIndicators(step) {
   if(!step || !step.groupIndicators) return;
@@ -1468,6 +1493,7 @@ function render() {
   if(CUR_STEP_DATA && !CUR_STEP_DATA.auto) drawHighlights(CUR_STEP_DATA);
   if(CUR_STEP_DATA) drawLiberties(CUR_STEP_DATA);
   if(CUR_STEP_DATA) drawMarkers(CUR_STEP_DATA);
+  if(window._mascotPointTarget) drawMascotPoint(window._mascotPointTarget);
   if(CUR_STEP_DATA) drawGroupIndicators(CUR_STEP_DATA);
   drawNextMoveHint();
   if(koPoint) drawKoPoint(koPoint);
@@ -1997,6 +2023,7 @@ const actionHndl = new ActionHandler(boardSt, lessonEng);
 
 // Bridge variables — render fonksiyonları hâlâ bunları okur
 let CUR_LESSON = null, CUR_STEP = 0, stepDone = false, CUR_STEP_DATA = null;
+let _firstLoad = true;
 let moveGen = 0;
 let koPoint = null;
 let nextMoveHint = null;
@@ -2063,8 +2090,12 @@ function processResult(result) {
   if (fb) {
     setFb(fb.text, fb.type);
     if (fb.type === 'correct' || fb.type === 'wrong') flashFeedback(fb.type);
-    if (fb.type === 'correct' && window.mascotCelebrate) mascotCelebrate();
+    if (fb.type === 'correct') {
+      if (window.mascotReactCorrect) mascotReactCorrect(CUR_STEP_DATA);
+      else if (window.mascotCelebrate) mascotCelebrate();
+    }
     if (fb.type === 'wrong') {
+      if (window.mascotReactWrong) mascotReactWrong(CUR_STEP_DATA);
       const fbEl = document.getElementById('feedback');
       fbEl.classList.add('shake');
       setTimeout(() => fbEl.classList.remove('shake'), 320);
@@ -2193,25 +2224,38 @@ function updateLessonDOM(ls) {
 
 /* ── Navigation ────────────────────────────────────────────────── */
 function loadLesson(lesson) {
+  const suppress = _firstLoad; _firstLoad = false;
   const result = actionHndl.handle({ type: 'LESSON_SELECT', payload: { lessonId: lesson.id } });
   processResult(result);
   updateSidebar(); updateProgress();
+  if (!suppress && window.mascotInitiate && CUR_STEP_DATA) {
+    setTimeout(() => mascotInitiate(CUR_STEP_DATA), 200);
+  }
 }
 
 function loadStep(idx) {
   const result = actionHndl.handle({ type: 'STEP_GOTO', payload: { idx } });
   processResult(result);
+  if (window.mascotInitiate && CUR_STEP_DATA) {
+    setTimeout(() => { mascotInitiate(CUR_STEP_DATA); if(window.resetIdleTimer) resetIdleTimer(CUR_STEP_DATA); }, 150);
+  }
 }
 
 window.nextStep = function() {
   const result = actionHndl.handle({ type: 'STEP_NEXT' });
   processResult(result);
   updateSidebar(); updateProgress();
+  if (window.mascotInitiate && CUR_STEP_DATA) {
+    setTimeout(() => { mascotInitiate(CUR_STEP_DATA); if(window.resetIdleTimer) resetIdleTimer(CUR_STEP_DATA); }, 150);
+  }
 };
 
 window.prevStep = function() {
   const result = actionHndl.handle({ type: 'STEP_PREV' });
   processResult(result);
+  if (window.mascotInitiate && CUR_STEP_DATA) {
+    setTimeout(() => { mascotInitiate(CUR_STEP_DATA); if(window.resetIdleTimer) resetIdleTimer(CUR_STEP_DATA); }, 150);
+  }
 };
 
 function playMoves(moves, step, gen) {
@@ -2513,10 +2557,65 @@ requestAnimationFrame(loop);
     opacity: 1; transform: translateY(0) scale(1); pointer-events: auto;
   }
 
+  /* ── State animations ── */
+  .mascot-btn.is-idle .mascot-svg {
+    animation: m-float 3s ease-in-out infinite;
+  }
+  @keyframes m-float {
+    0%,100% { transform: translateY(0); }
+    50%     { transform: translateY(-5px); }
+  }
+
+  .mascot-btn.is-talking .mascot-svg {
+    animation: m-sway .5s ease-in-out infinite alternate;
+  }
+  @keyframes m-sway {
+    0%   { transform: rotate(-3deg); }
+    100% { transform: rotate(3deg); }
+  }
+
+  .mascot-btn.is-pointing .mascot-svg {
+    animation: m-point-lean .6s cubic-bezier(.36,.07,.19,.97) 1 forwards;
+  }
+  @keyframes m-point-lean {
+    0%   { transform: rotate(0deg); }
+    40%  { transform: rotate(-10deg) translateX(-3px); }
+    100% { transform: rotate(-7deg) translateX(-2px); }
+  }
+
+  .mascot-btn.is-happy .mascot-svg {
+    animation: m-jump .5s cubic-bezier(.36,.07,.19,.97) 2;
+  }
+
+  .mascot-btn.is-encouraging .mascot-svg {
+    animation: m-shake-enc .4s ease-in-out 2;
+  }
+  @keyframes m-shake-enc {
+    0%,100% { transform: rotate(0); }
+    25%     { transform: rotate(-6deg); }
+    75%     { transform: rotate(6deg); }
+  }
+
+  /* Continue button inside bubble */
+  .mascot-continue {
+    display: block; margin-top: 8px;
+    background: rgba(200,168,75,.15); border: 1px solid rgba(200,168,75,.40);
+    color: #c8a84b; border-radius: 6px; padding: 4px 12px;
+    font-size: 12px; cursor: pointer; width: 100%;
+    font-family: 'Noto Sans', sans-serif;
+    transition: background .15s;
+  }
+  .mascot-continue:hover { background: rgba(200,168,75,.28); }
+
   @media (prefers-reduced-motion: reduce) {
     .m-body, .m-glow, .m-eye, .mascot-badge,
     .mascot-btn.is-clicking .mascot-svg,
-    .mascot-btn.is-celebrating .mascot-svg { animation: none !important; }
+    .mascot-btn.is-celebrating .mascot-svg,
+    .mascot-btn.is-idle .mascot-svg,
+    .mascot-btn.is-talking .mascot-svg,
+    .mascot-btn.is-pointing .mascot-svg,
+    .mascot-btn.is-happy .mascot-svg,
+    .mascot-btn.is-encouraging .mascot-svg { animation: none !important; }
   }
 </style>
 
@@ -2573,7 +2672,11 @@ requestAnimationFrame(loop);
   const btn    = document.getElementById('mascot-btn');
   const bubble = document.getElementById('mascot-bubble');
   let _hideTimer = null;
+  let _idleTimer = null;
+  let _seqData   = null;
+  let _seqAbort  = false;
 
+  /* ── Mouth ─────────────────────────────────── */
   function setMouth(type) {
     const s = btn.querySelector('#m-smile');
     const n = btn.querySelector('#m-neutral');
@@ -2585,20 +2688,52 @@ requestAnimationFrame(loop);
   }
   window.setMouth = setMouth;
 
+  /* ── State ──────────────────────────────────── */
+  const STATES = ['is-idle','is-talking','is-pointing','is-happy','is-encouraging',
+                  'is-thinking','is-speaking','is-celebrating'];
+  function mascotSetState(state) {
+    STATES.forEach(s => btn.classList.remove(s));
+    if (state) btn.classList.add(state);
+  }
+  window.mascotSetState = mascotSetState;
+
+  /* ── Bubble helpers ─────────────────────────── */
+  function showBubble() { bubble.classList.add('is-visible'); }
+  function hideBubble() { bubble.classList.remove('is-visible'); bubble.innerHTML = ''; }
+
+  /* ── Typed-out text ─────────────────────────── */
+  function mascotType(text, onDone) {
+    const SPEED = 38;
+    bubble.innerHTML = '';
+    const span = document.createElement('span');
+    bubble.appendChild(span);
+    let i = 0;
+    function tick() {
+      if (i >= text.length) { if (onDone) onDone(); return; }
+      span.textContent = text.slice(0, ++i);
+      setTimeout(tick, 1000 / SPEED);
+    }
+    tick();
+  }
+
+  /* ── Low-level say (no typing) ──────────────── */
   window.mascotSay = function(text, durationMs) {
     durationMs = durationMs === undefined ? 4500 : durationMs;
-    bubble.textContent = text;
-    bubble.classList.add('is-visible');
-    btn.classList.add('is-speaking');
-    setMouth('smile');
     clearTimeout(_hideTimer);
-    _hideTimer = setTimeout(function() {
-      bubble.classList.remove('is-visible');
-      btn.classList.remove('is-speaking');
-      setMouth('neutral');
-    }, durationMs);
+    bubble.innerHTML = text;
+    showBubble();
+    mascotSetState('is-talking');
+    setMouth('smile');
+    if (durationMs > 0) {
+      _hideTimer = setTimeout(function() {
+        hideBubble();
+        mascotSetState('is-idle');
+        setMouth('neutral');
+      }, durationMs);
+    }
   };
 
+  /* ── Celebrate ──────────────────────────────── */
   window.mascotCelebrate = function() {
     btn.classList.remove('is-celebrating');
     void btn.offsetWidth;
@@ -2606,38 +2741,180 @@ requestAnimationFrame(loop);
     setMouth('smile');
     btn.addEventListener('animationend', function() {
       btn.classList.remove('is-celebrating');
+      mascotSetState('is-idle');
     }, { once: true });
   };
 
+  /* ── Think ──────────────────────────────────── */
   window.mascotThink = function(text) {
-    btn.classList.add('is-thinking');
+    mascotSetState('is-thinking');
     setMouth('thinking');
-    if (text) {
-      bubble.textContent = text;
-      bubble.classList.add('is-visible');
-    }
+    if (text) { bubble.textContent = text; showBubble(); }
   };
 
   window.mascotStopThink = function() {
-    btn.classList.remove('is-thinking');
-    bubble.classList.remove('is-visible');
+    mascotSetState('is-idle');
+    hideBubble();
     setMouth('neutral');
   };
 
+  /* ── Sequence runner ────────────────────────── */
+  function _seqRun(frames, idx, step) {
+    if (_seqAbort || idx >= frames.length) {
+      window._mascotPointTarget = null;
+      mascotSetState('is-idle');
+      return;
+    }
+    const frame = frames[idx];
+
+    if (frame.point) {
+      window._mascotPointTarget = frame.point;
+      mascotSetState('is-pointing');
+    } else {
+      window._mascotPointTarget = null;
+      mascotSetState('is-talking');
+    }
+    setMouth('smile');
+    showBubble();
+
+    mascotType(frame.text, function() {
+      if (_seqAbort) return;
+      if (frame.waitForTap) {
+        // board tap will resume via mascotReactCorrect/Wrong
+        return;
+      }
+      if (frame.waitForContinue) {
+        const cont = document.createElement('button');
+        cont.className = 'mascot-continue';
+        cont.textContent = 'Devam →';
+        bubble.appendChild(cont);
+        cont.addEventListener('click', function() { _seqRun(frames, idx + 1, step); }, { once: true });
+        return;
+      }
+      const delay = frame.delay !== undefined ? frame.delay : 1600;
+      _hideTimer = setTimeout(function() { _seqRun(frames, idx + 1, step); }, delay);
+    });
+  }
+
+  function runMascotSequence(frames, step) {
+    _seqAbort = false;
+    _seqData  = { frames, step };
+    clearTimeout(_hideTimer);
+    _seqRun(frames, 0, step);
+  }
+  window.runMascotSequence = runMascotSequence;
+
+  /* ── Type-then-stay helper ──────────────────── */
+  function typeSay(text, durationMs) {
+    clearTimeout(_hideTimer);
+    showBubble();
+    mascotSetState('is-talking');
+    setMouth('smile');
+    mascotType(text, function() {
+      if ((durationMs || 0) > 0) {
+        _hideTimer = setTimeout(function() {
+          hideBubble();
+          mascotSetState('is-idle');
+          setMouth('neutral');
+        }, durationMs);
+      }
+    });
+  }
+
+  /* ── Initiate ───────────────────────────────── */
+  window.mascotInitiate = function(step) {
+    if (!step) return;
+    _seqAbort = true;
+    clearTimeout(_hideTimer);
+    window._mascotPointTarget = null;
+    if (step.mascot && step.mascot.sequence) {
+      runMascotSequence(step.mascot.sequence, step);
+      return;
+    }
+    if (step.mascotHook) {
+      typeSay(step.mascotHook);
+    }
+  };
+
+  /* ── React to correct/wrong ─────────────────── */
+  window.mascotReactCorrect = function(stepData) {
+    _seqAbort = true;
+    clearTimeout(_hideTimer);
+    window._mascotPointTarget = null;
+    const onC = stepData && stepData.mascot && stepData.mascot.onCorrect;
+    mascotSetState('is-happy');
+    setMouth('smile');
+    btn.classList.remove('is-celebrating');
+    void btn.offsetWidth;
+    btn.classList.add('is-celebrating');
+    const msg = (onC && onC.text) || (stepData && stepData.fb_ok) || 'Mükemmel!';
+    showBubble();
+    mascotType(msg, function() {
+      if (onC && onC.sequence) {
+        setTimeout(function() { runMascotSequence(onC.sequence, stepData); }, 400);
+      } else {
+        _hideTimer = setTimeout(function() {
+          hideBubble(); mascotSetState('is-idle'); setMouth('neutral');
+        }, 2000);
+      }
+    });
+  };
+
+  window.mascotReactWrong = function(stepData) {
+    _seqAbort = true;
+    clearTimeout(_hideTimer);
+    const onW = stepData && stepData.mascot && stepData.mascot.onIncorrect;
+    mascotSetState('is-encouraging');
+    setMouth('neutral');
+    const msg = (onW && onW.text) || (stepData && stepData.fb_err) || 'Tekrar dene!';
+    showBubble();
+    mascotType(msg, function() {
+      if (onW && onW.sequence) {
+        setTimeout(function() { runMascotSequence(onW.sequence, stepData); }, 600);
+      } else {
+        _hideTimer = setTimeout(function() {
+          hideBubble(); mascotSetState('is-idle'); setMouth('neutral');
+        }, 2200);
+      }
+    });
+  };
+
+  /* ── Idle nudge timer ───────────────────────── */
+  window.resetIdleTimer = function(step) {
+    clearTimeout(_idleTimer);
+    if (!step || !step.mascotNudge) return;
+    _idleTimer = setTimeout(function() {
+      if (!bubble.classList.contains('is-visible')) {
+        typeSay(step.mascotNudge);
+      }
+    }, 15000);
+  };
+
+  /* ── Click / keyboard ───────────────────────── */
   btn.addEventListener('click', function() {
     btn.classList.add('is-clicking');
     btn.addEventListener('animationend', function() {
       btn.classList.remove('is-clicking');
     }, { once: true });
-    mascotSay('Sana nasıl yardımcı olabilirim?');
+    if (bubble.classList.contains('is-visible')) {
+      hideBubble(); mascotSetState('is-idle');
+    } else {
+      mascotSay('Sana nasıl yardımcı olabilirim?', 4000);
+    }
   });
 
   btn.addEventListener('keydown', function(e) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      mascotSay('Sana nasıl yardımcı olabilirim?');
+      mascotSay('Sana nasıl yardımcı olabilirim?', 4000);
     }
   });
+
+  /* ── Initial greeting ───────────────────────── */
+  setTimeout(function() {
+    mascotSetState('is-idle');
+    setTimeout(function() { mascotSay('Merhaba! Go öğrenmeye hazır mısın?', 5000); }, 800);
+  }, 200);
 })();
 </script>
 </body>

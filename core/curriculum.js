@@ -31,8 +31,8 @@ export const CURRICULUM = [
           { label: 'Tekrar anlat', action: 'replay', muted: true },
         ],
         board:[], auto:true, boardSelector:true, size:9, camera:CAM.overview, fb:{t:'Tahta boyutunu seçerek farkı inceleyin.',c:'info'} },
-      { text:`<p>Taşlar karelerin içine değil, <strong>çizgilerin kesişim noktalarına</strong> yerleştirilir.</p><p>Aşağıdaki tahtaya herhangi bir noktaya tıklayarak <strong>siyah taş koy.</strong></p>`, board:[], answers:'any', turn:'black', size:9, fb:{t:'Herhangi bir noktaya tıkla!',c:'info'}, fb_ok:'Mükemmel! Taşı doğru noktaya koydun.' },
-      { text:`<p>Taşlar bir kez konulduktan sonra <strong>hareket ettirilemez</strong> — sadece yakalanarak kaldırılabilir.</p><div class="highlight-box">Go'da taşlar hareket etmez, sadece eklenir veya kaldırılır.</div>`, board:[{color:'W',x:4,y:4}], auto:true, size:9, fb:{t:'Bu beyaz taş artık o noktada sabit.',c:'info'} },
+      { text:`<p>Taşlar karelerin içine değil, <strong>çizgilerin kesişim noktalarına</strong> yerleştirilir.</p><p>Aşağıdaki tahtaya herhangi bir noktaya tıklayarak <strong>siyah taş koy.</strong></p>`, board:[], answers:'any', turn:'black', size:9, fb:{t:'Herhangi bir noktaya tıkla!',c:'info'}, fb_ok:'Mükemmel! Taşı doğru noktaya koydun.', mascotHook:'Çizgilerin kesişim noktalarına tıkla — herhangi bir yere!', mascotNudge:'Yardıma mı ihtiyacın var? Tahta üzerinde herhangi bir noktaya tıklayabilirsin.' },
+      { text:`<p>Taşlar bir kez konulduktan sonra <strong>hareket ettirilemez</strong> — sadece yakalanarak kaldırılabilir.</p><div class="highlight-box">Go'da taşlar hareket etmez, sadece eklenir veya kaldırılır.</div>`, board:[{color:'W',x:4,y:4}], auto:true, size:9, fb:{t:'Bu beyaz taş artık o noktada sabit.',c:'info'}, mascotHook:'Bu taş artık burada sabit — hareket ettiremezsin, sadece yakalayabilirsin.' },
     ]},
 
     { id:'l2', title:'Nefes Noktaları', steps:[
@@ -42,7 +42,17 @@ export const CURRICULUM = [
     ]},
 
     { id:'l3', title:'Taş Alma', steps:[
-      { text:`<p>Bir taşın <strong>tüm nefes noktaları doldurulursa</strong>, o taş yakalanır ve tahtadan kalkar.</p><p>Beyaz taşın tek boş noktası var — oraya siyah taş koyarak beyazı yakala! <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}], answer:{x:4,y:5}, turn:'black', size:9, fb:{t:'Beyaz taşın son nefes noktasına tıkla!',c:'info'}, fb_ok:'Yakaladın! Beyaz taş tahtadan kalkar.', fb_err:'Beyaz taşın çevresindeki boş noktayı bul.' },
+      { text:`<p>Bir taşın <strong>tüm nefes noktaları doldurulursa</strong>, o taş yakalanır ve tahtadan kalkar.</p><p>Beyaz taşın tek boş noktası var — oraya siyah taş koyarak beyazı yakala! <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}], answer:{x:4,y:5}, turn:'black', size:9, fb:{t:'Beyaz taşın son nefes noktasına tıkla!',c:'info'}, fb_ok:'Yakaladın! Beyaz taş tahtadan kalkar.', fb_err:'Beyaz taşın çevresindeki boş noktayı bul.',
+        mascot: {
+          sequence: [
+            { text: 'Bak, beyaz taş siyahlarla çevrilmiş!', delay: 1400 },
+            { text: 'Bu boş noktayı gör?', point: {x:4, y:5}, delay: 1800 },
+            { text: 'Oraya siyah taş koyarsan beyaz taş yok olur.', waitForContinue: true },
+            { text: 'Şimdi dene — o noktaya tıkla!', waitForTap: true },
+          ],
+          onCorrect: { text: 'Yakaladın! Beyaz taş tahtadan kalktı.' },
+          onIncorrect: { text: 'Neredeyse! Beyaz taşa dokunan boş noktayı bul.' },
+        } },
       { text:`<p>Bir <strong>grubu</strong> yakalamak için grubun tüm nefes noktalarını doldurman gerekir.</p><p>İki beyaz taşın son nefes noktasını doldur — <strong>D5 noktasına tıkla.</strong></p>`, board:[{color:'W',x:3,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:3},{color:'B',x:4,y:4}], answer:{x:3,y:4}, turn:'black', size:9, fb:{t:'İki beyaz taşın son boş noktasını bul.',c:'info'}, fb_ok:'Grubu yakaladın!', fb_err:'Beyaz grubun son nefes noktasını bul.' },
       { text:`<p>Bir örnek daha! <strong>3 taşlı beyaz grup</strong> siyahlarla çevrilmiş.</p><p>Beyaz grubun tek nefes noktasını bul ve grubu yakala — <strong>E6 noktasına tıkla.</strong></p>`, board:[{color:'B',x:4,y:1},{color:'B',x:5,y:1},{color:'B',x:3,y:2},{color:'B',x:6,y:2},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'W',x:4,y:2},{color:'W',x:5,y:2},{color:'W',x:5,y:3}], answer:{x:4,y:3}, turn:'black', size:9, fb:{t:'3 taşlı beyaz grubun tek boş noktasını bul.',c:'info'}, fb_ok:'Mükemmel! Üç beyaz taş birden yakalandı.', fb_err:'E6 noktasına tıkla — beyazın tek boş komşusu.' },
     ]},
