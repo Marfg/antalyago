@@ -948,6 +948,10 @@ kataWorker.addEventListener('message', ({ data }) => {
       if (window.mascotStopThink) mascotStopThink();
       showFeedback('KataGo yuklenemedi. Temel AI ile devam ediliyor.', 'info');
       console.warn('KataGo yuklenemedi — MCTS ile devam:', data.error);
+      // Yükleme ekranını kapat — MCTS ile devam
+      const loElFb = document.getElementById('model-loader');
+      if (loElFb) { loElFb.classList.add('done'); setTimeout(() => loElFb.classList.remove('show'), 2000); }
+      renderDifficultyCards();
     }
     return;
   }

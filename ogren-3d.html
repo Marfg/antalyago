@@ -2744,15 +2744,13 @@ requestAnimationFrame(loop);
   }
 
   function mascotMoveTo(name) {
-    if (_curDock === name) { _updateBubblePos(); return; }
     _curDock = name;
     const pos = getMascotDock(name);
-    // Inline style tüm 4 tarafı sıfırla, sonra hedef değerleri yaz
+    // Her seferinde 4 tarafı sıfırla → transition için explicit starting point
     ['top','bottom','left','right'].forEach(p => btn.style[p] = 'auto');
     Object.entries(pos).forEach(([k,v]) => {
       btn.style[k] = typeof v === 'number' ? v + 'px' : v;
     });
-    // Geçiş bitince balon konumunu güncelle
     setTimeout(_updateBubblePos, 140);
   }
   window.mascotMoveTo = mascotMoveTo;
@@ -2906,7 +2904,6 @@ requestAnimationFrame(loop);
 
   function runMascotSequence(frames, step) {
     _seqAbort = false;
-    _seqData  = { frames, step };
     clearTimeout(_hideTimer);
     _seqRun(frames, 0, step);
   }
