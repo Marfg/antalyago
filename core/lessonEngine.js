@@ -8,11 +8,13 @@
  *  - LessonEngine sınıfı (state yönetimi)
  */
 
+import { meetsGoal } from './pedagogyEngine.js';
+
 // ── Tek doğrulama fonksiyonu ───────────────────────────────────────
-// Önceki mimaride 5 ayrı yerde tekrarlanan mantık buraya taşındı.
 
 /**
  * Verilen step tanımına göre (x,y) hamlesi doğru cevap mı?
+ * goalZone / goalAdjacent pedagoji hedefleri de desteklenir.
  *
  * @param {object} step  — curriculum step verisi
  * @param {number} x
@@ -21,6 +23,8 @@
  */
 export function isCorrectAnswer(step, x, y) {
   if (!step) return false;
+  // Pedagoji hedefleri: zone veya adjacency
+  if (step.goalZone || step.goalAdjacent) return meetsGoal(step, x, y);
   if (step.answers === 'any') return true;
   if (Array.isArray(step.answers)) {
     return step.answers.some(a => a.x === x && a.y === y);
@@ -35,9 +39,8 @@ export function isCorrectAnswer(step, x, y) {
  * Step bir cevap gerektiriyor mu?
  */
 export function stepRequiresAnswer(step) {
-  if (!step) return false;
-  if (step.auto) return false;
-  return !!(step.answer || step.answers);
+  if (!step || step.auto) return false;
+  return !!(step.answer || step.answers || step.goalZone || step.goalAdjacent);
 }
 
 // ── LessonEngine sınıfı ────────────────────────────────────────────

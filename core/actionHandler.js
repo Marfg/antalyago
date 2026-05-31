@@ -28,6 +28,10 @@
 
 import { isValidMove, computeCaptures, applyMove } from './ruleEngine.js';
 import { isCorrectAnswer, stepRequiresAnswer }      from './lessonEngine.js';
+import {
+  analyzePattern, buildFeedback, buildLibertyMiniQ,
+  wrongGoalMessage,
+} from './pedagogyEngine.js';
 
 export class ActionHandler {
   /**
@@ -87,12 +91,15 @@ export class ActionHandler {
     }
 
     // Ders cevap doğrulama
-    const { correct, mistakeCount } = this.lesson.validateAnswer(x, y);
+    const { correct } = this.lesson.validateAnswer(x, y);
 
     if (correct) {
       return this._handleCorrectAnswer(step, x, y, color);
     } else {
-      const fb = step.fb_err || 'Yanlış, tekrar dene.';
+      // Pedagoji hedefi varsa hedefe özgü mesaj, yoksa fb_err
+      const fb = (step.goalZone || step.goalAdjacent)
+        ? wrongGoalMessage(step)
+        : (step.fb_err || 'Yanlış, tekrar dene.');
       return this._result(false, [], { text: fb, type: 'wrong' });
     }
   }
@@ -128,8 +135,29 @@ export class ActionHandler {
     // DOM güncellemesi için lessonState
     effects.push({ type: 'UPDATE_LESSON', lessonState: this.lesson._currentState() });
 
-    const fb = step.fb_ok || 'Doğru!';
-    return this._result(true, effects, { text: fb, type: 'correct' });
+    // ── Pedagoji hook ──────────────────────────────────────────────
+    let feedbackText = step.fb_ok || 'Doğru!';
+    if (step.pedagogy) {
+      const pattern = analyzePattern(this.board, x, y);
+      feedbackText = buildFeedback(pattern);
+
+      // Yerleştirilen taşın liberty noktaları → görsel vurgu
+      if (pattern.libertyPoints.length) {
+        effects.push({ type: 'SHOW_LIBERTY_HIGHLIGHTS', points: pattern.libertyPoints });
+      }
+
+      // Mini soru: 'liberty' sentinel veya statik obje
+      const rawQ = step.miniQuestion;
+      const miniQ = rawQ === 'liberty'
+        ? buildLibertyMiniQ(pattern)
+        : (rawQ && typeof rawQ === 'object' ? rawQ : null);
+      if (miniQ) {
+        // UPDATE_LESSON'dan sonra gelmeli: önce btn-next açılır, sonra SHOW_MINI_QUESTION kapatır
+        effects.push({ type: 'SHOW_MINI_QUESTION', question: miniQ });
+      }
+    }
+
+    return this._result(true, effects, { text: feedbackText, type: 'correct' });
   }
 
   // ── STEP_NEXT ────────────────────────────────────────────────────

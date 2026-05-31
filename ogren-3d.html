@@ -165,6 +165,29 @@
     @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
     .shake { animation: shake .3s ease; }
 
+    /* ── MİNİ SORU ── */
+    #mini-question { display: none; margin-top: .6rem; }
+    #mini-question.show { display: block; }
+    .mini-q-wrap {
+      padding: .7rem .85rem; background: rgba(200,168,75,.06);
+      border: 1px solid var(--gborder); border-radius: 8px;
+    }
+    .mini-q-text { font-size: .83rem; font-weight: 600; color: var(--text); margin-bottom: .5rem; }
+    .mini-q-options { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .mini-opt-btn {
+      padding: .32rem .78rem; border: 1px solid var(--gborder); border-radius: 5px;
+      background: transparent; color: var(--text);
+      font-family: 'Noto Sans', sans-serif; font-size: .82rem; cursor: pointer;
+      transition: border-color .15s, background .15s, color .15s;
+    }
+    .mini-opt-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+    .mini-opt-btn.correct { border-color: var(--green); background: rgba(62,207,128,.1); color: var(--green); }
+    .mini-opt-btn.wrong   { border-color: var(--red);   background: rgba(224,80,80,.1);   color: var(--red); }
+    .mini-opt-btn:disabled { cursor: default; }
+    .mini-q-feedback { font-size: .78rem; margin-top: .4rem; line-height: 1.5; }
+    .mini-q-feedback.correct { color: var(--green); }
+    .mini-q-feedback.wrong   { color: var(--red); }
+
     /* ── ASISTAN DİYALOĞU ── */
     .assistant-bubble {
       background: rgba(200,168,75,.06); border: 1px solid var(--gborder);
@@ -630,6 +653,7 @@
   <div id="lesson-title">Ders Seç</div>
   <div class="step-dots" id="step-dots"></div>
   <div id="lesson-body"><p>Sol panelden bir ders seçin.</p></div>
+  <div id="mini-question"></div>
   <!-- Board size picker (Tahta ve Taşlar dersi) -->
   <div id="board-picker">
     <div class="bp-label">Tahta Boyutu</div>
@@ -1009,6 +1033,34 @@ function drawMarkers(step) {
   });
 }
 
+/* Pedagoji liberty vurguları — nefes noktaları (firuze artı) */
+function drawPedagogyHighlights3D() {
+  const pts = window._pedagyHighlights;
+  if (!pts || !pts.length) return;
+  const Y = -BOARD_H/2 - .3;
+  pts.forEach(({x, y}) => {
+    const wx = -HALF + x*CELL, wz = -HALF + y*CELL;
+    const p  = project(wx, Y, wz);
+    if (p.scale < 0.12) return;
+    const arm = CELL * 0.22 * p.scale;
+    const pulse = .5 + .5*Math.abs(Math.sin(hlTime * 3.2));
+    ctx.save();
+    ctx.strokeStyle = `rgba(91,210,195,${(.65+.30*pulse).toFixed(2)})`;
+    ctx.lineWidth = Math.max(1.5, 2.2 * p.scale);
+    ctx.lineCap = 'round';
+    // yatay kol
+    const pL = project(wx - arm/p.scale, Y, wz), pR = project(wx + arm/p.scale, Y, wz);
+    ctx.beginPath(); ctx.moveTo(pL.sx, pL.sy); ctx.lineTo(pR.sx, pR.sy); ctx.stroke();
+    // dikey kol
+    const pU = project(wx, Y, wz - arm/p.scale), pD = project(wx, Y, wz + arm/p.scale);
+    ctx.beginPath(); ctx.moveTo(pU.sx, pU.sy); ctx.lineTo(pD.sx, pD.sy); ctx.stroke();
+    // merkez nokta
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, 2.2*p.scale, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(91,210,195,${(.7+.25*pulse).toFixed(2)})`; ctx.fill();
+    ctx.restore();
+  });
+}
+
 /* Maskot işaret noktası — çift altın halka */
 function drawMascotPoint({x, y}) {
   const Y  = -BOARD_H/2 - .3;
@@ -1368,6 +1420,23 @@ function drawLiberties2D(step,b){
   });
 }
 
+function drawPedagogyHighlights2D(b){
+  const pts = window._pedagyHighlights;
+  if (!pts || !pts.length) return;
+  const pulse = .5 + .5*Math.abs(Math.sin(hlTime * 3.2));
+  pts.forEach(({x, y}) => {
+    const px=gx2(x,b), py=gy2(y,b), r=b.r*.28;
+    ctx.save();
+    ctx.strokeStyle = `rgba(91,210,195,${(.70+.25*pulse).toFixed(2)})`;
+    ctx.lineWidth = Math.max(1.2, r*.35); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(px-r,py); ctx.lineTo(px+r,py); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px,py-r); ctx.lineTo(px,py+r); ctx.stroke();
+    ctx.beginPath(); ctx.arc(px,py,Math.max(1.5,r*.22),0,Math.PI*2);
+    ctx.fillStyle = `rgba(91,210,195,${(.75+.20*pulse).toFixed(2)})`; ctx.fill();
+    ctx.restore();
+  });
+}
+
 function drawTerritory2D(pts,side,b){
   if(!pts||!pts.length) return;
   pts.forEach(({x,y})=>{
@@ -1454,6 +1523,7 @@ function render2D(){
   const step=CUR_STEP_DATA;
   if(step&&!step.auto) drawHighlights2D(step,b);
   if(step) drawLiberties2D(step,b);
+  drawPedagogyHighlights2D(b);
   if(step) drawMarkers2D(step,b);
   if(step) drawGroupIndicators2D(step,b);
   if(koPoint) drawKo2D(koPoint,b);
@@ -1492,6 +1562,7 @@ function render() {
 
   if(CUR_STEP_DATA && !CUR_STEP_DATA.auto) drawHighlights(CUR_STEP_DATA);
   if(CUR_STEP_DATA) drawLiberties(CUR_STEP_DATA);
+  drawPedagogyHighlights3D();
   if(CUR_STEP_DATA) drawMarkers(CUR_STEP_DATA);
   if(window._mascotPointTarget) drawMascotPoint(window._mascotPointTarget);
   if(CUR_STEP_DATA) drawGroupIndicators(CUR_STEP_DATA);
@@ -2037,6 +2108,7 @@ function processEffects(effects) {
     switch (eff.type) {
       case 'RESET_BOARD': {
         moveGen++; // önceki playMoves zincirini geçersiz kıl
+        window._pedagyHighlights = null;
         const ns = eff.size || 9;
         if (ns !== SIZE) { SIZE=ns; CELL=ns===9?48:ns===13?32:22; HALF=(SIZE-1)*CELL/2; STONE_R=CELL*(20/48); }
         game.reset();
@@ -2079,6 +2151,12 @@ function processEffects(effects) {
       case 'UPDATE_LESSON':
         updateLessonDOM(eff.lessonState);
         break;
+      case 'SHOW_LIBERTY_HIGHLIGHTS':
+        window._pedagyHighlights = eff.points;
+        break;
+      case 'SHOW_MINI_QUESTION':
+        renderMiniQuestion(eff.question);
+        break;
     }
   }
 }
@@ -2101,6 +2179,48 @@ function processResult(result) {
       setTimeout(() => fbEl.classList.remove('shake'), 320);
     }
   }
+}
+
+/* ── Mini soru ─────────────────────────────────────────────────── */
+function renderMiniQuestion(q) {
+  if (!q) return;
+  const el = document.getElementById('mini-question');
+  el.innerHTML = `
+    <div class="mini-q-wrap">
+      <div class="mini-q-text">${q.text}</div>
+      <div class="mini-q-options" id="mini-q-opts"></div>
+      <div class="mini-q-feedback" id="mini-q-fb" style="display:none"></div>
+    </div>`;
+  const optsEl = el.querySelector('#mini-q-opts');
+  q.options.forEach((opt, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'mini-opt-btn';
+    btn.textContent = opt.text;
+    btn.onclick = () => handleMiniAnswer(idx, q);
+    optsEl.appendChild(btn);
+  });
+  el.classList.add('show');
+  // btn-next kapatılsın (UPDATE_LESSON onu açmış olabilir)
+  document.getElementById('btn-next').disabled = true;
+}
+
+function handleMiniAnswer(idx, q) {
+  const el = document.getElementById('mini-question');
+  if (!el) return;
+  const btns = el.querySelectorAll('.mini-opt-btn');
+  btns.forEach(b => { b.disabled = true; });
+  const chosen = q.options[idx];
+  btns[idx].classList.add(chosen.correct ? 'correct' : 'wrong');
+  if (!chosen.correct) {
+    const correctIdx = q.options.findIndex(o => o.correct);
+    if (correctIdx >= 0) btns[correctIdx].classList.add('correct');
+  }
+  const fbEl = el.querySelector('#mini-q-fb');
+  fbEl.textContent = chosen.feedback || '';
+  fbEl.className = 'mini-q-feedback ' + (chosen.correct ? 'correct' : 'wrong');
+  fbEl.style.display = '';
+  // btn-next tekrar aç
+  document.getElementById('btn-next').disabled = false;
 }
 
 /* ── Asistan diyaloğu ──────────────────────────────────────────── */
@@ -2172,6 +2292,9 @@ function updateLessonDOM(ls) {
   koPoint       = step?.initialKoIndicator || null;
   nextMoveHint  = null;
   rotateMode    = false;
+  // Mini soru ve pedagoji vurguları temizle
+  const _mqEl = document.getElementById('mini-question');
+  if (_mqEl) { _mqEl.classList.remove('show'); _mqEl.innerHTML = ''; }
   ghostActive   = !!(step && !done && stepRequiresAnswer(step));
 
   const chap = chapter;

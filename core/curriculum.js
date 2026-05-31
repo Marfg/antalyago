@@ -19,6 +19,8 @@ export const CURRICULUM = [
   { id:'c1', title:'Temel Kurallar', lessons:[
 
     { id:'l1', title:'Tahta ve Taşlar', steps:[
+
+      // 0 — Tahta boyutu / tanışma (auto)
       { text:`<p>Go, <strong>19×19'luk</strong> bir tahta üzerinde oynanan iki kişilik bir strateji oyunudur. <strong>9×9</strong> tahta başlangıç için daha uygundur.</p><p>Sıralı bir hamle oyunudur, <strong>siyah</strong> önce oynar.</p>`,
         assistant: [
           { msg: 'Bu, bir Go tahtası.', delay: 0 },
@@ -30,9 +32,49 @@ export const CURRICULUM = [
           { label: '19×19 göster', action: 'board19' },
           { label: 'Tekrar anlat', action: 'replay', muted: true },
         ],
-        board:[], auto:true, boardSelector:true, size:9, camera:CAM.overview, fb:{t:'Tahta boyutunu seçerek farkı inceleyin.',c:'info'} },
-      { text:`<p>Taşlar karelerin içine değil, <strong>çizgilerin kesişim noktalarına</strong> yerleştirilir.</p><p>Aşağıdaki tahtaya herhangi bir noktaya tıklayarak <strong>siyah taş koy.</strong></p>`, board:[], answers:'any', turn:'black', size:9, fb:{t:'Herhangi bir noktaya tıkla!',c:'info'}, fb_ok:'Mükemmel! Taşı doğru noktaya koydun.', mascotHook:'Çizgilerin kesişim noktalarına tıkla — herhangi bir yere!', mascotNudge:'Yardıma mı ihtiyacın var? Tahta üzerinde herhangi bir noktaya tıklayabilirsin.' },
-      { text:`<p>Taşlar bir kez konulduktan sonra <strong>hareket ettirilemez</strong> — sadece yakalanarak kaldırılabilir.</p><div class="highlight-box">Go'da taşlar hareket etmez, sadece eklenir veya kaldırılır.</div>`, board:[{color:'W',x:4,y:4}], auto:true, size:9, fb:{t:'Bu beyaz taş artık o noktada sabit.',c:'info'}, mascotHook:'Bu taş artık burada sabit — hareket ettiremezsin, sadece yakalayabilirsin.' },
+        board:[], auto:true, boardSelector:true, size:9, camera:CAM.overview,
+        fb:{t:'Tahta boyutunu seçerek farkı inceleyin.',c:'info'} },
+
+      // 1 — Herhangi yere taş koy (pedagogy: zone + liberty feedback)
+      { text:`<p>Taşlar karelerin içine değil, <strong>çizgilerin kesişim noktalarına</strong> yerleştirilir.</p><p>Tahtaya herhangi bir noktaya tıkla — taşının <em>nefes noktası</em> sayısını birlikte göreceğiz.</p>`,
+        board:[], answers:'any', turn:'black', size:9, pedagogy:true,
+        miniQuestion:'liberty',
+        camera:CAM.high,
+        fb:{t:'Herhangi bir kesişim noktasına tıkla!',c:'info'} },
+
+      // 2 — Köşeye taş koy (pedagogy: corner liberties)
+      { text:`<p>Tahtanın dört <strong>köşesindeki</strong> taşların yalnızca <strong>2 nefes noktası</strong> vardır — en savunmasız konum budur.</p><p>Köşelerden birine tıkla ve nefes sayısını gör.</p>`,
+        board:[],
+        answers:[{x:0,y:0},{x:8,y:0},{x:0,y:8},{x:8,y:8}],
+        goalZone:'corner',
+        turn:'black', size:9, pedagogy:true,
+        miniQuestion:'liberty',
+        camera:CAM.corner_tl,
+        fb:{t:'Tahtanın dört köşesinden birine tıkla!',c:'info'},
+        fb_err:'Bu köşe değil. Tahtanın dört köşesinden birine tıkla.' },
+
+      // 3 — Beyaza bitişik taş koy (pedagogy: orthogonal contact)
+      { text:`<p>Go'da taşlar <strong>yatay veya dikey</strong> komşu olduklarında birbirine bağlanır.</p><p>Beyaz taşa yatay veya dikey olarak bitişik bir noktaya siyah taş koy.</p>`,
+        board:[{color:'W',x:4,y:4}],
+        answers:[{x:4,y:3},{x:4,y:5},{x:3,y:4},{x:5,y:4}],
+        goalAdjacent:{x:4,y:4},
+        turn:'black', size:9, pedagogy:true,
+        miniQuestion:{
+          text:"Çapraz komşu (45°) Go'da temas sayılır mı?",
+          options:[
+            {text:'Sayılmaz', correct:true,  feedback:"Doğru! Go'da yalnızca yatay/dikey bağlantı geçerlidir."},
+            {text:'Sayılır',  correct:false, feedback:"Hayır. Go sadece 4 yönü tanır, çapraz değil."},
+          ]
+        },
+        camera:CAM.center,
+        fb:{t:'Beyaz taşa bitişik bir noktaya tıkla!',c:'info'},
+        fb_err:'Hedef taşa yatay veya dikey olarak bitişik bir noktayı seç.' },
+
+      // 4 — Taşlar hareket etmez (auto)
+      { text:`<p>Taşlar bir kez konulduktan sonra <strong>hareket ettirilemez</strong> — sadece yakalanarak kaldırılabilir.</p><div class="highlight-box">Go'da taşlar hareket etmez, sadece eklenir veya kaldırılır.</div>`,
+        board:[{color:'W',x:4,y:4}], auto:true, size:9,
+        fb:{t:"Bu beyaz taş artık o noktada sabit.",c:'info'},
+        mascotHook:"Bu taş artık burada sabit — hareket ettiremezsin, sadece yakalayabilirsin." },
     ]},
 
     { id:'l2', title:'Nefes Noktaları', steps:[
