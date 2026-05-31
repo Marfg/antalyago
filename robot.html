@@ -250,6 +250,171 @@
       .color-pick { flex-direction:column; }
       .stat-row   { flex-direction:column; }
     }
+
+    /* ── REVIEW OVERLAY ───────────────────────────────────── */
+    #review-overlay {
+      display:none; position:fixed; inset:0; z-index:500;
+      background:rgba(10,10,18,.97); flex-direction:column;
+    }
+    #review-overlay.show { display:flex; }
+
+    #rv-topbar {
+      flex-shrink:0; height:50px; display:flex; align-items:center;
+      gap:1rem; padding:0 1.2rem;
+      border-bottom:1px solid var(--gb);
+      background:rgba(10,10,18,.6); backdrop-filter:blur(12px);
+    }
+    #rv-topbar h2 { font-size:.9rem; font-weight:700; color:var(--gold); flex:1; margin:0; }
+    .rv-close {
+      background:none; border:1px solid var(--gb); color:var(--muted);
+      border-radius:6px; padding:4px 10px; cursor:pointer; font-size:.8rem;
+      transition:all .18s;
+    }
+    .rv-close:hover { border-color:var(--red); color:var(--red); }
+    #rv-analyzing {
+      display:none; align-items:center; gap:.6rem;
+      font-size:.72rem; color:var(--blue);
+    }
+    #rv-analyzing.show { display:flex; }
+    .rv-spinner {
+      width:14px; height:14px; border:2px solid rgba(74,158,255,.2);
+      border-top-color:var(--blue); border-radius:50%;
+      animation:spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #rv-progress-bar {
+      height:2px; background:rgba(74,158,255,.1);
+      flex:1; border-radius:1px; overflow:hidden;
+    }
+    #rv-progress-fill {
+      height:100%; background:var(--blue); border-radius:1px;
+      transition:width .3s ease; width:0%;
+    }
+
+    #rv-body {
+      flex:1; display:flex; overflow:hidden;
+      gap:0;
+    }
+
+    /* Board pane */
+    #rv-board-pane {
+      flex:1; display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      padding:1rem; gap:.6rem; min-width:0;
+    }
+    #rv-board {
+      border-radius:4px; overflow:hidden;
+      box-shadow:0 8px 32px rgba(0,0,0,.5);
+    }
+    #rv-canvas { display:block; }
+    #rv-move-info {
+      font-size:.75rem; color:var(--text);
+      text-align:center; max-width:360px; line-height:1.5;
+      min-height:2.4em;
+    }
+    #rv-curriculum {
+      font-size:.7rem; color:var(--blue);
+      text-decoration:none; display:none;
+    }
+    #rv-curriculum.show { display:inline; }
+
+    /* Analysis side panel */
+    #rv-side {
+      width:260px; flex-shrink:0; display:flex; flex-direction:column;
+      border-left:1px solid var(--gb);
+      overflow:hidden;
+    }
+
+    /* Winrate chart */
+    #rv-chart-wrap {
+      padding:.7rem .8rem .4rem;
+      border-bottom:1px solid var(--gb); flex-shrink:0;
+    }
+    #rv-chart-label {
+      font-size:.58rem; color:var(--muted); letter-spacing:.08em;
+      text-transform:uppercase; margin-bottom:.3rem;
+      display:flex; justify-content:space-between;
+    }
+    #rv-chart { display:block; width:100%; height:56px; border-radius:3px; }
+
+    /* Worst moves */
+    #rv-worst-wrap {
+      padding:.5rem .8rem; border-bottom:1px solid var(--gb);
+      flex-shrink:0;
+    }
+    .rv-worst-title {
+      font-size:.6rem; font-weight:700; letter-spacing:.1em;
+      text-transform:uppercase; color:var(--gold); margin-bottom:.4rem;
+    }
+    .rv-worst-btn {
+      display:flex; align-items:center; gap:.5rem; width:100%;
+      background:none; border:1px solid transparent;
+      border-radius:5px; padding:.3rem .4rem; cursor:pointer;
+      transition:all .15s; text-align:left;
+    }
+    .rv-worst-btn:hover { background:rgba(255,255,255,.04); border-color:var(--gb); }
+    .rv-worst-btn.active { background:rgba(74,158,255,.08); border-color:rgba(74,158,255,.3); }
+    .rv-worst-dot {
+      width:8px; height:8px; border-radius:50%; flex-shrink:0;
+    }
+    .rv-worst-text { font-size:.7rem; color:var(--text); flex:1; }
+    .rv-worst-badge {
+      font-size:.6rem; padding:1px 5px; border-radius:3px;
+      font-weight:700;
+    }
+
+    /* Move list */
+    #rv-move-list {
+      flex:1; overflow-y:auto; padding:.4rem .4rem;
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .rv-move-row {
+      display:flex; align-items:center; gap:.4rem;
+      padding:.2rem .35rem; border-radius:4px; cursor:pointer;
+      transition:background .1s;
+    }
+    .rv-move-row:hover { background:rgba(255,255,255,.04); }
+    .rv-move-row.active { background:rgba(74,158,255,.1); }
+    .rv-move-num { font-size:.65rem; color:var(--muted); width:22px; flex-shrink:0; }
+    .rv-move-stone {
+      width:10px; height:10px; border-radius:50%; flex-shrink:0;
+    }
+    .rv-move-stone.b { background:radial-gradient(circle at 35%35%,#555,#111); }
+    .rv-move-stone.w { background:radial-gradient(circle at 35%35%,#fff,#c8c0b0);
+                       box-shadow:0 0 3px rgba(255,255,255,.2); }
+    .rv-move-label { font-size:.72rem; color:var(--text); flex:1; font-family:monospace; }
+    .rv-quality-dot {
+      width:7px; height:7px; border-radius:50%; flex-shrink:0;
+    }
+    .q-best       { background:var(--green); }
+    .q-good       { background:var(--green); opacity:.7; }
+    .q-inaccuracy { background:#f5c542; }
+    .q-mistake    { background:var(--red); opacity:.8; }
+    .q-blunder    { background:var(--red); }
+
+    /* Nav controls */
+    #rv-nav {
+      flex-shrink:0; display:flex; align-items:center; gap:.4rem;
+      padding:.5rem .6rem; border-top:1px solid var(--gb);
+    }
+    .rv-nav-btn {
+      flex:1; padding:.4rem; background:none;
+      border:1px solid var(--gb); border-radius:5px;
+      color:var(--text); cursor:pointer; font-size:.8rem;
+      transition:all .15s;
+    }
+    .rv-nav-btn:hover:not(:disabled) { border-color:var(--gold); color:var(--gold); }
+    .rv-nav-btn:disabled { opacity:.3; cursor:default; }
+    #rv-move-counter {
+      font-size:.7rem; color:var(--muted); text-align:center;
+      white-space:nowrap; min-width:50px;
+    }
+
+    @media (max-width:640px) {
+      #rv-body { flex-direction:column; }
+      #rv-side  { width:100%; height:220px; border-left:none; border-top:1px solid var(--gb); }
+      #rv-board-pane { padding:.5rem; }
+    }
   </style>
 </head>
 <body>
@@ -328,8 +493,52 @@
     <div class="go-komi" id="go-komi"></div>
     <div class="go-territory" id="go-territory"></div>
     <div class="go-actions">
+      <button class="action-btn" onclick="openReview()">Oyunumu İncele</button>
       <button class="action-btn" onclick="resetBoard()">Yeniden Oyna</button>
       <button class="action-btn" onclick="openLearnFeedback()">Ne öğrendim?</button>
+    </div>
+  </div>
+
+  <!-- ── REVIEW OVERLAY ── -->
+  <div id="review-overlay">
+    <div id="rv-topbar">
+      <h2>Oyun Analizi</h2>
+      <div id="rv-analyzing">
+        <div class="rv-spinner"></div>
+        <span id="rv-analyze-label">Analiz ediliyor…</span>
+        <div id="rv-progress-bar"><div id="rv-progress-fill"></div></div>
+      </div>
+      <button class="rv-close" onclick="closeReview()">Kapat ×</button>
+    </div>
+    <div id="rv-body">
+      <!-- Sol: tahta -->
+      <div id="rv-board-pane">
+        <div id="rv-board">
+          <canvas id="rv-canvas" width="0" height="0"></canvas>
+        </div>
+        <div id="rv-move-info">Hamle seçin</div>
+        <a id="rv-curriculum" href="#"></a>
+      </div>
+      <!-- Sağ: analiz -->
+      <div id="rv-side">
+        <div id="rv-chart-wrap">
+          <div id="rv-chart-label">
+            <span>Kazanma Oranı</span>
+            <span id="rv-chart-summary"></span>
+          </div>
+          <canvas id="rv-chart"></canvas>
+        </div>
+        <div id="rv-worst-wrap">
+          <div class="rv-worst-title">En Kötü Hamleler</div>
+          <div id="rv-worst-list"></div>
+        </div>
+        <div id="rv-move-list"></div>
+        <div id="rv-nav">
+          <button class="rv-nav-btn" id="rv-prev" onclick="rvGoto(rvIdx-1)">◀</button>
+          <span id="rv-move-counter">—</span>
+          <button class="rv-nav-btn" id="rv-next" onclick="rvGoto(rvIdx+1)">▶</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -733,6 +942,9 @@ let gameEnded   = false;
 let territory   = null;   // { black:[{x,y}…], white:[{x,y}…] } oyun bitince dolar
 let hlTime      = 0;
 
+// Hamle geçmişi — analiz için
+let gameHistory = []; // [{color:'black'|'white', x, y, pass:bool}]
+
 /* ── Board sync yardımcısı ── */
 function syncBoard(newState) {
   board.grid    = newState.grid;
@@ -1007,6 +1219,7 @@ function applyAIMove(move) {
   lastAIMoveXY = null;
 
   if (move === 'pass') {
+    gameHistory.push({ color: aiColor, x: -1, y: -1, pass: true });
     board.turn = board.turn === 'black' ? 'white' : 'black';
     passCount++;
     showFeedback('Robot pas geçti.', 'ai');
@@ -1020,6 +1233,7 @@ function applyAIMove(move) {
   const { x, y } = move;
   const { newState } = applyMove(board, x, y, board.turn);
   syncBoard(newState);
+  gameHistory.push({ color: aiColor, x, y, pass: false });
 
   lastAIMoveXY = { x, y };
   moveCount++;
@@ -1060,6 +1274,7 @@ function onBoardClick(mx, my) {
   lastAIMoveXY = null;
   const { newState } = applyMove(board, gx, gz, board.turn);
   syncBoard(newState);
+  gameHistory.push({ color: playerColor, x: gx, y: gz, pass: false });
 
   moveCount++;
   const tag = `${COL_LABELS[gx]}${SIZE - gz}`;
@@ -1075,6 +1290,7 @@ window.playerPass = function () {
   if (aiThinking || gameEnded) return;
   if (board.turn !== playerColor) return;
 
+  gameHistory.push({ color: playerColor, x: -1, y: -1, pass: true });
   board.turn = board.turn === 'black' ? 'white' : 'black';
   passCount++;
   showFeedback('Pas geçtin.', 'info');
@@ -1094,9 +1310,10 @@ window.pickColor = function (c) {
 };
 
 window.resetBoard = function () {
-  board      = new BoardState(SIZE);
-  moveCount  = 0; passCount = 0;
-  gameEnded  = false;
+  board       = new BoardState(SIZE);
+  gameHistory = [];
+  moveCount   = 0; passCount = 0;
+  gameEnded   = false;
   territory  = null;
   lastAIMoveXY = null;
   document.getElementById('move-count').textContent = '0';
@@ -1306,6 +1523,489 @@ frame();
 updateStatus();
 renderDifficultyCards();
 showFeedback('Siyah oyuncusun. Hamle yap!', 'info');
+
+/* ══════════════════════════════════════════════════════
+   OYUN ANALİZİ SİSTEMİ
+══════════════════════════════════════════════════════ */
+
+// ── parseKataGoOutput: worker çıktısını iç formata çevirir ──────
+function parseKataGoOutput(result) {
+  // result: { winrateBlack, scoreMean, moveInfos, bestMove, bestX, bestY }
+  return {
+    branches:  result.moveInfos || [],
+    win_rate:  result.winrateBlack ?? 0.5,
+    score:     result.scoreMean   ?? 0,
+  };
+}
+
+// ── getWorstMoves9x9: en kötü 4 hamle (her oyuncudan 2) ─────────
+function getWorstMoves9x9(reviewData) {
+  if (!reviewData) return [];
+  const { moves } = reviewData;
+  const QUALITY_RANK = { best:0, good:1, inaccuracy:2, mistake:3, blunder:4 };
+
+  const all = Object.values(moves).filter(m => !m.pass);
+  const black = all.filter(m => m.color === 'B')
+    .sort((a,b) => (QUALITY_RANK[b.quality]||0) - (QUALITY_RANK[a.quality]||0));
+  const white = all.filter(m => m.color === 'W')
+    .sort((a,b) => (QUALITY_RANK[b.quality]||0) - (QUALITY_RANK[a.quality]||0));
+
+  // En kötü 2'şer → quality rank ≥ inaccuracy
+  const pick = (arr, n) => arr
+    .filter(m => (QUALITY_RANK[m.quality] || 0) >= 2)
+    .slice(0, n);
+
+  return [...pick(black, 2), ...pick(white, 2)];
+}
+
+// ── Türkçe açıklama şablonları ───────────────────────────────────
+const CURRICULUM = [
+  { quality: 'blunder',    lesson: 'l3',  title: 'Taş Alma', url: 'ogren-3d.html?lesson=3' },
+  { quality: 'mistake',    lesson: 'l8',  title: 'Kesme ve Bağlama', url: 'ogren-3d.html?lesson=8' },
+  { quality: 'inaccuracy', lesson: 'l13', title: 'Açılış (Fuseki)', url: 'ogren-3d.html?lesson=13' },
+];
+
+function getCurriculumLink(quality) {
+  const c = CURRICULUM.find(c => c.quality === quality);
+  return c || null;
+}
+
+function getTurkishExplanation(md) {
+  if (!md || md.pass) return 'Pas';
+  const colorTr  = md.color === 'B' ? 'Siyah' : 'Beyaz';
+  const move     = md.move   || '?';
+  const best     = md.bestMove || '?';
+  const orderStr = md.order === 0 ? 'birinci' : md.order <= 2 ? 'ilk üç' : `${md.order + 1}.`;
+
+  switch (md.quality) {
+    case 'best':
+      return `${colorTr} <strong>${move}</strong> — Harika! KataGo'nun da ${orderStr} tercihi.`;
+    case 'good':
+      return `${colorTr} <strong>${move}</strong> — İyi hamle. KataGo ${best}'ı tercih eder, ama bu da makul.`;
+    case 'inaccuracy':
+      return `${colorTr} <strong>${move}</strong> — Küçük hata. <strong>${best}</strong> daha güçlü olurdu (sıralama: ${orderStr} seçenek).`;
+    case 'mistake':
+      return `${colorTr} <strong>${move}</strong> yerine <strong>${best}</strong> oynamak önemliydi. Bu hamle pozisyonu zorlaştırdı.`;
+    case 'blunder':
+      return `${colorTr} <strong>${move}</strong> — Büyük hata! <strong>${best}</strong> gibi kritik bir hamle kaçırıldı.`;
+    default:
+      return `${colorTr} ${move}`;
+  }
+}
+
+// ── Review Worker ────────────────────────────────────────────────
+const reviewWorker = new Worker('./workers/reviewWorker.js');
+let reviewReady  = false;
+let reviewData   = null;
+let rvIdx        = 0;
+let rvStones     = []; // oyunu sıfırdan izlemek için adım adım tahta
+let rvStoneHist  = []; // her hamle sonrası taş listesi (replay için)
+const RV_HOSHI_9 = [[2,2],[6,2],[4,4],[2,6],[6,6]];
+
+reviewWorker.addEventListener('message', ({ data }) => {
+  if (data.type === 'REVIEW_READY') {
+    reviewReady = data.ok;
+    return;
+  }
+  if (data.type === 'PROGRESS') {
+    const pct = Math.round(data.current / data.total * 100);
+    document.getElementById('rv-progress-fill').style.width = pct + '%';
+    document.getElementById('rv-analyze-label').textContent =
+      `Analiz ediliyor… ${data.current}/${data.total}`;
+    return;
+  }
+  if (data.type === 'DONE') {
+    reviewData = data.data;
+    document.getElementById('rv-analyzing').classList.remove('show');
+    buildReviewUI(reviewData);
+    rvGoto(1);
+    return;
+  }
+  if (data.type === 'ERROR') {
+    document.getElementById('rv-analyzing').classList.remove('show');
+    document.getElementById('rv-move-info').textContent =
+      'Analiz başarısız: ' + data.error;
+  }
+});
+
+// ── Review Overlay Kontrolü ──────────────────────────────────────
+window.openReview = function () {
+  if (!gameEnded || gameHistory.length === 0) return;
+  const el = document.getElementById('review-overlay');
+  el.classList.add('show');
+
+  // Taş geçmişini oluştur (replay için)
+  buildStoneHistory();
+
+  // Overlay yeni render'landı — layout için 1 kare bekle
+  requestAnimationFrame(() => {
+    if (reviewReady && !reviewData) {
+      startAnalysis();
+      drawReviewBoard(rvStoneHist[0] || [], null, null, null);
+    } else if (reviewData) {
+      buildReviewUI(reviewData);
+      rvGoto(rvIdx || 1);
+    } else {
+      document.getElementById('rv-move-info').textContent =
+        reviewReady ? 'Analiz başlatılıyor…' : 'AI modeli yükleniyor, lütfen bekle…';
+      drawReviewBoard(rvStoneHist[0] || [], null, null, null);
+      if (reviewReady) setTimeout(startAnalysis, 300);
+    }
+  });
+};
+
+window.closeReview = function () {
+  document.getElementById('review-overlay').classList.remove('show');
+};
+
+function startAnalysis() {
+  if (!reviewReady || gameHistory.length === 0) return;
+  reviewData = null;
+  document.getElementById('rv-worst-list').innerHTML = '';
+  document.getElementById('rv-move-list').innerHTML = '';
+  document.getElementById('rv-progress-fill').style.width = '0%';
+  document.getElementById('rv-analyzing').classList.add('show');
+  reviewWorker.postMessage({
+    type:  'ANALYZE_GAME',
+    moves: gameHistory,  // pas dahil tüm hamleler (moveNumber = rvIdx ile eşleşir)
+    size:  SIZE,
+    komi:  6.5,
+  });
+}
+
+// ── Taş geçmişi (replay) ─────────────────────────────────────────
+function buildStoneHistory() {
+  // Fake-replay the game to know board state at each move
+  rvStoneHist = [[]]; // move 0 = empty board
+  let g = new Int8Array(SIZE * SIZE);
+
+  for (const m of gameHistory) {
+    if (m.pass) { rvStoneHist.push([...rvStoneHist[rvStoneHist.length-1]]); continue; }
+    const color = m.color === 'black' ? 1 : 2;
+    g = replayApplyMove(g, SIZE, m.x, m.y, color);
+    const stones = [];
+    for (let i = 0; i < SIZE*SIZE; i++) {
+      if (g[i]) stones.push({ color: g[i]===1?'black':'white', x:i%SIZE, y:(i/SIZE)|0 });
+    }
+    rvStoneHist.push(stones);
+  }
+}
+
+function replayApplyMove(grid, size, x, y, color) {
+  const ng  = grid.slice();
+  const opp = 3 - color;
+  ng[y*size+x] = color;
+  const nbrs = [];
+  if (x>0) nbrs.push(y*size+(x-1));
+  if (x<size-1) nbrs.push(y*size+(x+1));
+  if (y>0) nbrs.push((y-1)*size+x);
+  if (y<size-1) nbrs.push((y+1)*size+x);
+  for (const n of nbrs) {
+    if (ng[n] !== opp) continue;
+    if (replayGroupLibs(ng, size, n) === 0) replayRemoveGroup(ng, size, n, opp);
+  }
+  return ng;
+}
+function replayGroupLibs(g, size, start) {
+  const col = g[start]; if (!col) return 0;
+  const vis = new Uint8Array(size*size), libs = new Set(), stk = [start];
+  while (stk.length) {
+    const i = stk.pop(); if (vis[i]) continue; vis[i]=1;
+    if (g[i]!==col) continue;
+    const x=i%size, y=(i/size)|0;
+    [x>0&&i-1,x<size-1&&i+1,y>0&&i-size,y<size-1&&i+size]
+      .filter(Boolean).forEach(n => g[n]===0 ? libs.add(n) : (!vis[n]&&stk.push(n)));
+  }
+  return libs.size;
+}
+function replayRemoveGroup(g, size, start, col) {
+  const stk = [start], vis = new Uint8Array(size*size);
+  while (stk.length) {
+    const i=stk.pop(); if(vis[i]) continue; vis[i]=1;
+    if(g[i]!==col) continue; g[i]=0;
+    const x=i%size,y=(i/size)|0;
+    [x>0&&i-1,x<size-1&&i+1,y>0&&i-size,y<size-1&&i+size]
+      .filter(Boolean).forEach(n => !vis[n]&&stk.push(n));
+  }
+}
+
+// ── Review UI Builder ────────────────────────────────────────────
+function buildReviewUI(rd) {
+  const worst = getWorstMoves9x9(rd);
+  buildWorstList(worst);
+  buildMoveList(rd);
+  drawWinrateChart(rd, worst);
+}
+
+function buildWorstList(worst) {
+  const el = document.getElementById('rv-worst-list');
+  el.innerHTML = '';
+  if (!worst.length) { el.innerHTML = '<div style="font-size:.68rem;color:var(--muted)">Büyük hata yok!</div>'; return; }
+  worst.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'rv-worst-btn';
+    btn.onclick = () => rvGoto(m.moveNumber);
+    const qColors = { best:'#3ecf80',good:'#3ecf80',inaccuracy:'#f5c542',mistake:'#e05050',blunder:'#e05050' };
+    btn.innerHTML = `
+      <div class="rv-worst-dot" style="background:${qColors[m.quality]}"></div>
+      <span class="rv-worst-text">${m.color==='B'?'Siyah':'Beyaz'} #${m.moveNumber} — ${m.move}</span>
+      <span class="rv-worst-badge" style="background:${qColors[m.quality]}20;color:${qColors[m.quality]}">
+        ${m.quality === 'blunder' ? 'Büyük Hata' : 'Hata'}
+      </span>`;
+    el.appendChild(btn);
+  });
+}
+
+function buildMoveList(rd) {
+  const el = document.getElementById('rv-move-list');
+  el.innerHTML = '';
+  const COLORS = { best:'q-best',good:'q-good',inaccuracy:'q-inaccuracy',mistake:'q-mistake',blunder:'q-blunder' };
+  Object.values(rd.moves).forEach(m => {
+    if (m.pass) return;
+    const row = document.createElement('div');
+    row.className = 'rv-move-row';
+    row.id = `rv-row-${m.moveNumber}`;
+    row.onclick = () => rvGoto(m.moveNumber);
+    row.innerHTML = `
+      <span class="rv-move-num">${m.moveNumber}</span>
+      <div class="rv-move-stone ${m.color==='B'?'b':'w'}"></div>
+      <span class="rv-move-label">${m.move}</span>
+      <div class="rv-quality-dot ${COLORS[m.quality] || 'q-inaccuracy'}"></div>`;
+    el.appendChild(row);
+  });
+}
+
+// ── Winrate Grafiği ──────────────────────────────────────────────
+function drawWinrateChart(rd, worst) {
+  const canvas = document.getElementById('rv-chart');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w   = canvas.offsetWidth || 228;
+  const h   = 56;
+  canvas.width  = w * dpr;
+  canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const rates = rd.win_rates;
+  if (!rates.length) return;
+
+  const N  = rates.length;
+  const xS = w / N;
+  const midY = h / 2;
+
+  // Background
+  ctx.fillStyle = 'rgba(255,255,255,.03)';
+  ctx.fillRect(0, 0, w, h);
+
+  // 50% line
+  ctx.strokeStyle = 'rgba(255,255,255,.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(w, midY); ctx.stroke();
+
+  // Siyah alan (üst)
+  const gB = ctx.createLinearGradient(0, 0, 0, midY);
+  gB.addColorStop(0, 'rgba(30,30,50,.85)');
+  gB.addColorStop(1, 'rgba(80,80,110,.4)');
+
+  // Beyaz alan (alt)
+  const gW = ctx.createLinearGradient(0, midY, 0, h);
+  gW.addColorStop(0, 'rgba(240,235,220,.4)');
+  gW.addColorStop(1, 'rgba(200,190,170,.85)');
+
+  // Black area
+  ctx.beginPath(); ctx.moveTo(0, midY);
+  rates.forEach((r, i) => { ctx.lineTo(i * xS, (1-r) * h); });
+  ctx.lineTo((N-1) * xS, midY);
+  ctx.closePath(); ctx.fillStyle = gB; ctx.fill();
+
+  // White area
+  ctx.beginPath(); ctx.moveTo(0, midY);
+  rates.forEach((r, i) => { ctx.lineTo(i * xS, (1-r) * h); });
+  ctx.lineTo((N-1) * xS, midY);
+  ctx.closePath(); ctx.fillStyle = gW; ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  rates.forEach((r, i) => {
+    const fx = i * xS, fy = (1-r) * h;
+    i === 0 ? ctx.moveTo(fx, fy) : ctx.lineTo(fx, fy);
+  });
+  ctx.strokeStyle = 'rgba(200,168,75,.8)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Red dots on worst moves
+  const worstSet = new Set((worst||[]).map(m => m.moveNumber - 1));
+  rates.forEach((r, i) => {
+    if (!worstSet.has(i)) return;
+    ctx.beginPath();
+    ctx.arc(i * xS, (1-r) * h, 3, 0, Math.PI*2);
+    ctx.fillStyle = 'var(--red)'; ctx.fill();
+  });
+
+  // Summary label
+  const lastWr = rates[rates.length-1];
+  document.getElementById('rv-chart-summary').textContent =
+    lastWr > 0.5 ? `Siyah +${((lastWr-0.5)*200).toFixed(0)}%` :
+    lastWr < 0.5 ? `Beyaz +${((0.5-lastWr)*200).toFixed(0)}%` : 'Eşit';
+}
+
+// ── Tahta Çizimi (2D, inceleme için) ─────────────────────────────
+function drawReviewBoard(stones, highlight, heatmap, lastMove) {
+  const canvas = document.getElementById('rv-canvas');
+  if (!canvas) return;
+  const wrap = document.getElementById('rv-board');
+  const maxSide = Math.min(
+    wrap.offsetWidth  || 300,
+    (document.getElementById('rv-board-pane').offsetHeight || 420) - 80
+  );
+  const side = Math.max(200, Math.min(maxSide, 380));
+  canvas.style.width  = side + 'px';
+  canvas.style.height = side + 'px';
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = side * dpr;
+  canvas.height = side * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const w = side, h = side;
+
+  const cell = Math.floor(Math.min(w,h) / (SIZE + 1));
+  const padX = Math.floor((w - (SIZE-1)*cell) / 2);
+  const padY = Math.floor((h - (SIZE-1)*cell) / 2);
+  const sR   = cell * 0.46;
+
+  // Board
+  ctx.fillStyle = '#c8a84a'; ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = '#7a5c0a'; ctx.lineWidth = 1;
+  for (let i = 0; i < SIZE; i++) {
+    ctx.beginPath(); ctx.moveTo(padX+i*cell, padY); ctx.lineTo(padX+i*cell, padY+(SIZE-1)*cell); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(padX, padY+i*cell); ctx.lineTo(padX+(SIZE-1)*cell, padY+i*cell); ctx.stroke();
+  }
+  RV_HOSHI_9.forEach(([hx,hy]) => {
+    ctx.beginPath(); ctx.arc(padX+hx*cell, padY+hy*cell, 3, 0, Math.PI*2);
+    ctx.fillStyle='#5c3d0a'; ctx.fill();
+  });
+
+  // Heatmap (visit intensity → blue circles)
+  if (heatmap?.length) {
+    const maxP = heatmap[0].prior;
+    heatmap.slice(0, 10).forEach(({ x, y, prior }) => {
+      const alpha = Math.max(0.05, (prior / (maxP || 1)) * 0.45);
+      ctx.beginPath(); ctx.arc(padX+x*cell, padY+y*cell, sR, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(74,158,255,${alpha.toFixed(2)})`; ctx.fill();
+    });
+    // Best move: solid blue ring
+    const bst = heatmap[0];
+    ctx.beginPath(); ctx.arc(padX+bst.x*cell, padY+bst.y*cell, sR*.82, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(74,158,255,.9)'; ctx.lineWidth = 2.2; ctx.stroke();
+  }
+
+  // Stones
+  stones?.forEach(({ color, x, y }) => {
+    const px = padX+x*cell, py = padY+y*cell;
+    const r  = sR;
+    ctx.save();
+    if (color === 'black') {
+      const g = ctx.createRadialGradient(px-r*.3,py-r*.3,r*.08,px,py,r);
+      g.addColorStop(0,'#555'); g.addColorStop(1,'#111');
+      ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+    } else {
+      const g = ctx.createRadialGradient(px-r*.3,py-r*.3,r*.05,px,py,r);
+      g.addColorStop(0,'#fff'); g.addColorStop(1,'#c8c0a8');
+      ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,.12)'; ctx.lineWidth=.6; ctx.stroke();
+    }
+    ctx.restore();
+  });
+
+  // Last move marker
+  if (lastMove) {
+    const px = padX+lastMove.x*cell, py = padY+lastMove.y*cell;
+    ctx.beginPath(); ctx.arc(px, py, sR*.28, 0, Math.PI*2);
+    ctx.fillStyle = lastMove.color==='black' ? 'rgba(255,255,255,.75)' : 'rgba(0,0,0,.45)';
+    ctx.fill();
+  }
+
+  // highlight square (played move vs best move)
+  if (highlight) {
+    const px = padX+highlight.x*cell, py = padY+highlight.y*cell;
+    ctx.beginPath(); ctx.arc(px, py, sR*.55, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(240,220,60,.85)'; ctx.lineWidth = 2; ctx.stroke();
+  }
+}
+
+// ── Review gezinme ────────────────────────────────────────────────
+window.rvGoto = function (idx) {
+  const total = gameHistory.length;
+  rvIdx = Math.max(0, Math.min(total, idx));
+
+  const stones   = rvStoneHist[rvIdx] || [];
+  const lastMove = rvIdx > 0 ? gameHistory[rvIdx-1] : null;
+
+  let md = null, heatmap = null, highlight = null;
+  if (reviewData && rvIdx > 0) {
+    md = reviewData.moves[rvIdx];
+    heatmap   = md?.moveInfos || null;
+    if (md && md.bestX !== undefined && md.bestX !== md.x) {
+      highlight = { x: md.bestX, y: md.bestY };
+    }
+  }
+
+  drawReviewBoard(stones, highlight, heatmap, lastMove);
+
+  // Info text
+  const infoEl = document.getElementById('rv-move-info');
+  if (rvIdx === 0) {
+    infoEl.innerHTML = 'Başlangıç pozisyonu';
+  } else if (md) {
+    infoEl.innerHTML = getTurkishExplanation(md);
+    const curr = getCurriculumLink(md.quality);
+    const cEl  = document.getElementById('rv-curriculum');
+    if (curr && (md.quality === 'mistake' || md.quality === 'blunder')) {
+      cEl.href      = curr.url;
+      cEl.textContent = `→ ${curr.title} dersini gör`;
+      cEl.classList.add('show');
+    } else {
+      cEl.classList.remove('show');
+    }
+  } else {
+    infoEl.innerHTML = rvIdx > 0
+      ? `Hamle ${rvIdx}: ${gameHistory[rvIdx-1]?.pass ? 'Pas' : COL_LABELS[gameHistory[rvIdx-1]?.x]+(SIZE-gameHistory[rvIdx-1]?.y)}`
+      : '';
+  }
+
+  // Counter
+  document.getElementById('rv-move-counter').textContent = `${rvIdx} / ${total}`;
+  document.getElementById('rv-prev').disabled = rvIdx <= 0;
+  document.getElementById('rv-next').disabled = rvIdx >= total;
+
+  // Highlight active row in move list
+  document.querySelectorAll('.rv-move-row').forEach(r => r.classList.remove('active'));
+  const activeRow = document.getElementById(`rv-row-${rvIdx}`);
+  if (activeRow) {
+    activeRow.classList.add('active');
+    activeRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  // Highlight worst button
+  document.querySelectorAll('.rv-worst-btn').forEach(b => b.classList.remove('active'));
+};
+
+// Winrate grafiği boyut güncellemesi (overlay açılınca)
+const _rvObserver = new ResizeObserver(() => {
+  if (reviewData && document.getElementById('review-overlay').classList.contains('show')) {
+    drawWinrateChart(reviewData, getWorstMoves9x9(reviewData));
+  }
+});
+_rvObserver.observe(document.getElementById('rv-chart'));
+
+// Review overlay kapatıldıktan sonra yeni oyun için temizle
+const _origReset = window.resetBoard;
+window.resetBoard = function() {
+  reviewData = null;
+  rvIdx = 0;
+  _origReset();
+};
 </script>
 </body>
 </html>
