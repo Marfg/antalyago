@@ -8,6 +8,14 @@
   <meta property="og:title" content="Antalya Go Topluluğu" />
   <meta property="og:description" content="Antalya'da Go oynayan topluluk. Öğren, oyna, buluşmalara katıl." />
   <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://antalyago.net/assets/og-image.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:image" content="https://antalyago.net/assets/og-image.jpg" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -37,6 +45,31 @@
       -webkit-font-smoothing: antialiased;
       font-size: 16px;
       line-height: 1.6;
+    }
+
+    /* ── SITE HEADER ── */
+    .site-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 50;
+      padding: 0.7rem 1.5rem;
+      display: flex;
+      align-items: center;
+      background: rgba(14, 13, 11, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(242, 239, 233, 0.06);
+    }
+
+    .site-header__logo {
+      height: 36px;
+      width: auto;
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      .site-header { padding: 0.65rem 1rem; }
+      .site-header__logo { height: 28px; }
     }
 
     /* ── GRID BACKGROUND ── */
@@ -78,12 +111,46 @@
     ══════════════════════════════════════ */
     .hero {
       min-height: 100svh;
-      display: flex; align-items: center;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 3rem;
       padding: 7rem 1.5rem 4rem;
-      max-width: 960px; margin: 0 auto;
+      max-width: 1100px; margin: 0 auto;
     }
 
-    .hero__content { max-width: 620px; }
+    .hero__content { }
+
+    .hero__image {
+      position: relative;
+      height: 480px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .hero__image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 35%;
+      filter: brightness(0.80) saturate(0.88);
+    }
+
+    .hero__image::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        transparent 45%,
+        rgba(14,13,11,0.75) 100%
+      );
+    }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero__image { display: none; }
+    }
 
     .hero__heading {
       font-size: clamp(2.4rem, 5.5vw, 4.8rem);
@@ -113,6 +180,51 @@
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(18px); }
       to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── STONE INTRO ── */
+    .stone-intro {
+      position: fixed; inset: 0; z-index: 200;
+      pointer-events: none;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .stone-intro__stone {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #3a3630, #0e0d0b);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      opacity: 0;
+      animation: stoneFall 0.30s cubic-bezier(0.36,0,0.66,1.35) 0.08s forwards;
+    }
+
+    .stone-intro__ripple {
+      position: absolute;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid #B8955A;
+      opacity: 0;
+      animation: stoneRipple 0.52s ease-out 0.38s forwards;
+    }
+
+    .stone-intro__ripple--2 {
+      animation-delay: 0.50s;
+      border-color: rgba(184,149,90,0.38);
+    }
+
+    @keyframes stoneFall {
+      0%   { opacity: 0; transform: translateY(-56px) scale(0.5); }
+      65%  { opacity: 1; transform: translateY(3px) scale(1.06); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes stoneRipple {
+      0%   { opacity: 0.65; transform: scale(1); }
+      100% { opacity: 0;    transform: scale(6.5); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .stone-intro { display: none; }
     }
 
     /* ══════════════════════════════════════
@@ -427,6 +539,25 @@
 
 <div class="grid-bg"></div>
 
+<!-- ══ STONE INTRO ══ -->
+<div class="stone-intro" id="stone-intro" aria-hidden="true">
+  <div class="stone-intro__stone"></div>
+  <div class="stone-intro__ripple"></div>
+  <div class="stone-intro__ripple stone-intro__ripple--2"></div>
+</div>
+
+<!-- ══ HEADER ══ -->
+<header class="site-header">
+  <a href="/" aria-label="Ana sayfa">
+    <img
+      src="assets/logo.png"
+      alt="Antalya GO"
+      class="site-header__logo"
+      width="140" height="36"
+    />
+  </a>
+</header>
+
 <div class="site">
 
   <!-- ══ HERO ══ -->
@@ -440,6 +571,15 @@
         <a href="ogren-3d.html" class="btn btn-primary">Öğrenmeye Başla</a>
         <a href="robot.html"    class="btn btn-secondary">Robot ile Oyna →</a>
       </div>
+    </div>
+    <div class="hero__image" aria-hidden="true">
+      <img
+        src="assets/hero.jpg"
+        alt=""
+        width="800" height="600"
+        loading="eager"
+        decoding="async"
+      />
     </div>
   </section>
 
@@ -585,6 +725,17 @@
 </div>
 
 <script>
+/* ── Stone Intro ── */
+(function () {
+  const intro = document.getElementById('stone-intro');
+  if (!intro) return;
+  setTimeout(function () {
+    intro.style.transition = 'opacity 250ms ease';
+    intro.style.opacity = '0';
+    setTimeout(function () { intro.remove(); }, 260);
+  }, 1050);
+})();
+
 /* ── Tool Card Scroll Stagger ── */
 (function () {
   const featured = document.querySelector('.tool-featured');
