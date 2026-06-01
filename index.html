@@ -450,6 +450,8 @@
       padding-top: 3px;
       text-align: right;
     }
+    .timeline-year--dim { color: var(--border); }
+
     .timeline-dot {
       width: 10px;
       height: 10px;
@@ -460,19 +462,80 @@
       z-index: 1;
       justify-self: center;
     }
+    .timeline-dot--gold   { background: var(--gold); }
+    .timeline-dot--dim    { background: var(--border); }
+
     .timeline-card h3 {
       font-family: var(--font-heading);
       font-size: 1rem;
       font-weight: 500;
       color: var(--fg);
-      margin: 0 0 4px;
+      margin: 0 0 6px;
     }
+    .timeline-card--dim h3 { color: var(--fg-muted); }
+
     .timeline-card p {
       font-size: 0.88rem;
       color: var(--fg-muted);
       line-height: 1.6;
       margin: 0;
     }
+
+    .tl-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-bottom: 8px;
+    }
+    .tl-meta span {
+      font-size: 0.82rem;
+      color: var(--fg-muted);
+      line-height: 1.5;
+    }
+    .tl-meta span strong {
+      color: var(--fg);
+      font-weight: 500;
+    }
+
+    .tl-podium {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .tl-podium span {
+      font-size: 0.82rem;
+      color: var(--fg);
+      font-weight: 500;
+    }
+    .tl-podium span em {
+      font-style: normal;
+      color: var(--fg-muted);
+      margin-right: 6px;
+    }
+
+    .tl-badge {
+      display: inline-block;
+      background: var(--gold);
+      color: #FDFAF5;
+      font-family: var(--font-body);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 2px;
+      margin-bottom: 8px;
+    }
+
+    .tl-unknown {
+      font-size: 0.78rem;
+      color: var(--border);
+      font-style: italic;
+    }
+
     @media (max-width: 768px) {
       .timeline { padding: 64px 24px; }
     }
@@ -806,53 +869,110 @@
 <!-- ══ TIMELINE ══ -->
 <section class="timeline">
   <div class="timeline-inner">
-    <span class="section-eyebrow reveal" data-delay="0">Tarihçe</span>
-    <h2 class="reveal" data-delay="60">Kilometre taşları</h2>
+    <span class="section-eyebrow reveal" data-delay="0">Turnuvalar</span>
+    <h2 class="reveal" data-delay="60">Antalya Go Turnuvaları</h2>
 
     <div class="timeline-list">
 
+      <!-- 1. TURNUVA -->
       <div class="timeline-item reveal" data-delay="0">
         <span class="timeline-year">2013</span>
         <span class="timeline-dot"></span>
         <div class="timeline-card">
           <h3>1. Antalya Go Turnuvası</h3>
-          <p>17–18 Ağustos 2013. Topluluğun kuruluş turnuvası — Antalya'da Go serüveninin başlangıcı.</p>
+          <div class="tl-meta">
+            <span><strong>Tarih:</strong> 17–18 Ağustos 2013</span>
+            <span><strong>Mekân:</strong> Antalya</span>
+          </div>
+          <p>Topluluğun kuruluş turnuvası — Antalya'da Go serüveninin başlangıcı.</p>
         </div>
       </div>
 
-      <div class="timeline-item reveal" data-delay="80">
+      <!-- 2. TURNUVA -->
+      <div class="timeline-item reveal" data-delay="60">
         <span class="timeline-year">2014</span>
         <span class="timeline-dot"></span>
         <div class="timeline-card">
           <h3>2. Antalya Go Turnuvası</h3>
-          <p>Konyaaltı Belediyesi Kültür Merkezi'nde düzenlendi. Belediye desteğiyle ilk kurumsal adım.</p>
+          <div class="tl-meta">
+            <span><strong>Tarih:</strong> 2014</span>
+            <span><strong>Mekân:</strong> Konyaaltı Belediyesi Kültür Merkezi</span>
+          </div>
+          <p>Belediye desteğiyle ilk kurumsal organizasyon.</p>
         </div>
       </div>
 
-      <div class="timeline-item reveal" data-delay="160">
+      <!-- 3. TURNUVA -->
+      <div class="timeline-item reveal" data-delay="120">
         <span class="timeline-year">2019</span>
         <span class="timeline-dot"></span>
         <div class="timeline-card">
-          <h3>3. Turnuva + Olimpos Yaz Kampı</h3>
-          <p>22–26 Temmuz Olimpos yaz kampı, ardından 27–28 Temmuz Konyaaltı Belediyesi turnuvası. 1. Özgür Değirmenci.</p>
+          <h3>3. Antalya Go Turnuvası</h3>
+          <div class="tl-meta">
+            <span><strong>Tarih:</strong> 27–28 Temmuz 2019</span>
+            <span><strong>Mekân:</strong> Konyaaltı Belediyesi</span>
+            <span><strong>Not:</strong> Öncesinde 22–26 Temmuz Olimpos Yaz Kampı</span>
+          </div>
+          <div class="tl-podium">
+            <span><em>1.</em>Özgür Değirmenci</span>
+            <span><em>2.</em>Altan Kuntay</span>
+            <span><em>3.</em>Hüsrev Aksüt</span>
+          </div>
         </div>
       </div>
 
+      <!-- 4. TURNUVA -->
+      <div class="timeline-item reveal" data-delay="180">
+        <span class="timeline-year timeline-year--dim">—</span>
+        <span class="timeline-dot timeline-dot--dim"></span>
+        <div class="timeline-card timeline-card--dim">
+          <h3>4. Antalya Go Turnuvası</h3>
+          <p class="tl-unknown">Tarih ve mekân bilgisi derleniyor.</p>
+        </div>
+      </div>
+
+      <!-- 5. TURNUVA -->
       <div class="timeline-item reveal" data-delay="240">
+        <span class="timeline-year timeline-year--dim">—</span>
+        <span class="timeline-dot timeline-dot--dim"></span>
+        <div class="timeline-card timeline-card--dim">
+          <h3>5. Antalya Go Turnuvası</h3>
+          <div class="tl-meta">
+            <span><strong>Tarih:</strong> <span class="tl-unknown">derleniyor</span></span>
+            <span><strong>Mekân:</strong> Varuna Gezgin Cafe, Kaleiçi</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. TURNUVA -->
+      <div class="timeline-item reveal" data-delay="300">
         <span class="timeline-year">2023</span>
         <span class="timeline-dot"></span>
         <div class="timeline-card">
           <h3>6. Antalya Go Turnuvası</h3>
-          <p>Rekor katılımla gerçekleşti. 1. Hüsrev Aksüt.</p>
+          <div class="tl-meta">
+            <span><strong>Tarih:</strong> 2023</span>
+            <span><strong>Not:</strong> Rekor katılım</span>
+          </div>
+          <div class="tl-podium">
+            <span><em>1.</em>Hüsrev Aksüt</span>
+          </div>
         </div>
       </div>
 
-      <div class="timeline-item reveal" data-delay="320">
+      <!-- 7. TURNUVA -->
+      <div class="timeline-item reveal" data-delay="360">
         <span class="timeline-year">2025</span>
-        <span class="timeline-dot"></span>
+        <span class="timeline-dot timeline-dot--gold"></span>
         <div class="timeline-card">
-          <h3>Türkiye Go Şampiyonası</h3>
-          <p>7. Antalya Go Turnuvası, Olympos Antik Kenti'nde Türkiye Go Şampiyonası statüsünde düzenlendi. 32 sporcu katıldı.</p>
+          <span class="tl-badge">Türkiye Go Şampiyonası</span>
+          <h3>7. Antalya Go Turnuvası</h3>
+          <div class="tl-meta">
+            <span><strong>Tarih:</strong> Ağustos 2025</span>
+            <span><strong>Mekân:</strong> Olympos Antik Kenti</span>
+            <span><strong>Katılım:</strong> 32 sporcu</span>
+            <span><strong>Ödül:</strong> Avrupa Go Kongresi'ne katılım hakkı</span>
+          </div>
         </div>
       </div>
 
