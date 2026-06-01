@@ -232,53 +232,6 @@
     .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
     .btn-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-    /* ── ASISTAN KARTI ── */
-    .assistant-card {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 16px 20px;
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      box-shadow: 0 2px 8px var(--shadow);
-      max-width: 420px;
-      margin-top: 24px;
-      opacity: 0;
-      animation: fadeIn 0.5s ease-out 1.0s forwards;
-    }
-
-    .assistant-icon {
-      font-size: 1.2rem;
-      color: var(--fg-muted);
-      flex-shrink: 0;
-      animation: breathe 3s ease-in-out infinite;
-    }
-
-    .assistant-text p {
-      font-size: 0.9rem;
-      color: var(--fg-muted);
-      margin: 0;
-      line-height: 1.5;
-    }
-
-    .assistant-cta {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--accent);
-      text-decoration: none;
-      white-space: nowrap;
-      flex-shrink: 0;
-      margin-left: auto;
-      transition: color 0.2s;
-    }
-    .assistant-cta:hover { color: var(--accent-hover); }
-    .assistant-cta:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
-
-    @keyframes breathe {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
 
     /* ── ÖĞRENİM MODÜLLERİ ── */
     .modules {
@@ -721,7 +674,7 @@
       }
       .reveal { opacity: 1; transform: none; }
       .hero-eyebrow, .hero-title, .hero-sub,
-      .hero-cta, .assistant-card { opacity: 1; }
+      .hero-cta { opacity: 1; }
     }
   </style>
 </head>
@@ -741,9 +694,7 @@
   <nav aria-label="Ana navigasyon">
     <ul class="site-nav">
       <li><a href="/">Ana Sayfa</a></li>
-      <li><a href="ogren-3d.html">Öğren</a></li>
-      <li><a href="ogren-3d.html">Nasıl Oynanır</a></li>
-      <li><a href="problem.html">Problemler</a></li>
+      <li><a href="go-nedir.html">Go Nedir?</a></li>
       <li><a href="#topluluk">Topluluk</a></li>
     </ul>
   </nav>
@@ -780,13 +731,6 @@
       <a href="ogren-3d.html" class="btn-secondary">İlk Dersi Aç</a>
     </div>
 
-    <div class="assistant-card" role="complementary" aria-label="Go öğrenme asistanı">
-      <div class="assistant-icon" aria-hidden="true">●○</div>
-      <div class="assistant-text">
-        <p>Go öğrenme yolculuğunda sana rehberlik edebilirim.</p>
-      </div>
-      <a href="ogren-3d.html" class="assistant-cta">Sorunu Sor →</a>
-    </div>
   </div>
 
 </section>
@@ -872,8 +816,8 @@
         <span class="timeline-year">2013</span>
         <span class="timeline-dot"></span>
         <div class="timeline-card">
-          <h3>İlk buluşma</h3>
-          <p>Antalya'da Go oyununu merak eden birkaç kişi ilk kez bir araya geldi.</p>
+          <h3>1. Antalya Go Turnuvası</h3>
+          <p>17–18 Ağustos 2013. Topluluğun kuruluş turnuvası — Antalya'da Go serüveninin başlangıcı.</p>
         </div>
       </div>
 
@@ -881,8 +825,8 @@
         <span class="timeline-year">2014</span>
         <span class="timeline-dot"></span>
         <div class="timeline-card">
-          <h3>İlk turnuva</h3>
-          <p>Topluluğun ilk resmi turnuvası düzenlendi; katılımcılar yarıştı, tanıştı.</p>
+          <h3>2. Antalya Go Turnuvası</h3>
+          <p>Konyaaltı Belediyesi Kültür Merkezi'nde düzenlendi. Belediye desteğiyle ilk kurumsal adım.</p>
         </div>
       </div>
 
@@ -890,8 +834,8 @@
         <span class="timeline-year">2019</span>
         <span class="timeline-dot"></span>
         <div class="timeline-card">
-          <h3>Düzenli buluşmalar</h3>
-          <p>Haftalık buluşmalar kalıcı bir formata kavuştu; yeni üyeler hızla artmaya başladı.</p>
+          <h3>3. Turnuva + Olimpos Yaz Kampı</h3>
+          <p>22–26 Temmuz Olimpos yaz kampı, ardından 27–28 Temmuz Konyaaltı Belediyesi turnuvası. 1. Özgür Değirmenci.</p>
         </div>
       </div>
 
@@ -899,8 +843,8 @@
         <span class="timeline-year">2023</span>
         <span class="timeline-dot"></span>
         <div class="timeline-card">
-          <h3>Çevrimiçi etkinlikler</h3>
-          <p>Türkiye genelinden oyuncularla online turnuvalar ve analiz seansları başladı.</p>
+          <h3>6. Antalya Go Turnuvası</h3>
+          <p>Rekor katılımla gerçekleşti. 1. Hüsrev Aksüt.</p>
         </div>
       </div>
 
@@ -908,8 +852,8 @@
         <span class="timeline-year">2025</span>
         <span class="timeline-dot"></span>
         <div class="timeline-card">
-          <h3>AntalyaGo.net</h3>
-          <p>Topluluğun dijital evi açıldı; 3D öğrenme motoru ve interaktif müfredat yayına girdi.</p>
+          <h3>Türkiye Go Şampiyonası</h3>
+          <p>7. Antalya Go Turnuvası, Olympos Antik Kenti'nde Türkiye Go Şampiyonası statüsünde düzenlendi. 32 sporcu katıldı.</p>
         </div>
       </div>
 
@@ -962,7 +906,7 @@
       <div class="stat-label">Üye</div>
     </div>
     <div class="reveal" data-delay="160">
-      <div class="stat-number">5</div>
+      <div class="stat-number">7</div>
       <div class="stat-label">Turnuva</div>
     </div>
     <div class="reveal" data-delay="240">
