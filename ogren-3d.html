@@ -3151,9 +3151,15 @@ requestAnimationFrame(loop);
   mascotMoveTo('home');
   setTimeout(function() {
     mascotSetState('is-idle');
-    // Selamlama: tahtanın altına in, yaz, 3sn sonra köşeye dön
     setTimeout(function() {
-      typeSay('Merhaba! Go öğrenmeye hazır mısın?', 3000, 'board_bc');
+      const step = window.CUR_STEP_DATA;
+      if (step && step.mascot && step.mascot.sequence) {
+        // Dersin kendi sekansı var — selamlama yerine direkt sekansı başlat
+        mascotInitiate(step);
+      } else {
+        // Selamlama: tahtanın altına in, yaz, 3sn sonra köşeye dön
+        typeSay('Merhaba! Go öğrenmeye hazır mısın?', 3000, 'board_bc');
+      }
     }, 800);
   }, 200);
 })();
