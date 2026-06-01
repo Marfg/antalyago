@@ -119,113 +119,173 @@
     /* ══════════════════════════════════════
        HERO
     ══════════════════════════════════════ */
-    .hero {
-      width: 100%;
-      height: 100vh;
-      min-height: 500px;
-      max-height: 800px;
-      position: relative;
-      overflow: hidden;
-    }
 
-    .hero-image {
+    /* Arka plan (full-bleed, fixed) */
+    .hero__bg {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+    }
+    .hero__bg-img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 35%;
+      object-position: center 40%;
+      filter: brightness(0.45) saturate(0.85);
+      will-change: transform;
     }
 
-    .hero-overlay {
-      position: absolute;
+    /* Doku overlay (fixed) */
+    .hero__texture {
+      position: fixed;
       inset: 0;
-      background: linear-gradient(
-        to right,
-        rgba(14, 13, 11, 0.82) 0%,
-        rgba(14, 13, 11, 0.55) 40%,
-        rgba(14, 13, 11, 0.10) 100%
-      );
+      z-index: -1;
+      pointer-events: none;
+      background-image: url('assets/images/hero-texture.png');
+      background-size: cover;
+      background-position: center;
+      opacity: 0.12;
+      mix-blend-mode: screen;
     }
 
-    .hero-content {
-      position: absolute;
-      inset: 0;
+    /* Hero section — içerik grid'i */
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 3rem;
+      padding: 7rem 1.5rem 4rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* Tahta görseli (sağ sütun) */
+    .hero__board {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: boardReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+      will-change: transform, opacity;
+    }
+    .hero__board img {
+      width: 100%;
+      max-width: 520px;
+      height: auto;
+      border-radius: 6px;
+      filter: brightness(0.88) saturate(0.92);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.3);
+    }
+    @keyframes boardReveal {
+      from { opacity: 0; transform: translateY(32px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0)   scale(1); }
+    }
+
+    /* İçerik bloğu (sol sütun) */
+    .hero__content {
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      padding: 7rem 3rem 3rem;
-      max-width: 680px;
+      gap: 1.1rem;
       opacity: 0;
       animation: fadeUp 400ms ease-out 1.4s both;
     }
-
-    .hero-content h1 {
-      font-size: clamp(2.2rem, 5vw, 4rem);
+    .hero__eyebrow {
+      font-size: 0.7rem;
       font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .hero__heading {
+      font-size: clamp(2.4rem, 5vw, 3.8rem);
+      font-weight: 500;
       line-height: 1.1;
       letter-spacing: -0.02em;
-      color: #F2EFE9;
-      margin-bottom: 1.25rem;
+      color: var(--fg);
       opacity: 0;
       animation: fadeUp 400ms ease-out 1.5s both;
     }
-
-    .hero-content p {
+    .hero__tagline {
       font-size: 1rem;
       font-weight: 400;
-      color: rgba(242, 239, 233, 0.75);
-      line-height: 1.6;
-      margin-bottom: 2.25rem;
+      color: var(--fg-muted);
+      line-height: 1.7;
       opacity: 0;
       animation: fadeUp 400ms ease-out 1.6s both;
     }
-
-    .hero-content .cta {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.85rem 2rem;
-      border-radius: 6px;
-      background: #B8955A;
-      color: #0E0D0B;
-      font-family: inherit;
-      font-size: 0.95rem;
-      font-weight: 700;
-      text-decoration: none;
-      cursor: pointer;
-      border: none;
-      white-space: nowrap;
-      width: fit-content;
-      transition: background 200ms ease;
+    .hero__cta {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
       opacity: 0;
       animation: fadeUp 400ms ease-out 1.7s both;
     }
-    .hero-content .cta:hover { background: #caa86e; }
+    .hero__social {
+      display: flex;
+      gap: 1.25rem;
+      padding-top: 0.5rem;
+      opacity: 0;
+      animation: fadeUp 400ms ease-out 1.8s both;
+    }
+    .hero__social a {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--fg-muted);
+      text-decoration: none;
+      transition: color 150ms;
+    }
+    .hero__social a:hover { color: var(--fg); }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 768px) {
+    /* Asistan zone (placeholder) */
+    .assistant-zone {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 64px;
+      height: 64px;
+      z-index: 40;
+      pointer-events: none;
+    }
+    .assistant-zone__pulse {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #2a2620, #0e0d0b);
+      border: 1px solid rgba(184,149,90,0.3);
+      box-shadow: 0 0 0 0 rgba(184,149,90,0.25);
+      animation: assistantPulse 3s ease-in-out infinite;
+    }
+    @keyframes assistantPulse {
+      0%, 100% { box-shadow: 0 0 0 0   rgba(184,149,90,0.25); }
+      50%       { box-shadow: 0 0 0 10px rgba(184,149,90,0); }
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
       .hero {
-        height: 65vh;
-        min-height: 400px;
+        grid-template-columns: 1fr;
+        min-height: 100svh;
+        align-items: flex-end;
+        padding-bottom: 6rem;
       }
-      .hero-image {
-        object-position: 60% 30%;
-      }
-      .hero-overlay {
-        background: linear-gradient(
-          to bottom,
-          rgba(14, 13, 11, 0.30) 0%,
-          rgba(14, 13, 11, 0.85) 70%
-        );
-      }
-      .hero-content {
-        justify-content: flex-end;
-        padding: 2rem 1.5rem 3rem;
-        max-width: 100%;
-      }
+      .hero__board { display: none; }
+      .hero__bg-img { object-position: center 30%; }
+      .hero__bg    { position: absolute; }
+      .hero__texture { display: none; }
+    }
+    @media (max-width: 768px) {
+      .assistant-zone { bottom: 5.5rem; right: 1rem; width: 48px; height: 48px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero__board { animation: none; opacity: 1; }
     }
 
     /* ── TAŞ ANIMASYONU (hero içinde) ── */
@@ -275,14 +335,9 @@
 
     @media (prefers-reduced-motion: reduce) {
       .stone-drop .stone,
-      .stone-drop .ripple,
-      .hero-content,
-      .hero-content h1,
-      .hero-content p,
-      .hero-content .cta {
-        animation: none;
-        opacity: 1;
-      }
+      .stone-drop .ripple { animation: none; opacity: 1; }
+      .hero__content, .hero__heading, .hero__tagline,
+      .hero__cta, .hero__social { animation: none; opacity: 1; }
     }
 
     /* ══════════════════════════════════════
@@ -319,7 +374,7 @@
 
     @media (max-width: 768px) {
       .hero__cta { flex-direction: column; }
-      .btn { width: 100%; padding: 1rem 1.5rem; }
+      .hero__cta .btn { width: 100%; padding: 1rem 1.5rem; }
     }
 
     /* ══════════════════════════════════════
@@ -590,7 +645,9 @@
         transition: none !important;
       }
       .tool-featured, .tool-card { opacity: 1; transform: none; }
-      .hero-content, .hero-content h1, .hero-content p, .hero-content .cta { opacity: 1; }
+      .hero__content, .hero__heading, .hero__tagline,
+      .hero__cta, .hero__social, .hero__board { opacity: 1; transform: none; }
+      .assistant-zone__pulse { box-shadow: none; }
     }
   </style>
 </head>
@@ -662,29 +719,43 @@
 <div class="site">
 
   <!-- ══ HERO ══ -->
+
+  <!-- Katman 0: Arka plan (fixed, full-bleed) -->
+  <div class="hero__bg" aria-hidden="true">
+    <img src="/assets/images/hero-bg.png" alt="" class="hero__bg-img"
+         width="1920" height="1080" fetchpriority="high" decoding="async" />
+  </div>
+
+  <!-- Katman 1: Doku overlay (fixed) -->
+  <div class="hero__texture" aria-hidden="true"></div>
+
   <section class="hero" id="hero">
-    <picture>
-      <source srcset="/assets/images/hero.webp" type="image/webp">
-      <img
-        class="hero-image"
-        src="/assets/images/hero.jpg"
-        alt="Antalya GO topluluğu — açık havada Go maçı"
-        loading="eager"
-        fetchpriority="high"
-        width="1080"
-        height="1080"
-      >
-    </picture>
-    <div class="hero-overlay"></div>
-    <div class="stone-drop" aria-hidden="true">
-      <div class="stone"></div>
-      <div class="ripple"></div>
+
+    <!-- Katman 2: Tahta görseli (sağ sütun) -->
+    <div class="hero__board" aria-hidden="true" id="hero-board">
+      <img src="/assets/images/hero-board.png" alt=""
+           width="900" height="675" decoding="async" />
     </div>
-    <div class="hero-content">
-      <h1>Go öğren. Topluluk kur. Oyna.</h1>
-      <p>Antalya'da her pazar Varuna Gezgin Cafe'de buluşuyoruz.</p>
-      <a href="ogren-3d.html" class="cta">Başlamak İstiyorum</a>
+
+    <!-- Katman 3: Metin + CTA (sol sütun) -->
+    <div class="hero__content">
+      <p class="hero__eyebrow">Antalya Go Topluluğu</p>
+      <h1 class="hero__heading">
+        Bir tahta.<br>İki renk.<br>Sonsuz olasılık.
+      </h1>
+      <p class="hero__tagline">
+        Go öğrenmek için bir neden yeterli: merak.
+      </p>
+      <div class="hero__cta">
+        <a href="ogren-3d.html" class="btn btn-primary">Go Öğrenmeye Başla</a>
+        <a href="#topluluk"     class="btn btn-secondary">Topluluğu Keşfet</a>
+      </div>
+      <div class="hero__social">
+        <a href="https://instagram.com/antalyago" target="_blank" rel="noopener">Instagram</a>
+        <a href="https://facebook.com/AntalyaGo"  target="_blank" rel="noopener">Facebook</a>
+      </div>
     </div>
+
   </section>
 
   <hr class="divider">
@@ -952,7 +1023,51 @@
   draw(false);
   setTimeout(schedule, 1400);
 })();
+
+/* ── Hero Board Parallax + 3D Tilt (Faz 2) ── */
+(function () {
+  const board = document.getElementById('hero-board');
+  if (!board) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  /* Scroll parallax — IntersectionObserver ile hero görünürdeyken çalışır */
+  let heroVisible = true;
+  const hero = document.getElementById('hero');
+  if (hero && 'IntersectionObserver' in window) {
+    const obs = new IntersectionObserver(
+      ([e]) => { heroVisible = e.isIntersecting; },
+      { threshold: 0 }
+    );
+    obs.observe(hero);
+  }
+
+  window.addEventListener('scroll', function () {
+    if (!heroVisible) return;
+    const y = window.scrollY;
+    if (y < window.innerHeight) {
+      board.style.transform = 'translateY(' + (y * 0.12) + 'px)';
+    }
+  }, { passive: true });
+
+  /* Mouse hover — 3D tilt (yalnızca gerçek hover destekli cihazlarda) */
+  if (!window.matchMedia('(hover: hover)').matches) return;
+  board.addEventListener('mousemove', function (e) {
+    const r = board.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width  - 0.5) * 8;
+    const y = ((e.clientY - r.top)  / r.height - 0.5) * 8;
+    board.style.transform =
+      'perspective(800px) rotateY(' + x + 'deg) rotateX(' + (-y) + 'deg)';
+  });
+  board.addEventListener('mouseleave', function () {
+    board.style.transform = '';
+  });
+})();
 </script>
+
+<!-- ── ASISTAN ZONE (Faz 3'te maskot asset buraya gelir) ── -->
+<div class="assistant-zone" id="assistant-zone" aria-hidden="true">
+  <div class="assistant-zone__pulse"></div>
+</div>
 
 <!-- ── AI ASISTAN WIDGET ── -->
 <style>
