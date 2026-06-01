@@ -392,6 +392,245 @@
       border-radius: 2px;
     }
 
+    /* ── STORY ── */
+    .story {
+      padding: 96px 72px;
+      background: var(--bg-surface);
+    }
+    .story-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+    .story-media {
+      position: relative;
+      height: 400px;
+    }
+    .story-img {
+      position: absolute;
+      width: 78%;
+      height: auto;
+      border-radius: 4px;
+      object-fit: cover;
+      box-shadow: 0 12px 40px var(--shadow);
+    }
+    .story-img--back {
+      top: 0; left: 0;
+      transform: rotate(2deg);
+      z-index: 1;
+    }
+    .story-img--front {
+      bottom: 0; right: 0;
+      transform: rotate(-1.5deg);
+      z-index: 2;
+    }
+    .section-eyebrow {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .story-text h2,
+    .timeline-inner > h2,
+    .today-text h2 {
+      font-family: var(--font-heading);
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 600;
+      color: var(--fg);
+      line-height: 1.2;
+      margin: 0 0 20px;
+    }
+    .story-text p,
+    .today-text p {
+      color: var(--fg-muted);
+      line-height: 1.7;
+      margin: 0 0 16px;
+    }
+    @media (max-width: 768px) {
+      .story { padding: 64px 24px; }
+      .story-inner { grid-template-columns: 1fr; gap: 40px; }
+      .story-media { height: 240px; }
+    }
+
+    /* ── TIMELINE ── */
+    .timeline {
+      padding: 96px 72px;
+      background: var(--bg);
+    }
+    .timeline-inner {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .timeline-inner > h2 {
+      margin-bottom: 48px;
+    }
+    .timeline-list {
+      position: relative;
+    }
+    .timeline-list::before {
+      content: '';
+      position: absolute;
+      left: 91px;
+      top: 8px;
+      bottom: 8px;
+      width: 1px;
+      background: var(--border);
+    }
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 80px 24px 1fr;
+      gap: 0 16px;
+      align-items: start;
+      padding-bottom: 36px;
+    }
+    .timeline-year {
+      font-family: var(--font-heading);
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--fg-muted);
+      padding-top: 3px;
+      text-align: right;
+    }
+    .timeline-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-top: 5px;
+      position: relative;
+      z-index: 1;
+      justify-self: center;
+    }
+    .timeline-card h3 {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--fg);
+      margin: 0 0 4px;
+    }
+    .timeline-card p {
+      font-size: 0.88rem;
+      color: var(--fg-muted);
+      line-height: 1.6;
+      margin: 0;
+    }
+    @media (max-width: 768px) {
+      .timeline { padding: 64px 24px; }
+    }
+
+    /* ── TODAY ── */
+    .today {
+      padding: 96px 72px;
+      background: var(--bg-surface);
+    }
+    .today-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+    .today-text h2 {
+      margin-bottom: 24px;
+    }
+    .meeting-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .meeting-card__label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .meeting-card__time {
+      font-family: var(--font-heading);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--fg);
+      margin-bottom: 4px;
+    }
+    .meeting-card__place {
+      font-size: 0.88rem;
+      color: var(--fg-muted);
+    }
+    .today-quote {
+      font-style: italic;
+      color: var(--fg-muted);
+      font-size: 0.92rem;
+      line-height: 1.7;
+      border-left: 2px solid var(--gold);
+      padding-left: 14px;
+      margin: 0 0 20px;
+    }
+    .today-links {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .today-links a {
+      font-size: 0.88rem;
+      color: var(--accent);
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .today-links a:hover { color: var(--accent-hover); }
+    .today-media img {
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+    @media (max-width: 768px) {
+      .today { padding: 64px 24px; }
+      .today-inner { grid-template-columns: 1fr; gap: 40px; }
+      .today-media { order: -1; }
+    }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      background: var(--accent);
+      padding: 52px 72px;
+    }
+    .stats-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      text-align: center;
+    }
+    .stat-number {
+      font-family: var(--font-heading);
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 600;
+      color: #F5F0E8;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: rgba(245,240,232,0.72);
+      letter-spacing: 0.04em;
+    }
+    @media (max-width: 768px) {
+      .stats-bar { padding: 40px 24px; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 32px; }
+    }
+
     /* ── FOOTER ── */
     .site-footer {
       padding: 24px 72px;
@@ -560,35 +799,35 @@
   </div>
   <div class="modules-grid">
 
-    <a href="ogren-3d.html" class="module-card reveal">
+    <a href="ogren-3d.html" class="module-card reveal" data-delay="0">
       <div class="module-number">01</div>
       <h3>Tahta ve Taşlar</h3>
       <p>19×19'dan 9×9'a Go tahtasını ve taşları tanı.</p>
       <span class="module-link">Başla →</span>
     </a>
 
-    <a href="ogren-3d.html" class="module-card reveal">
+    <a href="ogren-3d.html" class="module-card reveal" data-delay="80">
       <div class="module-number">02</div>
       <h3>Temel Kurallar</h3>
       <p>Nefes noktaları, taş alma ve yasak hamleler.</p>
       <span class="module-link">Başla →</span>
     </a>
 
-    <a href="ogren-3d.html" class="module-card reveal">
+    <a href="ogren-3d.html" class="module-card reveal" data-delay="160">
       <div class="module-number">03</div>
       <h3>9×9 Başlangıç</h3>
       <p>Küçük tahtada ilk partini oyna. Hata yap, öğren.</p>
       <span class="module-link">Başla →</span>
     </a>
 
-    <a href="ogren-3d.html" class="module-card reveal">
+    <a href="ogren-3d.html" class="module-card reveal" data-delay="240">
       <div class="module-number">04</div>
       <h3>Temel Teknikler</h3>
       <p>Atari, yakalama, göz ve canlı gruplar.</p>
       <span class="module-link">Başla →</span>
     </a>
 
-    <a href="problem.html" class="module-card reveal">
+    <a href="problem.html" class="module-card reveal" data-delay="320">
       <div class="module-number">05</div>
       <h3>Problemler</h3>
       <p>Tsumego problemleriyle örüntü görme yeteneği kazan.</p>
@@ -598,17 +837,138 @@
   </div>
 </section>
 
-<!-- ══ TOPLULUK ══ -->
-<section class="community" id="topluluk" aria-labelledby="community-heading">
-  <h2 id="community-heading">Antalya'da Go</h2>
-  <p>Her Perşembe 19:00'da Jiraf Coffee &amp; Book'ta buluşuyoruz.</p>
-  <div class="community-links">
-    <a href="https://instagram.com/antalyago" target="_blank" rel="noopener">
-      Instagram @antalyago
-    </a>
-    <a href="https://facebook.com/AntalyaGo" target="_blank" rel="noopener">
-      Facebook
-    </a>
+<!-- ══ STORY ══ -->
+<section class="story">
+  <div class="story-inner">
+
+    <div class="story-media reveal" data-delay="0">
+      <img class="story-img story-img--back"
+           src="assets/images/afis-1-turnuva-2013.jpg"
+           alt="2013 Antalya Go Turnuvası afişi" width="480" height="360" decoding="async" />
+      <img class="story-img story-img--front"
+           src="assets/images/turnuva-5-kupalar.webp"
+           alt="Turnuva kupaları" width="480" height="360" decoding="async" />
+    </div>
+
+    <div class="story-text reveal" data-delay="120">
+      <span class="section-eyebrow">Hikâye</span>
+      <h2>Bir taştan büyük bir topluluğa</h2>
+      <p>2013'te birkaç meraklının bir kafede bir araya gelmesiyle başladı. Kimse o gün on yılı aşkın bir serüvenin kapısını araladığını bilmiyordu.</p>
+      <p>Bugün Antalya Go Topluluğu; düzenli buluşmalar, turnuvalar ve bu öğrenme platformuyla şehrin en köklü düşünce çevrelerinden biri olmaya devam ediyor.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ TIMELINE ══ -->
+<section class="timeline">
+  <div class="timeline-inner">
+    <span class="section-eyebrow reveal" data-delay="0">Tarihçe</span>
+    <h2 class="reveal" data-delay="60">Kilometre taşları</h2>
+
+    <div class="timeline-list">
+
+      <div class="timeline-item reveal" data-delay="0">
+        <span class="timeline-year">2013</span>
+        <span class="timeline-dot"></span>
+        <div class="timeline-card">
+          <h3>İlk buluşma</h3>
+          <p>Antalya'da Go oyununu merak eden birkaç kişi ilk kez bir araya geldi.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item reveal" data-delay="80">
+        <span class="timeline-year">2014</span>
+        <span class="timeline-dot"></span>
+        <div class="timeline-card">
+          <h3>İlk turnuva</h3>
+          <p>Topluluğun ilk resmi turnuvası düzenlendi; katılımcılar yarıştı, tanıştı.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item reveal" data-delay="160">
+        <span class="timeline-year">2019</span>
+        <span class="timeline-dot"></span>
+        <div class="timeline-card">
+          <h3>Düzenli buluşmalar</h3>
+          <p>Haftalık buluşmalar kalıcı bir formata kavuştu; yeni üyeler hızla artmaya başladı.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item reveal" data-delay="240">
+        <span class="timeline-year">2023</span>
+        <span class="timeline-dot"></span>
+        <div class="timeline-card">
+          <h3>Çevrimiçi etkinlikler</h3>
+          <p>Türkiye genelinden oyuncularla online turnuvalar ve analiz seansları başladı.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item reveal" data-delay="320">
+        <span class="timeline-year">2025</span>
+        <span class="timeline-dot"></span>
+        <div class="timeline-card">
+          <h3>AntalyaGo.net</h3>
+          <p>Topluluğun dijital evi açıldı; 3D öğrenme motoru ve interaktif müfredat yayına girdi.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══ TODAY ══ -->
+<section class="today" id="topluluk">
+  <div class="today-inner">
+
+    <div class="today-text reveal" data-delay="0">
+      <span class="section-eyebrow">Bugün</span>
+      <h2>Kapı her hafta açık</h2>
+
+      <div class="meeting-card">
+        <div class="meeting-card__label">Haftalık Buluşma</div>
+        <div class="meeting-card__time">Her Perşembe · 19:00</div>
+        <div class="meeting-card__place">Jiraf Coffee &amp; Book, Antalya</div>
+      </div>
+
+      <p class="today-quote">
+        "Go öğrenmek için deneyimli olmak gerekmez. Sadece merak yeterli."
+      </p>
+
+      <div class="today-links">
+        <a href="https://instagram.com/antalyago" target="_blank" rel="noopener">Instagram @antalyago</a>
+        <a href="https://facebook.com/AntalyaGo" target="_blank" rel="noopener">Facebook</a>
+      </div>
+    </div>
+
+    <div class="today-media reveal" data-delay="120">
+      <img src="assets/images/illus-tahta-sonbahar.webp"
+           alt="Sonbahar ışığında bir Go tahtası"
+           width="520" height="480" decoding="async" />
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ STATS ══ -->
+<section class="stats-bar">
+  <div class="stats-inner">
+    <div class="reveal" data-delay="0">
+      <div class="stat-number">10+</div>
+      <div class="stat-label">Yıl</div>
+    </div>
+    <div class="reveal" data-delay="80">
+      <div class="stat-number">60+</div>
+      <div class="stat-label">Üye</div>
+    </div>
+    <div class="reveal" data-delay="160">
+      <div class="stat-number">5</div>
+      <div class="stat-label">Turnuva</div>
+    </div>
+    <div class="reveal" data-delay="240">
+      <div class="stat-number">33</div>
+      <div class="stat-label">Ders Adımı</div>
+    </div>
   </div>
 </section>
 
@@ -636,11 +996,12 @@
   const items = document.querySelectorAll('.reveal');
   if (!items.length) return;
   const observer = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry, i) {
+    entries.forEach(function (entry) {
       if (!entry.isIntersecting) return;
+      var delay = +(entry.target.dataset.delay || 0);
       setTimeout(function () {
         entry.target.classList.add('visible');
-      }, i * 80);
+      }, delay);
       observer.unobserve(entry.target);
     });
   }, { threshold: 0.1 });
