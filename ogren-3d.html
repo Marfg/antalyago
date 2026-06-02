@@ -235,8 +235,9 @@
       background: var(--glass); backdrop-filter: blur(14px);
       border: 1px solid var(--gborder); border-radius: 50px;
       padding: .3rem .5rem;
-      /* Masaüstü: canvas sol alt */
-      bottom: 16px; left: 238px;
+      /* Masaüstü: canvas sol alt — sidebar kapalıyken 20px, açıkken 238px */
+      bottom: 16px; left: 20px;
+      transition: left .3s ease;
     }
     .cc-btn {
       width: 42px; height: 42px; border-radius: 50%;
@@ -276,7 +277,8 @@
 
     /* ── ROTATE TOGGLE ── */
     #rotate-toggle {
-      position: fixed; bottom: 68px; left: 228px; z-index: 25;
+      position: fixed; bottom: 68px; left: 10px; z-index: 25;
+      transition: left .3s ease;
       background: var(--glass); border: 1px solid var(--gborder);
       color: var(--muted); padding: 6px 10px; border-radius: 6px;
       cursor: pointer; font-size: 11px; letter-spacing: .05em;
@@ -305,7 +307,8 @@
 
     /* ── HINT ── */
     #hint {
-      position: fixed; bottom: 18px; left: 228px; z-index: 10;
+      position: fixed; bottom: 18px; left: 10px; z-index: 10;
+      transition: left .3s ease;
       color: rgba(232,228,222,.16); font-size: 10px; letter-spacing: .12em;
       text-transform: uppercase; pointer-events: none;
     }
@@ -539,6 +542,64 @@
       #mob-feedback.wrong   { border-color: var(--red);   color: var(--red);   background: rgba(224,80,80,.1);  }
       #mob-feedback.info    { border-color: var(--gborder); color: var(--muted); }
       .mob-fb-icon { font-size: 1.05rem; flex-shrink: 0; }
+
+    /* ── PROGRESS MAP SIDEBAR ── */
+    .prog-map-section {
+      padding: .62rem .85rem; border-bottom: 1px solid var(--gborder);
+    }
+    .prog-map-section:last-child { border-bottom: none; }
+    .prog-map-ch-head {
+      display: flex; align-items: center; gap: .4rem;
+      margin-bottom: .6rem;
+      font-size: .62rem; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+    }
+    .prog-map-ch-badge {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: rgba(200,168,75,.14); border: 1px solid var(--gold);
+      color: var(--gold); font-size: .56rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .prog-map-ch-name { color: var(--gold); }
+    .prog-map-row {
+      display: flex; align-items: flex-start; gap: 0;
+      position: relative;
+    }
+    .prog-map-row::before {
+      content: ''; position: absolute;
+      top: 8px; left: 9px; right: 9px; height: 1px;
+      background: var(--gborder); z-index: 0;
+    }
+    .prog-map-node {
+      display: flex; flex-direction: column; align-items: center;
+      flex: 1; position: relative; z-index: 1; cursor: pointer;
+    }
+    .prog-map-dot {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--dark); border: 1.5px solid var(--gborder);
+      color: var(--muted); font-size: .58rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s;
+    }
+    .prog-map-node.done .prog-map-dot {
+      background: rgba(62,207,128,.1); border-color: rgba(62,207,128,.5);
+      color: rgba(62,207,128,.75);
+    }
+    .prog-map-node.active .prog-map-dot {
+      background: rgba(200,168,75,.18); border-color: var(--gold); color: var(--gold);
+      box-shadow: 0 0 8px rgba(200,168,75,.28); transform: scale(1.22);
+    }
+    .prog-map-active-label {
+      font-size: .68rem; color: rgba(232,228,222,.65);
+      margin-top: .45rem; padding-top: .35rem;
+      border-top: 1px solid rgba(200,168,75,.1);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ── BOARD PICKER SECONDARY ── */
+    .bp-btn[data-size="13"]:not(.active) { opacity: .48; }
+    .bp-btn[data-size="19"]:not(.active) { opacity: .38; }
       #mob-fb-content { flex: 1; min-width: 0; }
       #mob-fb-btn {
         flex-shrink: 0;
@@ -626,10 +687,10 @@
 <div id="mob-overlay" onclick="toggleMobileMenu()"></div>
 
 <!-- Sidebar toggle -->
-<button id="sb-toggle" onclick="toggleSidebar()">◀</button>
+<button id="sb-toggle" class="collapsed" onclick="toggleSidebar()">▶</button>
 
 <!-- Sidebar -->
-<div id="sidebar">
+<div id="sidebar" class="collapsed">
   <div class="sb-header">Müfredat</div>
   <div id="curriculum"></div>
 </div>
@@ -688,7 +749,7 @@
 <button id="rotate-toggle" onclick="toggleRotate()">⟳ Döndür</button>
 
 <!-- Hint -->
-<div id="hint" id="hint">Sol tık · Hamle &nbsp;·&nbsp; Sürükle · Döndür &nbsp;·&nbsp; Tekerlek · Yaklaştır</div>
+<div id="hint">Tıkla · Taş koy &nbsp;·&nbsp; Sürükle · Döndür &nbsp;·&nbsp; Tekerlek · Yaklaştır</div>
 
 <script type="module">
 import { BoardState }                           from './core/boardState.js';
@@ -1809,10 +1870,19 @@ window.toggleRotate = function() {
 };
 
 window.toggleSidebar = function() {
-  const sb=document.getElementById('sidebar'), t=document.getElementById('sb-toggle');
+  const sb  = document.getElementById('sidebar');
+  const tgl = document.getElementById('sb-toggle');
   sb.classList.toggle('collapsed');
-  t.classList.toggle('collapsed');
-  t.textContent = sb.classList.contains('collapsed') ? '▶' : '◀';
+  tgl.classList.toggle('collapsed');
+  const isOpen = !sb.classList.contains('collapsed');
+  tgl.textContent = isOpen ? '◀' : '▶';
+  // Shift floating elements with sidebar
+  const nav = document.getElementById('canvas-nav');
+  const rt  = document.getElementById('rotate-toggle');
+  const ht  = document.getElementById('hint');
+  if (nav) nav.style.left = isOpen ? '238px' : '20px';
+  if (rt)  rt.style.left  = isOpen ? '228px' : '10px';
+  if (ht)  ht.style.left  = isOpen ? '228px' : '10px';
 };
 
 window.toggleMobileMenu = function() {
@@ -1847,7 +1917,7 @@ const UI_T = {
     bp19desc:'Profesyonel standart tahta. Tam strateji derinliği ve uzun oyunlar için.',
     prevBtn:'← Geri', nextBtn:'İleri →', step:'Adım',
     rotateModeOn:'⟳ Döndür', rotateModeOff:'✕ Hamle Modu',
-    hint:'Sol tık · Hamle &nbsp;·&nbsp; Sürükle · Döndür &nbsp;·&nbsp; Tekerlek · Yaklaştır',
+    hint:'Tıkla · Taş koy &nbsp;·&nbsp; Sürükle · Döndür &nbsp;·&nbsp; Tekerlek · Yaklaştır',
     defaultOk:'Doğru!', defaultErr:'Yanlış, tekrar dene.',
   },
   en: {
@@ -1860,7 +1930,7 @@ const UI_T = {
     bp19desc:'Professional standard board. For full strategic depth and long games.',
     prevBtn:'← Back', nextBtn:'Next →', step:'Step',
     rotateModeOn:'⟳ Rotate', rotateModeOff:'✕ Move Mode',
-    hint:'Click · Place &nbsp;·&nbsp; Drag · Rotate &nbsp;·&nbsp; Scroll · Zoom',
+    hint:'Click · Place stone &nbsp;·&nbsp; Drag · Rotate &nbsp;·&nbsp; Scroll · Zoom',
     defaultOk:'Correct!', defaultErr:'Wrong, try again.',
   },
   ru: {
@@ -1905,12 +1975,12 @@ const STEP_T = {
     ru:{text:`<p>Го — стратегическая игра для двух игроков на доске <strong>19×19</strong>. Для начинающих лучше подходит доска <strong>9×9</strong>.</p><p>Ходы делаются поочерёдно — <strong>чёрные</strong> ходят первыми.</p>`,fb:'Попробуйте разные размеры доски.'},
   },
   'l1-1':{
-    en:{text:`<p>Stones are placed not inside squares, but on the <strong>intersections of lines</strong>.</p><p>Click anywhere on the board to <strong>place a black stone.</strong></p>`,fb:'Click on any intersection!',fb_ok:'Perfect! You placed the stone correctly.'},
-    ru:{text:`<p>Камни размещаются не внутри клеток, а на <strong>пересечениях линий</strong>.</p><p>Нажмите на любую точку доски, чтобы <strong>поставить чёрный камень.</strong></p>`,fb:'Нажмите на любое пересечение!',fb_ok:'Отлично! Камень поставлен верно.'},
+    en:{text:`<p>Stones are placed not inside squares, but on the <strong>intersections of lines</strong>.</p><p>Place a black stone on the glowing intersection.</p>`,fb:'Click the glowing point!',fb_ok:"Great! Go stones alternate — now it's white's turn.",fb_err:'Close. Stones go on intersections — try the glowing point.'},
+    ru:{text:`<p>Камни размещаются не внутри клеток, а на <strong>пересечениях линий</strong>.</p><p>Поставьте чёрный камень на светящееся пересечение.</p>`,fb:'Нажмите на светящуюся точку!',fb_ok:'Отлично! В Го камни чередуются — теперь ход белых.',fb_err:'Близко. Камни ставятся на пересечения — попробуйте светящуюся точку.'},
   },
   'l1-2':{
-    en:{text:`<p>Once placed, stones <strong>cannot be moved</strong> — they can only be removed by capture.</p><div class="highlight-box">In Go, stones don't move — they are only added or removed.</div>`,fb:'This white stone is now fixed at that point.'},
-    ru:{text:`<p>После размещения камни <strong>нельзя перемещать</strong> — их можно только захватить и убрать с доски.</p><div class="highlight-box">В Го камни не двигаются — их только добавляют или убирают.</div>`,fb:'Этот белый камень теперь стоит на месте.'},
+    en:{text:`<p>The empty points adjacent to a stone are its <strong>liberties</strong>.</p><p>Click anywhere on the board to explore how liberty count changes by position.</p>`,fb:'Click any intersection!'},
+    ru:{text:`<p>Пустые точки рядом с камнем — его <strong>свободы</strong>.</p><p>Нажмите на любую точку доски, чтобы исследовать количество свобод.</p>`,fb:'Нажмите на любое пересечение!'},
   },
   'l2-0':{
     en:{text:`<p>The empty points adjacent to a stone are called its <strong><span class="term">liberties</span></strong>.</p><p>A stone in the center has <strong>4 liberties</strong> (up, down, left, right).</p>`,fb:'The black stone in the center has 4 liberties.'},
@@ -2436,36 +2506,58 @@ function updateNextBtn(step, done, isLast, canAdvance) {
   mnext.textContent = isLast ? '✓' : '›';
 }
 
-/* Sidebar */
+/* Sidebar — İlerleme Haritası */
 function buildSidebar() {
-  const el=document.getElementById('curriculum'); el.innerHTML='';
-  CURRICULUM.forEach((chap,ci)=>{
-    const chapEl=document.createElement('div'); chapEl.className='chapter';
-    const title=document.createElement('div'); title.className='ch-title open';
-    const chapTitleTxt=(currentLang!=='tr'&&TITLE_T[chap.id]?.[currentLang])||chap.title;
-    title.innerHTML=`<div class="ch-left"><span class="ch-num">${ci+1}</span><span>${chapTitleTxt}</span></div><span class="ch-arrow">▶</span>`;
-    title.onclick=()=>{ title.classList.toggle('open'); list.classList.toggle('open'); };
-    chapEl.appendChild(title);
-    const list=document.createElement('div'); list.className='lesson-list open';
-    chap.lessons.forEach((lesson,li)=>{
-      const item=document.createElement('div');
-      item.className='lesson-item'+(CUR_LESSON?.id===lesson.id?' active':'')+(doneLessons.has(lesson.id)?' done':'');
-      item.dataset.id=lesson.id;
-      const lessonTitleTxt=(currentLang!=='tr'&&TITLE_T[lesson.id]?.[currentLang])||lesson.title;
-      item.innerHTML=`<span class="li-check">✓</span><span class="li-num">${ci+1}.${li+1}</span>${lessonTitleTxt}`;
-      item.onclick=()=>loadLesson(lesson);
-      list.appendChild(item);
+  const el = document.getElementById('curriculum');
+  el.innerHTML = '';
+  CURRICULUM.forEach((chap, ci) => {
+    const sec = document.createElement('div');
+    sec.className = 'prog-map-section';
+
+    // Chapter heading
+    const head = document.createElement('div');
+    head.className = 'prog-map-ch-head';
+    head.innerHTML = `<span class="prog-map-ch-badge">${ci+1}</span>`
+      + `<span class="prog-map-ch-name">${(currentLang!=='tr'&&TITLE_T[chap.id]?.[currentLang])||chap.title}</span>`;
+    sec.appendChild(head);
+
+    // Lesson node row
+    const row = document.createElement('div');
+    row.className = 'prog-map-row';
+    let activeName = '';
+
+    chap.lessons.forEach((lesson, li) => {
+      const isDone = doneLessons.has(lesson.id);
+      const isAct  = CUR_LESSON?.id === lesson.id;
+      const lTitle = (currentLang!=='tr'&&TITLE_T[lesson.id]?.[currentLang])||lesson.title;
+      if (isAct) activeName = lTitle;
+
+      const node = document.createElement('div');
+      node.className = 'prog-map-node' + (isDone ? ' done' : '') + (isAct ? ' active' : '');
+      node.dataset.id = lesson.id;
+      node.title = lTitle;
+      node.onclick = () => loadLesson(lesson);
+
+      const dot = document.createElement('div');
+      dot.className = 'prog-map-dot';
+      dot.textContent = isDone ? '✓' : String(li + 1);
+      node.appendChild(dot);
+      row.appendChild(node);
     });
-    chapEl.appendChild(list); el.appendChild(chapEl);
+
+    sec.appendChild(row);
+
+    if (activeName) {
+      const lbl = document.createElement('div');
+      lbl.className = 'prog-map-active-label';
+      lbl.textContent = '▸ ' + activeName;
+      sec.appendChild(lbl);
+    }
+
+    el.appendChild(sec);
   });
 }
-function updateSidebar() {
-  document.querySelectorAll('.lesson-item').forEach(el=>{
-    const id=el.dataset.id;
-    el.classList.toggle('active', CUR_LESSON?.id===id);
-    el.classList.toggle('done',   doneLessons.has(id));
-  });
-}
+function updateSidebar() { buildSidebar(); }
 function updateProgress() {
   const done=doneLessons.size, pct=TOTAL_LESSONS>0?Math.round(done/TOTAL_LESSONS*100):0;
   document.getElementById('prog-text').textContent=`${done} / ${TOTAL_LESSONS}`;

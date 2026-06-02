@@ -191,7 +191,7 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
 ## Mevcut Müfredat Durumu (2026-03-21)
 
 ### B1 — Temel Kurallar
-- l1 Tahta ve Taşlar — tam (3 adım)
+- l1 Tahta ve Taşlar — 6 adım (adım 1: asistan intro, adım 2: merkez taş, adım 3: nefes keşfi, adım 4: köşe, adım 5: bitişik, adım 6: hareket etmez)
 - l2 Nefes Noktaları — tam (3 adım)
 - l3 Taş Alma — tam (4 adım)
 - l4 Yasak Hamleler — tam (2 adım)
