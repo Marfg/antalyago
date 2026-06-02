@@ -190,11 +190,13 @@
 
     /* ── ASISTAN DİYALOĞU ── */
     .assistant-bubble {
-      background: rgba(200,168,75,.06); border: 1px solid var(--gborder);
+      background: rgba(200,168,75,.06);
+      border: 1px solid var(--gborder);
+      border-left: 2px solid rgba(200,168,75,.5);
       border-radius: 4px 12px 12px 12px;
       padding: .8rem 1rem; font-size: .9rem; line-height: 1.7; color: var(--text);
       opacity: 0; transform: translateY(6px);
-      transition: opacity .3s ease, transform .3s ease; margin-bottom: .4rem;
+      transition: opacity .3s ease, transform .3s ease; margin-bottom: .6rem;
     }
     .assistant-bubble.visible { opacity: 1; transform: translateY(0); }
     #ctx-buttons { display: none; flex-direction: column; gap: .4rem; margin-top: .4rem; }
@@ -2307,23 +2309,25 @@ function renderAssistantDialog(messages, ctxButtons) {
   const ctxEl = document.getElementById('ctx-buttons');
   ctxEl.style.display = 'none';
   ctxEl.innerHTML = '';
-
-  body.innerHTML = '<div class="assistant-bubble" id="assistant-bubble"></div>';
-  const bubble = document.getElementById('assistant-bubble');
+  body.innerHTML = '';
 
   let i = 0;
   function showNext() {
-    if (i >= messages.length) { renderCtxButtons(ctxButtons || []); return; }
+    if (i >= messages.length) {
+      _assistantTimer = setTimeout(() => renderCtxButtons(ctxButtons || []), 600);
+      return;
+    }
+    const bubble = document.createElement('div');
+    bubble.className = 'assistant-bubble';
+    body.appendChild(bubble);
     bubble.textContent = messages[i].msg;
+    bubble.getBoundingClientRect(); // force reflow for CSS transition
     bubble.classList.add('visible');
     i++;
-    if (i < messages.length) {
-      _assistantTimer = setTimeout(showNext, messages[i-1].delay || 1200);
-    } else {
-      _assistantTimer = setTimeout(() => renderCtxButtons(ctxButtons || []), 800);
-    }
+    const nextDelay = i < messages.length ? (messages[i].delay || 1200) : 600;
+    _assistantTimer = setTimeout(showNext, nextDelay);
   }
-  _assistantTimer = setTimeout(showNext, 0);
+  _assistantTimer = setTimeout(showNext, messages[0]?.delay ?? 0);
 }
 
 function renderCtxButtons(buttons) {
@@ -2645,9 +2649,9 @@ function loop(now) {
 
 document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===currentLang));
 buildSidebar(); updateProgress();
+applyLang();
 const first=ALL_LESSONS.find(l=>!doneLessons.has(l.id))||ALL_LESSONS[0];
 loadLesson(first);
-applyLang();
 requestAnimationFrame(loop);
 </script>
 
