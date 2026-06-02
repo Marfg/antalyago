@@ -35,13 +35,12 @@ export const CURRICULUM = [
         board:[], auto:true, boardSelector:true, size:9, camera:CAM.overview,
         fb:{t:'Tahta boyutunu seçerek farkı inceleyin.',c:'info'} },
 
-      // 1 — İlk taş: parlayan merkez noktasına tıkla
-      { text:`<p>Taşlar karelerin içine değil, <strong>çizgilerin kesişim noktalarına</strong> yerleştirilir.</p><p>Parlayan noktaya siyah taş koy.</p>`,
-        board:[], answer:{x:4,y:4}, turn:'black', size:9,
+      // 1 — İlk taş: herhangi bir kesişim noktasına tıkla
+      { text:`<p>Taşlar karelerin içine değil, <strong>çizgilerin kesişim noktalarına</strong> yerleştirilir.</p><p>Tahtada herhangi bir noktaya siyah taş koy.</p>`,
+        board:[], answers:'any', turn:'black', size:9,
         camera:CAM.high,
-        fb:{t:'Parlayan noktaya tıkla!',c:'info'},
-        fb_ok:'Harika! Go\'da taşlar sırayla konur — şimdi beyazın sırası.',
-        fb_err:'Yaklaştın. Taşlar çizgilerin kesişim noktalarına konur; parlayan noktayı dene.' },
+        fb:{t:'Herhangi bir kesişim noktasına tıkla!',c:'info'},
+        fb_ok:'Harika! Go\'da taşlar sırayla konur — şimdi beyazın sırası.' },
 
       // 2 — Nefes noktası keşfi: herhangi yere taş koy (pedagogy)
       { text:`<p>Her taşın komşu boş noktalarına <strong><span class="term">nefes noktası</span></strong> denir.</p><p>Tahtanın farklı bölgelerine taş koy ve nefes sayısının nasıl değiştiğini gör.</p>`,

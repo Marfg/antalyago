@@ -2510,58 +2510,36 @@ function updateNextBtn(step, done, isLast, canAdvance) {
   mnext.textContent = isLast ? '✓' : '›';
 }
 
-/* Sidebar — İlerleme Haritası */
+/* Sidebar — Bölüm/Ders Listesi */
 function buildSidebar() {
-  const el = document.getElementById('curriculum');
-  el.innerHTML = '';
-  CURRICULUM.forEach((chap, ci) => {
-    const sec = document.createElement('div');
-    sec.className = 'prog-map-section';
-
-    // Chapter heading
-    const head = document.createElement('div');
-    head.className = 'prog-map-ch-head';
-    head.innerHTML = `<span class="prog-map-ch-badge">${ci+1}</span>`
-      + `<span class="prog-map-ch-name">${(currentLang!=='tr'&&TITLE_T[chap.id]?.[currentLang])||chap.title}</span>`;
-    sec.appendChild(head);
-
-    // Lesson node row
-    const row = document.createElement('div');
-    row.className = 'prog-map-row';
-    let activeName = '';
-
-    chap.lessons.forEach((lesson, li) => {
-      const isDone = doneLessons.has(lesson.id);
-      const isAct  = CUR_LESSON?.id === lesson.id;
-      const lTitle = (currentLang!=='tr'&&TITLE_T[lesson.id]?.[currentLang])||lesson.title;
-      if (isAct) activeName = lTitle;
-
-      const node = document.createElement('div');
-      node.className = 'prog-map-node' + (isDone ? ' done' : '') + (isAct ? ' active' : '');
-      node.dataset.id = lesson.id;
-      node.title = lTitle;
-      node.onclick = () => loadLesson(lesson);
-
-      const dot = document.createElement('div');
-      dot.className = 'prog-map-dot';
-      dot.textContent = isDone ? '✓' : String(li + 1);
-      node.appendChild(dot);
-      row.appendChild(node);
+  const el=document.getElementById('curriculum'); el.innerHTML='';
+  CURRICULUM.forEach((chap,ci)=>{
+    const chapEl=document.createElement('div'); chapEl.className='chapter';
+    const title=document.createElement('div'); title.className='ch-title open';
+    const chapTitleTxt=(currentLang!=='tr'&&TITLE_T[chap.id]?.[currentLang])||chap.title;
+    title.innerHTML=`<div class="ch-left"><span class="ch-num">${ci+1}</span><span>${chapTitleTxt}</span></div><span class="ch-arrow">▶</span>`;
+    title.onclick=()=>{ title.classList.toggle('open'); list.classList.toggle('open'); };
+    chapEl.appendChild(title);
+    const list=document.createElement('div'); list.className='lesson-list open';
+    chap.lessons.forEach((lesson,li)=>{
+      const item=document.createElement('div');
+      item.className='lesson-item'+(CUR_LESSON?.id===lesson.id?' active':'')+(doneLessons.has(lesson.id)?' done':'');
+      item.dataset.id=lesson.id;
+      const lessonTitleTxt=(currentLang!=='tr'&&TITLE_T[lesson.id]?.[currentLang])||lesson.title;
+      item.innerHTML=`<span class="li-check">✓</span><span class="li-num">${ci+1}.${li+1}</span>${lessonTitleTxt}`;
+      item.onclick=()=>loadLesson(lesson);
+      list.appendChild(item);
     });
-
-    sec.appendChild(row);
-
-    if (activeName) {
-      const lbl = document.createElement('div');
-      lbl.className = 'prog-map-active-label';
-      lbl.textContent = '▸ ' + activeName;
-      sec.appendChild(lbl);
-    }
-
-    el.appendChild(sec);
+    chapEl.appendChild(list); el.appendChild(chapEl);
   });
 }
-function updateSidebar() { buildSidebar(); }
+function updateSidebar() {
+  document.querySelectorAll('.lesson-item').forEach(el=>{
+    const id=el.dataset.id;
+    el.classList.toggle('active', CUR_LESSON?.id===id);
+    el.classList.toggle('done',   doneLessons.has(id));
+  });
+}
 function updateProgress() {
   const done=doneLessons.size, pct=TOTAL_LESSONS>0?Math.round(done/TOTAL_LESSONS*100):0;
   document.getElementById('prog-text').textContent=`${done} / ${TOTAL_LESSONS}`;
