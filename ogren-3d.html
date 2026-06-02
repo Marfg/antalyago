@@ -956,7 +956,7 @@ function drawBoard() {
 }
 
 function drawGrid() {
-  const Y=-BOARD_H/2-.4, LTRS='ABCDEFGHJ';
+  const Y=-BOARD_H/2-.4;
   const corners=[[-HALF,Y,-HALF],[HALF,Y,-HALF],[HALF,Y,HALF],[-HALF,Y,HALF]];
   ctx.strokeStyle='rgba(55,24,0,.92)'; ctx.lineWidth=1.9;
   for(let i=0;i<4;i++){
@@ -1915,7 +1915,7 @@ const UI_T = {
     bp9desc:'Yeni başlayanlar için idealdir. Oyun hızlı biter, temel kavramlar net görünür.',
     bp13desc:'Orta seviye oyuncular için. Strateji gelişmeye başlar, oyun daha uzun sürer.',
     bp19desc:'Profesyonel standart tahta. Tam strateji derinliği ve uzun oyunlar için.',
-    prevBtn:'← Geri', nextBtn:'İleri →', step:'Adım',
+    prevBtn:'← Geri', nextBtn:'İleri →', finishLesson:'Dersi Bitir ✓', step:'Adım',
     rotateModeOn:'⟳ Döndür', rotateModeOff:'✕ Hamle Modu',
     hint:'Tıkla · Taş koy &nbsp;·&nbsp; Sürükle · Döndür &nbsp;·&nbsp; Tekerlek · Yaklaştır',
     defaultOk:'Doğru!', defaultErr:'Yanlış, tekrar dene.',
@@ -1928,7 +1928,7 @@ const UI_T = {
     bp9desc:'Ideal for beginners. Games end quickly and basic concepts are easy to see.',
     bp13desc:'For intermediate players. Strategy develops and games last longer.',
     bp19desc:'Professional standard board. For full strategic depth and long games.',
-    prevBtn:'← Back', nextBtn:'Next →', step:'Step',
+    prevBtn:'← Back', nextBtn:'Next →', finishLesson:'Finish Lesson ✓', step:'Step',
     rotateModeOn:'⟳ Rotate', rotateModeOff:'✕ Move Mode',
     hint:'Click · Place stone &nbsp;·&nbsp; Drag · Rotate &nbsp;·&nbsp; Scroll · Zoom',
     defaultOk:'Correct!', defaultErr:'Wrong, try again.',
@@ -1941,7 +1941,7 @@ const UI_T = {
     bp9desc:'Идеально для начинающих. Игры короткие, основные концепции ясны.',
     bp13desc:'Для среднего уровня. Стратегия развивается, игры длиннее.',
     bp19desc:'Профессиональная стандартная доска. Для полной стратегической глубины.',
-    prevBtn:'← Назад', nextBtn:'Далее →', step:'Шаг',
+    prevBtn:'← Назад', nextBtn:'Далее →', finishLesson:'Завершить урок ✓', step:'Шаг',
     rotateModeOn:'⟳ Повернуть', rotateModeOff:'✕ Режим хода',
     hint:'Клик · Ход &nbsp;·&nbsp; Тащить · Повернуть &nbsp;·&nbsp; Колесо · Зум',
     defaultOk:'Правильно!', defaultErr:'Неверно, попробуйте снова.',
@@ -2144,7 +2144,7 @@ function applyLang() {
   const rtBtn=document.getElementById('rotate-toggle');
   if(rtBtn) rtBtn.textContent = rotateMode ? t('rotateModeOff') : t('rotateModeOn');
   buildSidebar();
-  if(CUR_STEP_DATA) loadStep(CUR_STEP);
+  if(CUR_STEP_DATA) updateLessonDOM(lessonEng._currentState());
   else {
     document.getElementById('lesson-title').textContent = t('selectLesson');
     document.getElementById('lesson-body').innerHTML = t('selectLessonBody');
@@ -2499,7 +2499,7 @@ function updateNextBtn(step, done, isLast, canAdvance) {
   const cnext = document.getElementById('cnav-next');
   const mnext = document.getElementById('mnext');
   btn.disabled    = !canAdvance;
-  btn.textContent = isLast ? 'Dersi Bitir ✓' : 'İleri →';
+  btn.textContent = isLast ? t('finishLesson') : t('nextBtn');
   cnext.disabled    = !canAdvance;
   cnext.textContent = isLast ? '✓' : '›';
   mnext.disabled    = !canAdvance;
