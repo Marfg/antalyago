@@ -2693,7 +2693,7 @@ function updateLessonDOM(ls) {
   }
 
   setFb(stepT(lesson.id, stepIdx, 'fb') || step?.fb?.t || t('defaultFb'), step?.fb?.c || 'info');
-  document.getElementById('feedback').style.display = _hasAssistant ? 'none' : '';
+  document.getElementById('feedback').style.display = '';
 
   // Task card: show step objective hint below the board
   const tc = document.getElementById('task-card');
