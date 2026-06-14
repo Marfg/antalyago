@@ -2399,15 +2399,23 @@ function processEffects(effects) {
           animateCamera(cam);
         }
         break;
-      case 'SHOW_COMPLETION':
+      case 'SHOW_COMPLETION': {
         updateSidebar(); updateProgress();
-        if (eff.chapComplete) {
-          document.getElementById('complete-msg').textContent = `"${eff.chapTitle}" bölümünü tamamladın! 🎊`;
+        // Engine state'inden doğrudan oku (effect payload'a güvenme)
+        const _completedChap = lessonEng.currentChapter();
+        const _chapDone = _completedChap &&
+          _completedChap.lessons.every(l => lessonEng.doneLessons.has(l.id));
+        if (_chapDone) {
+          document.getElementById('complete-msg').textContent =
+            `"${_completedChap.title}" bölümünü tamamladın! 🎊`;
           document.getElementById('complete-screen').classList.add('show');
-        } else if (eff.nextLesson) {
-          setTimeout(() => loadLesson(eff.nextLesson), 0);
+        } else {
+          const _curIdx = lessonEng.allLessons.findIndex(l => l.id === lessonEng.curLesson?.id);
+          const _nextL  = lessonEng.allLessons[_curIdx + 1];
+          if (_nextL) setTimeout(() => loadLesson(_nextL), 0);
         }
         break;
+      }
       case 'UPDATE_LESSON':
         updateLessonDOM(eff.lessonState);
         break;
