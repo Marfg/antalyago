@@ -831,6 +831,10 @@
       <span id="tb-lesson-crumb">Ders Seç</span>
     </div>
     <div class="tb-right">
+      <div id="pm-chip" hidden>
+        <span class="pm-chip-nick"></span>
+        <button class="pm-chip-reset" onclick="pmReset()" title="Profili sıfırla">↺</button>
+      </div>
       <div class="lang-switcher">
         <button class="lang-btn active" data-lang="tr" onclick="setLang('tr')">TR</button>
         <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
@@ -2362,6 +2366,82 @@ let nextMoveHint = null;
 // doneLessons → lessonEng üzerinden — sidebar/progress fonksiyonları bu getter'ı kullanır
 const doneLessons = { has: id => lessonEng.doneLessons.has(id), get size() { return lessonEng.doneLessons.size; } };
 
+/* ── Geçici Profil Sistemi ──────────────────────────────────────── */
+const PM = (() => {
+  const KEY = 'go_profile';
+  const raw = () => { try { return JSON.parse(localStorage.getItem(KEY) || sessionStorage.getItem(KEY) || 'null'); } catch { return null; } };
+  return {
+    load() { return raw(); },
+    save(data) {
+      const now = new Date().toISOString();
+      const p = { nickname: data.nickname.slice(0,18), level: data.level, _p: data.persistent,
+                  currentStep:'l1-0', completedSteps:[], createdAt:now, lastVisitedAt:now };
+      (data.persistent ? localStorage : sessionStorage).setItem(KEY, JSON.stringify(p));
+      return p;
+    },
+    update(changes) {
+      const p = raw(); if (!p) return;
+      const u = Object.assign({}, p, changes, { lastVisitedAt: new Date().toISOString() });
+      (p._p !== false ? localStorage : sessionStorage).setItem(KEY, JSON.stringify(u));
+    },
+    reset() { localStorage.removeItem(KEY); sessionStorage.removeItem(KEY); },
+    setStep(lid, idx) { this.update({ currentStep: `${lid}-${idx}` }); },
+    setLessonDone(lid) {
+      const p = raw(); if (!p || p.completedSteps.includes(lid)) return;
+      this.update({ completedSteps: [...p.completedSteps, lid] });
+    },
+  };
+})();
+window.PM = PM;
+
+function openProfileModal(onDone) {
+  const overlay = document.getElementById('pm-overlay');
+  overlay.hidden = false;
+  const inp = document.getElementById('pm-nick');
+  const err = document.getElementById('pm-nick-err');
+  inp.addEventListener('input', () => { inp.classList.remove('pm-inp-err'); err.hidden = true; });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('pm-submit').click(); });
+  overlay.querySelectorAll('.pm-opts').forEach(grp => {
+    grp.querySelectorAll('.pm-opt').forEach(opt => {
+      opt.querySelector('input').addEventListener('change', () => {
+        grp.querySelectorAll('.pm-opt').forEach(o => o.classList.remove('sel'));
+        opt.classList.add('sel');
+      });
+    });
+  });
+  document.getElementById('pm-submit').addEventListener('click', () => {
+    const nick = inp.value.trim();
+    if (!nick) { inp.classList.add('pm-inp-err'); inp.focus(); err.hidden = false; return; }
+    const level = overlay.querySelector('[name=pm-level]:checked')?.value || 'new';
+    const persistent = (overlay.querySelector('[name=pm-persist]:checked')?.value || 'local') === 'local';
+    const profile = PM.save({ nickname: nick, level, persistent });
+    overlay.hidden = true;
+    renderNickname(profile.nickname);
+    onDone(profile);
+  });
+  setTimeout(() => inp.focus(), 120);
+}
+
+function renderNickname(nick) {
+  const chip = document.getElementById('pm-chip');
+  if (!chip) return;
+  chip.hidden = false;
+  chip.querySelector('.pm-chip-nick').textContent = nick;
+}
+
+function showWelcomeToast(msg) {
+  const t = document.getElementById('pm-toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3800);
+}
+
+window.pmReset = function() {
+  if (!confirm('Profili sıfırlamak istiyor musun? Tüm ilerleme kaybolacak.')) return;
+  PM.reset(); location.reload();
+};
+
 /* ── Effect processor ──────────────────────────────────────────── */
 function processEffects(effects) {
   for (const eff of (effects || [])) {
@@ -2558,6 +2638,7 @@ function updateLessonDOM(ls) {
   CUR_LESSON    = lesson;
   CUR_STEP      = stepIdx;
   CUR_STEP_DATA = step;
+  PM.setStep(lesson.id, stepIdx);
   stepDone      = done;
   koPoint       = step?.initialKoIndicator || null;
   nextMoveHint  = null;
@@ -2655,6 +2736,7 @@ window.nextStep = function() {
 
   // Son adımda ders tamamlandıysa effect sistemini atla — doğrudan yönet
   if (wasLast) {
+    PM.setLessonDone(lessonEng.curLesson?.id);
     updateSidebar(); updateProgress();
     const chap     = lessonEng.currentChapter();
     const chapDone = chap?.lessons.every(l => lessonEng.doneLessons.has(l.id));
@@ -2910,10 +2992,159 @@ function loop(now) {
 document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===currentLang));
 buildSidebar(); buildCurriculumTrack(); updateProgress();
 applyLang();
-const first=ALL_LESSONS.find(l=>!doneLessons.has(l.id))||ALL_LESSONS[0];
-loadLesson(first);
 requestAnimationFrame(loop);
+
+const _initLesson = () => {
+  const first = ALL_LESSONS.find(l=>!doneLessons.has(l.id)) || ALL_LESSONS[0];
+  loadLesson(first);
+};
+const _pmProfile = PM.load();
+if (!_pmProfile) {
+  openProfileModal(() => _initLesson());
+} else {
+  renderNickname(_pmProfile.nickname);
+  _initLesson();
+  setTimeout(() => showWelcomeToast(`Tekrar hoş geldin, ${_pmProfile.nickname}! Kaldığın yerden devam edelim.`), 600);
+}
 </script>
+
+<!-- ── Profil Modal ── -->
+<style>
+  #pm-overlay {
+    position:fixed; inset:0; z-index:200;
+    background:rgba(8,8,14,.88); backdrop-filter:blur(7px) saturate(.8);
+    display:flex; align-items:center; justify-content:center;
+    padding:1rem;
+  }
+  #pm-overlay[hidden] { display:none; }
+  .pm-card {
+    background:var(--glass); border:1px solid rgba(200,168,75,.3);
+    border-radius:16px; padding:2rem 1.8rem;
+    width:100%; max-width:400px;
+    box-shadow:0 12px 48px rgba(0,0,0,.7);
+    animation: pm-in .22s ease;
+  }
+  @keyframes pm-in { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+  .pm-hex { font-size:2.2rem; color:var(--gold); text-align:center; margin-bottom:.35rem; }
+  .pm-ttl { font-family:'Noto Serif',serif; font-size:1.25rem; color:var(--gold); text-align:center; margin:0 0 .2rem; }
+  .pm-sub { font-size:.78rem; color:var(--muted); text-align:center; margin:0 0 1.4rem; }
+  .pm-field { margin-bottom:1.1rem; }
+  .pm-lbl { display:block; font-size:.68rem; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:.4rem; }
+  .pm-inp {
+    width:100%; box-sizing:border-box;
+    background:rgba(255,255,255,.05); border:1px solid var(--gborder);
+    border-radius:8px; padding:.55rem .75rem;
+    color:var(--text); font-size:.88rem; font-family:inherit;
+    outline:none; transition:border-color .15s;
+  }
+  .pm-inp:focus { border-color:var(--gold); }
+  .pm-inp.pm-inp-err { border-color:#d03050; }
+  .pm-err { display:block; font-size:.7rem; color:#d03050; margin-top:.2rem; }
+  .pm-hint { display:block; font-size:.68rem; color:var(--muted); margin-top:.28rem; }
+  .pm-opts { display:flex; flex-direction:column; gap:.35rem; }
+  .pm-opts-row { flex-direction:row; flex-wrap:wrap; }
+  .pm-opt {
+    display:flex; align-items:center; gap:.5rem; flex:1;
+    background:rgba(255,255,255,.04); border:1px solid var(--gborder);
+    border-radius:8px; padding:.48rem .7rem; cursor:pointer;
+    font-size:.8rem; color:var(--muted); transition:border-color .15s,color .15s,background .15s;
+    user-select:none;
+  }
+  .pm-opt input { display:none; }
+  .pm-opt.sel { border-color:var(--gold); color:var(--text); background:rgba(200,168,75,.1); }
+  .pm-opt-ico { font-size:.95rem; color:var(--gold); }
+  .pm-btn {
+    width:100%; padding:.68rem; margin-top:.6rem;
+    background:var(--gold); color:#09090f;
+    font-weight:700; font-size:.9rem; letter-spacing:.05em;
+    border:none; border-radius:9px; cursor:pointer;
+    transition:opacity .15s, transform .1s;
+  }
+  .pm-btn:hover { opacity:.88; }
+  .pm-btn:active { transform:scale(.98); }
+  /* Nickname chip */
+  #pm-chip { display:flex; align-items:center; gap:.3rem; margin-right:.4rem; }
+  #pm-chip[hidden] { display:none; }
+  .pm-chip-nick {
+    font-size:.72rem; color:var(--gold); font-weight:700;
+    background:rgba(200,168,75,.12); border:1px solid rgba(200,168,75,.25);
+    border-radius:5px; padding:2px 7px; letter-spacing:.03em;
+    max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .pm-chip-reset { background:none; border:none; color:var(--muted); cursor:pointer; font-size:.85rem; padding:0 2px; line-height:1; transition:color .15s; }
+  .pm-chip-reset:hover { color:var(--gold); }
+  /* Toast */
+  #pm-toast {
+    position:fixed; bottom:5.5rem; left:50%; transform:translateX(-50%);
+    background:var(--glass); border:1px solid var(--gborder);
+    border-radius:9px; padding:.6rem 1.1rem;
+    font-size:.8rem; color:var(--text); white-space:nowrap;
+    z-index:150; opacity:0; transition:opacity .35s;
+    pointer-events:none; max-width:calc(100vw - 2rem); text-align:center;
+  }
+  #pm-toast.show { opacity:1; }
+  @media (max-width:640px) {
+    .pm-card { padding:1.4rem 1.2rem; }
+    .pm-opts-row { flex-direction:column; }
+    #pm-chip { display:none; }
+  }
+</style>
+
+<div id="pm-overlay" role="dialog" aria-modal="true" aria-labelledby="pm-ttl-id" hidden>
+  <div class="pm-card">
+    <div class="pm-hex">⬡</div>
+    <h2 class="pm-ttl" id="pm-ttl-id">Antalya Go</h2>
+    <p class="pm-sub">Öğrenmeye başlamadan önce kendini tanıt</p>
+
+    <div class="pm-field">
+      <label class="pm-lbl" for="pm-nick">Rumuz</label>
+      <input id="pm-nick" class="pm-inp" maxlength="18"
+             placeholder="KaraTaş, Deniz9x9, YeniOyuncu…"
+             autocomplete="off" spellcheck="false" />
+      <span id="pm-nick-err" class="pm-err" hidden>Lütfen bir rumuz gir.</span>
+      <span class="pm-hint">Gerçek adın değil — sadece eğlenceli bir takma ad. En fazla 18 karakter.</span>
+    </div>
+
+    <div class="pm-field">
+      <label class="pm-lbl">Go deneyimin?</label>
+      <div class="pm-opts">
+        <label class="pm-opt sel">
+          <input type="radio" name="pm-level" value="new" checked>
+          <span class="pm-opt-ico">○</span>
+          <span>Go'yu yeni öğreniyorum</span>
+        </label>
+        <label class="pm-opt">
+          <input type="radio" name="pm-level" value="heard">
+          <span class="pm-opt-ico">◎</span>
+          <span>Kuralları biraz duydum</span>
+        </label>
+        <label class="pm-opt">
+          <input type="radio" name="pm-level" value="played">
+          <span class="pm-opt-ico">●</span>
+          <span>Birkaç oyun oynadım</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="pm-field">
+      <label class="pm-lbl">İlerlemeyi kaydet</label>
+      <div class="pm-opts pm-opts-row">
+        <label class="pm-opt sel">
+          <input type="radio" name="pm-persist" value="local" checked>
+          <span>Bu bilgisayarda hatırla</span>
+        </label>
+        <label class="pm-opt">
+          <input type="radio" name="pm-persist" value="session">
+          <span>Sadece bu oturumda</span>
+        </label>
+      </div>
+    </div>
+
+    <button id="pm-submit" class="pm-btn">Başla →</button>
+  </div>
+</div>
+
+<div id="pm-toast" role="status" aria-live="polite"></div>
 
 <!-- ── MASKOT (askıya alındı) ── -->
 <style>
