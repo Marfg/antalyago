@@ -171,9 +171,13 @@ export class ActionHandler {
     if (!outcome) return this._result(false, [], null);
 
     if (outcome.type === 'LESSON_COMPLETE') {
-      const effects = [
-        { type: 'SHOW_COMPLETION', ...outcome },
-      ];
+      const effects = [{
+        type: 'SHOW_COMPLETION',
+        chapComplete: outcome.chapComplete,
+        chapTitle:    outcome.chapTitle,
+        nextLesson:   outcome.nextLesson,
+        progress:     outcome.progress,
+      }];
       return this._result(true, effects, null);
     }
 
