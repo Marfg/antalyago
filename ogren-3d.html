@@ -2650,7 +2650,25 @@ function loadStep(idx) {
 }
 
 window.nextStep = function() {
-  const result = actionHndl.handle({ type: 'STEP_NEXT' });
+  const wasLast = lessonEng.isLastStep() && lessonEng.canAdvance();
+  const result  = actionHndl.handle({ type: 'STEP_NEXT' });
+
+  // Son adımda ders tamamlandıysa effect sistemini atla — doğrudan yönet
+  if (wasLast) {
+    updateSidebar(); updateProgress();
+    const chap     = lessonEng.currentChapter();
+    const chapDone = chap?.lessons.every(l => lessonEng.doneLessons.has(l.id));
+    if (chapDone) {
+      document.getElementById('complete-msg').textContent = `"${chap.title}" bölümünü tamamladın! 🎊`;
+      document.getElementById('complete-screen').classList.add('show');
+    } else {
+      const idx  = lessonEng.allLessons.findIndex(l => l.id === lessonEng.curLesson?.id);
+      const next = lessonEng.allLessons[idx + 1];
+      if (next) loadLesson(next);
+    }
+    return;
+  }
+
   processResult(result);
   updateSidebar(); updateProgress();
   if (window.mascotInitiate && CUR_STEP_DATA) {
