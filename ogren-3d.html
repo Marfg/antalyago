@@ -2915,8 +2915,10 @@ loadLesson(first);
 requestAnimationFrame(loop);
 </script>
 
-<!-- ── MASKOT ── -->
+<!-- ── MASKOT (askıya alındı) ── -->
 <style>
+  /* Maskot geçici olarak gizlendi */
+  #mascot-btn, .mascot-bubble { display: none !important; }
   .mascot-btn {
     position: fixed;
     bottom: 45vh;
@@ -3174,6 +3176,8 @@ requestAnimationFrame(loop);
 
 <script>
 (function() {
+  /* Maskot geçici olarak askıya alındı */
+  return;
   const btn    = document.getElementById('mascot-btn');
   const bubble = document.getElementById('mascot-bubble');
   let _hideTimer = null;
