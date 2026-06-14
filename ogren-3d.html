@@ -885,7 +885,7 @@
 <div id="lesson-panel">
   <div class="panel-handle" onclick="togglePanel()"></div>
   <div id="lp-header">
-    <span id="lp-header-title">Asistan ile Konuş</span>
+    <span id="lp-header-title">Ders Notları</span>
     <button id="lp-hide-btn" onclick="toggleLessonPanel()">✕ Gizle</button>
   </div>
   <div class="ch-tag"  id="chapter-tag"></div>
@@ -2571,15 +2571,15 @@ function updateLessonDOM(ls) {
   document.getElementById('chapter-tag').textContent   = (currentLang!=='tr'&&TITLE_T[chap?.id]?.[currentLang])||chap?.title||'';
   document.getElementById('lesson-title').textContent  = (currentLang!=='tr'&&TITLE_T[lesson.id]?.[currentLang])||lesson.title;
   updateTopbarBreadcrumb(chapter, lesson, stepIdx, totalSteps);
-  const _hasAssistant = !!step?.assistant;
-  if (_hasAssistant) {
-    renderAssistantDialog(step.assistant, step.ctxButtons || []);
-  } else {
-    cancelAssistantDialog();
-    document.getElementById('lesson-body').innerHTML = stepT(lesson.id, stepIdx, 'text') || step?.text || '';
-    const ctxEl = document.getElementById('ctx-buttons');
-    if (ctxEl) { ctxEl.style.display = 'none'; ctxEl.innerHTML = ''; }
-  }
+  // Asistan diyaloğu askıya alındı — her zaman düz metin göster
+  cancelAssistantDialog();
+  const _assistantFallback = step?.assistant
+    ? step.assistant.map(m => `<p>${m.msg}</p>`).join('')
+    : '';
+  document.getElementById('lesson-body').innerHTML =
+    stepT(lesson.id, stepIdx, 'text') || step?.text || _assistantFallback;
+  const ctxEl = document.getElementById('ctx-buttons');
+  if (ctxEl) { ctxEl.style.display = 'none'; ctxEl.innerHTML = ''; }
   const counterTxt = `${stepIdx+1} / ${totalSteps}`;
   document.getElementById('step-counter').textContent  = `${t('step')} ${counterTxt}`;
   document.getElementById('cc-counter').textContent    = counterTxt;
