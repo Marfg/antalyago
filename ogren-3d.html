@@ -45,10 +45,38 @@
       border-radius: 6px; transition: all .18s;
     }
     .back-btn:hover { background: var(--gold); color: var(--dark); }
-    .page-title { font-family: 'Noto Serif', serif; font-size: 1rem; font-weight: 700; letter-spacing: .06em; }
+    .page-title { display: none; }
+
+    /* ── BREADCRUMB (masaüstü) ── */
+    #tb-breadcrumb {
+      display: flex; align-items: center; gap: .4rem;
+      flex: 1; min-width: 0; overflow: hidden;
+    }
+    #tb-chap-badge {
+      flex-shrink: 0;
+      background: rgba(200,168,75,.14); border: 1px solid rgba(200,168,75,.4);
+      color: var(--gold); border-radius: 5px;
+      font-size: .63rem; font-weight: 800; letter-spacing: .1em;
+      padding: .18rem .45rem; text-transform: uppercase;
+    }
+    #tb-chap-name {
+      font-size: .68rem; color: var(--muted); font-weight: 500;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .tb-bread-sep { color: var(--gborder); font-size: .85rem; flex-shrink: 0; line-height: 1; }
+    #tb-lesson-crumb {
+      font-size: .82rem; color: var(--text); font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    /* Adım noktaları (masaüstü topbar) */
+    #tb-stepdots {
+      display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+    }
+    #tb-stepdots .sdot { width: 7px; height: 7px; cursor: default; }
+
     .prog-wrap { display: flex; align-items: center; gap: .6rem; }
     .prog-text { font-size: 11px; color: var(--muted); font-weight: 600; }
-    .prog-track { width: 120px; height: 5px; background: rgba(200,168,75,.12); border: 1px solid var(--gborder); border-radius: 3px; overflow: hidden; }
+    .prog-track { width: 80px; height: 5px; background: rgba(200,168,75,.12); border: 1px solid var(--gborder); border-radius: 3px; overflow: hidden; }
     .prog-fill  { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2)); border-radius: 3px; transition: width .5s; }
     .lang-switcher { display:flex; gap:.3rem; align-items:center; }
     .lang-btn { padding:3px 8px; font-size:.7rem; font-weight:700; letter-spacing:.04em; border:1px solid var(--gborder); border-radius:4px; background:transparent; color:var(--muted); cursor:pointer; transition:all .15s; }
@@ -104,13 +132,22 @@
     /* ── SIDEBAR TOGGLE ── */
     #sb-toggle {
       position: fixed; top: calc(56px + var(--sat)); left: 218px; z-index: 25;
-      width: 18px; height: 36px; background: var(--glass);
+      width: 18px; background: var(--glass);
       border: 1px solid var(--gborder); border-left: none;
       border-radius: 0 6px 6px 0; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
       font-size: 10px; color: var(--gold); transition: left .3s;
+      padding: 8px 0; min-height: 36px;
     }
     #sb-toggle.collapsed { left: 0; }
+    .sbt-arrow { font-size: 10px; line-height: 1; }
+    .sbt-label {
+      display: none;
+      writing-mode: vertical-rl; transform: rotate(180deg);
+      font-size: .55rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--gold); white-space: nowrap; user-select: none;
+    }
+    #sb-toggle.collapsed .sbt-label { display: block; }
 
     /* ── LESSON PANEL ── */
     #lesson-panel {
@@ -119,9 +156,39 @@
       border-left: 1px solid var(--gborder);
       overflow-y: auto; padding: 1.4rem 1.3rem;
       display: flex; flex-direction: column; gap: .85rem;
+      transition: transform .3s ease;
     }
+    #lesson-panel.panel-hidden { transform: translateX(330px); pointer-events: none; }
     #lesson-panel::-webkit-scrollbar { width: 3px; }
     #lesson-panel::-webkit-scrollbar-thumb { background: var(--gborder); border-radius: 3px; }
+    /* Panel header */
+    #lp-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-bottom: .6rem; border-bottom: 1px solid var(--gborder);
+      margin-bottom: -.1rem;
+    }
+    #lp-header-title { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+    #lp-hide-btn {
+      padding: .2rem .55rem; border: 1px solid var(--gborder); border-radius: 4px;
+      background: transparent; color: var(--muted); font-size: .7rem; cursor: pointer;
+      font-family: 'Noto Sans', sans-serif; transition: all .15s;
+    }
+    #lp-hide-btn:hover { border-color: var(--gold); color: var(--gold); }
+    /* Right-edge tab shown when panel is hidden */
+    #ap-tab {
+      position: fixed; top: calc(46px + var(--sat)); right: 0; bottom: 60px; width: 20px; z-index: 19;
+      background: var(--glass); backdrop-filter: blur(16px);
+      border-left: 1px solid var(--gborder);
+      display: none; align-items: center; justify-content: center;
+      cursor: pointer; transition: background .15s;
+    }
+    #ap-tab:hover { background: rgba(200,168,75,.08); }
+    #ap-tab.show { display: flex; }
+    #ap-tab-label {
+      writing-mode: vertical-rl; transform: rotate(180deg);
+      font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--gold); white-space: nowrap; user-select: none;
+    }
     .ch-tag { font-size: .62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
     #lesson-title { font-family: 'Noto Serif', serif; font-size: 1.22rem; font-weight: 700; line-height: 1.25; }
     .step-dots { display: flex; gap: .35rem; align-items: center; }
@@ -144,6 +211,23 @@
       border: 1px solid var(--gborder); border-radius: 2px;
       padding: .02rem .3rem; font-family: monospace; font-size: .78rem; color: var(--gold); font-weight: 600;
     }
+
+    /* ── GÖREV KARTI ── */
+    #task-card {
+      position: fixed; bottom: 72px; left: 20px; z-index: 15;
+      max-width: calc(100vw - 400px); min-width: 160px;
+      background: var(--glass); backdrop-filter: blur(14px);
+      border: 1px solid var(--gborder); border-radius: 8px;
+      padding: .45rem .75rem;
+      font-size: .76rem; line-height: 1.5; color: var(--muted);
+      transition: left .3s ease, opacity .2s ease, transform .2s ease;
+      pointer-events: none; opacity: 0; transform: translateY(4px);
+      display: flex; align-items: flex-start; gap: .4rem;
+    }
+    #task-card.show { opacity: 1; transform: translateY(0); }
+    #task-card.sb-open { left: 238px; }
+    .tc-icon { font-size: .85rem; flex-shrink: 0; margin-top: .05rem; }
+    #task-card-text { flex: 1; }
 
     /* ── MOBİL FLOATING FEEDBACK BADGE ── */
     #mob-feedback {
@@ -217,7 +301,9 @@
       border-top: 1px solid var(--gborder); border-left: 1px solid var(--gborder);
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 1rem;
+      transition: transform .3s ease;
     }
+    #nav-bar.panel-hidden { transform: translateX(330px); pointer-events: none; }
     .nav-btn {
       display: flex; align-items: center; gap: .35rem;
       padding: .4rem .95rem; border: 1px solid var(--gborder); border-radius: 5px;
@@ -376,6 +462,10 @@
       #sidebar, #sb-toggle, #hint { display: none; }
       #lesson-panel, #nav-bar { width: 100%; left: 0; border-left: none; }
       #rotate-toggle { left: 10px; }
+      /* panel-hidden has no effect on mobile */
+      #lesson-panel.panel-hidden, #nav-bar.panel-hidden { transform: none; pointer-events: auto; }
+      #ap-tab { display: none !important; }
+      #task-card { display: none !important; }
     }
 
     @media (max-width: 640px) {
@@ -383,7 +473,9 @@
       .mob-menu-btn { display: flex; align-items: center; }
       .prog-wrap { display: none; }
       .lang-switcher { display: none; }
-      .page-title { font-size: .85rem; }
+      .page-title { display: block; font-size: .85rem; font-family: 'Noto Serif', serif; font-weight: 700; }
+      #tb-breadcrumb { display: none; }
+      #tb-stepdots { display: none; }
       #tb-dots { display: flex; }
 
       /* Sidebar overlay */
@@ -650,6 +742,12 @@
   <button class="cc-btn" id="cnav-next" onclick="nextStep()">›</button>
 </div>
 
+<!-- Görev kartı -->
+<div id="task-card">
+  <span class="tc-icon">🎯</span>
+  <span id="task-card-text"></span>
+</div>
+
 <!-- Canvas (3D board) -->
 <canvas id="c"></canvas>
 
@@ -673,6 +771,15 @@
     <a class="back-btn" href="index.html">← Ana</a>
     <span class="page-title">Go Öğren 3D</span>
   </div>
+  <!-- Müfredat konumu (masaüstü) -->
+  <div id="tb-breadcrumb">
+    <span id="tb-chap-badge">B1</span>
+    <span id="tb-chap-name">Temel Kurallar</span>
+    <span class="tb-bread-sep">›</span>
+    <span id="tb-lesson-crumb">Ders Seç</span>
+  </div>
+  <!-- Adım noktaları (masaüstü) -->
+  <div id="tb-stepdots"></div>
   <div id="tb-dots"></div>
   <div class="prog-wrap">
     <span class="prog-text" id="prog-text">0 / 0</span>
@@ -689,7 +796,10 @@
 <div id="mob-overlay" onclick="toggleMobileMenu()"></div>
 
 <!-- Sidebar toggle -->
-<button id="sb-toggle" class="collapsed" onclick="toggleSidebar()">▶</button>
+<button id="sb-toggle" class="collapsed" onclick="toggleSidebar()">
+  <span class="sbt-arrow">▶</span>
+  <span class="sbt-label">Müfredat</span>
+</button>
 
 <!-- Sidebar -->
 <div id="sidebar" class="collapsed">
@@ -709,9 +819,18 @@
 <!-- Mobil tema değiştirme FAB -->
 <button id="theme-fab" onclick="toggleBoardTheme()" title="Aydınlık tema">☀</button>
 
+<!-- Right-edge tab (shown when panel is hidden) -->
+<div id="ap-tab" onclick="toggleLessonPanel()">
+  <span id="ap-tab-label">Asistan</span>
+</div>
+
 <!-- Lesson panel -->
 <div id="lesson-panel">
   <div class="panel-handle" onclick="togglePanel()"></div>
+  <div id="lp-header">
+    <span id="lp-header-title">Asistan ile Konuş</span>
+    <button id="lp-hide-btn" onclick="toggleLessonPanel()">✕ Gizle</button>
+  </div>
   <div class="ch-tag"  id="chapter-tag"></div>
   <div id="lesson-title">Ders Seç</div>
   <div class="step-dots" id="step-dots"></div>
@@ -1877,14 +1996,26 @@ window.toggleSidebar = function() {
   sb.classList.toggle('collapsed');
   tgl.classList.toggle('collapsed');
   const isOpen = !sb.classList.contains('collapsed');
-  tgl.textContent = isOpen ? '◀' : '▶';
+  const arrow = tgl.querySelector('.sbt-arrow');
+  if (arrow) arrow.textContent = isOpen ? '◀' : '▶';
   // Shift floating elements with sidebar
   const nav = document.getElementById('canvas-nav');
   const rt  = document.getElementById('rotate-toggle');
   const ht  = document.getElementById('hint');
+  const tc  = document.getElementById('task-card');
   if (nav) nav.style.left = isOpen ? '238px' : '20px';
   if (rt)  rt.style.left  = isOpen ? '228px' : '10px';
   if (ht)  ht.style.left  = isOpen ? '228px' : '10px';
+  if (tc)  tc.classList.toggle('sb-open', isOpen);
+};
+
+let _panelHidden = false;
+window.toggleLessonPanel = function() {
+  _panelHidden = !_panelHidden;
+  document.getElementById('lesson-panel').classList.toggle('panel-hidden', _panelHidden);
+  document.getElementById('nav-bar').classList.toggle('panel-hidden', _panelHidden);
+  const tab = document.getElementById('ap-tab');
+  if (tab) tab.classList.toggle('show', _panelHidden);
 };
 
 window.toggleMobileMenu = function() {
@@ -2374,6 +2505,7 @@ function updateLessonDOM(ls) {
   const chap = chapter;
   document.getElementById('chapter-tag').textContent   = (currentLang!=='tr'&&TITLE_T[chap?.id]?.[currentLang])||chap?.title||'';
   document.getElementById('lesson-title').textContent  = (currentLang!=='tr'&&TITLE_T[lesson.id]?.[currentLang])||lesson.title;
+  updateTopbarBreadcrumb(chapter, lesson, stepIdx, totalSteps);
   const _hasAssistant = !!step?.assistant;
   if (_hasAssistant) {
     renderAssistantDialog(step.assistant, step.ctxButtons || []);
@@ -2416,6 +2548,20 @@ function updateLessonDOM(ls) {
 
   setFb(stepT(lesson.id, stepIdx, 'fb') || step?.fb?.t || t('defaultFb'), step?.fb?.c || 'info');
   document.getElementById('feedback').style.display = _hasAssistant ? 'none' : '';
+
+  // Task card: show step objective hint below the board
+  const tc = document.getElementById('task-card');
+  const tcText = document.getElementById('task-card-text');
+  if (tc && tcText && !isMobile) {
+    const hint = stepT(lesson.id, stepIdx, 'fb') || step?.fb?.t || '';
+    if (hint && !step?.auto) {
+      tcText.textContent = hint;
+      tc.classList.add('show');
+    } else {
+      tc.classList.remove('show');
+    }
+  }
+
   updateNextBtn(step, done, isLast, canAdvance);
 }
 
@@ -2540,6 +2686,30 @@ function updateSidebar() {
     el.classList.toggle('done',   doneLessons.has(id));
   });
 }
+function updateTopbarBreadcrumb(chapter, lesson, stepIdx, totalSteps) {
+  const chapNum = chapter?.id?.replace('c','') || '';
+  const badge   = chapNum ? `B${chapNum}` : '';
+  const chapTitle = (currentLang!=='tr'&&TITLE_T[chapter?.id]?.[currentLang]) || chapter?.title || '';
+  const lessonTitle = (currentLang!=='tr'&&TITLE_T[lesson?.id]?.[currentLang]) || lesson?.title || '';
+
+  const badgeEl    = document.getElementById('tb-chap-badge');
+  const chapNameEl = document.getElementById('tb-chap-name');
+  const crumbEl    = document.getElementById('tb-lesson-crumb');
+  const dotsEl     = document.getElementById('tb-stepdots');
+
+  if (badgeEl)    badgeEl.textContent    = badge;
+  if (chapNameEl) chapNameEl.textContent = chapTitle;
+  if (crumbEl)    crumbEl.textContent    = lessonTitle;
+
+  if (dotsEl && totalSteps) {
+    dotsEl.innerHTML = '';
+    for (let i = 0; i < totalSteps; i++) {
+      const d = document.createElement('div');
+      d.className = 'sdot' + (i === stepIdx ? ' active' : i < stepIdx ? ' done' : '');
+      dotsEl.appendChild(d);
+    }
+  }
+}
 function updateProgress() {
   const done=doneLessons.size, pct=TOTAL_LESSONS>0?Math.round(done/TOTAL_LESSONS*100):0;
   document.getElementById('prog-text').textContent=`${done} / ${TOTAL_LESSONS}`;
@@ -2637,8 +2807,8 @@ requestAnimationFrame(loop);
 <style>
   .mascot-btn {
     position: fixed;
-    bottom: max(24px, env(safe-area-inset-bottom, 24px));
-    right:  max(20px, env(safe-area-inset-right,  20px));
+    bottom: 45vh;
+    left: 230px;
     width: 64px; height: 64px;
     cursor: pointer; z-index: 9000;
     background: none; border: none; padding: 0;
@@ -2928,7 +3098,7 @@ requestAnimationFrame(loop);
     const cW     = vw - panelW;
     // Tutunan noktalar (canvas içi)
     const docks  = {
-      home:        { right:  20,              bottom: 24              },
+      home:        { left: isMob ? 10 : 230,   bottom: Math.round(vh * 0.45) },
       board_bl:    { left:   Math.round(cW*.07),  bottom: Math.round(vh*.10) },
       board_bc:    { left:   Math.round(cW*.46),  bottom: Math.round(vh*.06) },
       board_br:    { left:   Math.round(cW*.82),  bottom: Math.round(vh*.10) },
