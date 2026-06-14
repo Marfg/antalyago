@@ -260,20 +260,33 @@
 
     /* ── GÖREV KARTI ── */
     #task-card {
-      position: fixed; bottom: 72px; left: 20px; z-index: 15;
-      max-width: calc(100vw - 400px); min-width: 160px;
-      background: var(--glass); backdrop-filter: blur(14px);
-      border: 1px solid var(--gborder); border-radius: 8px;
-      padding: .45rem .75rem;
-      font-size: .76rem; line-height: 1.5; color: var(--muted);
-      transition: left .3s ease, opacity .2s ease, transform .2s ease;
-      pointer-events: none; opacity: 0; transform: translateY(4px);
-      display: flex; align-items: flex-start; gap: .4rem;
+      position: fixed;
+      bottom: 115px;   /* rotate-toggle (bottom:68px, ~34px yüksek) üzerinde, örtüşme yok */
+      left: 20px; z-index: 15;
+      max-width: calc(100vw - 390px); min-width: 200px;
+      background: linear-gradient(135deg, rgba(12,10,26,.97), rgba(8,8,18,.96));
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(200,168,75,.38);
+      border-left: 3px solid var(--gold);
+      border-radius: 10px;
+      padding: .6rem .95rem .6rem .85rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,.55), inset 0 0 0 1px rgba(200,168,75,.04);
+      font-size: .82rem; font-weight: 500; line-height: 1.5; color: var(--text);
+      letter-spacing: .01em;
+      transition: left .3s ease, opacity .22s ease, transform .22s ease;
+      pointer-events: none; opacity: 0; transform: translateY(6px);
+      display: flex; align-items: flex-start; gap: .55rem;
     }
     #task-card.show { opacity: 1; transform: translateY(0); }
     #task-card.sb-open { left: 238px; }
-    .tc-icon { font-size: .85rem; flex-shrink: 0; margin-top: .05rem; }
-    #task-card-text { flex: 1; }
+    .tc-icon { color: var(--gold); font-size: .9rem; flex-shrink: 0; line-height: 1.7; }
+    .tc-body { display: flex; flex-direction: column; flex: 1; }
+    .tc-label {
+      display: block; font-size: .58rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .1em;
+      color: var(--gold); opacity: .8; margin-bottom: .1rem;
+    }
+    #task-card-text { display: block; }
 
     /* ── MOBİL FLOATING FEEDBACK BADGE ── */
     #mob-feedback {
@@ -794,8 +807,11 @@
 
 <!-- Görev kartı -->
 <div id="task-card">
-  <span class="tc-icon">🎯</span>
-  <span id="task-card-text"></span>
+  <span class="tc-icon">▶</span>
+  <div class="tc-body">
+    <span class="tc-label">Görev</span>
+    <span id="task-card-text"></span>
+  </div>
 </div>
 
 <!-- Canvas (3D board) -->
