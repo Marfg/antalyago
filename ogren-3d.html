@@ -172,6 +172,12 @@
     .li-check { display: none; font-size: .62rem; }
     .lesson-item.done .li-check { display: inline; }
     .li-num { font-size: .6rem; color: var(--muted); min-width: 22px; }
+    .lesson-item.assessment { border-left-color: rgba(200,168,75,.35); font-style: italic; }
+    .lesson-item.assessment.done { color: var(--gold); opacity: .85; }
+    .li-star { font-size: .7rem; color: var(--gold); min-width: 22px; display: inline-block; text-align: center; }
+    .ctg-seg.assessment { border-style: dashed; }
+    .ctg-seg.assessment.done { background: rgba(200,168,75,.28); border-style: solid; }
+    .ctg-seg.assessment.active { background: rgba(200,168,75,.22); border-color: var(--gold); border-style: solid; }
     #sidebar::-webkit-scrollbar { width: 3px; }
     #sidebar::-webkit-scrollbar-thumb { background: var(--gborder); border-radius: 3px; }
 
@@ -451,6 +457,16 @@
     .comp-icon  { font-size: 3.5rem; }
     .comp-title { font-family: 'Noto Serif', serif; font-size: 1.8rem; font-weight: 700; color: var(--gold); }
     .comp-sub   { font-size: .9rem; color: var(--muted); max-width: 340px; line-height: 1.7; }
+    #deg-screen {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(8,8,14,.96); backdrop-filter: blur(8px);
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: .9rem; text-align: center; padding: 2rem;
+    }
+    #deg-screen.show { display: flex; }
+    .deg-score { font-family: 'Noto Serif', serif; font-size: 3.5rem; font-weight: 700; color: var(--gold); line-height: 1; }
+    .deg-score-label { font-size: .72rem; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+    .deg-actions { display: flex; gap: .7rem; flex-wrap: wrap; justify-content: center; margin-top: .3rem; }
 
     /* ── HINT ── */
     #hint {
@@ -796,6 +812,16 @@
   <div class="comp-title">Tebrikler!</div>
   <div class="comp-sub" id="complete-msg">Bölümü tamamladın!</div>
   <button class="nav-btn primary" onclick="closeComplete()" style="margin-top:.5rem">Devam Et →</button>
+</div>
+
+<!-- Değerlendirme sonuç ekranı -->
+<div id="deg-screen">
+  <div class="comp-icon" id="deg-icon">📋</div>
+  <div class="comp-title">Değerlendirme Sonucu</div>
+  <div class="deg-score" id="deg-score">—</div>
+  <div class="deg-score-label">doğru cevap</div>
+  <div class="comp-sub" id="deg-msg"></div>
+  <div class="deg-actions" id="deg-actions"></div>
 </div>
 
 <!-- Canvas navigation pill -->
@@ -2497,6 +2523,8 @@ function processEffects(effects) {
         break;
       case 'SHOW_COMPLETION': {
         updateSidebar(); updateProgress();
+        // Değerlendirme dersi miniQ son adımıyla biterse buradan yakala
+        if (lessonEng.isAssessment(lessonEng.curLesson?.id)) { showDegResult(); break; }
         // Engine state'inden doğrudan oku (effect payload'a güvenme)
         const _completedChap = lessonEng.currentChapter();
         const _chapDone = _completedChap &&
@@ -2583,6 +2611,10 @@ function handleMiniAnswer(idx, q) {
   fbEl.textContent = chosen.feedback || '';
   fbEl.className = 'mini-q-feedback ' + (chosen.correct ? 'correct' : 'wrong');
   fbEl.style.display = '';
+  // Değerlendirme dersinde skoru kaydet
+  if (lessonEng.isAssessment(lessonEng.curLesson?.id)) {
+    lessonEng.recordDegAnswer(chosen.correct);
+  }
   // btn-next tekrar aç
   document.getElementById('btn-next').disabled = false;
 }
@@ -2748,12 +2780,23 @@ function loadStep(idx) {
 
 window.nextStep = function() {
   const wasLast = lessonEng.isLastStep() && lessonEng.canAdvance();
+  const isDeg   = lessonEng.isAssessment(lessonEng.curLesson?.id);
+
+  // Değerlendirme dersinde board-cevap adımını geçmeden önce skoru kaydet
+  if (isDeg) {
+    const step = lessonEng.currentStep();
+    if (step && !step.auto && !step.miniQuestion && (step.answer || step.answers)) {
+      lessonEng.recordDegAnswer(lessonEng.mistakeCount === 0 && lessonEng.stepDone);
+    }
+  }
+
   const result  = actionHndl.handle({ type: 'STEP_NEXT' });
 
   // Son adımda ders tamamlandıysa effect sistemini atla — doğrudan yönet
   if (wasLast) {
     PM.setLessonDone(lessonEng.curLesson?.id);
     updateSidebar(); updateProgress();
+    if (isDeg) { showDegResult(); return; }
     const chap     = lessonEng.currentChapter();
     const chapDone = chap?.lessons.every(l => lessonEng.doneLessons.has(l.id));
     if (chapDone) {
@@ -2822,6 +2865,69 @@ window.closeComplete = function() {
   if (next) loadLesson(next);
 };
 
+let _lastDegLesson = null;
+function showDegResult() {
+  _lastDegLesson = lessonEng.curLesson;
+  const r = lessonEng.getDegResult();
+  const icons = { pass: '🏆', partial: '⭐', retry: '📖' };
+  const lessonMsgs = {
+    l1_deg: {
+      pass:    'Harika başlangıç! Artık temel kuralları tahtada uygulayabiliyorsun. Grupların nasıl yaşadığını öğrenmeye geçelim.',
+      partial: 'Genel fikri aldın — nefes ve taş alma konularında biraz daha pratik iyi olur. Devam edebilirsin.',
+      retry:   'Özgürlük ve taş alma bu bölümün temeli. Birlikte birkaç kısa örnek daha çözelim.',
+    },
+    l2_deg: {
+      pass:    'Mükemmel. Artık bir oyunun nerede bittiğini ve kimin kazandığını görebiliyorsun. Taktiklere geçelim!',
+      partial: 'Genel fikir oturdu. Sahte göz ve sayım konularını bir kez daha bakarsan yeterli olur.',
+      retry:   'İki göz ve ölü grup bu bölümün kalbi. Birlikte bir-iki örnek daha bakalım.',
+    },
+    l3_deg: {
+      pass:    'Tebrikler! Artık sadece kural bilen biri değilsin — tahtadaki ilişkileri görüyorsun. Go yolculuğun gerçekten başladı.',
+      partial: 'Güzel ilerleme. Kesme ve karşılıklı atari konularını bir daha çalışırsan taktik gözün keskinleşir.',
+      retry:   'Bağlantı ve atari bu bölümün temeli. Birlikte bir-iki pozisyon daha çözelim, geri kalanı çok daha kolay gelir.',
+    },
+  };
+  const msgs = lessonMsgs[_lastDegLesson?.id] || {
+    pass: 'Harika! Bir sonraki bölüme geçebilirsin.', partial: 'İyi iş! Devam edebilirsin.', retry: 'Biraz daha pratik yapalım.',
+  };
+  document.getElementById('deg-icon').textContent  = icons[r.level];
+  document.getElementById('deg-score').textContent = `${r.correct} / ${r.total}`;
+  document.getElementById('deg-msg').textContent   = msgs[r.level];
+  const actEl = document.getElementById('deg-actions');
+  actEl.innerHTML = '';
+  if (r.level === 'retry') {
+    const backBtn = document.createElement('button');
+    backBtn.className = 'nav-btn'; backBtn.textContent = '← Konulara Dön';
+    backBtn.onclick = () => closeDeg('back');
+    actEl.appendChild(backBtn);
+  }
+  const retryBtn = document.createElement('button');
+  retryBtn.className = 'nav-btn'; retryBtn.textContent = 'Tekrar Dene';
+  retryBtn.onclick = () => closeDeg('retry');
+  actEl.appendChild(retryBtn);
+  const contBtn = document.createElement('button');
+  contBtn.className = 'nav-btn primary'; contBtn.textContent = 'Devam Et →';
+  contBtn.onclick = () => closeDeg('continue');
+  actEl.appendChild(contBtn);
+  document.getElementById('deg-screen').classList.add('show');
+}
+
+window.closeDeg = function(action) {
+  document.getElementById('deg-screen').classList.remove('show');
+  const deg = _lastDegLesson;
+  if (action === 'retry') {
+    if (deg) loadLesson(deg); return;
+  }
+  if (action === 'back') {
+    const chap = lessonEng.curriculum.find(c => c.lessons.some(l => l.id === deg?.id));
+    const first = chap?.lessons.find(l => !lessonEng.isAssessment(l.id));
+    if (first) { loadLesson(first); return; }
+  }
+  const idx  = lessonEng.allLessons.findIndex(l => l.id === deg?.id);
+  const next = lessonEng.allLessons[idx + 1];
+  if (next) loadLesson(next);
+};
+
 function updateNextBtn(step, done, isLast, canAdvance) {
   done       = done       ?? stepDone;
   isLast     = isLast     ?? (CUR_STEP === CUR_LESSON?.steps.length - 1);
@@ -2849,11 +2955,13 @@ function buildSidebar() {
     chapEl.appendChild(title);
     const list=document.createElement('div'); list.className='lesson-list open';
     chap.lessons.forEach((lesson,li)=>{
+      const isDegL = lesson.id.endsWith('_deg');
       const item=document.createElement('div');
-      item.className='lesson-item'+(CUR_LESSON?.id===lesson.id?' active':'')+(doneLessons.has(lesson.id)?' done':'');
+      item.className='lesson-item'+(isDegL?' assessment':'')+(CUR_LESSON?.id===lesson.id?' active':'')+(doneLessons.has(lesson.id)?' done':'');
       item.dataset.id=lesson.id;
       const lessonTitleTxt=(currentLang!=='tr'&&TITLE_T[lesson.id]?.[currentLang])||lesson.title;
-      item.innerHTML=`<span class="li-check">✓</span><span class="li-num">${ci+1}.${li+1}</span>${lessonTitleTxt}`;
+      const numHtml=isDegL?`<span class="li-star">★</span>`:`<span class="li-num">${ci+1}.${li+1}</span>`;
+      item.innerHTML=`<span class="li-check">✓</span>${numHtml}${lessonTitleTxt}`;
       item.onclick=()=>loadLesson(lesson);
       list.appendChild(item);
     });
@@ -2882,7 +2990,7 @@ function buildCurriculumTrack() {
     group.appendChild(label);
     chap.lessons.forEach(lesson => {
       const seg = document.createElement('div');
-      seg.className = 'ctg-seg';
+      seg.className = 'ctg-seg' + (lesson.id.endsWith('_deg') ? ' assessment' : '');
       seg.dataset.lessonId = lesson.id;
       seg.dataset.title = lesson.title;
       seg.title = lesson.title;

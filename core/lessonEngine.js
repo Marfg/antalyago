@@ -58,18 +58,32 @@ export class LessonEngine {
     this.stepDone     = false;
     this.mistakeCount = 0;
 
+    // Değerlendirme oturum skoru
+    this._degCorrect = 0;
+    this._degTotal   = 0;
+
     // localStorage'dan tamamlanan dersler
     this._loadDone();
   }
 
   // ── Ders gezinme ─────────────────────────────────────────────────
 
+  /** Bir ders id'si "_deg" ile bitiyorsa değerlendirme dersdir. */
+  isAssessment(lessonId) {
+    return (lessonId || '').endsWith('_deg');
+  }
+
   loadLesson(lessonId) {
     const lesson = this.allLessons.find(l => l.id === lessonId);
     if (!lesson) return null;
     this.curLesson    = lesson;
     this.mistakeCount = 0;
-    return this.loadStep(0);  // stepDone'u ilk adıma göre doğru ayarlar
+    // Değerlendirme dersine girince skoru sıfırla
+    if (this.isAssessment(lessonId)) {
+      this._degCorrect = 0;
+      this._degTotal   = 0;
+    }
+    return this.loadStep(0);
   }
 
   loadStep(idx) {
@@ -120,6 +134,28 @@ export class LessonEngine {
     }
 
     return { correct, stepDone: this.stepDone, mistakeCount: this.mistakeCount };
+  }
+
+  /**
+   * Değerlendirme adımında cevabı kaydet (miniQuestion için).
+   * @param {boolean} correct
+   */
+  recordDegAnswer(correct) {
+    if (!this.isAssessment(this.curLesson?.id)) return;
+    this._degTotal++;
+    if (correct) this._degCorrect++;
+  }
+
+  /**
+   * Değerlendirme sonucunu döndür.
+   * @returns {{ correct: number, total: number, pct: number, level: 'pass'|'partial'|'retry' }}
+   */
+  getDegResult() {
+    const correct = this._degCorrect;
+    const total   = this._degTotal || this.curLesson?.steps.length || 1;
+    const pct     = Math.round(correct / total * 100);
+    const level   = pct >= 80 ? 'pass' : pct >= 60 ? 'partial' : 'retry';
+    return { correct, total, pct, level };
   }
 
   // ── Yardımcı erişiciler ──────────────────────────────────────────
