@@ -209,11 +209,25 @@ export const CURRICULUM = [
         {x:0,y:18,color:'red'},{x:2,y:18,color:'red'},{x:8,y:18,color:'red'},{x:10,y:18,color:'red'},{x:18,y:18,color:'red'},
       ], auto:true, camera:CAM.board19, fb:{t:'Yeşil çapraz = canlı grup gözü · Kırmızı çapraz = iki gözsüz, ölümlü nokta',c:'info'} },
       { text:`<p><strong>Sahte göz</strong> — rakip tarafından doldurulabilecek nokta gerçek göz değildir.</p><div class="highlight-box">İki gerçek göz = ölümsüz grup. Go'nun en temel kavramlarından biridir.</div>`, board:[{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:2,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:4}], groupIndicators:[{x:3,y:3,color:'red'}], auto:true, size:9, fb:{t:'Kırmızı halka = tek göz, ölümlü grup — yakalanabilir!',c:'info'} },
+
+      // ── Alıştırma ──
+      { text:`<p>★ <strong>Alıştırma:</strong> Bu siyah grup canlı mı, ölü mü?</p>`, board:[{color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:1,y:2},{color:'B',x:3,y:2},{color:'B',x:1,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:3}], groupIndicators:[{x:2,y:2,color:'green'}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Bu grup canlı mı?',options:[{text:'Canlı — iki gözü var',correct:false,feedback:'Hayır — tek bir boş iç nokta var. Tek göz = ölümlü.'},{text:'Ölümlü — tek göz',correct:true,feedback:'Doğru! Tek göz yetmez. Beyaz ortaya oynayıp grubu öldürebilir.'}]}, fb:{t:'Kaç göz var? Say.',c:'info'} },
+
+      { text:`<p>★★ <strong>Alıştırma:</strong> İkinci gözü tamamla — grubu kurtar.</p>`, board:[{color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:4,y:1},{color:'B',x:1,y:2},{color:'B',x:4,y:2},{color:'B',x:1,y:3},{color:'B',x:4,y:3},{color:'B',x:1,y:4},{color:'B',x:2,y:4},{color:'B',x:4,y:4},{color:'W',x:3,y:3}], answer:{x:3,y:4}, turn:'black', size:9, camera:CAM.center, fb:{t:'İkinci göz için nereye oyna?',c:'info'}, fb_ok:'İki göz tamamlandı — grup artık ölümsüz!', fb_err:'Grubun içini ikiye böl — iki ayrı boş alan oluştur.' },
+
+      { text:`<p>★★★ <strong>Alıştırma:</strong> Beyaz bu grubu öldürebilir mi? Kritik noktaya oyna.</p>`, board:[{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:4,y:1},{color:'B',x:2,y:2},{color:'B',x:4,y:2},{color:'B',x:2,y:3},{color:'B',x:3,y:3},{color:'B',x:4,y:3}], answer:{x:3,y:2}, turn:'white', size:9, camera:CAM.center, fb:{t:'Sahte gözün kritik noktasını bul!',c:'info'}, fb_ok:'Evet! Tek göz yıkıldı — siyah grup ölümlü.', fb_err:'Grubun tek boş iç noktasına oyna.' },
     ]},
 
     { id:'l8', title:'Kesme ve Bağlama', steps:[
       { text:`<p><span class="term">Kesme</span> — rakibin iki taşı arasına girerek bağlantısını koparmak.</p><p>Siyahın iki taşı arasına gir — <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}], answer:{x:4,y:3}, turn:'white', size:9, fb:{t:'Siyahın iki taşı arasına gir!',c:'info'}, fb_ok:'Kestik! Siyah artık iki ayrı grup.', fb_err:'Siyahın iki taşını birbirine bağlayan boşluğu bul.' },
       { text:`<p><span class="term">Bağlama</span> — kendi taşlarının arasını kapatarak grubu güçlendirmek.</p><p>Siyah taşları birleştir — <strong>D4 noktasına tıkla.</strong></p>`, board:[{color:'B',x:3,y:3},{color:'B',x:3,y:5},{color:'W',x:2,y:4},{color:'W',x:4,y:4}], answer:{x:3,y:4}, turn:'black', size:9, fb:{t:'Siyah taşlarını birleştir!',c:'info'}, fb_ok:'Güçlü bağlantı! Artık tek grup.', fb_err:'Siyah taşlar arasındaki boşluğu doldur.' },
+
+      // ── Alıştırma ──
+      { text:`<p>★★ <strong>Alıştırma:</strong> Beyaz nereye keser?</p>`, board:[{color:'B',x:2,y:4},{color:'B',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:5}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Beyaz hangi noktaya girerek siyahı keser?',options:[{text:'D5 (3,4)',correct:true,feedback:'Doğru! Orta nokta siyahın bağlantısını koparır.'},{text:'C4 (2,3)',correct:false,feedback:'Hayır — bu nokta bağlantıyı kesmez.'},{text:'E5 (4,3)',correct:false,feedback:'Hayır — kesme noktası iki taş arasında olmalı.'}]}, fb:{t:'Siyahın hangi noktası bağlantı boşluğu?',c:'info'} },
+
+      { text:`<p>★★ <strong>Alıştırma:</strong> Siyah taşları birbirine bağla.</p>`, board:[{color:'B',x:2,y:2},{color:'B',x:4,y:4},{color:'W',x:3,y:2},{color:'W',x:2,y:3}], answer:{x:3,y:3}, turn:'black', size:9, camera:CAM.center, fb:{t:'İki siyah taşı bağlayan noktayı bul.',c:'info'}, fb_ok:'Bağlandı! Artık tek güçlü grup.', fb_err:'İki siyah taş arasındaki köşegen bağlantıyı kapatacak noktayı bul.' },
+
+      { text:`<p>★★★ <strong>Alıştırma:</strong> Beyaz kesiyor mu yoksa siyah bağlıyor mu — doğru hamleyi seç.</p>`, board:[{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}], answers:[{x:4,y:3}], turn:'black', size:9, camera:CAM.center, fb:{t:'Siyahın bağlantısını kes mi, koru mu?',c:'info'}, fb_ok:'Doğru — siyah bağlantıyı korudu, beyazın kesmesi engellendi.', fb_err:'Siyah taşlar arasındaki boşluğu kapat.' },
     ]},
 
     { id:'l9', title:'Çift Atari', steps:[
@@ -235,6 +249,11 @@ export const CURRICULUM = [
         fb:{t:'Beyaz taşlardan birinin yanındaki boş noktaya oyna.',c:'info'},
         fb_ok:'Bir taşı kurtardın — ama diğeri yakalandı. Çift atariden kaçış yoktur!',
         fb_err:'Beyaz taşlardan birini kurtarmak için yanındaki boş noktaya oyna.' },
+
+      // ── Alıştırma ──
+      { text:`<p>★★ <strong>Alıştırma:</strong> Çift atari noktasını bul.</p>`, board:[{color:'W',x:3,y:3},{color:'W',x:5,y:5},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:5,y:4},{color:'B',x:6,y:5},{color:'B',x:4,y:5}], answer:{x:4,y:4}, turn:'black', size:9, camera:CAM.center, fb:{t:'Tek hamleyle iki beyazı atariye al!',c:'info'}, fb_ok:'Çift atari! Beyaz ikisini birden kurtaramaz.', fb_err:'Her iki beyaz taşa da tek hamlede atari kuracak noktayı bul.' },
+
+      { text:`<p>★★★ <strong>Alıştırma:</strong> Bu pozisyonda çift atari mümkün mü?</p>`, board:[{color:'W',x:2,y:2},{color:'W',x:6,y:6},{color:'B',x:1,y:2},{color:'B',x:3,y:2},{color:'B',x:2,y:1},{color:'B',x:5,y:6},{color:'B',x:7,y:6},{color:'B',x:6,y:5}], auto:true, size:9, camera:CAM.overview, miniQuestion:{text:'Bu pozisyonda çift atari kurmak mümkün mü?',options:[{text:'Hayır — taşlar çok uzak',correct:true,feedback:'Doğru! İki beyaz taş birbirinden kopuk, tek bir nokta her ikisine atari yapamaz.'},{text:'Evet — D4 noktası çalışır',correct:false,feedback:'Hayır — iki taş arasındaki mesafe çok büyük.'}]}, fb:{t:'Çift atari için taşların yakın olması gerekir.',c:'info'} },
     ]},
 
     { id:'l10', title:'Merdiven (Shicho)', steps:[
@@ -286,6 +305,10 @@ export const CURRICULUM = [
         moveSpeed:0.22, auto:true, size:13, camera:CAM.overview,
         fb:{t:'Beyaz (8,4) merdiveni kıran taşa bağlandı — artık köşeye sürülmez!',c:'info'} },
 
+      // ── Alıştırma ──
+      { text:`<p>★★ <strong>Alıştırma:</strong> Bu pozisyon merdiven mi?</p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'B',x:4,y:5}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Beyaz bu atariden kaçabilir mi?',options:[{text:'Hayır — merdiven, yakalanır',correct:true,feedback:'Doğru! Kaçtıkça köşeye sürülecek ve yakalanacak.'},{text:'Evet — kurtulur',correct:false,feedback:'Hayır. Her adımda yeniden atariye girer.'}]}, fb:{t:'Merdiven = kaçış yok.',c:'info'} },
+
+      { text:`<p>★★★ <strong>Alıştırma:</strong> Merdiveni başlat — ilk hamleyi oyna.</p>`, board:[{color:'W',x:5,y:5},{color:'B',x:4,y:4},{color:'B',x:4,y:5},{color:'B',x:6,y:5},{color:'B',x:5,y:6}], answer:{x:5,y:4}, turn:'black', size:9, camera:CAM.center, fb:{t:'Beyaza atari kur — merdiveni başlat!',c:'info'}, fb_ok:'Merdiven başladı! Beyaz köşeye doğru sürülecek.', fb_err:'Beyazın kaçacağı yönün önünü kes.' },
     ]},
 
     { id:'l11', title:'Ağ (Geta)', steps:[
@@ -297,6 +320,11 @@ export const CURRICULUM = [
           {color:'B',x:6,y:4,capture:[{x:4,y:4},{x:4,y:3},{x:5,y:4}]},
         ],
         fb:{t:'Beyazın tüm kaçış yollarını kapat!',c:'info'}, fb_ok:'Ağ kuruldu! Beyaz kaçmaya çalışıyor ama tuzakta.', fb_err:'Beyazın kaçış yollarını kapatan noktayı bul.' },
+
+      // ── Alıştırma ──
+      { text:`<p>★★ <strong>Alıştırma:</strong> Beyaz taşı ağa düşür — hangi nokta?</p>`, board:[{color:'W',x:5,y:3},{color:'B',x:4,y:2},{color:'B',x:4,y:3},{color:'B',x:5,y:4},{color:'B',x:6,y:4}], answer:{x:6,y:2}, turn:'black', size:9, camera:CAM.center, fb:{t:'Beyazın tüm kaçış yollarını kapatan noktayı bul!',c:'info'}, fb_ok:'Ağ kuruldu! Beyaz nereye kaçarsa yakalanır.', fb_err:'Beyazın sağ üst kaçışını kapatan noktayı bul.' },
+
+      { text:`<p>★★★ <strong>Alıştırma:</strong> Ağ mı merdiven mi — hangisi daha uygun?</p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:4,y:5},{color:'B',x:5,y:5}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Bu pozisyonda doğru yaklaşım hangisi?',options:[{text:'Ağ — F6\'ya oyna',correct:true,feedback:'Doğru! Ağ burada çalışır — beyaz nereye kaçarsa yakalanır.'},{text:'Merdiven — E6\'ya oyna',correct:false,feedback:'Hayır. Merdiven burada çalışmaz, ağ daha etkili.'}]}, fb:{t:'Ağ = etrafı çevirme, merdiven = atari zinciri.',c:'info'} },
     ]},
 
     { id:'l12', title:'Snapback', steps:[
@@ -322,6 +350,33 @@ export const CURRICULUM = [
           {color:'B',x:0,y:4,capture:[{x:0,y:5},{x:1,y:4},{x:1,y:5}]},
         ],
         fb:{t:'Kurbanı ver — beyaz alacak ama grubu kaybedecek!',c:'info'}, fb_ok:'Snapback! Beyaz kurbanı aldı ama tuzağa düştü.', fb_err:'A5 noktasına tıkla — kurbanı ver.' },
+
+      // ── Alıştırma ──
+      { text:`<p>★★ <strong>Alıştırma:</strong> Snapback mi, normal yakalama mı?</p>`, board:[{color:'W',x:3,y:3},{color:'W',x:2,y:4},{color:'W',x:4,y:4},{color:'B',x:1,y:3},{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:3},{color:'B',x:1,y:4},{color:'B',x:1,y:5},{color:'B',x:2,y:5},{color:'B',x:3,y:5}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'D5\'e (3,4) oynamak snapback midir?',options:[{text:'Evet — snapback',correct:true,feedback:'Doğru! Beyaz kurbanı alır, sonra siyah geri alarak daha büyük grubu yakalar.'},{text:'Hayır — normal yakalama',correct:false,feedback:'Bu snapback — kurban veriyorsun, beyaz alıyor, sen geri alıyorsun.'}]}, fb:{t:'Snapback = kurban ver, geri al.',c:'info'} },
+
+      { text:`<p>★★★ <strong>Alıştırma:</strong> Kurban ver ve snapback tamamla.</p>`, board:[{color:'W',x:4,y:2},{color:'W',x:3,y:3},{color:'W',x:5,y:3},{color:'B',x:3,y:2},{color:'B',x:5,y:2},{color:'B',x:2,y:3},{color:'B',x:6,y:3},{color:'B',x:3,y:4},{color:'B',x:4,y:4},{color:'B',x:5,y:4}], answer:{x:4,y:3}, turn:'black', size:9, camera:CAM.center, movesAfterAnswer:[{color:'W',x:4,y:3,capture:[{x:4,y:3}]},{color:'B',x:4,y:3,capture:[{x:4,y:2},{x:3,y:3},{x:5,y:3}]}], fb:{t:'Kurbanı ver — snapback!',c:'info'}, fb_ok:'Snapback tamamlandı! Üç beyaz taş geri alındı.', fb_err:'Ortaya (E4) oyna — kurbanı ver.' },
+    ]},
+
+    { id:'l2_deg', title:'Canlı mı, Ölü mü? ✓', steps:[
+      { text:`<p>★ <strong>Soru 1/10</strong> — Bu grup canlı mı?</p>`, board:[{color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:1,y:2},{color:'B',x:3,y:2},{color:'B',x:1,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:3}], groupIndicators:[{x:2,y:2,color:'red'}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Bu grup canlı mı?',options:[{text:'Hayır — tek göz',correct:true,feedback:'Doğru! Tek göz yetmez, yakalanabilir.'},{text:'Evet — canlı',correct:false,feedback:'Hayır. İki gerçek göz gerekli.'}]}, fb:{t:'Kaç boş iç nokta var?',c:'info'} },
+
+      { text:`<p>★ <strong>Soru 2/10</strong> — İkinci gözü tamamla.</p>`, board:[{color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:4,y:1},{color:'B',x:1,y:2},{color:'B',x:4,y:2},{color:'B',x:1,y:3},{color:'B',x:4,y:3},{color:'B',x:1,y:4},{color:'B',x:2,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:4}], answer:{x:3,y:2}, turn:'black', size:9, camera:CAM.center, fb:{t:'Grubu ikiye böl — iki ayrı göz yap.',c:'info'}, fb_ok:'İki göz! Grup ölümsüz.', fb_err:'İç alanı ikiye bölecek noktayı bul.' },
+
+      { text:`<p>★★ <strong>Soru 3/10</strong> — Beyaz grubu öldür. Kritik noktaya oyna.</p>`, board:[{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:4,y:1},{color:'B',x:2,y:2},{color:'B',x:4,y:2},{color:'B',x:2,y:3},{color:'B',x:3,y:3},{color:'B',x:4,y:3}], answer:{x:3,y:2}, turn:'white', size:9, camera:CAM.center, fb:{t:'Tek gözü de yık!',c:'info'}, fb_ok:'Grup öldü — tek göz beyazla doldu.', fb_err:'Tek boş iç noktaya oyna.' },
+
+      { text:`<p>★★ <strong>Soru 4/10</strong> — Hangi taşlar ölü?</p>`, board:[{color:'W',x:3,y:3},{color:'W',x:4,y:3},{color:'W',x:3,y:4},{color:'W',x:4,y:4},{color:'B',x:2,y:3},{color:'B',x:5,y:3},{color:'B',x:2,y:4},{color:'B',x:5,y:4},{color:'B',x:3,y:5},{color:'B',x:4,y:5},{color:'B',x:3,y:2},{color:'B',x:4,y:2}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Beyaz taşlar canlı mı?',options:[{text:'Hayır — gözsüz, ölü',correct:true,feedback:'Doğru! İç boş nokta yok — iki göz yapamaz.'},{text:'Evet — canlı',correct:false,feedback:'Hayır. Hiç göz yok — beyaz ölü.'}]}, fb:{t:'İç boş nokta sayısını kontrol et.',c:'info'} },
+
+      { text:`<p>★★ <strong>Soru 5/10</strong> — Kesme mi, bağlama mı — doğru hamleyi seç.</p>`, board:[{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}], answer:{x:4,y:3}, turn:'black', size:9, camera:CAM.center, fb:{t:'Siyah bağlantısını koru!',c:'info'}, fb_ok:'Bağlandı — beyazın kesmesi engellendi.', fb_err:'İki siyah taş arasındaki boşluğu kapat.' },
+
+      { text:`<p>★★ <strong>Soru 6/10</strong> — Çift atari noktasını bul.</p>`, board:[{color:'W',x:3,y:3},{color:'W',x:5,y:5},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:5,y:4},{color:'B',x:6,y:5},{color:'B',x:4,y:5}], answer:{x:4,y:4}, turn:'black', size:9, camera:CAM.center, fb:{t:'Tek hamlede iki beyazı atariye al!',c:'info'}, fb_ok:'Çift atari!', fb_err:'Her iki beyaza da atari yapacak noktayı bul.' },
+
+      { text:`<p>★★ <strong>Soru 7/10</strong> — Ağı kur.</p>`, board:[{color:'W',x:5,y:3},{color:'B',x:4,y:2},{color:'B',x:4,y:3},{color:'B',x:5,y:4},{color:'B',x:6,y:4}], answer:{x:6,y:2}, turn:'black', size:9, camera:CAM.center, fb:{t:'Beyazın kaçış yolunu kes!',c:'info'}, fb_ok:'Ağ kuruldu!', fb_err:'Beyazın sağ üst kaçışını kapatan noktayı bul.' },
+
+      { text:`<p>★★★ <strong>Soru 8/10</strong> — Merdiveni başlat.</p>`, board:[{color:'W',x:5,y:5},{color:'B',x:4,y:4},{color:'B',x:4,y:5},{color:'B',x:6,y:5},{color:'B',x:5,y:6}], answer:{x:5,y:4}, turn:'black', size:9, camera:CAM.center, fb:{t:'Atari kur — merdiveni başlat!',c:'info'}, fb_ok:'Merdiven başladı!', fb_err:'Beyazın kaçacağı yönün önünü kes.' },
+
+      { text:`<p>★★★ <strong>Soru 9/10</strong> — Snapback: kurban ver.</p>`, board:[{color:'W',x:3,y:3},{color:'W',x:2,y:4},{color:'W',x:4,y:4},{color:'W',x:4,y:5},{color:'B',x:4,y:3},{color:'B',x:5,y:3},{color:'B',x:5,y:4},{color:'B',x:2,y:5},{color:'B',x:5,y:5},{color:'B',x:3,y:6},{color:'B',x:4,y:6}], answer:{x:3,y:4}, turn:'black', size:9, camera:CAM.center, movesAfterAnswer:[{color:'W',x:3,y:5,capture:[{x:3,y:4}]},{color:'B',x:3,y:4,capture:[{x:3,y:5},{x:4,y:4},{x:4,y:5}]}], fb:{t:'Kurbanı ver!',c:'info'}, fb_ok:'Snapback! Büyük grup yakalandı.', fb_err:'D5\'e oyna — kurban ver.' },
+
+      { text:`<p>★★★★ <strong>Soru 10/10</strong> — Bu grup canlı mı? Cevapla ve gerekirse kurtar.</p>`, board:[{color:'W',x:2,y:2},{color:'W',x:3,y:2},{color:'W',x:4,y:2},{color:'W',x:2,y:3},{color:'W',x:4,y:3},{color:'W',x:2,y:4},{color:'W',x:3,y:4},{color:'W',x:4,y:4},{color:'B',x:1,y:2},{color:'B',x:5,y:2},{color:'B',x:1,y:3},{color:'B',x:5,y:3},{color:'B',x:1,y:4},{color:'B',x:5,y:4},{color:'B',x:2,y:5},{color:'B',x:3,y:5},{color:'B',x:4,y:5}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Beyaz grup canlı mı?',options:[{text:'Hayır — tek göz, ölümlü',correct:true,feedback:'Doğru! Tek göz = ölümlü. Siyah ortaya oynayıp öldürebilir.'},{text:'Evet — iki göz var',correct:false,feedback:'Sayalım: yalnızca bir boş iç nokta var.'}]}, fb:{t:'Göz sayısını dikkatlice say.',c:'info'} },
     ]},
   ]},
 
@@ -446,6 +501,37 @@ export const CURRICULUM = [
       auto:true, size:19, camera:CAM.board19, fb:{t:'Oyun sonu — bölgeler ve esir taşlar sayılıyor.',c:'info'} },
       { text:`<p><span class="term">Yose</span> — oyunun son aşaması. Sınırlar netleşir, her hamle doğrudan puana dönüşür.</p>`, board:[{color:'B',x:0,y:0},{color:'B',x:1,y:0},{color:'B',x:2,y:0},{color:'B',x:0,y:1},{color:'B',x:0,y:2},{color:'B',x:0,y:3},{color:'W',x:5,y:5},{color:'W',x:6,y:5},{color:'W',x:7,y:5},{color:'W',x:8,y:5},{color:'W',x:8,y:6},{color:'W',x:8,y:7},{color:'W',x:8,y:8}], auto:true, size:9, camera:CAM.high, fb:{t:'Oyun sonunda sayılan puanlar kazanan oyuncuyu belirler.',c:'info'} },
       { text:`<p>Önem sırası:<ol><li><strong>Sente endgame</strong> — cevap gerektiren hamleler</li><li><strong>Büyük gote</strong> — en yüksek puanlı serbest hamleler</li><li><strong>Küçük gote</strong> — ince detay hamleler</li></ol></p>`, board:[], auto:true, size:9, fb:{t:'Go öğrenme yolculuğun başlıyor!',c:'info'} },
+
+      // ── Alıştırma ──
+      { text:`<p>★★ <strong>Alıştırma:</strong> Siyah için en değerli köşeye oyna.</p>`, board:[], answers:[{x:2,y:2},{x:3,y:3},{x:2,y:3},{x:3,y:2},{x:6,y:2},{x:5,y:3},{x:6,y:3},{x:5,y:2},{x:2,y:5},{x:3,y:5},{x:5,y:5},{x:6,y:5}], turn:'black', size:9, camera:CAM.high, fb:{t:'Köşe → kenar → merkez sırasıyla oyna.',c:'info'}, fb_ok:'Güzel açılış! Köşeyi güvence altına aldın.', fb_err:'Açılışta önce köşeleri hedefle.' },
+
+      { text:`<p>★★★ <strong>Alıştırma:</strong> Siyahın sınırındaki boşluğu kapat — bölgeni savun.</p>`, board:[{color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:1,y:2},{color:'B',x:1,y:3},{color:'B',x:1,y:4},{color:'B',x:2,y:4},{color:'W',x:5,y:2},{color:'W',x:5,y:3},{color:'W',x:5,y:4}], answer:{x:3,y:4}, turn:'black', size:9, camera:CAM.high, fb:{t:'Sınırdaki boşluğu kapat!',c:'info'}, fb_ok:'Sınır kapatıldı — beyaz giremez.', fb_err:'Siyahın sol alt köşe bölgesinin açık noktasını bul.' },
+    ]},
+
+    { id:'l3_deg', title:'İlk Taktik Sınavı ✓', steps:[
+      { text:`<p>★ <strong>Soru 1/12</strong> — Siyahın bağlantısını koru.</p>`, board:[{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}], answer:{x:4,y:3}, turn:'black', size:9, camera:CAM.center, fb:{t:'Bağlantı noktasını bul.',c:'info'}, fb_ok:'Bağlandı!', fb_err:'İki siyah taş arasındaki boşluğu kapat.' },
+
+      { text:`<p>★ <strong>Soru 2/12</strong> — Beyaz nereyi keser?</p>`, board:[{color:'B',x:2,y:4},{color:'B',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:5}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Beyaz hangi noktaya girerek siyahı keser?',options:[{text:'D5 (3,4)',correct:true,feedback:'Doğru! Orta nokta siyahın bağlantısını koparır.'},{text:'C4 (2,3)',correct:false,feedback:'Hayır — bu kesme noktası değil.'},{text:'E4 (4,3)',correct:false,feedback:'Hayır — kesme iki taş arasında olmalı.'}]}, fb:{t:'Kesme noktasını göster.',c:'info'} },
+
+      { text:`<p>★ <strong>Soru 3/12</strong> — Atari kur.</p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'B',x:3,y:5}], answer:{x:3,y:4}, turn:'black', size:9, camera:CAM.center, fb:{t:'Beyaza atari yap!',c:'info'}, fb_ok:'Atari! Beyaz cevap vermek zorunda.', fb_err:'Beyazı tek nefese sokacak noktayı bul.' },
+
+      { text:`<p>★★ <strong>Soru 4/12</strong> — Atariden kaç.</p>`, board:[{color:'B',x:4,y:4},{color:'W',x:3,y:4},{color:'W',x:4,y:3},{color:'W',x:5,y:4}], answers:[{x:4,y:5},{x:4,y:6}], turn:'black', size:9, camera:CAM.center, fb:{t:'Siyah atari\'de — kaç!',c:'info'}, fb_ok:'Kaçtın! Daha fazla nefes açıldı.', fb_err:'Siyahın kaçabileceği tek boş yönü bul.' },
+
+      { text:`<p>★★ <strong>Soru 5/12</strong> — Kesme tehlikeli mi?</p>`, board:[{color:'B',x:3,y:3},{color:'B',x:5,y:5},{color:'W',x:4,y:4},{color:'B',x:2,y:4},{color:'B',x:4,y:2},{color:'B',x:6,y:4},{color:'B',x:4,y:6}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'W(4,4) siyahı kesiyor — bu kesme tehlikeli mi?',options:[{text:'Evet — iki grup ayrıldı',correct:true,feedback:'Doğru! İki siyah taş artık bağlı değil.'},{text:'Hayır — siyah güçlü',correct:false,feedback:'Hayır, kesme gerçek — iki taş birbirinden koptu.'}]}, fb:{t:'Kesilen taşlar ayrı savunmak zorunda.',c:'info'} },
+
+      { text:`<p>★★ <strong>Soru 6/12</strong> — Karşılıklı atari: kim kazanır?</p>`, board:[{color:'B',x:4,y:4},{color:'B',x:4,y:5},{color:'W',x:5,y:4},{color:'W',x:5,y:5},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'W',x:6,y:4},{color:'W',x:5,y:3}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Siyahın sırası — siyah mı beyaz mı kazanır?',options:[{text:'Siyah — daha çok nefesi var',correct:true,feedback:'Doğru! Siyah daha fazla nefese sahip, önce beyazı alır.'},{text:'Beyaz — aynı nefes',correct:false,feedback:'Hayır — siyahın daha fazla nefesi var.'}]}, fb:{t:'Nefes say, önce oynayan alır.',c:'info'} },
+
+      { text:`<p>★★ <strong>Soru 7/12</strong> — Merdiveni devam ettir.</p>`, board:[{color:'W',x:5,y:5},{color:'B',x:4,y:4},{color:'B',x:4,y:5},{color:'B',x:5,y:4},{color:'B',x:6,y:5},{color:'W',x:6,y:4}], answer:{x:6,y:3}, turn:'black', size:9, camera:CAM.center, fb:{t:'Beyaz kaçıyor — takip et!',c:'info'}, fb_ok:'Merdiven devam ediyor!', fb_err:'Beyazın kaçacağı yönün önüne geç.' },
+
+      { text:`<p>★★★ <strong>Soru 8/12</strong> — Ağı kur.</p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:4,y:5},{color:'B',x:5,y:5}], answer:{x:5,y:3}, turn:'black', size:9, camera:CAM.center, fb:{t:'Beyazın tüm kaçışlarını kapat!',c:'info'}, fb_ok:'Ağ kuruldu!', fb_err:'F6\'ya oyna — beyazın kaçış yolunu kes.' },
+
+      { text:`<p>★★★ <strong>Soru 9/12</strong> — Kaplan ağzı oluştur.</p>`, board:[{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'B',x:4,y:5}], answer:{x:4,y:3}, turn:'black', size:9, camera:CAM.center, fb:{t:'Kaplan ağzını tamamla!',c:'info'}, fb_ok:'Kaplan ağzı tamamlandı — beyaz içine giremez.', fb_err:'Üç taşın ortasındaki boşluğu yukarıdan kapat.' },
+
+      { text:`<p>★★★ <strong>Soru 10/12</strong> — Zayıf taşı hedefle.</p>`, board:[{color:'W',x:7,y:1},{color:'W',x:3,y:5},{color:'B',x:6,y:1},{color:'B',x:8,y:1},{color:'B',x:7,y:0}], answer:{x:7,y:2}, turn:'black', size:9, camera:CAM.high, fb:{t:'Hangi beyaz taş daha zayıf?',c:'info'}, fb_ok:'Doğru hedef! Yalnız taşa atari.', fb_err:'Az nefesi olan, izole taşa saldır.' },
+
+      { text:`<p>★★★ <strong>Soru 11/12</strong> — Tehdit altındaki grubu kurtar.</p>`, board:[{color:'B',x:4,y:4},{color:'B',x:5,y:4},{color:'W',x:3,y:4},{color:'W',x:4,y:3},{color:'W',x:6,y:4},{color:'W',x:5,y:3}], answers:[{x:4,y:5},{x:5,y:5}], turn:'black', size:9, camera:CAM.center, fb:{t:'Siyah grup sıkışıyor — kurtar!',c:'info'}, fb_ok:'Kurtarıldı! Grup nefes aldı.', fb_err:'Grubun nefes açabileceği alt noktaya oyna.' },
+
+      { text:`<p>★★★★ <strong>Soru 12/12</strong> — Çift tehdit kur: rakip ikisini birden savunamaz.</p>`, board:[{color:'W',x:5,y:3},{color:'W',x:4,y:4},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'B',x:4,y:5}], answer:{x:4,y:3}, turn:'black', size:9, camera:CAM.center, fb:{t:'Tek hamlede iki tehdidi aynı anda kur!',c:'info'}, fb_ok:'Mükemmel! Çift tehdit — beyaz ikisini birden savunamaz. Tebrikler, müfredatı tamamladın!', fb_err:'Her iki beyaz taşa da aynı anda atari yapacak noktayı bul.' },
     ]},
   ]},
 ];
