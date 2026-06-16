@@ -267,6 +267,12 @@ export class ActionHandler {
 
     effects.push({ type: 'UPDATE_LESSON', lessonState });
 
+    // Auto adımda statik miniQuestion varsa yüklenince göster.
+    // (pedagoji adımları auto değildir — board tıklaması sonrası SHOW_MINI_QUESTION üretirler)
+    if (step?.auto && step.miniQuestion && typeof step.miniQuestion === 'object') {
+      effects.push({ type: 'SHOW_MINI_QUESTION', question: step.miniQuestion });
+    }
+
     return this._result(true, effects, this._stepFeedback(step));
   }
 
