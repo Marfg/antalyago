@@ -1796,6 +1796,50 @@ function drawGhost2D(b){
   }
 }
 
+function drawStoneLabels3D(labels){
+  if(!labels||!labels.length) return;
+  for(const l of labels){
+    const wx=-HALF+l.x*CELL, wz=-HALF+l.y*CELL;
+    const wy=-(BOARD_H/2)-STONE_R*ASPECT_3D-1;
+    const p=project(wx,wy,wz);
+    const {rx,ry}=stoneRadii(p);
+    const r=rx*.50, sx=p.sx, sy=p.sy, ery=r*ry/rx;
+    const grd=ctx.createRadialGradient(sx-r*.3,sy-ery*.3,r*.04,sx,sy,r);
+    grd.addColorStop(0,'#fff3b0'); grd.addColorStop(.45,'#e6c030'); grd.addColorStop(1,'#8c4e08');
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,.65)'; ctx.shadowBlur=r*.7; ctx.shadowOffsetY=ery*.3;
+    ctx.beginPath(); ctx.ellipse(sx,sy,r,ery,0,0,Math.PI*2);
+    ctx.fillStyle=grd; ctx.fill();
+    ctx.shadowColor='transparent';
+    ctx.strokeStyle='rgba(30,10,0,.70)'; ctx.lineWidth=r*.12; ctx.stroke();
+    ctx.fillStyle='#1a0800';
+    ctx.font=`bold ${Math.round(r*1.35)}px Georgia,serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(l.label,sx,sy);
+    ctx.restore();
+  }
+}
+
+function drawStoneLabels2D(labels,b){
+  if(!labels||!labels.length) return;
+  for(const l of labels){
+    const sx=gx2(l.x,b),sy=gy2(l.y,b),r=b.r*.50;
+    const grd=ctx.createRadialGradient(sx-r*.3,sy-r*.3,r*.04,sx,sy,r);
+    grd.addColorStop(0,'#fff3b0'); grd.addColorStop(.45,'#e6c030'); grd.addColorStop(1,'#8c4e08');
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,.65)'; ctx.shadowBlur=r*.7; ctx.shadowOffsetY=r*.3;
+    ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2);
+    ctx.fillStyle=grd; ctx.fill();
+    ctx.shadowColor='transparent';
+    ctx.strokeStyle='rgba(30,10,0,.70)'; ctx.lineWidth=r*.12; ctx.stroke();
+    ctx.fillStyle='#1a0800';
+    ctx.font=`bold ${Math.round(r*1.35)}px Georgia,serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(l.label,sx,sy);
+    ctx.restore();
+  }
+}
+
 function render2D(){
   const t=getBT();
   const bg=ctx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.5,Math.max(W,H)*.75);
@@ -1818,14 +1862,19 @@ function render2D(){
   drawGhost2D(b);
 
   const deadSet=new Set((step?.deadStones||[]).map(p=>`${p.x},${p.y}`));
+  const focusSet=step?.focusStones?new Set(step.focusStones.map(p=>`${p.x},${p.y}`)):null;
   game.stones.forEach(s=>{
     if(s.removing){
       const al=Math.max(0,1-s.removeT);
       if(al>0) drawStone2D(s.gx,s.gz,s.color,al,b);
     } else {
-      drawStone2D(s.gx,s.gz,s.color,deadSet.has(`${s.gx},${s.gz}`)?0.28:1,b);
+      const dead=deadSet.has(`${s.gx},${s.gz}`);
+      let al=dead?0.28:1;
+      if(focusSet&&!dead&&!focusSet.has(`${s.gx},${s.gz}`)) al=0.22;
+      drawStone2D(s.gx,s.gz,s.color,al,b);
     }
   });
+  if(step?.stoneLabels?.length) drawStoneLabels2D(step.stoneLabels,b);
 }
 
 function screenToGrid2D(mx,my){
@@ -1902,13 +1951,16 @@ function render() {
 
   const sorted=[...game.stones].sort((a,b)=>project(a.wx,a.wy,a.wz).z-project(b.wx,b.wy,b.wz).z);
   const deadSet=new Set((CUR_STEP_DATA?.deadStones||[]).map(p=>`${p.x},${p.y}`));
+  const focusSet=CUR_STEP_DATA?.focusStones?new Set(CUR_STEP_DATA.focusStones.map(p=>`${p.x},${p.y}`)):null;
   for(const s of sorted){
     const dead = deadSet.has(`${s.gx},${s.gz}`);
-    const al = s.removing ? Math.max(0,1-s.removeT) : (dead ? 0.28 : 1);
+    let al = s.removing ? Math.max(0,1-s.removeT) : (dead ? 0.28 : 1);
+    if(focusSet&&!dead&&!s.removing&&!focusSet.has(`${s.gx},${s.gz}`)) al=0.22;
     const sc = s.done ? 1 : easeOutBack(Math.min(s.t,1));
     if(al>0) drawStone(s.wx,s.wy,s.wz,s.color,al,sc);
     if(s.showPts&&al>0) drawParticles(s.pts);
   }
+  if(CUR_STEP_DATA?.stoneLabels?.length) drawStoneLabels3D(CUR_STEP_DATA.stoneLabels);
 }
 
 /* Hit detection */
