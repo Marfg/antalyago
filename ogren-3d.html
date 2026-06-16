@@ -1803,19 +1803,28 @@ function drawStoneLabels3D(labels){
     const wy=-(BOARD_H/2)-STONE_R*ASPECT_3D-1;
     const p=project(wx,wy,wz);
     const {rx,ry}=stoneRadii(p);
-    const r=rx*.50, sx=p.sx, sy=p.sy, ery=r*ry/rx;
-    const grd=ctx.createRadialGradient(sx-r*.3,sy-ery*.3,r*.04,sx,sy,r);
-    grd.addColorStop(0,'#fff3b0'); grd.addColorStop(.45,'#e6c030'); grd.addColorStop(1,'#8c4e08');
+    const r=rx*.56, sx=p.sx, sy=p.sy, ery=r*ry/rx;
     ctx.save();
-    ctx.shadowColor='rgba(0,0,0,.65)'; ctx.shadowBlur=r*.7; ctx.shadowOffsetY=ery*.3;
+    // Drop shadow
+    ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=r*.9; ctx.shadowOffsetY=ery*.38;
+    // Dark badge
+    const bg=ctx.createRadialGradient(sx-r*.22,sy-ery*.22,r*.05,sx,sy,r);
+    bg.addColorStop(0,'#1e2440'); bg.addColorStop(.6,'#0d1222'); bg.addColorStop(1,'#060810');
     ctx.beginPath(); ctx.ellipse(sx,sy,r,ery,0,0,Math.PI*2);
-    ctx.fillStyle=grd; ctx.fill();
+    ctx.fillStyle=bg; ctx.fill();
     ctx.shadowColor='transparent';
-    ctx.strokeStyle='rgba(30,10,0,.70)'; ctx.lineWidth=r*.12; ctx.stroke();
-    ctx.fillStyle='#1a0800';
-    ctx.font=`bold ${Math.round(r*1.35)}px Georgia,serif`;
+    // Gold metallic rim
+    const rim=ctx.createLinearGradient(sx-r,sy-ery,sx+r,sy+ery);
+    rim.addColorStop(0,'#ffe066'); rim.addColorStop(.5,'#a06818'); rim.addColorStop(1,'#ffe066');
+    ctx.strokeStyle=rim; ctx.lineWidth=r*.17; ctx.stroke();
+    // Neon letter — layered glow
+    ctx.font=`bold ${Math.round(r*1.40)}px Georgia,serif`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(l.label,sx,sy);
+    [[r*2.8,.28],[r*1.4,.62],[r*.48,.96]].forEach(([blur,al])=>{
+      ctx.shadowColor='#00e8ff'; ctx.shadowBlur=blur;
+      ctx.fillStyle=`rgba(0,232,255,${al})`; ctx.fillText(l.label,sx,sy);
+    });
+    ctx.shadowColor='transparent'; ctx.fillStyle='#e8ffff'; ctx.fillText(l.label,sx,sy);
     ctx.restore();
   }
 }
@@ -1823,19 +1832,24 @@ function drawStoneLabels3D(labels){
 function drawStoneLabels2D(labels,b){
   if(!labels||!labels.length) return;
   for(const l of labels){
-    const sx=gx2(l.x,b),sy=gy2(l.y,b),r=b.r*.50;
-    const grd=ctx.createRadialGradient(sx-r*.3,sy-r*.3,r*.04,sx,sy,r);
-    grd.addColorStop(0,'#fff3b0'); grd.addColorStop(.45,'#e6c030'); grd.addColorStop(1,'#8c4e08');
+    const sx=gx2(l.x,b),sy=gy2(l.y,b),r=b.r*.56;
     ctx.save();
-    ctx.shadowColor='rgba(0,0,0,.65)'; ctx.shadowBlur=r*.7; ctx.shadowOffsetY=r*.3;
+    ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=r*.9; ctx.shadowOffsetY=r*.38;
+    const bg=ctx.createRadialGradient(sx-r*.22,sy-r*.22,r*.05,sx,sy,r);
+    bg.addColorStop(0,'#1e2440'); bg.addColorStop(.6,'#0d1222'); bg.addColorStop(1,'#060810');
     ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2);
-    ctx.fillStyle=grd; ctx.fill();
+    ctx.fillStyle=bg; ctx.fill();
     ctx.shadowColor='transparent';
-    ctx.strokeStyle='rgba(30,10,0,.70)'; ctx.lineWidth=r*.12; ctx.stroke();
-    ctx.fillStyle='#1a0800';
-    ctx.font=`bold ${Math.round(r*1.35)}px Georgia,serif`;
+    const rim=ctx.createLinearGradient(sx-r,sy-r,sx+r,sy+r);
+    rim.addColorStop(0,'#ffe066'); rim.addColorStop(.5,'#a06818'); rim.addColorStop(1,'#ffe066');
+    ctx.strokeStyle=rim; ctx.lineWidth=r*.17; ctx.stroke();
+    ctx.font=`bold ${Math.round(r*1.40)}px Georgia,serif`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(l.label,sx,sy);
+    [[r*2.8,.28],[r*1.4,.62],[r*.48,.96]].forEach(([blur,al])=>{
+      ctx.shadowColor='#00e8ff'; ctx.shadowBlur=blur;
+      ctx.fillStyle=`rgba(0,232,255,${al})`; ctx.fillText(l.label,sx,sy);
+    });
+    ctx.shadowColor='transparent'; ctx.fillStyle='#e8ffff'; ctx.fillText(l.label,sx,sy);
     ctx.restore();
   }
 }
@@ -1870,7 +1884,7 @@ function render2D(){
     } else {
       const dead=deadSet.has(`${s.gx},${s.gz}`);
       let al=dead?0.28:1;
-      if(focusSet&&!dead&&!focusSet.has(`${s.gx},${s.gz}`)) al=0.22;
+      if(focusSet&&!dead&&!focusSet.has(`${s.gx},${s.gz}`)) al=0.11;
       drawStone2D(s.gx,s.gz,s.color,al,b);
     }
   });
@@ -1955,7 +1969,7 @@ function render() {
   for(const s of sorted){
     const dead = deadSet.has(`${s.gx},${s.gz}`);
     let al = s.removing ? Math.max(0,1-s.removeT) : (dead ? 0.28 : 1);
-    if(focusSet&&!dead&&!s.removing&&!focusSet.has(`${s.gx},${s.gz}`)) al=0.22;
+    if(focusSet&&!dead&&!s.removing&&!focusSet.has(`${s.gx},${s.gz}`)) al=0.11;
     const sc = s.done ? 1 : easeOutBack(Math.min(s.t,1));
     if(al>0) drawStone(s.wx,s.wy,s.wz,s.color,al,sc);
     if(s.showPts&&al>0) drawParticles(s.pts);
