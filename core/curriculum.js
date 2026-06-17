@@ -155,31 +155,165 @@ export const CURRICULUM = [
     ]},
 
     { id:'l1_deg', title:'İlk Tahta Kontrolü ✓', steps:[
-      { text:`<p>★ <strong>Soru 1/12</strong> — Köşedeki taşın kaç nefes noktası var?</p>`, board:[{color:'W',x:0,y:0}], auto:true, showLiberties:true, size:9, camera:CAM.corner_tl, miniQuestion:{text:'Nefes sayısı?',options:[{text:'2',correct:true,feedback:'Doğru! Köşede 2 nefes noktası var.'},{text:'3',correct:false,feedback:'Hayır — köşede 2 yön açık.'},{text:'4',correct:false,feedback:'Hayır — ortada değil, köşede.'}]}, fb:{t:'Nefes noktalarını say.',c:'info'} },
 
-      { text:`<p>★ <strong>Soru 2/12</strong> — Beyaz taşı yakala.</p>`, board:[{color:'W',x:0,y:0},{color:'B',x:1,y:0}], answer:{x:0,y:1}, turn:'black', size:9, camera:CAM.corner_tl, fb:{t:'Beyaz taşın son nefesini kapat.',c:'info'}, fb_ok:'Doğru! Yakaladın.', fb_err:'Beyaza dokunan tek boş noktayı bul.' },
+      // ── Nefes Noktaları (L2) ──────────────────────────────────────────────
+      { text:`<p>★ <strong>Soru 1/12</strong> — Köşedeki siyah taşın kaç nefes noktası var?</p>`,
+        board:[{color:'B',x:0,y:0}],
+        auto:true, showLiberties:true, size:9, camera:CAM.corner_tl,
+        miniQuestion:{text:'Köşedeki taşın nefes sayısı?',options:[
+          {text:'2',correct:true,feedback:'Doğru! Köşede iki duvar var — yalnızca sağ ve alt açık. 2 nefes noktası.'},
+          {text:'3',correct:false,feedback:'Hayır. Köşede iki yön duvarla kapalı — sadece 2 açık yön var.'},
+          {text:'4',correct:false,feedback:'Hayır. Ortada olsaydı 4 olurdu; köşede 2.'}
+        ]},
+        fb:{t:'Nefes noktası = taşa bitişik boş kesişim. Köşede yalnızca 2 yön açık.',c:'info'} },
 
-      { text:`<p>★ <strong>Soru 3/12</strong> — Kenar taşının kaç nefesi var?</p>`, board:[{color:'W',x:4,y:0}], auto:true, showLiberties:true, size:9, camera:CAM.high, miniQuestion:{text:'Nefes sayısı?',options:[{text:'3',correct:true,feedback:'Evet! Kenarda 3 boş komşu.'},{text:'2',correct:false,feedback:'Hayır — kenar köşe değil, 3 açık yön var.'},{text:'4',correct:false,feedback:'Hayır — bir yön tahtanın dışına çıkıyor.'}]}, fb:{t:'Kenar taşının nefeslerini say.',c:'info'} },
+      { text:`<p>★ <strong>Soru 2/12</strong> — Üst kenar boyunca dizili 3 siyah taşın toplam nefes sayısı?</p>`,
+        board:[{color:'B',x:3,y:0},{color:'B',x:4,y:0},{color:'B',x:5,y:0}],
+        auto:true, showLiberties:true, size:9, camera:CAM.high,
+        miniQuestion:{text:'3 taşlı kenar grubunun toplam nefesi?',options:[
+          {text:'5',correct:true,feedback:'Doğru! Sol:(2,0) · Sol alt:(3,1) · Orta alt:(4,1) · Sağ alt:(5,1) · Sağ:(6,0) — toplam 5.'},
+          {text:'6',correct:false,feedback:'Hayır. Üstteki duvar 3 nefesi kapatıyor ve taşlar kendi aralarındaki noktaları paylaşıyor.'},
+          {text:'9',correct:false,feedback:'Hayır. Birbirine bitişik taşların nefesleri birleşir — paylaşılan komşular bir kez sayılır.'}
+        ]},
+        fb:{t:'Bağlı grubun nefesi: tüm dış boş komşular sayılır, paylaşılan nokta tekrar sayılmaz.',c:'info'} },
 
-      { text:`<p>★★ <strong>Soru 4/12</strong> — Beyaz atari'de mi?</p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}], auto:true, showLiberties:true, size:9, camera:CAM.center, miniQuestion:{text:'Beyaz atari\'de mi (tek nefes)?',options:[{text:'Evet, atari',correct:true,feedback:'Doğru! Yalnızca alt nokta boş — atari.'},{text:'Hayır, güvende',correct:false,feedback:'Hayır — üç komşu dolu, tek boş nokta kaldı.'}]}, fb:{t:'Nefes noktasını say.',c:'info'} },
+      // ── Taş Alma — Kolay (L3) ────────────────────────────────────────────
+      { text:`<p>★★ <strong>Soru 3/12</strong> — Merkezdeki iki beyaz taşı yakala. Son nefes noktasına oyna!</p>`,
+        board:[
+          {color:'W',x:4,y:4},{color:'W',x:5,y:4},
+          {color:'B',x:4,y:3},{color:'B',x:5,y:3},{color:'B',x:6,y:4},{color:'B',x:5,y:5},{color:'B',x:4,y:5}
+        ],
+        answer:{x:3,y:4}, turn:'black', size:9, camera:CAM.center,
+        capture:[{x:4,y:4},{x:5,y:4}],
+        fb:{t:'Beyaz grubunun tek açık noktasını bul!',c:'info'},
+        fb_ok:'Yakaladın! İki beyaz taş alındı.',
+        fb_err:'Beyaz grubun nefes noktalarını say — bir tane kaldı.' },
 
-      { text:`<p>★★ <strong>Soru 5/12</strong> — Atari'deki beyazı yakala.</p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}], answer:{x:4,y:5}, turn:'black', size:9, camera:CAM.center, fb:{t:'Son nefese oyna!',c:'info'}, fb_ok:'Yakaladın!', fb_err:'Beyaza dokunan tek boş noktayı bul.' },
+      { text:`<p>★★ <strong>Soru 4/12</strong> — Üst kenardaki iki beyaz taşı yakala.</p>`,
+        board:[
+          {color:'W',x:5,y:0},{color:'W',x:6,y:0},
+          {color:'B',x:4,y:0},{color:'B',x:5,y:1},{color:'B',x:6,y:1}
+        ],
+        answer:{x:7,y:0}, turn:'black', size:9, camera:CAM.high,
+        capture:[{x:5,y:0},{x:6,y:0}],
+        fb:{t:'Beyaz grubunun sağdaki son nefesini bul!',c:'info'},
+        fb_ok:'Yakaladın! Kenar grubu alındı.',
+        fb_err:'Grubun sağdaki tek boş noktasını bul.' },
 
-      { text:`<p>★★ <strong>Soru 6/12</strong> — İşaretli noktaya siyah oynayabilir mi?</p>`, board:[{color:'W',x:3,y:4},{color:'W',x:5,y:4},{color:'W',x:4,y:3},{color:'W',x:4,y:5}], auto:true, size:9, camera:CAM.center, forbidden:[{x:4,y:4}], miniQuestion:{text:'Siyah X noktasına oynayabilir mi?',options:[{text:'Hayır, yasak',correct:true,feedback:'Doğru! Nefessiz kalır ve yakalama yok.'},{text:'Evet, serbest',correct:false,feedback:'Hayır — koysa hiç nefesi olmaz.'}]}, fb:{t:'Kırmızı X = yasak nokta.',c:'info'} },
+      { text:`<p>★★ <strong>Soru 5/12</strong> — Sağ üst köşedeki iki beyaz taşı yakala.</p>`,
+        board:[
+          {color:'W',x:7,y:0},{color:'W',x:8,y:0},
+          {color:'B',x:6,y:0},{color:'B',x:8,y:1}
+        ],
+        answer:{x:7,y:1}, turn:'black', size:9, camera:CAM.corner_tr,
+        capture:[{x:7,y:0},{x:8,y:0}],
+        fb:{t:'Köşe grubunun son nefesini bul!',c:'info'},
+        fb_ok:'Yakaladın! İki köşe taşı alındı.',
+        fb_err:'Beyaz grubun tek açık noktasını bul.' },
 
-      { text:`<p>★★ <strong>Soru 7/12</strong> — Beyaz hemen geri alabilir mi?</p>`, board:[{color:'B',x:4,y:3},{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'B',x:4,y:5},{color:'W',x:3,y:5},{color:'W',x:5,y:5},{color:'W',x:4,y:6}], auto:true, size:9, camera:CAM.center, koPoint:{x:4,y:4}, miniQuestion:{text:'Beyaz kırmızı noktaya hemen oynayabilir mi?',options:[{text:'Hayır — ko',correct:true,feedback:'Doğru! Ko kuralı — önce başka hamle gerekli.'},{text:'Evet',correct:false,feedback:'Hayır! Bu ko — hemen geri dönemezsin.'}]}, fb:{t:'Ko = hemen geri alınamaz.',c:'info'} },
+      // ── Yasak Hamle (L4) ──────────────────────────────────────────────────
+      { text:`<p>★★ <strong>Soru 6/12</strong> — İşaretli noktaya siyah oynayabilir mi?</p>`,
+        board:[{color:'W',x:3,y:4},{color:'W',x:5,y:4},{color:'W',x:4,y:3},{color:'W',x:4,y:5}],
+        forbidden:[{x:4,y:4}],
+        auto:true, size:9, camera:CAM.center,
+        miniQuestion:{text:'Siyah X noktasına oynayabilir mi?',options:[
+          {text:'Hayır — nefessiz kalır, yasak',correct:true,feedback:'Doğru! O noktaya oynamak siyahı nefessiz bırakır — yakalama da yok. Yasak hamle.'},
+          {text:'Evet — serbest',correct:false,feedback:'Hayır. Dört komşusunun tamamı beyaz — orada nefes kalmaz.'}
+        ]},
+        fb:{t:'Kırmızı X = yasak nokta. Nefessiz bırakılan ve yakalama olmayan hamle yapılamaz.',c:'info'} },
 
-      { text:`<p>★★ <strong>Soru 8/12</strong> — Bu iki taşlı grubun toplam nefes sayısı?</p>`, board:[{color:'B',x:4,y:4},{color:'B',x:5,y:4}], auto:true, showLiberties:true, size:9, camera:CAM.center, miniQuestion:{text:'Grubun toplam nefes sayısı?',options:[{text:'6',correct:true,feedback:'Evet! Her taşın 3 dış nefesi, toplam 6.'},{text:'4',correct:false,feedback:'Hayır — iki taş birbirinden bağımsız nefes kazanır.'},{text:'8',correct:false,feedback:'Hayır — birbirine komşu nokta çift sayılmaz.'}]}, fb:{t:'Bağlı taşların nefesleri birleşir.',c:'info'} },
+      // ── Ko Kuralı (L5) ────────────────────────────────────────────────────
+      { text:`<p>★★ <strong>Soru 7/12</strong> — Beyaz, kırmızı noktaya hemen oynayabilir mi?</p>`,
+        board:[
+          {color:'B',x:4,y:3},{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'B',x:4,y:5},
+          {color:'W',x:3,y:5},{color:'W',x:5,y:5},{color:'W',x:4,y:6}
+        ],
+        koPoint:{x:4,y:4},
+        auto:true, size:9, camera:CAM.center,
+        miniQuestion:{text:'Beyaz kırmızı noktaya hemen oynayabilir mi?',options:[
+          {text:'Hayır — ko kuralı, önce başka hamle',correct:true,feedback:'Doğru! Ko kuralı: aynı tahta pozisyonunu tekrar yaratmak yasak. Beyaz önce başka bir hamle yapmalı.'},
+          {text:'Evet — serbestçe oynayabilir',correct:false,feedback:'Hayır! Bu bir ko durumu — aynı pozisyona hemen dönmek yasak.'}
+        ]},
+        fb:{t:'Ko = hemen geri alınamaz. Önce başka bir yerde hamle zorunlu.',c:'info'} },
 
-      { text:`<p>★★★ <strong>Soru 9/12</strong> — İki beyaz taşlı grubu yakala.</p>`, board:[{color:'W',x:4,y:4},{color:'W',x:4,y:5},{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'B',x:4,y:3},{color:'B',x:3,y:5},{color:'B',x:5,y:5}], answer:{x:4,y:6}, turn:'black', size:9, camera:CAM.center, fb:{t:'Grubun son boş noktasını bul!',c:'info'}, fb_ok:'Mükemmel! İki taş birden yakalandı.', fb_err:'Grubun tek boş komşusunu bul.' },
+      // ── Taş Alma — Orta Zorluk (L3) ─────────────────────────────────────
+      { text:`<p>★★★ <strong>Soru 8/12</strong> — Üst kenardaki üç beyaz taşı yakala.</p>`,
+        board:[
+          {color:'W',x:1,y:0},{color:'W',x:2,y:0},{color:'W',x:3,y:0},
+          {color:'B',x:0,y:0},{color:'B',x:4,y:0},{color:'B',x:2,y:1},{color:'B',x:3,y:1}
+        ],
+        answer:{x:1,y:1}, turn:'black', size:9, camera:CAM.high,
+        capture:[{x:1,y:0},{x:2,y:0},{x:3,y:0}],
+        fb:{t:'Üç taşlı grubun tek boş noktasını bul!',c:'info'},
+        fb_ok:'Üç beyaz taş yakalandı!',
+        fb_err:'Grubun sol alt köşesindeki boş noktayı bul.' },
 
-      { text:`<p>★★★★ <strong>Soru 10/12</strong> — Köşe yasak görünüyor ama değil! Beyazları yakala.</p>`, board:[{color:'B',x:2,y:0},{color:'B',x:1,y:1},{color:'B',x:0,y:2},{color:'W',x:1,y:0},{color:'W',x:0,y:1}], answer:{x:0,y:0}, turn:'black', size:9, camera:CAM.corner_tl, fb:{t:'Görünüşte yasak — ama yakalayarak girebilirsin!',c:'info'}, fb_ok:'Harika! İstisna kuralını uyguladın — beyazları yakalayarak nefes açtın.', fb_err:'Köşeye (A9) git — beyaz taşları yakalarsın.' },
+      // ── Oyun Sonu — Ölü Taş (L6) ─────────────────────────────────────────
+      { text:`<p>★★★ <strong>Soru 9/12</strong> — Merkezdeki beyaz taşlar canlı mı, ölü mü?</p>`,
+        board:[
+          {color:'W',x:3,y:3},{color:'W',x:4,y:3},{color:'W',x:3,y:4},{color:'W',x:4,y:4},
+          {color:'B',x:2,y:3},{color:'B',x:5,y:3},{color:'B',x:2,y:4},{color:'B',x:5,y:4},
+          {color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:3,y:5},{color:'B',x:4,y:5}
+        ],
+        auto:true, size:9, camera:CAM.center,
+        miniQuestion:{text:'Beyaz taşlar canlı mı?',options:[
+          {text:'Hayır — gözsüz, ölü',correct:true,feedback:'Doğru! İçeride boş yer yok — göz yapılamaz. Bu taşlar tamamen çevrilmiş ve ölümlü.'},
+          {text:'Evet — kurtulabilir',correct:false,feedback:'Hayır. İçeride hiç boş alan yok — iki göz yapılamaz. Tamamen çevrilmiş ve ölümlü.'}
+        ]},
+        fb:{t:'Canlı grup = en az 2 gerçek göz. İç boş nokta yoksa yaşayamaz.',c:'info'} },
 
-      { text:`<p>★★★ <strong>Soru 11/12</strong> — Üst kenardaki üç taşlı grubu yakala.</p>`, board:[{color:'W',x:1,y:0},{color:'W',x:2,y:0},{color:'W',x:3,y:0},{color:'B',x:0,y:0},{color:'B',x:4,y:0},{color:'B',x:2,y:1},{color:'B',x:3,y:1}], answer:{x:1,y:1}, turn:'black', size:9, camera:CAM.high, capture:[{x:1,y:0},{x:2,y:0},{x:3,y:0}], fb:{t:'Üç taşlı kenar grubunun tek nefesini bul!',c:'info'}, fb_ok:'Üç taş birden yakalandı!', fb_err:'Grubun sol alt boş noktasını bul.' },
+      // ── Taş Alma — Zor (L3) ──────────────────────────────────────────────
+      { text:`<p>★★★ <strong>Soru 10/12</strong> — Sol üst köşedeki dört beyaz taşı yakala.</p>`,
+        board:[
+          {color:'W',x:0,y:0},{color:'W',x:1,y:0},{color:'W',x:0,y:1},{color:'W',x:0,y:2},
+          {color:'B',x:2,y:0},{color:'B',x:1,y:1},{color:'B',x:0,y:3}
+        ],
+        answer:{x:1,y:2}, turn:'black', size:9, camera:CAM.corner_tl,
+        capture:[{x:0,y:0},{x:1,y:0},{x:0,y:1},{x:0,y:2}],
+        fb:{t:'L-şeklindeki grubun tek açık noktasını bul!',c:'info'},
+        fb_ok:'Harika! Dört taşlı köşe grubu yakalandı.',
+        fb_err:'Grubun sağ alt boş noktasını bul.' },
 
-      { text:`<p>★★★★ <strong>Soru 12/12</strong> — Üst kenardaki dört taşlı grubu yakala.</p>`, board:[{color:'W',x:2,y:0},{color:'W',x:3,y:0},{color:'W',x:4,y:0},{color:'W',x:5,y:0},{color:'B',x:1,y:0},{color:'B',x:6,y:0},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:4,y:1},{color:'B',x:6,y:1}], answer:{x:5,y:1}, turn:'black', size:9, camera:CAM.high, capture:[{x:2,y:0},{x:3,y:0},{x:4,y:0},{x:5,y:0}], fb:{t:'Dört taşlı grubun tek nefesini bul!',c:'info'}, fb_ok:'Dört taş birden yakalandı! Mükemmel.', fb_err:'Grubun sağ alt boş noktasını bul.' },
+      // ── Oyun Sonu — Bölge Sayımı (L6) ────────────────────────────────────
+      { text:`<p>★★★ <strong>Soru 11/12</strong> — Hangi renk daha fazla bölgeye (eve) sahip?</p>`,
+        board:[
+          {color:'B',x:4,y:0},{color:'B',x:4,y:1},{color:'B',x:4,y:2},{color:'B',x:4,y:3},{color:'B',x:4,y:4},
+          {color:'B',x:0,y:4},{color:'B',x:1,y:4},{color:'B',x:2,y:4},{color:'B',x:3,y:4},
+          {color:'W',x:5,y:4},{color:'W',x:5,y:5},{color:'W',x:5,y:6},{color:'W',x:5,y:7},{color:'W',x:5,y:8},
+          {color:'W',x:6,y:4},{color:'W',x:7,y:4},{color:'W',x:8,y:4}
+        ],
+        blackTerritory:[
+          {x:0,y:0},{x:1,y:0},{x:2,y:0},{x:3,y:0},
+          {x:0,y:1},{x:1,y:1},{x:2,y:1},{x:3,y:1},
+          {x:0,y:2},{x:1,y:2},{x:2,y:2},{x:3,y:2},
+          {x:0,y:3},{x:1,y:3},{x:2,y:3},{x:3,y:3}
+        ],
+        whiteTerritory:[
+          {x:6,y:5},{x:7,y:5},{x:8,y:5},
+          {x:6,y:6},{x:7,y:6},{x:8,y:6},
+          {x:6,y:7},{x:7,y:7},{x:8,y:7},
+          {x:6,y:8},{x:7,y:8},{x:8,y:8}
+        ],
+        auto:true, size:9, camera:CAM.overview,
+        miniQuestion:{text:'Hangi taraf daha fazla bölgeye sahip?',options:[
+          {text:'Siyah — 16 ev',correct:true,feedback:'Doğru! Siyah: sol üst köşede 16 ev. Beyaz: sağ alt köşede 12 ev. Siyah önde!'},
+          {text:'Beyaz — 12 ev',correct:false,feedback:'Hayır. Beyaz 12 ev, Siyah 16 ev sahip — siyah önde.'},
+          {text:'Eşit',correct:false,feedback:'Hayır. Siyah 16, Beyaz 12 — eşit değil.'}
+        ]},
+        fb:{t:'Bölge = tarafınızın taşlarıyla çevrilmiş boş noktalardır.',c:'info'} },
 
-      { text:`<p>★★★ — <strong>A</strong> ve <strong>B</strong> ile işaretli iki gruptan hangisi daha fazla nefes noktasına sahip?</p>`, board:[{color:'B',x:6,y:2},{color:'B',x:5,y:3},{color:'B',x:3,y:6},{color:'B',x:5,y:6},{color:'B',x:6,y:5},{color:'B',x:7,y:5},{color:'B',x:7,y:6},{color:'B',x:3,y:7},{color:'B',x:4,y:7},{color:'B',x:5,y:7},{color:'W',x:2,y:6},{color:'W',x:3,y:5},{color:'W',x:4,y:5},{color:'W',x:5,y:5},{color:'W',x:4,y:6},{color:'W',x:6,y:6},{color:'W',x:6,y:7},{color:'W',x:7,y:7},{color:'W',x:2,y:7},{color:'W',x:8,y:7}], focusStones:[{x:3,y:6},{x:3,y:7},{x:4,y:7},{x:5,y:6},{x:5,y:7},{x:6,y:6},{x:6,y:7},{x:7,y:7},{x:8,y:7}], stoneLabels:[{x:3,y:7,label:'A'},{x:6,y:7,label:'B'}], showLiberties:true, auto:true, size:9, camera:CAM.overview, miniQuestion:{text:'Hangi grup daha fazla nefes noktasına sahip?',options:[{text:'A grubu (Siyah) daha fazla',correct:false,feedback:'Hayır. A grubu (Siyah) 3 nefes noktasında — B grubu daha fazla.'},{text:'B grubu (Beyaz) daha fazla',correct:true,feedback:'Doğru! B grubu (Beyaz) 4, A grubu (Siyah) 3 nefes noktasına sahip.'},{text:'İkisi eşit',correct:false,feedback:'Hayır. B grubu 4, A grubu 3 nefes noktası — eşit değil.'}]}, fb:{t:'A ve B işaretli grupların nefes noktalarını say.',c:'info'} },
+      // ── Yasak İstisna + Yakalama (L3+L4) ─────────────────────────────────
+      { text:`<p>★★★★ <strong>Soru 12/12</strong> — Köşe yasak görünüyor ama değil! Beyazları yakala ve nefes aç.</p>`,
+        board:[
+          {color:'B',x:2,y:0},{color:'B',x:1,y:1},{color:'B',x:0,y:2},
+          {color:'W',x:1,y:0},{color:'W',x:0,y:1}
+        ],
+        answer:{x:0,y:0}, turn:'black', size:9, camera:CAM.corner_tl,
+        capture:[{x:1,y:0},{x:0,y:1}],
+        fb:{t:'Görünüşte yasak — ama yakalama gerçekleşiyor. Yasak değil!',c:'info'},
+        fb_ok:'Harika! Yakalama nefes açar — bu hamle meşru. Yasak istisna anlaşıldı.',
+        fb_err:'Köşeye (0,0) oyna — beyaz iki taşın son nefesini kapatırsın ve onları yakalarsın.' },
+
     ]},
   ]},
 
