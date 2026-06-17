@@ -1884,7 +1884,7 @@ function render2D(){
     } else {
       const dead=deadSet.has(`${s.gx},${s.gz}`);
       let al=dead?0.28:1;
-      if(focusSet&&!dead&&!focusSet.has(`${s.gx},${s.gz}`)) al=0.11;
+      if(focusSet&&!dead&&!focusSet.has(`${s.gx},${s.gz}`)) al=0.38;
       drawStone2D(s.gx,s.gz,s.color,al,b);
     }
   });
@@ -1969,7 +1969,7 @@ function render() {
   for(const s of sorted){
     const dead = deadSet.has(`${s.gx},${s.gz}`);
     let al = s.removing ? Math.max(0,1-s.removeT) : (dead ? 0.28 : 1);
-    if(focusSet&&!dead&&!s.removing&&!focusSet.has(`${s.gx},${s.gz}`)) al=0.11;
+    if(focusSet&&!dead&&!s.removing&&!focusSet.has(`${s.gx},${s.gz}`)) al=0.38;
     const sc = s.done ? 1 : easeOutBack(Math.min(s.t,1));
     if(al>0) drawStone(s.wx,s.wy,s.wz,s.color,al,sc);
     if(s.showPts&&al>0) drawParticles(s.pts);
