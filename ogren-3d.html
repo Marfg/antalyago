@@ -1796,6 +1796,15 @@ function drawGhost2D(b){
   }
 }
 
+// Per-label neon colour palette
+const LABEL_NEON={
+  'A':{hex:'#00ffee',rgb:'0,255,238',rim:'#00bbaa'},
+  'B':{hex:'#ffaa00',rgb:'255,170,0',rim:'#cc8800'},
+  'C':{hex:'#ff00ee',rgb:'255,0,238',rim:'#cc00bb'},
+  'D':{hex:'#88ff00',rgb:'136,255,0',rim:'#66bb00'},
+};
+function _lc(label){ return LABEL_NEON[label]||LABEL_NEON['A']; }
+
 function drawStoneLabels3D(labels){
   if(!labels||!labels.length) return;
   for(const l of labels){
@@ -1803,28 +1812,35 @@ function drawStoneLabels3D(labels){
     const wy=-(BOARD_H/2)-STONE_R*ASPECT_3D-1;
     const p=project(wx,wy,wz);
     const {rx,ry}=stoneRadii(p);
-    const r=rx*.56, sx=p.sx, sy=p.sy, ery=r*ry/rx;
+    const r=rx*.60, sx=p.sx, sy=p.sy, ery=r*ry/rx;
+    const lc=_lc(l.label);
     ctx.save();
-    // Drop shadow
-    ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=r*.9; ctx.shadowOffsetY=ery*.38;
-    // Dark badge
-    const bg=ctx.createRadialGradient(sx-r*.22,sy-ery*.22,r*.05,sx,sy,r);
-    bg.addColorStop(0,'#1e2440'); bg.addColorStop(.6,'#0d1222'); bg.addColorStop(1,'#060810');
+    // Outer haze glow
+    ctx.shadowColor=lc.hex; ctx.shadowBlur=r*2.2; ctx.shadowOffsetX=0; ctx.shadowOffsetY=0;
+    ctx.beginPath(); ctx.ellipse(sx,sy,r,ery,0,0,Math.PI*2);
+    ctx.strokeStyle='transparent'; ctx.lineWidth=1; ctx.stroke();
+    ctx.shadowColor='transparent';
+    // Deep-space badge background
+    const bg=ctx.createRadialGradient(sx-r*.28,sy-ery*.28,r*.03,sx,sy,r*1.05);
+    bg.addColorStop(0,'#0a0015'); bg.addColorStop(.55,'#04000c'); bg.addColorStop(1,'#000005');
     ctx.beginPath(); ctx.ellipse(sx,sy,r,ery,0,0,Math.PI*2);
     ctx.fillStyle=bg; ctx.fill();
-    ctx.shadowColor='transparent';
-    // Gold metallic rim
-    const rim=ctx.createLinearGradient(sx-r,sy-ery,sx+r,sy+ery);
-    rim.addColorStop(0,'#ffe066'); rim.addColorStop(.5,'#a06818'); rim.addColorStop(1,'#ffe066');
-    ctx.strokeStyle=rim; ctx.lineWidth=r*.17; ctx.stroke();
-    // Neon letter — layered glow
-    ctx.font=`bold ${Math.round(r*1.40)}px Georgia,serif`;
+    // Thick neon rim
+    ctx.strokeStyle=lc.rim; ctx.lineWidth=r*.26;
+    ctx.beginPath(); ctx.ellipse(sx,sy,r,ery,0,0,Math.PI*2);
+    ctx.stroke();
+    // Thin bright inner rim
+    ctx.strokeStyle=lc.hex; ctx.lineWidth=r*.07;
+    ctx.stroke();
+    // Neon letter — 5-layer bloom
+    ctx.font=`bold ${Math.round(r*1.52)}px 'Courier New',monospace`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    [[r*2.8,.28],[r*1.4,.62],[r*.48,.96]].forEach(([blur,al])=>{
-      ctx.shadowColor='#00e8ff'; ctx.shadowBlur=blur;
-      ctx.fillStyle=`rgba(0,232,255,${al})`; ctx.fillText(l.label,sx,sy);
+    [[r*5.0,.12],[r*3.2,.26],[r*1.8,.50],[r*.7,.80],[r*.2,.97]].forEach(([blur,al])=>{
+      ctx.shadowColor=lc.hex; ctx.shadowBlur=blur;
+      ctx.fillStyle=`rgba(${lc.rgb},${al})`; ctx.fillText(l.label,sx,sy);
     });
-    ctx.shadowColor='transparent'; ctx.fillStyle='#e8ffff'; ctx.fillText(l.label,sx,sy);
+    // Crisp white core
+    ctx.shadowColor='transparent'; ctx.fillStyle='#ffffff'; ctx.fillText(l.label,sx,sy);
     ctx.restore();
   }
 }
@@ -1832,24 +1848,34 @@ function drawStoneLabels3D(labels){
 function drawStoneLabels2D(labels,b){
   if(!labels||!labels.length) return;
   for(const l of labels){
-    const sx=gx2(l.x,b),sy=gy2(l.y,b),r=b.r*.56;
+    const sx=gx2(l.x,b),sy=gy2(l.y,b),r=b.r*.60;
+    const lc=_lc(l.label);
     ctx.save();
-    ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=r*.9; ctx.shadowOffsetY=r*.38;
-    const bg=ctx.createRadialGradient(sx-r*.22,sy-r*.22,r*.05,sx,sy,r);
-    bg.addColorStop(0,'#1e2440'); bg.addColorStop(.6,'#0d1222'); bg.addColorStop(1,'#060810');
+    // Outer haze
+    ctx.shadowColor=lc.hex; ctx.shadowBlur=r*2.2;
+    ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2);
+    ctx.strokeStyle='transparent'; ctx.lineWidth=1; ctx.stroke();
+    ctx.shadowColor='transparent';
+    // Badge background
+    const bg=ctx.createRadialGradient(sx-r*.28,sy-r*.28,r*.03,sx,sy,r*1.05);
+    bg.addColorStop(0,'#0a0015'); bg.addColorStop(.55,'#04000c'); bg.addColorStop(1,'#000005');
     ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2);
     ctx.fillStyle=bg; ctx.fill();
-    ctx.shadowColor='transparent';
-    const rim=ctx.createLinearGradient(sx-r,sy-r,sx+r,sy+r);
-    rim.addColorStop(0,'#ffe066'); rim.addColorStop(.5,'#a06818'); rim.addColorStop(1,'#ffe066');
-    ctx.strokeStyle=rim; ctx.lineWidth=r*.17; ctx.stroke();
-    ctx.font=`bold ${Math.round(r*1.40)}px Georgia,serif`;
+    // Thick neon rim
+    ctx.strokeStyle=lc.rim; ctx.lineWidth=r*.26;
+    ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2);
+    ctx.stroke();
+    // Thin bright inner rim
+    ctx.strokeStyle=lc.hex; ctx.lineWidth=r*.07;
+    ctx.stroke();
+    // 5-layer bloom letter
+    ctx.font=`bold ${Math.round(r*1.52)}px 'Courier New',monospace`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    [[r*2.8,.28],[r*1.4,.62],[r*.48,.96]].forEach(([blur,al])=>{
-      ctx.shadowColor='#00e8ff'; ctx.shadowBlur=blur;
-      ctx.fillStyle=`rgba(0,232,255,${al})`; ctx.fillText(l.label,sx,sy);
+    [[r*5.0,.12],[r*3.2,.26],[r*1.8,.50],[r*.7,.80],[r*.2,.97]].forEach(([blur,al])=>{
+      ctx.shadowColor=lc.hex; ctx.shadowBlur=blur;
+      ctx.fillStyle=`rgba(${lc.rgb},${al})`; ctx.fillText(l.label,sx,sy);
     });
-    ctx.shadowColor='transparent'; ctx.fillStyle='#e8ffff'; ctx.fillText(l.label,sx,sy);
+    ctx.shadowColor='transparent'; ctx.fillStyle='#ffffff'; ctx.fillText(l.label,sx,sy);
     ctx.restore();
   }
 }
