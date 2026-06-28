@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "1.0.0",
+  "updatedAt": "2026-06-28",
+  "problems": [
+    {
+      "id": "b1-l2-liberty-count-0001",
+      "path": "problems/b1-l2-liberty-count-0001.json",
+      "status": "verified",
+      "curriculum": {
+        "chapter": "B1",
+        "lesson": "l2",
+        "node": "practice"
+      },
+      "stage": "variable_practice",
+      "interactionType": "numeric_count",
+      "concepts": [
+        "liberty",
+        "corner"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "b1-l3-capture-0001",
+      "path": "problems/b1-l3-capture-0001.json",
+      "status": "verified",
+      "curriculum": {
+        "chapter": "B1",
+        "lesson": "l3",
+        "node": "assessment"
+      },
+      "stage": "assessment",
+      "interactionType": "capture_goal",
+      "concepts": [
+        "capture",
+        "atari",
+        "liberty"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "b2-l10-ladder-sequence-0001",
+      "path": "problems/b2-l10-ladder-sequence-0001.json",
+      "status": "verified",
+      "curriculum": {
+        "chapter": "B2",
+        "lesson": "l10",
+        "node": "practice"
+      },
+      "stage": "guided_practice",
+      "interactionType": "sequence",
+      "concepts": [
+        "ladder",
+        "atari",
+        "forced_sequence"
+      ],
+      "difficulty": 2
+    }
+  ]
+}

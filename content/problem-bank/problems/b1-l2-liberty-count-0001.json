@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "b1-l2-liberty-count-0001",
+  "title": "Köşe taşının nefesleri",
+  "status": "verified",
+  "curriculum": {
+    "chapter": "B1",
+    "lesson": "l2",
+    "node": "practice"
+  },
+  "stage": "variable_practice",
+  "interactionType": "numeric_count",
+  "concepts": [
+    "liberty",
+    "corner"
+  ],
+  "source": {
+    "documentId": "falling-in-love-with-baduk",
+    "page": 17,
+    "usage": "concept_reference"
+  },
+  "board": {
+    "size": 9,
+    "toPlay": "B",
+    "stones": [
+      {
+        "color": "W",
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "markers": []
+  },
+  "question": {
+    "prompt": "Köşedeki beyaz taşın kaç nefes noktası var?",
+    "options": [
+      {
+        "text": "2",
+        "correct": true,
+        "feedback": "Doğru. Köşede yalnızca iki komşu kesişim vardır."
+      },
+      {
+        "text": "3",
+        "correct": false,
+        "feedback": "Kenar ile köşeyi ayır: köşede iki açık yön vardır."
+      },
+      {
+        "text": "4",
+        "correct": false,
+        "feedback": "Dört nefes yalnızca merkezdeki tek taş için geçerlidir."
+      }
+    ]
+  },
+  "solution": {
+    "terminalChecks": [
+      "liberty_count:2"
+    ]
+  },
+  "difficulty": {
+    "authorLevel": 1,
+    "estimated": 0.12,
+    "calibrated": null
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "concept",
+      "text": "Yalnız yatay ve dikey komşuları say."
+    }
+  ],
+  "feedback": {
+    "initial": "Beyaz taşın boş komşularını say."
+  },
+  "variantPolicy": {
+    "rotate": true,
+    "mirror": true,
+    "swapColors": true,
+    "translate": false
+  },
+  "rights": {
+    "status": "original",
+    "notes": "Pozisyon AntalyaGo için yeniden kuruldu."
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "b1-l3-capture-0001",
+  "title": "Son nefesi kapat",
+  "status": "verified",
+  "curriculum": {
+    "chapter": "B1",
+    "lesson": "l3",
+    "node": "assessment"
+  },
+  "stage": "assessment",
+  "interactionType": "capture_goal",
+  "concepts": [
+    "capture",
+    "atari",
+    "liberty"
+  ],
+  "source": {
+    "documentId": "falling-in-love-with-baduk",
+    "page": 21,
+    "usage": "concept_reference"
+  },
+  "board": {
+    "size": 9,
+    "toPlay": "B",
+    "stones": [
+      {
+        "color": "W",
+        "x": 4,
+        "y": 4
+      },
+      {
+        "color": "B",
+        "x": 3,
+        "y": 4
+      },
+      {
+        "color": "B",
+        "x": 4,
+        "y": 3
+      },
+      {
+        "color": "B",
+        "x": 5,
+        "y": 4
+      }
+    ],
+    "markers": []
+  },
+  "question": {
+    "prompt": "Beyaz taşı tek hamlede yakala."
+  },
+  "goal": {
+    "type": "capture_group",
+    "targetGroup": [
+      {
+        "x": 4,
+        "y": 4
+      }
+    ],
+    "maxMoves": 1
+  },
+  "solution": {
+    "acceptedMoves": [
+      {
+        "x": 4,
+        "y": 5
+      }
+    ],
+    "terminalChecks": [
+      "target_captured"
+    ]
+  },
+  "difficulty": {
+    "authorLevel": 1,
+    "estimated": 0.18,
+    "calibrated": null
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "concept",
+      "text": "Beyazın kalan nefesini bul."
+    },
+    {
+      "level": 2,
+      "type": "region",
+      "points": [
+        {
+          "x": 4,
+          "y": 5
+        }
+      ]
+    }
+  ],
+  "feedback": {
+    "initial": "Son nefesi kapat.",
+    "correct": "Beyaz taş yakalandı.",
+    "incorrect": "Beyazın boş kalan tek komşusunu ara."
+  },
+  "variantPolicy": {
+    "rotate": true,
+    "mirror": true,
+    "swapColors": true,
+    "translate": true
+  },
+  "rights": {
+    "status": "original",
+    "notes": "Pozisyon AntalyaGo için yeniden kuruldu."
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "b2-l10-ladder-sequence-0001",
+  "title": "Merdiveni başlat",
+  "status": "verified",
+  "curriculum": {
+    "chapter": "B2",
+    "lesson": "l10",
+    "node": "practice"
+  },
+  "stage": "guided_practice",
+  "interactionType": "sequence",
+  "concepts": [
+    "ladder",
+    "atari",
+    "forced_sequence"
+  ],
+  "source": {
+    "documentId": "falling-in-love-with-baduk",
+    "page": 99,
+    "usage": "concept_reference"
+  },
+  "board": {
+    "size": 9,
+    "toPlay": "B",
+    "stones": [
+      {
+        "color": "W",
+        "x": 4,
+        "y": 4
+      },
+      {
+        "color": "B",
+        "x": 3,
+        "y": 4
+      },
+      {
+        "color": "B",
+        "x": 4,
+        "y": 5
+      }
+    ],
+    "markers": []
+  },
+  "question": {
+    "prompt": "Beyazı merdivene almak için doğru atariyle başla."
+  },
+  "goal": {
+    "type": "capture_group",
+    "targetGroup": [
+      {
+        "x": 4,
+        "y": 4
+      }
+    ],
+    "maxMoves": 5
+  },
+  "solution": {
+    "sequence": [
+      {
+        "color": "B",
+        "move": {
+          "x": 4,
+          "y": 3
+        }
+      },
+      {
+        "color": "W",
+        "move": {
+          "x": 5,
+          "y": 4
+        }
+      },
+      {
+        "color": "B",
+        "move": {
+          "x": 5,
+          "y": 3
+        }
+      }
+    ],
+    "terminalChecks": [
+      "forced_sequence_started"
+    ],
+    "tree": null
+  },
+  "difficulty": {
+    "authorLevel": 2,
+    "estimated": 0.35,
+    "calibrated": null
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "concept",
+      "text": "Beyazı zikzak kaçışa zorlayacak atariyi seç."
+    }
+  ],
+  "feedback": {
+    "initial": "İlk atari yönünü bul.",
+    "correct": "Merdiven başladı.",
+    "incorrect": "Beyazın kaçış yönünü kontrol eden atariyi ara."
+  },
+  "variantPolicy": {
+    "rotate": true,
+    "mirror": true,
+    "swapColors": true,
+    "translate": true
+  },
+  "rights": {
+    "status": "original",
+    "notes": "Pozisyon AntalyaGo için yeniden kuruldu."
+  }
+}
