@@ -9,6 +9,7 @@
  */
 
 import { meetsGoal } from './pedagogyEngine.js';
+import { buildAssessmentBlueprint, summarizeAssessmentResponses } from './learningContext.js';
 
 // ── Tek doğrulama fonksiyonu ───────────────────────────────────────
 
@@ -61,6 +62,8 @@ export class LessonEngine {
     // Değerlendirme oturum skoru
     this._degCorrect = 0;
     this._degTotal   = 0;
+    this._degBlueprint = [];
+    this._degResponses = new Map();
 
     // localStorage'dan tamamlanan dersler
     this._loadDone();
@@ -82,6 +85,9 @@ export class LessonEngine {
     if (this.isAssessment(lessonId)) {
       this._degCorrect = 0;
       this._degTotal   = 0;
+      const chapter = this.curriculum.find(c => c.lessons.includes(lesson)) || null;
+      this._degBlueprint = buildAssessmentBlueprint(lesson, chapter);
+      this._degResponses = new Map();
     }
     return this.loadStep(0);
   }
@@ -140,10 +146,18 @@ export class LessonEngine {
    * Değerlendirme adımında cevabı kaydet (miniQuestion için).
    * @param {boolean} correct
    */
-  recordDegAnswer(correct) {
-    if (!this.isAssessment(this.curLesson?.id)) return;
-    this._degTotal++;
-    if (correct) this._degCorrect++;
+  recordDegAnswer(correct, metadata = {}) {
+    if (!this.isAssessment(this.curLesson?.id)) return false;
+    const itemId = this.curLesson.id + ':' + this.curStepIdx;
+    if (!this._degBlueprint.some(item => item.id === itemId) || this._degResponses.has(itemId)) return false;
+    this._degResponses.set(itemId, {
+      correct: !!correct,
+      attempts: metadata.attempts ?? Math.max(1, this.mistakeCount + 1),
+      recordedAt: metadata.recordedAt || Date.now(),
+    });
+    this._degTotal = this._degResponses.size;
+    this._degCorrect = [...this._degResponses.values()].filter(answer => answer.correct).length;
+    return true;
   }
 
   /**
@@ -151,11 +165,10 @@ export class LessonEngine {
    * @returns {{ correct: number, total: number, pct: number, level: 'pass'|'partial'|'retry' }}
    */
   getDegResult() {
-    const correct = this._degCorrect;
-    const total   = this._degTotal || this.curLesson?.steps.length || 1;
-    const pct     = Math.round(correct / total * 100);
-    const level   = pct >= 80 ? 'pass' : pct >= 60 ? 'partial' : 'retry';
-    return { correct, total, pct, level };
+    if (!this.isAssessment(this.curLesson?.id)) {
+      return { correct: 0, total: 0, expected: 0, answered: 0, unanswered: 0, pct: 0, weightedPct: 0, level: 'retry', concepts: [], gaps: [], strengths: [] };
+    }
+    return summarizeAssessmentResponses(this._degBlueprint, this._degResponses);
   }
 
   // ── Yardımcı erişiciler ──────────────────────────────────────────

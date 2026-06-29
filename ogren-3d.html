@@ -2984,7 +2984,9 @@ function showDegResult() {
   };
   document.getElementById('deg-icon').textContent  = icons[r.level];
   document.getElementById('deg-score').textContent = `${r.correct} / ${r.total}`;
-  document.getElementById('deg-msg').textContent   = msgs[r.level];
+  const conceptLabels = { liberty:'nefes noktaları', capture:'taş alma', atari:'atari', connection:'kesme ve bağlama', life_and_death:'canlılık ve gözler', ko:'ko', forbidden_move:'yasak hamleler', ladder:'merdiven', net:'ağ', snapback:'snapback', territory:'bölge ve sayım', opening:'açılış', endgame:'son oyun', shape:'şekil', general_go:'genel tahta okuma' };
+  const gapText = r.gaps?.length ? ' Güçlendirilecek alanlar: ' + r.gaps.slice(0, 3).map(id => conceptLabels[id] || id).join(', ') + '.' : ' Kavram dağılımın dengeli görünüyor.';
+  document.getElementById('deg-msg').textContent = msgs[r.level] + gapText;
   const actEl = document.getElementById('deg-actions');
   actEl.innerHTML = '';
   if (r.level === 'retry') {

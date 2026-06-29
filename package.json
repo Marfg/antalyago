@@ -1,13 +1,15 @@
-﻿{
-    "type":  "module",
-    "scripts":  {
-                    "serve":  "npx serve . -p 3000 --no-clipboard",
-                    "test-core":  "node --experimental-vm-modules tests/run.js",
-                    "test-problems":  "node tests/problemBank.test.js",
-                    "validate-problems":  "node scripts/problem-bank/validate.mjs",
-                    "test-all":  "npm run test-core \u0026\u0026 npm run test-problems"
-                },
-    "devDependencies":  {
-                            "playwright-core":  "^1.59.1"
-                        }
+{
+  "type": "module",
+  "scripts": {
+    "serve": "npx serve . -p 3000 --no-clipboard",
+    "test-core": "node --experimental-vm-modules tests/run.js",
+    "test-problems": "node tests/problemBank.test.js",
+    "validate-problems": "node scripts/problem-bank/validate.mjs",
+    "test-all": "npm run test-core && npm run test-problems && npm run test-learning",
+    "test-learning": "node tests/learningContext.test.js",
+    "audit-curriculum": "node scripts/curriculum/audit.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.59.1"
+  }
 }
