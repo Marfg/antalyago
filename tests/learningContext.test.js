@@ -43,8 +43,8 @@ test('müfredatın tamamı sınıflandırılır', () => {
 test('uygulama ve değerlendirme adımları ayrıdır', () => {
   ok(audit.summary.guidedPractice > 0);
   ok(audit.summary.variablePractice > 0);
-  equal(audit.summary.assessment, 35);
-  equal(audit.summary.assessmentExplanations, 1);
+  equal(audit.summary.assessment, 36);
+  equal(audit.summary.assessmentExplanations, 0);
 });
 
 test('bağlam kavramları çıkarılır', () => {
@@ -64,7 +64,7 @@ test('değerlendirme açıklaması puan paydasına girmez', () => {
   const lesson = CURRICULUM[1].lessons.find(item => item.id === 'l2_deg');
   const blueprint = buildAssessmentBlueprint(lesson, CURRICULUM[1]);
   equal(lesson.steps.length, 12);
-  equal(blueprint.length, 11);
+  equal(blueprint.length, 12);
 });
 
 test('eksik cevap başarı oranını şişirmez', () => {
