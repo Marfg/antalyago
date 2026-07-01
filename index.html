@@ -232,6 +232,127 @@
     .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
     .btn-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
+    /* ── Instagram Butonu ── */
+    .btn-instagram {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 16px;
+      border: 1px solid rgba(184,149,90,0.35);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--fg-muted);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: border-color 200ms ease, color 200ms ease, background 200ms ease;
+    }
+    .btn-instagram svg {
+      width: 15px; height: 15px;
+      flex-shrink: 0;
+      opacity: 0.75;
+      transition: opacity 200ms ease;
+    }
+    .btn-instagram:hover {
+      border-color: var(--accent);
+      color: var(--fg);
+      background: rgba(184,149,90,0.06);
+    }
+    .btn-instagram:hover svg { opacity: 1; }
+    .btn-instagram:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+
+    /* ── 9×9 ROBOT ÇAĞRISI ── */
+    .robot-callout {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 28px;
+      margin: 32px 72px 0;
+      padding: 28px 32px;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(184,149,90,.18), transparent 34%),
+        var(--bg-surface);
+      border: 1px solid rgba(184,149,90,.28);
+      border-radius: 14px;
+      box-shadow: 0 12px 36px var(--shadow);
+    }
+    .robot-callout__board {
+      width: 92px;
+      height: 92px;
+      border-radius: 12px;
+      border: 1px solid rgba(184,149,90,.35);
+      background:
+        linear-gradient(rgba(184,149,90,.28) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(184,149,90,.28) 1px, transparent 1px),
+        rgba(184,149,90,.08);
+      background-size: 11.5px 11.5px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .robot-callout__board span {
+      position: absolute;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 10px rgba(184,149,90,.28);
+    }
+    .robot-callout__board span:nth-child(1) { left: 18px; top: 18px; background: #15120e; }
+    .robot-callout__board span:nth-child(2) { left: 42px; top: 18px; background: #f7efe0; }
+    .robot-callout__board span:nth-child(3) { left: 66px; top: 18px; background: #15120e; }
+    .robot-callout__board span:nth-child(4) { left: 30px; top: 42px; background: #f7efe0; }
+    .robot-callout__board span:nth-child(5) { left: 54px; top: 42px; background: #15120e; }
+    .robot-callout__board span:nth-child(6) { left: 18px; top: 66px; background: #f7efe0; }
+    .robot-callout__board span:nth-child(7) { left: 42px; top: 66px; background: #15120e; }
+    .robot-callout__board span:nth-child(8) { left: 66px; top: 66px; background: #f7efe0; }
+    .robot-callout__board span:nth-child(9) { left: 42px; top: 42px; background: var(--gold); }
+    .robot-callout__content { min-width: 0; }
+    .robot-callout__eyebrow {
+      margin: 0 0 6px;
+      font-size: .78rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .robot-callout h2 {
+      margin: 0 0 8px;
+      font-family: var(--font-heading);
+      font-size: clamp(1.65rem, 3vw, 2.35rem);
+      color: var(--fg);
+    }
+    .robot-callout p {
+      margin: 0 0 10px;
+      color: var(--fg-muted);
+      line-height: 1.6;
+      max-width: 640px;
+    }
+    .robot-callout span {
+      color: var(--accent);
+      font-size: .9rem;
+      font-weight: 600;
+    }
+    .robot-callout__button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 52px;
+      padding: 0 28px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #FDFAF5;
+      text-decoration: none;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 8px 22px rgba(184,149,90,.22);
+      transition: transform .18s ease, background .18s ease;
+    }
+    .robot-callout__button:hover { background: var(--accent-hover); transform: translateY(-1px); }
+    .robot-callout__button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
 
     /* ── ÖĞRENİM MODÜLLERİ ── */
     .modules {
@@ -718,6 +839,20 @@
         padding: 32px 24px 48px;
       }
       .hero-title { font-size: clamp(1.8rem, 7vw, 2.4rem); }
+      .robot-callout {
+        grid-template-columns: 1fr;
+        gap: 18px;
+        margin: 20px 24px 0;
+        padding: 24px;
+      }
+      .robot-callout__board {
+        width: 78px;
+        height: 78px;
+      }
+      .robot-callout__button {
+        width: 100%;
+        min-height: 54px;
+      }
       .modules { padding: 48px 24px; }
       .community { padding: 48px 24px; }
       .site-footer { padding: 20px 24px; }
@@ -758,6 +893,7 @@
     <ul class="site-nav">
       <li><a href="/">Ana Sayfa</a></li>
       <li><a href="go-nedir.html">Go Nedir?</a></li>
+      <li><a href="robot.html">Robotla Oyna</a></li>
       <li><a href="#topluluk">Topluluk</a></li>
     </ul>
   </nav>
@@ -795,6 +931,21 @@
 
   </div>
 
+</section>
+
+<!-- ══ 9×9 ROBOT ÇAĞRISI ══ -->
+<section class="robot-callout" aria-labelledby="robot-callout-title">
+  <div class="robot-callout__board" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span>
+  </div>
+  <div class="robot-callout__content">
+    <p class="robot-callout__eyebrow">Pratik modu</p>
+    <h2 id="robot-callout-title">9×9 Robotla Oyna</h2>
+    <p>Küçük tahtada hızlı bir parti yap. Robot seviyesini sana göre ayarlasın; hata yap, dene, öğren.</p>
+    <span>Yeni başlayanlar için önerilir · Uyarlanabilir robot rakip</span>
+  </div>
+  <a href="robot.html" class="robot-callout__button">9×9 Oyuna Başla</a>
 </section>
 
 <!-- ══ ÖĞRENME MODÜLLERİ ══ -->
@@ -984,8 +1135,15 @@
       </p>
 
       <div class="today-links">
-        <a href="https://instagram.com/antalyago" target="_blank" rel="noopener">Instagram @antalyago</a>
-        <a href="https://facebook.com/AntalyaGo" target="_blank" rel="noopener">Facebook</a>
+        <a href="https://www.instagram.com/antalyago/" target="_blank" rel="noopener noreferrer" class="btn-instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+          </svg>
+          @antalyago
+        </a>
+        <a href="https://facebook.com/AntalyaGo" target="_blank" rel="noopener noreferrer">Facebook</a>
       </div>
     </div>
 

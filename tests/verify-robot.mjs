@@ -37,16 +37,39 @@ async function context(options={}){
     window.Worker=FakeWorker;
   },{kataReady:options.kataReady??false,mctsMode:options.mctsMode||'move',delayMs:options.delayMs||0,storage:options.storage});
   const page=await ctx.newPage();
-  await page.goto(`${BASE}/robot.html?e2e=1`,{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>window.__robotTest);
+  await page.goto(`${BASE}/${options.path||'robot.html?e2e=1'}`,{waitUntil:'domcontentloaded'});
+  if(options.waitRobot!==false)await page.waitForFunction(()=>window.__robotTest);
   return{ctx,page};
 }
+
+await test('ana sayfada belirgin 9×9 robot çağrısı görünür',async()=>{
+  const{ctx,page}=await context({path:'index.html',waitRobot:false});
+  await page.getByRole('heading',{name:'9×9 Robotla Oyna'}).waitFor();
+  const playButton=page.getByRole('link',{name:'9×9 Oyuna Başla'});
+  await playButton.waitFor();
+  assert((await playButton.getAttribute('href'))==='robot.html','ana oyun butonu robot.html hedeflemiyor');
+  const navLink=page.getByRole('navigation',{name:'Ana navigasyon'}).getByRole('link',{name:'Robotla Oyna'});
+  await navLink.waitFor();
+  assert((await navLink.getAttribute('href'))==='robot.html','header robot bağlantısı robot.html hedeflemiyor');
+  await ctx.close();
+});
+
+await test('öğrenme ekranında robot pratik kartı görünür',async()=>{
+  const{ctx,page}=await context({path:'ogren-3d.html',waitRobot:false});
+  const link=page.getByRole('link',{name:'Pratik yap: 9×9 Robotla Oyna'});
+  await link.waitFor();
+  assert((await link.getAttribute('href'))==='robot.html','öğrenme ekranı robot bağlantısı robot.html hedeflemiyor');
+  await ctx.close();
+});
 
 await test('Uyarlanabilir mod varsayılan açılır ve bozuk veri sıfırlanır',async()=>{
   const{ctx,page}=await context({storage:'{bozuk'});const state=await page.evaluate(()=>window.__robotTest.state());
   assert(state.currentLevel===0,'Uyarlanabilir seçili değil');assert(state.adaptive.profile==='beginner','bozuk veri Başlangıç durumuna dönmedi');
   await page.getByText('Tamamlanan oyunlarına bakar').waitFor();
   await page.getByText('Uyarlanabilir seviye').waitFor();
+  for(const label of ['Uyarlanabilir','Başlangıç','Orta','Güçlü'])await page.locator('#diff-grid').getByRole('button',{name:new RegExp(label)}).waitFor();
+  const diffText=await page.locator('#diff-grid').innerText();
+  assert(!/\bkyu\b|\bdan\b/i.test(diffText),'zorluk kartlarında kyu/dan iddiası var');
   await ctx.close();
 });
 

@@ -358,6 +358,21 @@
     .ctx-btn:hover { border-color: var(--gold); background: rgba(200,168,75,.08); color: var(--gold); }
     .ctx-btn--muted { opacity: .45; font-weight: 400; font-size: .76rem; border-color: transparent; }
     .ctx-btn--muted:hover { opacity: 1; border-color: var(--gborder); }
+    .robot-practice-link {
+      display: block; margin-top: .7rem; padding: .75rem .85rem;
+      border: 1px solid rgba(200,168,75,.45); border-radius: 9px;
+      color: var(--gold); text-decoration: none;
+      font-family: 'Noto Sans', sans-serif; font-size: .86rem; font-weight: 800;
+      background: linear-gradient(135deg, rgba(200,168,75,.13), rgba(200,168,75,.04));
+      box-shadow: 0 8px 22px rgba(0,0,0,.18);
+      transition: border-color .15s, background .15s, transform .15s;
+    }
+    .robot-practice-link:hover,
+    .robot-practice-link:focus-visible {
+      border-color: var(--gold); background: rgba(200,168,75,.12);
+      outline: none;
+      transform: translateY(-1px);
+    }
 
     /* ── NAV BAR ── */
     #nav-bar {
@@ -954,6 +969,7 @@
     <div class="bp-desc" id="bp-desc">Yeni başlayanlar için 9×9 tahtasıyla başlamak önerilir.</div>
   </div>
 
+  <a class="robot-practice-link" href="robot.html">Pratik yap: 9×9 Robotla Oyna</a>
   <div id="ctx-buttons"></div>
 
   <div id="feedback" class="info">
