@@ -15,6 +15,7 @@ export const DEFAULT_KOMI = 6.5;
 const MAX_PLY   = 200;  // rollout hamle sınırı (döngü koruması)
 
 export const AI_PROFILES = Object.freeze({
+  club:     Object.freeze({ id:'club',     name:'Kulüp Robotu', iterations:600, topK:1, temperature:0.08, thinkingTimeMs:1600 }),
   beginner: Object.freeze({ id:'beginner', name:'Başlangıç', iterations:40,  topK:5, temperature:0.90, thinkingTimeMs:350 }),
   medium:   Object.freeze({ id:'medium',   name:'Orta',      iterations:120, topK:3, temperature:0.35, thinkingTimeMs:750 }),
   strong:   Object.freeze({ id:'strong',   name:'Güçlü',     iterations:300, topK:1, temperature:0,    thinkingTimeMs:1400 }),

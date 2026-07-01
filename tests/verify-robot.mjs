@@ -5,7 +5,6 @@ import { fileURLToPath } from 'url';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const BASE='http://antalyago.test';
-const STORAGE_KEY='antalyago.adaptiveAI.v1';
 let passed=0,failed=0;
 function assert(value,message){if(!value)throw new Error(message)}
 async function test(name,fn){try{await fn();console.log('  ✓',name);passed++}catch(error){console.error('  ✗',name,'-',error.message);failed++}}
@@ -19,12 +18,13 @@ async function context(options={}){
     const file=path.join(ROOT,new URL(route.request().url()).pathname);
     try{await route.fulfill({status:200,contentType:mime(file),body:fs.readFileSync(file)})}catch{await route.abort()}
   });
-  await ctx.addInitScript(({kataReady,mctsMode,delayMs,storage})=>{
-    if(storage!==undefined)localStorage.setItem('antalyago.adaptiveAI.v1',storage);
+  await ctx.addInitScript(({mctsMode,delayMs})=>{
+    window.__workerMessages=[];
     class FakeWorker extends EventTarget{
-      constructor(url){super();this.url=String(url);if(this.url.includes('kataWorker'))setTimeout(()=>this.emit({ok:kataReady,type:'READY',backend:kataReady?'test-cpu':undefined,error:kataReady?undefined:'offline test'}),0)}
+      constructor(url){super();this.url=String(url)}
       emit(data){this.dispatchEvent(new MessageEvent('message',{data}))}
       postMessage(data){
+        window.__workerMessages.push({...data,boardData:undefined});
         if(data.type==='LOAD')return;
         if(data.type==='SCORE'){setTimeout(()=>this.emit({ok:true,type:'SCORE',score:{winner:'white',rawDiff:-6.5,margin:6.5,komi:data.boardData.komi,blackTerritory:[],whiteTerritory:[],blackDead:[],whiteDead:[]},gameId:data.gameId,requestId:data.requestId}),0);return}
         if(data.type==='MOVE'||data.type==='MOVE_PROFILE'){
@@ -35,7 +35,7 @@ async function context(options={}){
       terminate(){}
     }
     window.Worker=FakeWorker;
-  },{kataReady:options.kataReady??false,mctsMode:options.mctsMode||'move',delayMs:options.delayMs||0,storage:options.storage});
+  },{mctsMode:options.mctsMode||'move',delayMs:options.delayMs||0});
   const page=await ctx.newPage();
   await page.goto(`${BASE}/${options.path||'robot.html?e2e=1'}`,{waitUntil:'domcontentloaded'});
   if(options.waitRobot!==false)await page.waitForFunction(()=>window.__robotTest);
@@ -62,48 +62,31 @@ await test('öğrenme ekranında robot pratik kartı görünür',async()=>{
   await ctx.close();
 });
 
-await test('Uyarlanabilir mod varsayılan açılır ve bozuk veri sıfırlanır',async()=>{
-  const{ctx,page}=await context({storage:'{bozuk'});const state=await page.evaluate(()=>window.__robotTest.state());
-  assert(state.currentLevel===0,'Uyarlanabilir seçili değil');assert(state.adaptive.profile==='beginner','bozuk veri Başlangıç durumuna dönmedi');
-  await page.getByText('Tamamlanan oyunlarına bakar').waitFor();
-  await page.getByText('Uyarlanabilir seviye').waitFor();
-  for(const label of ['Uyarlanabilir','Başlangıç','Orta','Güçlü'])await page.locator('#diff-grid').getByRole('button',{name:new RegExp(label)}).waitFor();
-  const diffText=await page.locator('#diff-grid').innerText();
-  assert(!/\bkyu\b|\bdan\b/i.test(diffText),'zorluk kartlarında kyu/dan iddiası var');
+await test('ekran yalnız Kulüp Robotu seviyesini gösterir',async()=>{
+  const{ctx,page}=await context();const state=await page.evaluate(()=>window.__robotTest.state());
+  assert(state.profile==='club'&&state.settings.profile==='club','club profili etkin değil');
+  await page.getByText('Kulüp Robotu · 8–10 kyu hedefi').waitFor();
+  for(const removed of ['Uyarlanabilir','Başlangıç','Orta','Güçlü','Geçmişi Sıfırla'])assert(await page.getByText(removed,{exact:true}).count()===0,removed+' arayüzde kaldı');
+  assert(await page.locator('#iter-count, #iter-lbl, #diff-grid').count()===0,'teknik sayaç veya eski seviye seçimi kaldı');
   await ctx.close();
 });
 
-await test('teslim onayı bir kez kaydeder, reset sonuç kaydetmez ve yenilemede korunur',async()=>{
+await test('teslim ikinci onay ister ve yeni oyun akışı çalışır',async()=>{
   const{ctx,page}=await context();await page.click('#btn-resign');
-  let savedRaw=await page.evaluate(key=>localStorage.getItem(key),STORAGE_KEY);assert(savedRaw===null||JSON.parse(savedRaw).games.length===0,'ilk teslim tıklaması oyun kaydetti');
+  assert(!(await page.evaluate(()=>window.__robotTest.state().gameEnded)),'ilk tıklama oyunu bitirdi');
   await page.getByText('Teslim olursan oyun biter').waitFor();
   await page.click('#btn-resign',{force:true});
-  let saved=JSON.parse(await page.evaluate(key=>localStorage.getItem(key),STORAGE_KEY));assert(saved.games.length===1,'teslim birden fazla/hiç kaydedildi');
-  await page.getByRole('button',{name:'Yeni Oyun'}).click();saved=JSON.parse(await page.evaluate(key=>localStorage.getItem(key),STORAGE_KEY));assert(saved.games.length===1,'yeni oyun/reset oyun kaydetti');
-  await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.__robotTest);const state=await page.evaluate(()=>window.__robotTest.state());assert(state.adaptive.games.length===1,'yenilemede geçmiş kayboldu');await ctx.close();
-});
-
-await test('uyarlanabilir geçmiş sıfırlama ikinci onay ister',async()=>{
-  const completed=JSON.stringify({version:1,profile:'medium',games:[{outcome:'win',endReason:'score'}],gamesSinceChange:1,edgeAdjustment:1,lastReason:'test'});
-  const{ctx,page}=await context({storage:completed});
-  await page.click('#btn-reset-adaptive');
-  let saved=JSON.parse(await page.evaluate(key=>localStorage.getItem(key),STORAGE_KEY));assert(saved.games.length===1,'ilk geçmiş sıfırlama tıklaması veriyi sildi');
-  await page.getByText('Eminsen tekrar bas').waitFor();
-  await page.click('#btn-reset-adaptive');
-  saved=JSON.parse(await page.evaluate(key=>localStorage.getItem(key),STORAGE_KEY));assert(saved.games.length===0&&saved.profile==='beginner','ikinci onay geçmişi sıfırlamadı');
+  assert(await page.evaluate(()=>window.__robotTest.state().gameEnded),'ikinci tıklama oyunu bitirmedi');
+  await page.locator('#gameover').getByRole('button',{name:'Yeni oyun başlat'}).click();
+  assert(!(await page.evaluate(()=>window.__robotTest.state().gameEnded)),'yeni oyun başlamadı');
   await ctx.close();
 });
 
-await test('renk değişiminde komi ve handikap doğru tarafa uygulanır',async()=>{
-  const top=JSON.stringify({version:1,profile:'strong',games:[],gamesSinceChange:3,edgeAdjustment:1,lastReason:'test'});
-  const{ctx,page}=await context({storage:top});await page.click('#cp-w');let state=await page.evaluate(()=>window.__robotTest.state());
-  assert(state.settings.handicap.length===2&&state.stones.length===2,'AI siyah handikap taşları uygulanmadı');
-  await page.click('#cp-b');state=await page.evaluate(()=>window.__robotTest.state());assert(state.settings.handicap.length===0&&state.settings.komi===7.5,'AI beyaz için komi uygulanmadı');await ctx.close();
-});
-
-await test('manuel mod uyarlanabilir geçmişi değiştirmez',async()=>{
-  const{ctx,page}=await context();await page.click('button[onclick="selectDifficulty(1)"]');await page.click('#btn-resign');
-  const raw=await page.evaluate(key=>localStorage.getItem(key),STORAGE_KEY);assert(raw===null||JSON.parse(raw).games.length===0,'manuel oyun geçmişi değiştirdi');await ctx.close();
+await test('renk değişse de sabit komi ve club profili korunur',async()=>{
+  const{ctx,page}=await context();await page.click('#cp-w');const state=await page.evaluate(()=>window.__robotTest.state());
+  assert(state.settings.komi===6.5&&state.settings.handicap.length===0&&state.profile==='club','sabit oyun ayarı bozuldu');
+  await page.waitForFunction(()=>window.__workerMessages.some(m=>m.type==='MOVE_PROFILE'));
+  assert(await page.evaluate(()=>window.__workerMessages.find(m=>m.type==='MOVE_PROFILE').profile==='club'),'worker club profili almadı');await ctx.close();
 });
 
 await test('eski worker cevabı reset sonrası taşa dönüşmez',async()=>{
@@ -113,23 +96,15 @@ await test('eski worker cevabı reset sonrası taşa dönüşmez',async()=>{
 
 await test('iki pas oyunu bitirir',async()=>{
   const{ctx,page}=await context({mctsMode:'pass'});await page.click('#btn-pass');await page.waitForFunction(()=>window.__robotTest.state().gameEnded);
-  const state=await page.evaluate(()=>window.__robotTest.state());assert(state.gameEnded,'iki pas oyun sonu üretmedi');assert(state.adaptive.games.length===1,'skorla biten oyun kaydedilmedi');
+  const state=await page.evaluate(()=>window.__robotTest.state());assert(state.gameEnded,'iki pas oyun sonu üretmedi');
   await page.getByText('Yeni oyun başlatabilirsin').waitFor();
-  await page.getByRole('button',{name:'Yeni Oyun'}).click();
+  await page.locator('#gameover').getByRole('button',{name:'Yeni oyun başlat'}).click();
   const fresh=await page.evaluate(()=>window.__robotTest.state());assert(!fresh.gameEnded&&fresh.moveCount===0,'oyun sonundan yeni oyun başlamadı');
   await ctx.close();
 });
 
-await test('KataGo başarısı ve çevrimdışı fallback ayrı durumlardır',async()=>{
-  const failedCtx=await context({kataReady:false});assert(!(await failedCtx.page.evaluate(()=>window.__robotTest.state().kataReady)),'fallback KataGo başarısı sayıldı');
-  await failedCtx.page.getByText('MCTS robotu ile devam ediyoruz').waitFor();await failedCtx.ctx.close();
-  const readyCtx=await context({kataReady:true});await readyCtx.page.waitForFunction(()=>window.__robotTest.state().kataReady);assert(await readyCtx.page.evaluate(()=>window.__robotTest.state().kataReady),'READY durumu görülmedi');
-  await readyCtx.page.getByText('KataGo yardımcı motoru hazır').waitFor();await readyCtx.ctx.close();
-});
-
-await test('zorluk ve renk seçimleri erişilebilir durum bildirir',async()=>{
+await test('renk seçimleri erişilebilir durum bildirir',async()=>{
   const{ctx,page}=await context();
-  assert(await page.locator('.diff-card').first().evaluate(el=>el.getAttribute('aria-pressed')==='true'),'aktif zorluk aria-pressed değil');
   assert(await page.locator('#cp-b').evaluate(el=>el.getAttribute('aria-pressed')==='true'),'siyah renk seçimi aria-pressed değil');
   await page.click('#cp-w');
   assert(await page.locator('#cp-w').evaluate(el=>el.getAttribute('aria-pressed')==='true'),'beyaz renk seçimi aria-pressed değil');
@@ -137,7 +112,7 @@ await test('zorluk ve renk seçimleri erişilebilir durum bildirir',async()=>{
 });
 
 for(const viewport of [{width:390,height:844},{width:1280,height:720}])await test(`${viewport.width}×${viewport.height} temel kontroller erişilebilir`,async()=>{
-  const{ctx,page}=await context({viewport});for(const selector of ['#diff-grid','#cp-b','#cp-w','#btn-pass','#btn-resign','#btn-reset-board']){
+  const{ctx,page}=await context({viewport});for(const selector of ['#club-profile','#cp-b','#cp-w','#btn-pass','#btn-resign','#btn-reset-board']){
     const el=page.locator(selector);await el.scrollIntoViewIfNeeded();assert(await el.isVisible(),selector+' görünür değil');const box=await el.boundingBox();assert(box&&box.width>20&&box.height>20,selector+' erişilebilir boyutta değil')
   }await ctx.close();
 });

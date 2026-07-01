@@ -166,6 +166,15 @@
     .action-btn:hover { background:rgba(200,168,75,.08); border-color:var(--gold); color:var(--gold); }
     .action-btn.danger:hover { background:rgba(224,80,80,.08); border-color:var(--red); color:var(--red); }
     .action-btn.confirming { border-color:var(--red); color:var(--red); background:rgba(224,80,80,.06); }
+    .club-card {
+      display:flex; flex-direction:column; gap:.25rem; padding:.85rem;
+      border:1px solid var(--gb); border-radius:9px;
+      background:linear-gradient(135deg,rgba(200,168,75,.12),rgba(200,168,75,.035));
+    }
+    .club-card strong { color:var(--gold); font-size:.78rem; line-height:1.35; }
+    .club-card span { color:var(--muted); font-size:.63rem; }
+    .game-controls { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+    .game-controls #btn-reset-board { grid-column:1/-1; }
 
     /* Engine badge */
     .engine-badge {
@@ -267,7 +276,9 @@
       .stat-row   { flex-direction:column; }
       .diff-grid { grid-template-columns:1fr; }
       .diff-card { padding:.55rem .5rem; text-align:left; }
-      .action-btn, .cp-btn, .adaptive-reset { min-height:44px; }
+      .action-btn, .cp-btn { min-height:46px; }
+      .game-controls { flex:1 1 100%; grid-template-columns:1fr 1fr 1fr; }
+      .game-controls #btn-reset-board { grid-column:auto; }
       #model-loader, .stat-row { display:none; }
     }
 
@@ -451,21 +462,11 @@
     <div class="s-stone white" id="stone-w"></div>
   </div>
   <span id="last-move-tag">—</span>
-  <span class="engine-badge" id="engine-badge">Motor Yükleniyor</span>
+  <span class="engine-badge ready" id="engine-badge">Kulüp Robotu</span>
 </div>
 
 <!-- Sağ Panel -->
 <div id="panel">
-
-  <!-- Model Loader -->
-  <div id="model-loader">
-    <div class="ml-phase" id="ml-phase">Ağırlıklar indiriliyor…</div>
-    <div class="ml-bar"><div class="ml-bar-fill"></div></div>
-    <div class="ml-tip" id="ml-tip"></div>
-    <a class="ml-learn" href="ogren-3d.html">
-      Model hazırlanırken kuralları gözden geçir →
-    </a>
-  </div>
 
   <div>
     <div class="sec-label">Rengin</div>
@@ -479,29 +480,15 @@
     </div>
   </div>
 
-  <!-- Zorluk -->
-  <div>
-    <div class="sec-label">Zorluk</div>
-    <div class="diff-grid" id="diff-grid"></div>
-    <div class="adaptive-status" id="adaptive-status"></div>
+  <div class="club-card" id="club-profile" aria-label="Robot seviyesi">
+    <strong>Kulüp Robotu · 8–10 kyu hedefi</strong>
+    <span>Tek ve dengeli oyun seviyesi</span>
   </div>
 
   <!-- Düşünüyor göstergesi -->
   <div id="think-bar">
     <span class="td"></span><span class="td"></span><span class="td"></span>
     <span>Robot düşünüyor…</span>
-  </div>
-
-  <!-- İstatistik -->
-  <div class="stat-row">
-    <div class="stat-box">
-      <div class="stat-val" id="move-count">0</div>
-      <div class="stat-lbl">hamle</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-val" id="iter-count">—</div>
-      <div class="stat-lbl" id="iter-lbl">iterasyon</div>
-    </div>
   </div>
 
   <!-- Geri bildirim -->
@@ -563,9 +550,11 @@
     </div>
   </div>
 
-  <button class="action-btn" id="btn-pass" onclick="playerPass()" aria-label="Bu tur hamle yapmadan pas geç">Pas Geç</button>
-  <button class="action-btn danger" id="btn-resign" onclick="playerResign()" aria-label="Teslim olmak için iki kez bas">Teslim Ol</button>
-  <button class="action-btn danger" id="btn-reset-board" onclick="resetBoard()" aria-label="Oyunu kaydetmeden tahtayı sıfırla">Yeni Oyun / Tahtayı Sıfırla</button>
+  <div class="game-controls">
+    <button class="action-btn" id="btn-reset-board" onclick="resetBoard()" aria-label="Yeni oyun başlat">Yeni Oyun</button>
+    <button class="action-btn" id="btn-pass" onclick="playerPass()" aria-label="Bu tur hamle yapmadan pas geç">Pas</button>
+    <button class="action-btn danger" id="btn-resign" onclick="playerResign()" aria-label="Teslim olmak için iki kez bas">Teslim Ol</button>
+  </div>
 
 </div>
 
@@ -821,7 +810,6 @@
 <script type="module">
 import { BoardState }              from './core/boardState.js';
 import { isValidMove, applyMove }  from './core/ruleEngine.js';
-import { ADAPTIVE_STORAGE_KEY, getAdaptiveGameSettings, loadAdaptiveState, recordCompletedGame, resetAdaptiveState, serializeAdaptiveState } from './core/adaptiveAI.js';
 
 /* ══════════════════════════════════════════════════════
    3D ENGINE
@@ -933,21 +921,9 @@ const woodPat = ctx.createPattern(woodCv, 'repeat');
 ══════════════════════════════════════════════════════ */
 const COL_LABELS = 'ABCDEFGHJ'; // I atlanır
 
-const DIFFICULTY_LEVELS = [
-  { id:0, name:'Uyarlanabilir', label:'Önerilen', desc:'Tamamlanan oyunlarına bakar; robot seviyesini küçük adımlarla ayarlar.', engine:'adaptive' },
-  { id:1, name:'Başlangıç', label:'Sakin oyun', desc:'Yasal ve makul hamleler arar; öğrenirken rahat deneme yapman için yumuşaktır.', profile:'beginner', engine:'mcts' },
-  { id:2, name:'Orta',      label:'Daha dikkatli', desc:'Daha çok aday okur; basit tehditleri daha düzenli takip eder.', profile:'medium',   engine:'mcts' },
-  { id:3, name:'Güçlü',     label:'Daha çok okur', desc:'Aynı motorla daha geniş arama yapar; kesin güç iddiası değildir.', profile:'strong',   engine:'mcts' },
-  { id:4, name:'İleri analiz', label:'KataGo yardımcı motoru', desc:'Yüklenirse analiz ve hamle önerisi için kullanılır.', timeMs:null, engine:'kata' },
-  { id:5, name:'Derin analiz', label:'KataGo yardımcı motoru', desc:'Yüklenirse daha ağır analiz desteği sağlar.', timeMs:null, engine:'kata' },
-];
-let currentLevel = 0;
-let adaptiveState=loadAdaptiveState(localStorage.getItem(ADAPTIVE_STORAGE_KEY));
-let currentGameSettings=getAdaptiveGameSettings(adaptiveState,'black');
-let adaptiveGameRecorded=false;
-let adaptiveGameActive=true;
+const CLUB_PROFILE = 'club';
+let currentGameSettings={profile:CLUB_PROFILE,komi:6.5,handicap:[],reason:'Kulüp Robotu'};
 let resignConfirmUntil=0;
-let adaptiveResetConfirmUntil=0;
 
 const GO_TIPS = [
   'İki göz yapan grup ölmez.',
@@ -1059,68 +1035,6 @@ function initModelLoader() {
   }, 4000);
 }
 
-function renderDifficultyCards() {
-  const grid = document.getElementById('diff-grid');
-  grid.innerHTML = DIFFICULTY_LEVELS.map(lv => {
-    const unavail = lv.engine === 'kata' && !kataReady;
-    const active  = lv.id === currentLevel;
-    return `<button class="diff-card${active ? ' active' : ''}${unavail ? ' unavail' : ''}"
-      onclick="selectDifficulty(${lv.id})"${unavail ? ' disabled' : ''}
-      aria-pressed="${active ? 'true' : 'false'}"
-      aria-label="${lv.name}: ${lv.desc}">
-      <div class="diff-name">${lv.name}</div>
-      <div class="diff-kyu">${lv.label}</div>
-      <div class="diff-desc">${lv.desc}</div>
-    </button>`;
-  }).join('');
-  const status=document.getElementById('adaptive-status');
-  const profileName=adaptiveState.profile==='beginner'?'Başlangıç':adaptiveState.profile==='medium'?'Orta':'Güçlü';
-  const edge=Math.abs(adaptiveState.edgeAdjustment||0);
-  const edgeText=edge===0?'Denge ayarı yok.':`${edge} küçük denge ayarı aktif.`;
-  status.innerHTML=`<div class="adaptive-row"><span class="adaptive-label">Uyarlanabilir seviye</span><strong>${profileName}</strong></div>
-    <div class="adaptive-note">${adaptiveState.lastReason || 'Henüz tamamlanmış oyun yok.'}</div>
-    <div class="adaptive-note">${edgeText}</div>
-    <button class="adaptive-reset" id="btn-reset-adaptive" onclick="resetAdaptiveProgress()" aria-label="Uyarlanabilir geçmişi sıfırlamak için iki kez bas">Geçmişi Sıfırla</button>`;
-}
-
-window.selectDifficulty = function(id) {
-  if (aiThinking) invalidatePendingAI();
-  const lv = DIFFICULTY_LEVELS.find(l => l.id === id);
-  if (!lv || (lv.engine === 'kata' && !kataReady)) return;
-  currentLevel = id;
-  if(moveCount>0)adaptiveGameActive=false;
-  else adaptiveGameActive=id===0;
-  currentGameSettings=id===0?getAdaptiveGameSettings(adaptiveState,playerColor):{profile:lv.profile||'strong',komi:6.5,handicap:[],reason:'Manuel seçim'};
-  if(moveCount===0)resetBoard();
-  renderDifficultyCards();
-};
-
-window.resetAdaptiveProgress=function(){
-  const now=Date.now();
-  const btn=document.getElementById('btn-reset-adaptive');
-  if(now>adaptiveResetConfirmUntil){
-    adaptiveResetConfirmUntil=now+4000;
-    if(btn){btn.textContent='Eminsen tekrar bas';btn.classList.add('confirming');}
-    showFeedback('Uyarlanabilir geçmişi silmek için düğmeye bir kez daha bas.', 'info');
-    return;
-  }
-  adaptiveResetConfirmUntil=0;
-  adaptiveState=resetAdaptiveState();
-  localStorage.setItem(ADAPTIVE_STORAGE_KEY,serializeAdaptiveState(adaptiveState));
-  if(currentLevel===0)currentGameSettings=getAdaptiveGameSettings(adaptiveState,playerColor);
-  renderDifficultyCards();
-  showFeedback('Uyarlanabilir geçmiş sıfırlandı. Yeni oyunlar yeniden sayılacak.','info');
-};
-
-function recordAdaptiveResult(outcome,endReason){
-  if(!adaptiveGameActive||adaptiveGameRecorded)return;
-  const result=recordCompletedGame(adaptiveState,{completed:true,outcome,endReason});
-  adaptiveState=result.state;
-  adaptiveGameRecorded=true;
-  localStorage.setItem(ADAPTIVE_STORAGE_KEY,serializeAdaptiveState(adaptiveState));
-  renderDifficultyCards();
-  if(result.changed)showFeedback(adaptiveState.lastReason,'info');
-}
 
 let _fbTimer = null;
 function showFeedback(msg, type) {
@@ -1153,8 +1067,6 @@ function showGameOver(scoreInfo) {
   const winnerTr  = winner === 'black' ? 'Siyah' : 'Beyaz';
   const margin    = scoreInfo.rawDiff==null?null:Math.abs(scoreInfo.rawDiff).toFixed(1);
   const isPlayerWin = winner === playerColor;
-  recordAdaptiveResult(isPlayerWin?'win':'loss',scoreInfo.resigned?'resign':'score');
-
   document.getElementById('go-winner').textContent =
     isPlayerWin ? 'Oyun bitti: sen kazandın' : 'Oyun bitti: robot kazandı';
   if (isPlayerWin && window.mascotCelebrate) { mascotCelebrate(); mascotSay('Tebrikler!', 3000); }
@@ -1182,13 +1094,10 @@ window.openLearnFeedback = function() {
 /* ══════════════════════════════════════════════════════
    AI WORKERS
 ══════════════════════════════════════════════════════ */
-// MCTS (yedek): her zaman hazır; SCORE için de kullanılır
+// Kulüp Robotu hamleleri ve SCORE hesaplaması
 const mctsWorker = new Worker('./workers/goAI.worker.js', { type: 'module' });
-// KataGo: CDN'den model yükler, hazır olunca MOVE için devreye girer
-const kataWorker = new Worker('./workers/kataWorker.js');
 
 let aiThinking   = false;
-let kataReady    = false;
 let lastScoreInfo = null;
 let currentGameId=0;
 let nextRequestId=0;
@@ -1226,41 +1135,6 @@ mctsWorker.addEventListener('error', e => {
   console.error('Worker error:', e);
 });
 
-kataWorker.addEventListener('message', ({ data }) => {
-  if (data.type === 'READY') {
-    if (data.ok) {
-      kataReady = true;
-      const loEl = document.getElementById('model-loader');
-      const phEl = document.getElementById('ml-phase');
-      loEl.classList.add('done');
-      phEl.textContent = 'KataGo Hazır';
-      clearInterval(tipTimer);
-      setTimeout(() => loEl.classList.remove('show'), 3000);
-      updateEngineBadge('kata');
-      document.getElementById('iter-lbl').textContent = 'KataGo';
-      showFeedback(`KataGo yardımcı motoru hazır (${data.backend}).`, 'ok');
-      if (window.mascotStopThink) mascotStopThink();
-      if (window.mascotSay) mascotSay('Oynamaya hazırım!', 3500);
-      renderDifficultyCards();
-    } else {
-      updateEngineBadge('mcts');
-      if (window.mascotStopThink) mascotStopThink();
-      showFeedback('KataGo yardımcı motoru hazır değil; sorun yok, MCTS robotu ile devam ediyoruz.', 'info');
-      console.warn('KataGo yuklenemedi — MCTS ile devam:', data.error);
-      // Yükleme ekranını kapat — MCTS ile devam
-      const loElFb = document.getElementById('model-loader');
-      if (loElFb) { loElFb.classList.add('done'); setTimeout(() => loElFb.classList.remove('show'), 2000); }
-      renderDifficultyCards();
-    }
-    return;
-  }
-  handleWorkerMessage(data);
-});
-kataWorker.addEventListener('error', e => console.warn('kataWorker error:', e));
-
-updateEngineBadge('loading');
-initModelLoader();
-
 function triggerAI() {
   if (aiThinking || gameEnded) return;
   if (board.turn !== aiColor)  return;
@@ -1276,20 +1150,14 @@ function triggerAI() {
   const ko     = board.koPoint
     ? board.koPoint.y * size + board.koPoint.x : -1;
   const colNum = aiColor === 'black' ? 1 : 2;
-  const lv     = DIFFICULTY_LEVELS.find(l => l.id === currentLevel);
   const boardData={grid,ko,size,komi:currentGameSettings.komi};
   const requestId=++nextRequestId;
   activeRequestId=requestId;
 
-  if (kataReady && lv.engine === 'kata') {
-    kataWorker.postMessage({ type: 'MOVE', boardData, color: colNum, gameId:currentGameId, requestId });
-  } else {
-    const profile = lv.engine === 'adaptive' ? currentGameSettings.profile : (lv.engine === 'mcts' ? lv.profile : 'strong');
-    mctsWorker.postMessage(
-      { type: 'MOVE_PROFILE', boardData, color: colNum, profile, gameId:currentGameId, requestId },
-      [grid.buffer]
-    );
-  }
+  mctsWorker.postMessage(
+    { type: 'MOVE_PROFILE', boardData, color: colNum, profile:CLUB_PROFILE, gameId:currentGameId, requestId },
+    [grid.buffer]
+  );
 }
 
 function requestFinalScore() {
@@ -1330,8 +1198,6 @@ function applyAIMove(move) {
   lastAIMoveXY = { x, y };
   moveCount++;
   const tag = `Robot: ${COL_LABELS[x]}${SIZE - y}`;
-  document.getElementById('move-count').textContent = moveCount;
-  document.getElementById('iter-count').textContent = move.iters ?? '—';
   updateMoveTag(tag);
   showFeedback(tag, 'ai');
   updateStatus();
@@ -1371,7 +1237,6 @@ function onBoardClick(mx, my) {
 
   moveCount++;
   const tag = `${COL_LABELS[gx]}${SIZE - gz}`;
-  document.getElementById('move-count').textContent = moveCount;
   updateMoveTag(tag);
   showFeedback(`Sen: ${tag}`, 'ok');
   updateStatus();
@@ -1422,23 +1287,13 @@ window.pickColor = function (c) {
 window.resetBoard = function () {
   invalidatePendingAI();
   resignConfirmUntil=0;
-  adaptiveResetConfirmUntil=0;
   board       = new BoardState(SIZE);
-  const lv=DIFFICULTY_LEVELS.find(level=>level.id===currentLevel);
-  currentGameSettings=currentLevel===0
-    ?getAdaptiveGameSettings(adaptiveState,playerColor)
-    :{profile:lv?.profile||'strong',komi:6.5,handicap:[],reason:'Manuel seçim'};
-  for(const point of currentGameSettings.handicap)board.placeStone(point.x,point.y,'black');
-  if(currentGameSettings.handicap.length)board.turn='white';
+  currentGameSettings={profile:CLUB_PROFILE,komi:6.5,handicap:[],reason:'Kulüp Robotu'};
   gameHistory = [];
   moveCount   = 0; passCount = 0;
   gameEnded   = false;
-  adaptiveGameRecorded=false;
-  adaptiveGameActive=currentLevel===0;
   territory  = null;
   lastAIMoveXY = null;
-  document.getElementById('move-count').textContent = '0';
-  document.getElementById('iter-count').textContent = '—';
   document.getElementById('gameover').classList.remove('show');
   document.getElementById('btn-pass').disabled = false;
   document.getElementById('btn-resign').disabled = false;
@@ -1462,7 +1317,7 @@ window.resetBoard = function () {
 
 if(new URLSearchParams(location.search).has('e2e')){
   window.__robotTest={
-    state:()=>({currentLevel,playerColor,aiColor,gameEnded,moveCount,passCount,gameId:currentGameId,activeRequestId,stones:board.stones.map(s=>({...s})),settings:{...currentGameSettings,handicap:currentGameSettings.handicap.map(p=>({...p}))},adaptive:JSON.parse(serializeAdaptiveState(adaptiveState)),kataReady}),
+    state:()=>({profile:CLUB_PROFILE,playerColor,aiColor,gameEnded,moveCount,passCount,gameId:currentGameId,activeRequestId,stones:board.stones.map(s=>({...s})),settings:{...currentGameSettings,handicap:[]}}),
   };
 }
 
@@ -1653,7 +1508,6 @@ function frame() {
 
 frame();
 updateStatus();
-renderDifficultyCards();
 showFeedback('Siyah oyuncusun. Hamle yap!', 'info');
 
 /* ══════════════════════════════════════════════════════

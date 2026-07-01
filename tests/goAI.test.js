@@ -103,6 +103,12 @@ test('profil bütçeleri Başlangıç < Orta < Güçlü sırasındadır',()=>{
   ok(AI_PROFILES.medium.topK>AI_PROFILES.strong.topK);
 });
 
+test('Kulüp Robotu profili sabit yayın ayarlarını kullanır',()=>{
+  equal(JSON.stringify(AI_PROFILES.club),JSON.stringify({
+    id:'club',name:'Kulüp Robotu',iterations:600,topK:1,temperature:0.08,thinkingTimeMs:1600
+  }));
+});
+
 test('aynı profil ve seed aynı hamleyi üretir',()=>{
   const board=position(5,[[1,1,1],[2,3,3]]);
   for(const profile of Object.keys(AI_PROFILES)){
