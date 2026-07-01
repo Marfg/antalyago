@@ -6,12 +6,37 @@
  * Web Worker içinde çalıştırılmak üzere tasarlandı.
  *
  * Dışa: getBestMove(boardData, color, timeMs) → {x,y,iters} | 'pass'
+ *       getBestMoveByIterations(boardData, color, iterations, options)
  */
 
 // ── Sabitler ──────────────────────────────────────────────────────────
 const C_EXPLORE = 1.4;  // UCT keşif sabiti
-const KOMI      = 6.5;  // beyaz komi
+export const DEFAULT_KOMI = 6.5;
 const MAX_PLY   = 200;  // rollout hamle sınırı (döngü koruması)
+
+export const AI_PROFILES = Object.freeze({
+  beginner: Object.freeze({ id:'beginner', name:'Başlangıç', iterations:40,  topK:5, temperature:0.90, thinkingTimeMs:350 }),
+  medium:   Object.freeze({ id:'medium',   name:'Orta',      iterations:120, topK:3, temperature:0.35, thinkingTimeMs:750 }),
+  strong:   Object.freeze({ id:'strong',   name:'Güçlü',     iterations:300, topK:1, temperature:0,    thinkingTimeMs:1400 }),
+});
+
+export function getAIProfile(profileId) {
+  const profile = AI_PROFILES[profileId];
+  if (!profile) throw new Error(`Bilinmeyen AI profili: ${profileId}`);
+  return profile;
+}
+
+function createRng(seed) {
+  if (seed === undefined || seed === null) return Math.random;
+  let state = Number(seed) >>> 0;
+  return () => {
+    state = (state + 0x6D2B79F5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 // Generation-tabanlı 'seen' dizisi — her groupAndLibs çağrısında
 // yeni dizi oluşturmak yerine tek dizi yeniden kullanılır.
@@ -103,7 +128,7 @@ function placeStone(grid, nbr, size, i, color, ko) {
     if (sl.size === 1) newKo = captured[0];
   }
 
-  return { grid: ng, ko: newKo };
+  return { grid: ng, ko: newKo, captured };
 }
 
 /**
@@ -121,7 +146,7 @@ function legalMoves(grid, nbr, size, color, ko) {
 
 // ── Puanlama — Tromp-Taylor alan sayımı ──────────────────────────────
 
-function scoreBoard(grid, nbr, size) {
+function scoreBoard(grid, nbr, size, komi=DEFAULT_KOMI) {
   const seen = new Uint8Array(size * size);
   let b = 0, w = 0;
 
@@ -147,11 +172,11 @@ function scoreBoard(grid, nbr, size) {
     else if (tW && !tB) w += region.length;
   }
 
-  return b - w - KOMI; // pozitif → siyah kazanır
+  return b - w - komi; // pozitif → siyah kazanır
 }
 
 // scoreBoard'un bölge noktalarını ve ölü taşları da döndüren versiyonu (finalScore için)
-function scoreBoardDetailed(grid, nbr, size) {
+function scoreBoardDetailed(grid, nbr, size, komi=DEFAULT_KOMI) {
   const seen = new Uint8Array(size * size);
   let b = 0, w = 0;
   const bT = [], wT = [];
@@ -202,7 +227,7 @@ function scoreBoardDetailed(grid, nbr, size) {
   }
 
   return {
-    score:           b - w - KOMI,
+    score:           b - w - komi,
     blackTerritory:  bT,
     whiteTerritory:  wT,
     blackDead:       deadFrom(wRegions, 1), // beyaz bölgedeki siyah taşlar
@@ -226,7 +251,7 @@ function isSelfAtari(grid, nbr, size, i, color, ko) {
   return libs.size === 1;
 }
 
-function pickMove(grid, nbr, size, moves, color, ko) {
+function tacticalMove(grid, nbr, moves, color) {
   const opp = color === 1 ? 2 : 1;
 
   // Öncelik 1: atari'deki rakip grubu yakala
@@ -248,10 +273,16 @@ function pickMove(grid, nbr, size, moves, color, ko) {
       }
     }
   }
+  return null;
+}
+
+function pickMove(grid, nbr, size, moves, color, ko, rng) {
+  const tactical = tacticalMove(grid, nbr, moves, color);
+  if (tactical !== null) return tactical;
 
   // Kendi gözünü doldurmayan hamleleri seç
   let pool = moves.filter(i => !isOwnEye(grid, nbr, i, color));
-  if (!pool.length) pool = moves;
+  if (!pool.length) return -1;
 
   // Self-atari olmayan hamleleri tercih et
   if (pool.length > 1) {
@@ -259,13 +290,56 @@ function pickMove(grid, nbr, size, moves, color, ko) {
     if (nonSA.length) pool = nonSA;
   }
 
-  return pool[(Math.random() * pool.length) | 0];
+  // Tahta doldukça doğal pas olasılığı artar. Acil yakalama/kurtarma varsa
+  // yukarıdaki taktik seçim pası engeller. İki ardışık pas rollout'u bitirir.
+  let occupied = 0;
+  for (const point of grid) if (point) occupied++;
+  const fill = occupied / (size * size);
+  const passChance = fill < 0.55 ? 0 : Math.min(0.55, (fill - 0.55) * 1.4);
+  if (rng() < passChance) return -1;
+
+  return pool[(rng() * pool.length) | 0];
+}
+
+function pickRolloutMove(grid,nbr,size,color,ko,rng) {
+  const opp=color===1?2:1;
+  const total=size*size;
+
+  for(const targetColor of [opp,color]){
+    const checked=new Set();
+    for(let i=0;i<total;i++){
+      if(grid[i]!==targetColor||checked.has(i))continue;
+      const {group,libs}=groupAndLibs(grid,nbr,i);
+      group.forEach(point=>checked.add(point));
+      if(libs.size!==1)continue;
+      const liberty=[...libs][0];
+      if(placeStone(grid,nbr,size,liberty,color,ko))return liberty;
+    }
+  }
+
+  const candidates=[];
+  const start=(rng()*total)|0;
+  for(let offset=0;offset<total&&candidates.length<12;offset++){
+    const i=(start+offset)%total;
+    if(grid[i]||i===ko||isOwnEye(grid,nbr,i,color))continue;
+    const result=placeStone(grid,nbr,size,i,color,ko);
+    if(!result||(!result.captured.length&&groupAndLibs(result.grid,nbr,i).libs.size===1))continue;
+    candidates.push(i);
+  }
+  if(!candidates.length)return -1;
+
+  let occupied=0;
+  for(const point of grid)if(point)occupied++;
+  const fill=occupied/total;
+  const passChance=fill<0.55?0:Math.min(0.55,(fill-0.55)*1.4);
+  if(rng()<passChance)return -1;
+  return candidates[(rng()*candidates.length)|0];
 }
 
 // ── MCTS Düğümü ───────────────────────────────────────────────────────
 
 class Node {
-  constructor(grid, ko, color, move, parent) {
+  constructor(grid, ko, color, move, parent, rng) {
     this.grid     = grid;
     this.ko       = ko;
     this.color    = color;   // oynayacak renk: 1|2
@@ -275,6 +349,7 @@ class Node {
     this.visits   = 0;
     this.wins     = 0;
     this._untried = null;    // lazy init
+    this.rng      = rng;
   }
 
   _init(nbr, size) {
@@ -283,7 +358,7 @@ class Node {
     const m = legalMoves(this.grid, nbr, size, this.color, this.ko);
     // Fisher-Yates karıştır
     for (let i = m.length - 1; i > 0; i--) {
-      const j = (Math.random() * (i + 1)) | 0;
+      const j = (this.rng() * (i + 1)) | 0;
       [m[i], m[j]] = [m[j], m[i]];
     }
     m.unshift(-1); // pas en son denenir
@@ -318,7 +393,7 @@ function expand(node, nbr, size) {
   if (mi === -1) {
     const isGameOver = node.move === -1; // iki ardışık pas
     const child = new Node(node.grid.slice(), -1, nextCol,
-                           isGameOver ? -999 : -1, node);
+                           isGameOver ? -999 : -1, node, node.rng);
     node.children.push(child);
     return child;
   }
@@ -326,44 +401,46 @@ function expand(node, nbr, size) {
   const res = placeStone(node.grid, nbr, size, mi, node.color, node.ko);
   if (!res) return expand(node, nbr, size); // nadir geçersizlik, tekrar dene
 
-  const child = new Node(res.grid, res.ko, nextCol, mi, node);
+  const child = new Node(res.grid, res.ko, nextCol, mi, node, node.rng);
   node.children.push(child);
   return child;
 }
 
-function rollout(node, nbr, size, rootColor) {
+function rollout(node, nbr, size, rng, diagnostics = null, komi=DEFAULT_KOMI) {
   let grid   = node.grid.slice();
   let ko     = node.ko;
   let color  = node.color;
-  let passes = node.move === -1 ? 1 : 0;
+  let passes = node.move === -999 ? 2 : (node.move === -1 ? 1 : 0);
   let ply    = 0;
 
   while (passes < 2 && ply < MAX_PLY) {
-    const legal = legalMoves(grid, nbr, size, color, ko);
-
-    if (!legal.length) {
+    const mi=pickRolloutMove(grid,nbr,size,color,ko,rng);
+    if(mi===-1){
       passes++; ko = -1;
     } else {
       passes = 0;
-      const mi  = pickMove(grid, nbr, size, legal, color, ko);
-      const res = placeStone(grid, nbr, size, mi, color, ko);
-      if (res) { grid = res.grid; ko = res.ko; }
-      else     { passes++; ko = -1; }
+      const res=placeStone(grid,nbr,size,mi,color,ko);
+      if(res){grid=res.grid;ko=res.ko;}
+      else{passes++;ko=-1;}
     }
 
     color = color === 1 ? 2 : 1;
     ply++;
   }
 
-  const s = scoreBoard(grid, nbr, size);
-  return rootColor === 1 ? (s > 0 ? 1 : 0) : (s < 0 ? 1 : 0);
+  const s = scoreBoard(grid, nbr, size,komi);
+  if (diagnostics) Object.assign(diagnostics, { ply, passes, endedByPasses: passes >= 2, score: s });
+  return s > 0 ? 1 : (s < 0 ? 2 : 0);
 }
 
-function backprop(node, win) {
+function backprop(node, winner) {
   while (node) {
     node.visits++;
-    node.wins += win;
-    win  = 1 - win; // alternatif perspektif
+    // Düğümün değeri, bu düğüme gelmek için hamle yapan oyuncuya aittir.
+    // Çocuk düğümde bu oyuncu parent.color olduğundan UCT seçimi tutarlıdır.
+    const playerJustMoved = node.color === 1 ? 2 : 1;
+    if (winner === playerJustMoved) node.wins++;
+    else if (winner === 0) node.wins += 0.5;
     node = node.parent;
   }
 }
@@ -378,29 +455,129 @@ function backprop(node, win) {
  * @param {number} timeMs
  * @returns {{ x: number, y: number, iters: number } | 'pass'}
  */
-export function getBestMove(boardData, color, timeMs = 2000) {
+function createSearch(boardData, color, rng) {
   const { grid, ko, size } = boardData;
   const nbr = getNeighborTable(size);
+  const root = new Node(grid.slice(), ko, color, null, null, rng);
+  return { root, nbr, size, komi:boardData.komi??DEFAULT_KOMI };
+}
 
-  const root    = new Node(grid.slice(), ko, color, null, null);
-  const endTime = Date.now() + timeMs;
-  let iters     = 0;
+function runIteration(search, rng) {
+  const sel = select(search.root);
+  const exp = expand(sel, search.nbr, search.size);
+  const winner = rollout(exp, search.nbr, search.size, rng,null,search.komi);
+  backprop(exp, winner);
+}
 
-  while (Date.now() < endTime) {
-    const sel = select(root);
-    const exp = expand(sel, nbr, size);
-    const win = rollout(exp, nbr, size, color);
-    backprop(exp, win);
-    iters++;
-  }
-
+function searchResult(root, size, iters) {
   if (!root.children.length) return 'pass';
-
   const best = root.children.reduce((a, b) => a.visits > b.visits ? a : b);
   if (best.move < 0) return 'pass';
-
   return { x: best.move % size, y: (best.move / size) | 0, iters };
 }
+
+function isReasonableRootMove(root, nbr, size, move) {
+  if (move < 0) return false;
+  if (isOwnEye(root.grid, nbr, move, root.color)) return false;
+  const result = placeStone(root.grid,nbr,size,move,root.color,root.ko);
+  if (!result) return false;
+  if (result.captured.length) return true;
+  return !isSelfAtari(root.grid, nbr, size, move, root.color, root.ko);
+}
+
+function profileSearchResult(search, profile, rng, iters) {
+  const reasonable = search.root.children
+    .filter(child => isReasonableRootMove(search.root, search.nbr, search.size, child.move))
+    .sort((a,b) => b.visits-a.visits || b.wins/Math.max(1,b.visits)-a.wins/Math.max(1,a.visits));
+  if (!reasonable.length) return 'pass';
+
+  const candidates = reasonable.slice(0, profile.topK);
+  let chosen = candidates[0];
+  if (profile.temperature > 0 && candidates.length > 1) {
+    const weights = candidates.map(child => Math.pow(child.visits + 1, 1 / profile.temperature));
+    let cursor = rng() * weights.reduce((sum,value) => sum+value,0);
+    for (let i=0;i<candidates.length;i++) {
+      cursor -= weights[i];
+      if (cursor <= 0) { chosen=candidates[i]; break; }
+    }
+  }
+  return { x:chosen.move%search.size, y:(chosen.move/search.size)|0, iters, profile:profile.id };
+}
+
+export function getBestMove(boardData, color, timeMs = 2000) {
+  const rng = createRng();
+  const search = createSearch(boardData, color, rng);
+  const endTime = Date.now() + timeMs;
+  let iters = 0;
+
+  while (Date.now() < endTime) {
+    runIteration(search, rng);
+    iters++;
+  }
+  return searchResult(search.root, search.size, iters);
+}
+
+/** Sabit iterasyonlu, seed edilebilir arama. Süre tabanlı API'yi değiştirmez. */
+export function getBestMoveByIterations(boardData, color, iterations, options = {}) {
+  if (!Number.isInteger(iterations) || iterations < 1) throw new Error('iterations pozitif bir tam sayı olmalı');
+  const rng = createRng(options.seed);
+  const search = createSearch(boardData, color, rng);
+  for (let i = 0; i < iterations; i++) runIteration(search, rng);
+  return searchResult(search.root, search.size, iterations);
+}
+
+/** Merkezi profil bütçesi ve seçim politikasıyla seed edilebilir hamle üretir. */
+export function getBestMoveForProfile(boardData, color, profileId, options = {}) {
+  const profile = getAIProfile(profileId);
+  const rng = createRng(options.seed);
+  const search = createSearch(boardData, color, rng);
+  for (let i=0;i<profile.iterations;i++) runIteration(search,rng);
+  return profileSearchResult(search,profile,rng,profile.iterations);
+}
+
+// Kural ve rollout özelliklerini üretim API'sini genişletmeden doğrulayan test yüzeyi.
+export const __test = {
+  play(boardData, color, x, y) {
+    const nbr = getNeighborTable(boardData.size);
+    return placeStone(boardData.grid, nbr, boardData.size, y * boardData.size + x, color, boardData.ko);
+  },
+  legalMoves(boardData, color) {
+    const nbr = getNeighborTable(boardData.size);
+    return legalMoves(boardData.grid, nbr, boardData.size, color, boardData.ko)
+      .map(i => ({ x: i % boardData.size, y: (i / boardData.size) | 0 }));
+  },
+  pickMove(boardData, color, seed = 1) {
+    const nbr = getNeighborTable(boardData.size);
+    const moves = legalMoves(boardData.grid, nbr, boardData.size, color, boardData.ko);
+    if (!moves.length) return 'pass';
+    const move = pickMove(boardData.grid, nbr, boardData.size, moves, color, boardData.ko, createRng(seed));
+    return move < 0 ? 'pass' : { x: move % boardData.size, y: (move / boardData.size) | 0 };
+  },
+  rollout(boardData, color, options = {}) {
+    const rng = createRng(options.seed);
+    const nbr = getNeighborTable(boardData.size);
+    const node = new Node(boardData.grid.slice(), boardData.ko, color, options.previousPass ? -1 : null, null, rng);
+    const diagnostics = {};
+    const winner = rollout(node, nbr, boardData.size, rng, diagnostics,boardData.komi??DEFAULT_KOMI);
+    return { winner, ...diagnostics };
+  },
+  score(boardData) {
+    return scoreBoard(boardData.grid, getNeighborTable(boardData.size), boardData.size,boardData.komi??DEFAULT_KOMI);
+  },
+  backpropProbe(rootColor, depth, winner) {
+    const rng = createRng(1);
+    let root = new Node(new Int8Array(1), -1, rootColor, null, null, rng);
+    let leaf = root;
+    for (let i = 0; i < depth; i++) {
+      leaf = new Node(leaf.grid, -1, leaf.color === 1 ? 2 : 1, 0, leaf, rng);
+      leaf.parent.children.push(leaf);
+    }
+    backprop(leaf, winner);
+    const values = [];
+    for (let node = root; node; node = node.children[0]) values.push(node.wins);
+    return values;
+  },
+};
 
 /**
  * Tromp-Taylor puanlama — oyun bitişinde sonucu hesapla.
@@ -409,12 +586,13 @@ export function getBestMove(boardData, color, timeMs = 2000) {
 export function finalScore(boardData) {
   const { grid, size } = boardData;
   const nbr = getNeighborTable(size);
-  const { score: raw, blackTerritory, whiteTerritory, blackDead, whiteDead } = scoreBoardDetailed(grid, nbr, size);
+  const komi=boardData.komi??DEFAULT_KOMI;
+  const { score: raw, blackTerritory, whiteTerritory, blackDead, whiteDead } = scoreBoardDetailed(grid, nbr, size,komi);
   return {
     rawDiff: raw,
     winner:  raw > 0 ? 'black' : 'white',
     margin:  Math.abs(raw),
-    komi:    KOMI,
+    komi,
     blackTerritory,
     whiteTerritory,
     blackDead,

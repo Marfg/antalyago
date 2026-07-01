@@ -157,7 +157,7 @@
 
     /* Butonlar */
     .action-btn {
-      width:100%; padding:.52rem; border-radius:7px;
+      width:100%; min-height:42px; padding:.58rem; border-radius:7px;
       border:1px solid var(--gb); background:transparent;
       cursor:pointer; font-family:'Noto Sans',sans-serif;
       font-size:.76rem; font-weight:600; color:var(--text);
@@ -165,6 +165,7 @@
     }
     .action-btn:hover { background:rgba(200,168,75,.08); border-color:var(--gold); color:var(--gold); }
     .action-btn.danger:hover { background:rgba(224,80,80,.08); border-color:var(--red); color:var(--red); }
+    .action-btn.confirming { border-color:var(--red); color:var(--red); background:rgba(224,80,80,.06); }
 
     /* Engine badge */
     .engine-badge {
@@ -214,9 +215,24 @@
     }
     .diff-card:hover:not(.unavail) { border-color:var(--gold); background:rgba(200,168,75,.06); }
     .diff-card.active { border-color:var(--gold); background:rgba(200,168,75,.12); }
+    .diff-card:focus-visible,
+    .cp-btn:focus-visible,
+    .action-btn:focus-visible,
+    .adaptive-reset:focus-visible {
+      outline:2px solid var(--gold);
+      outline-offset:2px;
+    }
     .diff-card.unavail { opacity:.38; cursor:not-allowed; }
     .diff-name { font-size:.68rem; font-weight:700; color:var(--text); }
     .diff-kyu  { font-size:.58rem; color:var(--muted); margin-top:.1rem; }
+    .diff-desc { font-size:.56rem; color:var(--muted); margin-top:.18rem; line-height:1.3; }
+    .adaptive-status { margin-top:.45rem; padding:.55rem; border:1px solid var(--gb); border-radius:7px; font-size:.63rem; color:var(--muted); line-height:1.45; background:rgba(200,168,75,.04); }
+    .adaptive-status strong { color:var(--gold); }
+    .adaptive-row { display:flex; justify-content:space-between; gap:.45rem; align-items:flex-start; }
+    .adaptive-label { color:var(--muted); }
+    .adaptive-note { margin-top:.18rem; }
+    .adaptive-reset { margin-top:.45rem; padding:.45rem .55rem; border:1px solid var(--gb); border-radius:6px; background:transparent; color:var(--muted); cursor:pointer; font-size:.62rem; min-height:34px; }
+    .adaptive-reset.confirming { border-color:var(--red); color:var(--red); background:rgba(224,80,80,.06); }
 
     /* Gelişmiş oyun sonu */
     .go-winner    { font-size:1.05rem; font-weight:700; color:var(--gold); }
@@ -242,13 +258,17 @@
     @media(max-width:640px) {
       #panel {
         top:auto; bottom:0; right:0; left:0; width:100%;
-        max-height:48vh; border-left:none; border-top:1px solid var(--gb);
+        max-height:52vh; border-left:none; border-top:1px solid var(--gb);
         flex-direction:row; flex-wrap:wrap; padding:.6rem;
         gap:.5rem; overflow-y:auto;
       }
-      #panel > * { flex:1 1 45%; min-width:100px; }
+      #panel > * { flex:1 1 45%; min-width:128px; }
       .color-pick { flex-direction:column; }
       .stat-row   { flex-direction:column; }
+      .diff-grid { grid-template-columns:1fr; }
+      .diff-card { padding:.55rem .5rem; text-align:left; }
+      .action-btn, .cp-btn, .adaptive-reset { min-height:44px; }
+      #model-loader, .stat-row { display:none; }
     }
 
     /* ── REVIEW OVERLAY ───────────────────────────────────── */
@@ -450,10 +470,10 @@
   <div>
     <div class="sec-label">Rengin</div>
     <div class="color-pick">
-      <button class="cp-btn active-b" id="cp-b" onclick="pickColor('black')">
+      <button class="cp-btn active-b" id="cp-b" onclick="pickColor('black')" aria-label="Siyah taşlarla oyna" aria-pressed="true">
         <div class="sp b"></div>Siyah
       </button>
-      <button class="cp-btn" id="cp-w" onclick="pickColor('white')">
+      <button class="cp-btn" id="cp-w" onclick="pickColor('white')" aria-label="Beyaz taşlarla oyna" aria-pressed="false">
         <div class="sp w"></div>Beyaz
       </button>
     </div>
@@ -463,6 +483,7 @@
   <div>
     <div class="sec-label">Zorluk</div>
     <div class="diff-grid" id="diff-grid"></div>
+    <div class="adaptive-status" id="adaptive-status"></div>
   </div>
 
   <!-- Düşünüyor göstergesi -->
@@ -493,9 +514,9 @@
     <div class="go-komi" id="go-komi"></div>
     <div class="go-territory" id="go-territory"></div>
     <div class="go-actions">
-      <button class="action-btn" onclick="openReview()">Oyunumu İncele</button>
-      <button class="action-btn" onclick="resetBoard()">Yeniden Oyna</button>
-      <button class="action-btn" onclick="openLearnFeedback()">Ne öğrendim?</button>
+      <button class="action-btn" onclick="openReview()" aria-label="Oyun analizini aç">Oyunumu İncele</button>
+      <button class="action-btn" onclick="resetBoard()" aria-label="Yeni oyun başlat">Yeni Oyun</button>
+      <button class="action-btn" onclick="openLearnFeedback()" aria-label="Bu oyundan ne öğrendiğini gör">Ne öğrendim?</button>
     </div>
   </div>
 
@@ -542,8 +563,9 @@
     </div>
   </div>
 
-  <button class="action-btn" id="btn-pass" onclick="playerPass()">Pas Geç</button>
-  <button class="action-btn danger" onclick="resetBoard()">Tahtayı Sıfırla</button>
+  <button class="action-btn" id="btn-pass" onclick="playerPass()" aria-label="Bu tur hamle yapmadan pas geç">Pas Geç</button>
+  <button class="action-btn danger" id="btn-resign" onclick="playerResign()" aria-label="Teslim olmak için iki kez bas">Teslim Ol</button>
+  <button class="action-btn danger" id="btn-reset-board" onclick="resetBoard()" aria-label="Oyunu kaydetmeden tahtayı sıfırla">Yeni Oyun / Tahtayı Sıfırla</button>
 
 </div>
 
@@ -799,6 +821,7 @@
 <script type="module">
 import { BoardState }              from './core/boardState.js';
 import { isValidMove, applyMove }  from './core/ruleEngine.js';
+import { ADAPTIVE_STORAGE_KEY, getAdaptiveGameSettings, loadAdaptiveState, recordCompletedGame, resetAdaptiveState, serializeAdaptiveState } from './core/adaptiveAI.js';
 
 /* ══════════════════════════════════════════════════════
    3D ENGINE
@@ -911,13 +934,20 @@ const woodPat = ctx.createPattern(woodCv, 'repeat');
 const COL_LABELS = 'ABCDEFGHJ'; // I atlanır
 
 const DIFFICULTY_LEVELS = [
-  { id:1, name:'Başlangıç', kyu:'25–20 kyu', timeMs:600,  engine:'mcts' },
-  { id:2, name:'Acemi',     kyu:'20–15 kyu', timeMs:1200, engine:'mcts' },
-  { id:3, name:'Orta',      kyu:'15–10 kyu', timeMs:2400, engine:'mcts' },
-  { id:4, name:'İleri',     kyu:'10–5 kyu',  timeMs:null, engine:'kata' },
-  { id:5, name:'Uzman',     kyu:'5 kyu–dan', timeMs:null, engine:'kata' },
+  { id:0, name:'Uyarlanabilir', label:'Önerilen', desc:'Tamamlanan oyunlarına bakar; robot seviyesini küçük adımlarla ayarlar.', engine:'adaptive' },
+  { id:1, name:'Başlangıç', label:'Sakin oyun', desc:'Yasal ve makul hamleler arar; öğrenirken rahat deneme yapman için yumuşaktır.', profile:'beginner', engine:'mcts' },
+  { id:2, name:'Orta',      label:'Daha dikkatli', desc:'Daha çok aday okur; basit tehditleri daha düzenli takip eder.', profile:'medium',   engine:'mcts' },
+  { id:3, name:'Güçlü',     label:'Daha çok okur', desc:'Aynı motorla daha geniş arama yapar; kesin güç iddiası değildir.', profile:'strong',   engine:'mcts' },
+  { id:4, name:'İleri analiz', label:'KataGo yardımcı motoru', desc:'Yüklenirse analiz ve hamle önerisi için kullanılır.', timeMs:null, engine:'kata' },
+  { id:5, name:'Derin analiz', label:'KataGo yardımcı motoru', desc:'Yüklenirse daha ağır analiz desteği sağlar.', timeMs:null, engine:'kata' },
 ];
-let currentLevel = 1;
+let currentLevel = 0;
+let adaptiveState=loadAdaptiveState(localStorage.getItem(ADAPTIVE_STORAGE_KEY));
+let currentGameSettings=getAdaptiveGameSettings(adaptiveState,'black');
+let adaptiveGameRecorded=false;
+let adaptiveGameActive=true;
+let resignConfirmUntil=0;
+let adaptiveResetConfirmUntil=0;
 
 const GO_TIPS = [
   'İki göz yapan grup ölmez.',
@@ -1035,20 +1065,62 @@ function renderDifficultyCards() {
     const unavail = lv.engine === 'kata' && !kataReady;
     const active  = lv.id === currentLevel;
     return `<button class="diff-card${active ? ' active' : ''}${unavail ? ' unavail' : ''}"
-      onclick="selectDifficulty(${lv.id})"${unavail ? ' disabled' : ''}>
+      onclick="selectDifficulty(${lv.id})"${unavail ? ' disabled' : ''}
+      aria-pressed="${active ? 'true' : 'false'}"
+      aria-label="${lv.name}: ${lv.desc}">
       <div class="diff-name">${lv.name}</div>
-      <div class="diff-kyu">${lv.kyu}</div>
+      <div class="diff-kyu">${lv.label}</div>
+      <div class="diff-desc">${lv.desc}</div>
     </button>`;
   }).join('');
+  const status=document.getElementById('adaptive-status');
+  const profileName=adaptiveState.profile==='beginner'?'Başlangıç':adaptiveState.profile==='medium'?'Orta':'Güçlü';
+  const edge=Math.abs(adaptiveState.edgeAdjustment||0);
+  const edgeText=edge===0?'Denge ayarı yok.':`${edge} küçük denge ayarı aktif.`;
+  status.innerHTML=`<div class="adaptive-row"><span class="adaptive-label">Uyarlanabilir seviye</span><strong>${profileName}</strong></div>
+    <div class="adaptive-note">${adaptiveState.lastReason || 'Henüz tamamlanmış oyun yok.'}</div>
+    <div class="adaptive-note">${edgeText}</div>
+    <button class="adaptive-reset" id="btn-reset-adaptive" onclick="resetAdaptiveProgress()" aria-label="Uyarlanabilir geçmişi sıfırlamak için iki kez bas">Geçmişi Sıfırla</button>`;
 }
 
 window.selectDifficulty = function(id) {
-  if (aiThinking) return;
+  if (aiThinking) invalidatePendingAI();
   const lv = DIFFICULTY_LEVELS.find(l => l.id === id);
   if (!lv || (lv.engine === 'kata' && !kataReady)) return;
   currentLevel = id;
+  if(moveCount>0)adaptiveGameActive=false;
+  else adaptiveGameActive=id===0;
+  currentGameSettings=id===0?getAdaptiveGameSettings(adaptiveState,playerColor):{profile:lv.profile||'strong',komi:6.5,handicap:[],reason:'Manuel seçim'};
+  if(moveCount===0)resetBoard();
   renderDifficultyCards();
 };
+
+window.resetAdaptiveProgress=function(){
+  const now=Date.now();
+  const btn=document.getElementById('btn-reset-adaptive');
+  if(now>adaptiveResetConfirmUntil){
+    adaptiveResetConfirmUntil=now+4000;
+    if(btn){btn.textContent='Eminsen tekrar bas';btn.classList.add('confirming');}
+    showFeedback('Uyarlanabilir geçmişi silmek için düğmeye bir kez daha bas.', 'info');
+    return;
+  }
+  adaptiveResetConfirmUntil=0;
+  adaptiveState=resetAdaptiveState();
+  localStorage.setItem(ADAPTIVE_STORAGE_KEY,serializeAdaptiveState(adaptiveState));
+  if(currentLevel===0)currentGameSettings=getAdaptiveGameSettings(adaptiveState,playerColor);
+  renderDifficultyCards();
+  showFeedback('Uyarlanabilir geçmiş sıfırlandı. Yeni oyunlar yeniden sayılacak.','info');
+};
+
+function recordAdaptiveResult(outcome,endReason){
+  if(!adaptiveGameActive||adaptiveGameRecorded)return;
+  const result=recordCompletedGame(adaptiveState,{completed:true,outcome,endReason});
+  adaptiveState=result.state;
+  adaptiveGameRecorded=true;
+  localStorage.setItem(ADAPTIVE_STORAGE_KEY,serializeAdaptiveState(adaptiveState));
+  renderDifficultyCards();
+  if(result.changed)showFeedback(adaptiveState.lastReason,'info');
+}
 
 let _fbTimer = null;
 function showFeedback(msg, type) {
@@ -1075,24 +1147,27 @@ function showGameOver(scoreInfo) {
   const el = document.getElementById('gameover');
   el.classList.add('show');
   document.getElementById('btn-pass').disabled = true;
+  document.getElementById('btn-resign').disabled = true;
 
   const winner    = scoreInfo.winner;
   const winnerTr  = winner === 'black' ? 'Siyah' : 'Beyaz';
-  const margin    = Math.abs(scoreInfo.rawDiff).toFixed(1);
+  const margin    = scoreInfo.rawDiff==null?null:Math.abs(scoreInfo.rawDiff).toFixed(1);
   const isPlayerWin = winner === playerColor;
+  recordAdaptiveResult(isPlayerWin?'win':'loss',scoreInfo.resigned?'resign':'score');
 
   document.getElementById('go-winner').textContent =
-    isPlayerWin ? 'Kazandın' : 'Robot kazandı';
+    isPlayerWin ? 'Oyun bitti: sen kazandın' : 'Oyun bitti: robot kazandı';
   if (isPlayerWin && window.mascotCelebrate) { mascotCelebrate(); mascotSay('Tebrikler!', 3000); }
-  document.getElementById('go-score').textContent =
-    `${winnerTr} galip — ${margin} puan farkıyla.`;
+  document.getElementById('go-score').textContent = scoreInfo.resigned
+    ? `${winnerTr} kazandı; diğer oyuncu teslim oldu. Yeni oyun başlatabilirsin.`
+    : `${winnerTr} ${margin} puan farkla kazandı. Yeni oyun başlatabilirsin.`;
   document.getElementById('go-komi').textContent =
-    `Komi ${scoreInfo.komi}: beyaza verilen avantaj puanı.`;
+    `Komi ${scoreInfo.komi}: beyaza oyun başında eklenen denge puanı.`;
 
   const bLen = (scoreInfo.blackTerritory || []).length;
   const wLen = (scoreInfo.whiteTerritory || []).length;
   document.getElementById('go-territory').textContent =
-    `Siyah bölgesi: ${bLen} · Beyaz: ${wLen}`;
+    `Sayım özeti: Siyah bölgesi ${bLen}, Beyaz bölgesi ${wLen}.`;
 }
 
 window.openLearnFeedback = function() {
@@ -1115,8 +1190,20 @@ const kataWorker = new Worker('./workers/kataWorker.js');
 let aiThinking   = false;
 let kataReady    = false;
 let lastScoreInfo = null;
+let currentGameId=0;
+let nextRequestId=0;
+let activeRequestId=null;
+
+function invalidatePendingAI(){
+  currentGameId++;
+  activeRequestId=null;
+  aiThinking=false;
+  document.getElementById('think-bar').classList.remove('show');
+}
 
 function handleWorkerMessage(data) {
+  if(data.gameId!==currentGameId||data.requestId!==activeRequestId)return;
+  activeRequestId=null;
   aiThinking = false;
   document.getElementById('think-bar').classList.remove('show');
 
@@ -1151,14 +1238,14 @@ kataWorker.addEventListener('message', ({ data }) => {
       setTimeout(() => loEl.classList.remove('show'), 3000);
       updateEngineBadge('kata');
       document.getElementById('iter-lbl').textContent = 'KataGo';
-      showFeedback(`KataGo hazir (${data.backend}).`, 'ok');
+      showFeedback(`KataGo yardımcı motoru hazır (${data.backend}).`, 'ok');
       if (window.mascotStopThink) mascotStopThink();
       if (window.mascotSay) mascotSay('Oynamaya hazırım!', 3500);
       renderDifficultyCards();
     } else {
       updateEngineBadge('mcts');
       if (window.mascotStopThink) mascotStopThink();
-      showFeedback('KataGo yuklenemedi. Temel AI ile devam ediliyor.', 'info');
+      showFeedback('KataGo yardımcı motoru hazır değil; sorun yok, MCTS robotu ile devam ediyoruz.', 'info');
       console.warn('KataGo yuklenemedi — MCTS ile devam:', data.error);
       // Yükleme ekranını kapat — MCTS ile devam
       const loElFb = document.getElementById('model-loader');
@@ -1190,13 +1277,16 @@ function triggerAI() {
     ? board.koPoint.y * size + board.koPoint.x : -1;
   const colNum = aiColor === 'black' ? 1 : 2;
   const lv     = DIFFICULTY_LEVELS.find(l => l.id === currentLevel);
+  const boardData={grid,ko,size,komi:currentGameSettings.komi};
+  const requestId=++nextRequestId;
+  activeRequestId=requestId;
 
   if (kataReady && lv.engine === 'kata') {
-    kataWorker.postMessage({ type: 'MOVE', boardData: { grid, ko, size }, color: colNum });
+    kataWorker.postMessage({ type: 'MOVE', boardData, color: colNum, gameId:currentGameId, requestId });
   } else {
-    const timeMs = lv.engine === 'mcts' ? lv.timeMs : 2000;
+    const profile = lv.engine === 'adaptive' ? currentGameSettings.profile : (lv.engine === 'mcts' ? lv.profile : 'strong');
     mctsWorker.postMessage(
-      { type: 'MOVE', boardData: { grid, ko, size }, color: colNum, timeMs },
+      { type: 'MOVE_PROFILE', boardData, color: colNum, profile, gameId:currentGameId, requestId },
       [grid.buffer]
     );
   }
@@ -1209,8 +1299,10 @@ function requestFinalScore() {
     grid[s.y * size + s.x] = s.color === 'black' ? 1 : 2;
   }
   const ko = board.koPoint ? board.koPoint.y * size + board.koPoint.x : -1;
+  const requestId=++nextRequestId;
+  activeRequestId=requestId;
   mctsWorker.postMessage(
-    { type: 'SCORE', boardData: { grid, ko, size } },
+    { type: 'SCORE', boardData: { grid, ko, size, komi:currentGameSettings.komi }, gameId:currentGameId, requestId },
     [grid.buffer]
   );
 }
@@ -1247,6 +1339,7 @@ function applyAIMove(move) {
 
 function checkGameOver() {
   gameEnded = true;
+  invalidatePendingAI();
   requestFinalScore();
 }
 
@@ -1293,7 +1386,7 @@ window.playerPass = function () {
   gameHistory.push({ color: playerColor, x: -1, y: -1, pass: true });
   board.turn = board.turn === 'black' ? 'white' : 'black';
   passCount++;
-  showFeedback('Pas geçtin.', 'info');
+    showFeedback('Pas geçtin: bu tur taş koymadın. Robot da pas geçerse oyun sayılır.', 'info');
   updateMoveTag('Pas');
   updateStatus();
 
@@ -1301,8 +1394,25 @@ window.playerPass = function () {
   setTimeout(triggerAI, 300);
 };
 
+window.playerResign=function(){
+  if(aiThinking||gameEnded)return;
+  const now=Date.now();
+  const btn=document.getElementById('btn-resign');
+  if(now>resignConfirmUntil){
+    resignConfirmUntil=now+4000;
+    if(btn){btn.textContent='Eminsen tekrar bas';btn.classList.add('confirming');}
+    showFeedback('Teslim olursan oyun biter. Eminsen bir kez daha bas.', 'info');
+    return;
+  }
+  resignConfirmUntil=0;
+  if(btn){btn.textContent='Teslim Ol';btn.classList.remove('confirming');}
+  gameEnded=true;
+  invalidatePendingAI();
+  showGameOver({winner:aiColor,rawDiff:null,komi:currentGameSettings.komi,resigned:true,blackTerritory:[],whiteTerritory:[],blackDead:[],whiteDead:[]});
+};
+
 window.pickColor = function (c) {
-  if (aiThinking) return;
+  if (aiThinking) invalidatePendingAI();
   playerColor = c;
   aiColor     = c === 'black' ? 'white' : 'black';
   resetBoard();
@@ -1310,29 +1420,51 @@ window.pickColor = function (c) {
 };
 
 window.resetBoard = function () {
+  invalidatePendingAI();
+  resignConfirmUntil=0;
+  adaptiveResetConfirmUntil=0;
   board       = new BoardState(SIZE);
+  const lv=DIFFICULTY_LEVELS.find(level=>level.id===currentLevel);
+  currentGameSettings=currentLevel===0
+    ?getAdaptiveGameSettings(adaptiveState,playerColor)
+    :{profile:lv?.profile||'strong',komi:6.5,handicap:[],reason:'Manuel seçim'};
+  for(const point of currentGameSettings.handicap)board.placeStone(point.x,point.y,'black');
+  if(currentGameSettings.handicap.length)board.turn='white';
   gameHistory = [];
   moveCount   = 0; passCount = 0;
   gameEnded   = false;
+  adaptiveGameRecorded=false;
+  adaptiveGameActive=currentLevel===0;
   territory  = null;
   lastAIMoveXY = null;
   document.getElementById('move-count').textContent = '0';
   document.getElementById('iter-count').textContent = '—';
   document.getElementById('gameover').classList.remove('show');
   document.getElementById('btn-pass').disabled = false;
+  document.getElementById('btn-resign').disabled = false;
+  document.getElementById('btn-resign').textContent = 'Teslim Ol';
+  document.getElementById('btn-resign').classList.remove('confirming');
   document.getElementById('feedback').classList.remove('show');
   document.getElementById('cp-b').className =
     'cp-btn' + (playerColor === 'black' ? ' active-b' : '');
   document.getElementById('cp-w').className =
     'cp-btn' + (playerColor === 'white' ? ' active-w' : '');
+  document.getElementById('cp-b').setAttribute('aria-pressed', playerColor === 'black' ? 'true' : 'false');
+  document.getElementById('cp-w').setAttribute('aria-pressed', playerColor === 'white' ? 'true' : 'false');
   updateMoveTag('—');
   updateStatus();
   showFeedback(
-    playerColor === 'black' ? 'Siyah oyuncusun. Hamle yap!' : 'Robot siyah. Düşünüyor…',
+    playerColor === 'black' ? 'Yeni oyun başladı. Siyah sensin; ilk hamleyi yap.' : 'Yeni oyun başladı. Robot siyah; ilk hamleyi robot yapacak.',
     'info'
   );
-  if (playerColor === 'white') setTimeout(triggerAI, 600);
+  if (board.turn === aiColor) setTimeout(triggerAI, 600);
 };
+
+if(new URLSearchParams(location.search).has('e2e')){
+  window.__robotTest={
+    state:()=>({currentLevel,playerColor,aiColor,gameEnded,moveCount,passCount,gameId:currentGameId,activeRequestId,stones:board.stones.map(s=>({...s})),settings:{...currentGameSettings,handicap:currentGameSettings.handicap.map(p=>({...p}))},adaptive:JSON.parse(serializeAdaptiveState(adaptiveState)),kataReady}),
+  };
+}
 
 /* ══════════════════════════════════════════════════════
    ÇİZİM
@@ -1669,7 +1801,7 @@ function startAnalysis() {
     type:  'ANALYZE_GAME',
     moves: gameHistory,  // pas dahil tüm hamleler (moveNumber = rvIdx ile eşleşir)
     size:  SIZE,
-    komi:  6.5,
+    komi:  currentGameSettings.komi,
   });
 }
 

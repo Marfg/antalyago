@@ -184,21 +184,21 @@ async function loadModel() {
 // ── Mesaj dinleyici ───────────────────────────────────────────────────
 
 self.addEventListener('message', async ({ data }) => {
-  const { type, boardData, color } = data;
+  const { type, boardData, color, gameId, requestId } = data;
 
   if (type === 'LOAD') { await loadModel(); return; }
 
   if (!model) {
-    self.postMessage({ ok: false, error: 'Model henüz yüklenmedi.' });
+    self.postMessage({ ok: false, error: 'Model henüz yüklenmedi.', gameId, requestId });
     return;
   }
 
   if (type === 'MOVE') {
     try {
       const move = await getBestMove(boardData, color);
-      self.postMessage({ ok: true, type: 'MOVE', move });
+      self.postMessage({ ok: true, type: 'MOVE', move, gameId, requestId });
     } catch (e) {
-      self.postMessage({ ok: false, error: e.message });
+      self.postMessage({ ok: false, error: e.message, gameId, requestId });
     }
   }
 });
