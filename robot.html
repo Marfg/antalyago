@@ -1094,6 +1094,7 @@ const policyWorker = new Worker('./workers/kataWorker.js');
 let aiThinking   = false;
 let policyReady = false;
 const pendingPolicy = new Map();
+const POLICY_TIMEOUT_MS=4000;
 let lastScoreInfo = null;
 let currentGameId=0;
 let nextRequestId=0;
@@ -1101,7 +1102,14 @@ let activeRequestId=null;
 
 function invalidatePendingAI(){
   currentGameId++;
+  for(const pending of pendingPolicy.values())clearTimeout(pending.timeoutId);
   pendingPolicy.clear();
+  activeRequestId=null;
+  aiThinking=false;
+  document.getElementById('think-bar').classList.remove('show');
+}
+
+function finishThinking(){
   activeRequestId=null;
   aiThinking=false;
   document.getElementById('think-bar').classList.remove('show');
@@ -1109,9 +1117,7 @@ function invalidatePendingAI(){
 
 function handleWorkerMessage(data) {
   if(data.gameId!==currentGameId||data.requestId!==activeRequestId)return;
-  activeRequestId=null;
-  aiThinking = false;
-  document.getElementById('think-bar').classList.remove('show');
+  finishThinking();
 
   if (!data.ok) {
     showFeedback('Robot hatası: ' + data.error, 'err');
@@ -1126,25 +1132,45 @@ function handleWorkerMessage(data) {
 
 mctsWorker.addEventListener('message', ({ data }) => handleWorkerMessage(data));
 mctsWorker.addEventListener('error', e => {
-  aiThinking = false;
-  document.getElementById('think-bar').classList.remove('show');
+  finishThinking();
   showFeedback('Robot bağlanamadı.', 'err');
   console.error('Worker error:', e);
 });
 
 function sendMctsFallback(payload){
   const grid=payload.boardData.grid;
-  mctsWorker.postMessage({...payload,type:'MOVE_PROFILE',profile:CLUB_PROFILE},[grid.buffer]);
+  try{mctsWorker.postMessage({...payload,type:'MOVE_PROFILE',profile:CLUB_PROFILE},[grid.buffer])}
+  catch(error){finishThinking();showFeedback('Robot bağlanamadı.','err');console.error(error)}
+}
+
+function fallbackPolicyRequest(key){
+  const pending=pendingPolicy.get(key);
+  if(!pending)return;
+  clearTimeout(pending.timeoutId);
+  pendingPolicy.delete(key);
+  const {payload}=pending;
+  if(payload.gameId!==currentGameId||payload.requestId!==activeRequestId)return;
+  sendMctsFallback(payload);
+}
+
+function fallbackAllPolicyRequests(){
+  for(const key of [...pendingPolicy.keys()])fallbackPolicyRequest(key);
 }
 
 policyWorker.addEventListener('message',({data})=>{
-  if(data.type==='READY'){policyReady=Boolean(data.ok);return}
-  const key=`${data.gameId}:${data.requestId}`,fallback=pendingPolicy.get(key);
+  if(data.type==='READY'){
+    policyReady=Boolean(data.ok);
+    if(!policyReady)fallbackAllPolicyRequests();
+    return;
+  }
+  const key=`${data.gameId}:${data.requestId}`,pending=pendingPolicy.get(key);
+  if(!pending)return;
+  if(!data.ok){policyReady=false;fallbackPolicyRequest(key);return}
+  clearTimeout(pending.timeoutId);
   pendingPolicy.delete(key);
-  if(!data.ok){if(fallback&&data.gameId===currentGameId&&data.requestId===activeRequestId)sendMctsFallback(fallback);return}
   handleWorkerMessage(data);
 });
-policyWorker.addEventListener('error',()=>{policyReady=false});
+policyWorker.addEventListener('error',()=>{policyReady=false;fallbackAllPolicyRequests()});
 
 function triggerAI() {
   if (aiThinking || gameEnded) return;
@@ -1167,8 +1193,10 @@ function triggerAI() {
 
   const payload={type:'MOVE',boardData,color:colNum,gameId:currentGameId,requestId};
   if(policyReady){
-    pendingPolicy.set(`${currentGameId}:${requestId}`,payload);
-    policyWorker.postMessage(payload);
+    const key=`${currentGameId}:${requestId}`;
+    const timeoutId=setTimeout(()=>fallbackPolicyRequest(key),POLICY_TIMEOUT_MS);
+    pendingPolicy.set(key,{payload,timeoutId});
+    try{policyWorker.postMessage(payload)}catch(error){policyReady=false;fallbackPolicyRequest(key)}
   }else sendMctsFallback(payload);
 }
 

@@ -18,7 +18,7 @@ async function context(options={}){
     const file=path.join(ROOT,new URL(route.request().url()).pathname);
     try{await route.fulfill({status:200,contentType:mime(file),body:fs.readFileSync(file)})}catch{await route.abort()}
   });
-  await ctx.addInitScript(({mctsMode,delayMs,policyReady})=>{
+  await ctx.addInitScript(({mctsMode,delayMs,policyReady,policyMode,policyDelayMs})=>{
     window.__workerMessages=[];
     class FakeWorker extends EventTarget{
       constructor(url){super();this.url=String(url);if(this.url.includes('kataWorker'))setTimeout(()=>this.emit({ok:policyReady,type:'READY'}),0)}
@@ -28,14 +28,16 @@ async function context(options={}){
         if(data.type==='LOAD')return;
         if(data.type==='SCORE'){setTimeout(()=>this.emit({ok:true,type:'SCORE',score:{winner:'white',rawDiff:-6.5,margin:6.5,komi:data.boardData.komi,blackTerritory:[],whiteTerritory:[],blackDead:[],whiteDead:[]},gameId:data.gameId,requestId:data.requestId}),0);return}
         if(data.type==='MOVE'||data.type==='MOVE_PROFILE'){
+          const isPolicy=this.url.includes('kataWorker');
+          if(isPolicy&&policyMode==='silent')return;
           const move=mctsMode==='pass'?'pass':{x:0,y:0,iters:1};
-          setTimeout(()=>this.emit({ok:true,type:data.type,move,gameId:data.gameId,requestId:data.requestId}),delayMs||0);
+          setTimeout(()=>this.emit({ok:true,type:data.type,move,gameId:data.gameId,requestId:data.requestId}),isPolicy?policyDelayMs:(delayMs||0));
         }
       }
       terminate(){}
     }
     window.Worker=FakeWorker;
-  },{mctsMode:options.mctsMode||'move',delayMs:options.delayMs||0,policyReady:options.policyReady??false});
+  },{mctsMode:options.mctsMode||'move',delayMs:options.delayMs||0,policyReady:options.policyReady??false,policyMode:options.policyMode||'respond',policyDelayMs:options.policyDelayMs||0});
   const page=await ctx.newPage();
   await page.goto(`${BASE}/${options.path||'robot.html?e2e=1'}`,{waitUntil:'domcontentloaded'});
   if(options.waitRobot!==false)await page.waitForFunction(()=>window.__robotTest);
@@ -94,8 +96,26 @@ await test('politika modeli hazır değilken MCTS yedeği kullanılır',async()=
   await ctx.close();
 });
 
+await test('yanıt vermeyen politika worker dört saniye sonra tek MCTS hamlesine düşer',async()=>{
+  const{ctx,page}=await context({policyReady:true,policyMode:'silent'});await page.click('#cp-w');
+  await page.waitForFunction(()=>window.__workerMessages.some(m=>m.type==='MOVE_PROFILE'),null,{timeout:6500});
+  await page.waitForFunction(()=>window.__robotTest.state().moveCount===1);
+  const result=await page.evaluate(()=>({state:window.__robotTest.state(),messages:window.__workerMessages,thinking:document.querySelector('#think-bar').classList.contains('show')}));
+  assert(result.state.stones.length===1,'fallback tek taş koymadı');
+  assert(result.messages.filter(m=>m.type==='MOVE_PROFILE').length===1,'fallback birden fazla çalıştı');
+  assert(!result.thinking,'düşünüyor göstergesi kapanmadı');await ctx.close();
+});
+
+await test('timeout sonrasında gelen geç politika cevabı ikinci taş koymaz',async()=>{
+  const{ctx,page}=await context({policyReady:true,policyDelayMs:4600});await page.click('#cp-w');
+  await page.waitForTimeout(5200);
+  const result=await page.evaluate(()=>({state:window.__robotTest.state(),messages:window.__workerMessages}));
+  assert(result.state.moveCount===1&&result.state.stones.length===1,'geç politika cevabı ikinci hamle üretti');
+  assert(result.messages.filter(m=>m.type==='MOVE_PROFILE').length===1,'MCTS fallback tek istek değil');await ctx.close();
+});
+
 await test('eski worker cevabı reset sonrası taşa dönüşmez',async()=>{
-  const{ctx,page}=await context({delayMs:250,policyReady:true});await page.click('#btn-pass');await page.click('#btn-reset-board');await page.waitForTimeout(400);
+  const{ctx,page}=await context({policyDelayMs:250,policyReady:true});await page.click('#btn-pass');await page.waitForFunction(()=>window.__workerMessages.some(m=>m.type==='MOVE'&&m.worker.includes('kataWorker')));await page.click('#btn-reset-board');await page.waitForTimeout(400);
   const state=await page.evaluate(()=>window.__robotTest.state());assert(state.stones.length===0&&state.moveCount===0,'eski worker cevabı yeni tahtaya uygulandı');await ctx.close();
 });
 
