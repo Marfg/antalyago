@@ -536,6 +536,34 @@ export function getBestMoveForProfile(boardData, color, profileId, options = {})
   return profileSearchResult(search,profile,rng,profile.iterations);
 }
 
+/** Politika modelinin olasılıklarını kurallar ve temel taktiklerle yeniden sıralar. */
+export function choosePolicyMove(boardData,color,policy,{policyStride=19}={}){
+  const {grid,size,ko=-1}=boardData,nbr=getNeighborTable(size),candidates=[];
+  for(let i=0;i<grid.length;i++){
+    const result=placeStone(grid,nbr,size,i,color,ko);
+    if(!result)continue;
+    const x=i%size,y=(i/size)|0,probability=Number(policy[y*policyStride+x])||0;
+    const allyGroups=new Set(),savedAtari=new Set();
+    for(const n of nbr[i]){
+      if(grid[n]!==color)continue;
+      const ally=groupAndLibs(grid,nbr,n),key=Math.min(...ally.group);
+      allyGroups.add(key);if(ally.libs.size===1)savedAtari.add(key);
+    }
+    const own=groupAndLibs(result.grid,nbr,i);
+    let tactical=result.captured.length*420+savedAtari.size*260+Math.max(0,allyGroups.size-1)*110;
+    tactical+=Math.min(own.libs.size,4)*8;
+    if(own.libs.size===1&&!result.captured.length)tactical-=300;
+    candidates.push({x,y,i,probability,score:Math.log(Math.max(probability,1e-12))*12+tactical});
+  }
+  if(!candidates.length)return 'pass';
+  candidates.sort((a,b)=>b.score-a.score||b.probability-a.probability||a.i-b.i);
+  const occupied=grid.reduce((count,cell)=>count+(cell!==0),0);
+  const passProbability=Number(policy[policyStride*policyStride])||0;
+  const lead=scoreBoard(grid,nbr,size,boardData.komi??DEFAULT_KOMI)*(color===1?1:-1);
+  if(occupied/grid.length>=.72&&lead>2&&passProbability>candidates[0].probability*1.15)return 'pass';
+  return {x:candidates[0].x,y:candidates[0].y};
+}
+
 // Kural ve rollout özelliklerini üretim API'sini genişletmeden doğrulayan test yüzeyi.
 export const __test = {
   play(boardData, color, x, y) {

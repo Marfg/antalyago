@@ -20,6 +20,7 @@ const NB19  = N19 * N19;  // 361
 const NC    = 22;
 
 let model = null;
+const policyTools = import('../core/goAI.js');
 
 // ── Liberty flood-fill ──────────────────────────────────────────────
 
@@ -150,23 +151,8 @@ async function getBestMove(boardData, color) {
   for (let i = 0; i < 362; i++) { exp[i] = Math.exp(raw[i] - maxVal); expSum += exp[i]; }
   for (let i = 0; i < 362; i++) exp[i] /= expSum;
 
-  // Yasal hamleleri politika olasılığına göre sırala
-  const candidates = [];
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const idxB = y * size + x;
-      if (!isLegal(grid, size, idxB, color, ko)) continue;
-      candidates.push({ x, y, prob: exp[y * N19 + x] });
-    }
-  }
-  candidates.sort((a, b) => b.prob - a.prob);
-
-  if (!candidates.length) return 'pass';
-
-  const passProb = exp[361];
-  if (passProb > candidates[0].prob * 1.5) return 'pass';
-
-  return { x: candidates[0].x, y: candidates[0].y };
+  const { choosePolicyMove } = await policyTools;
+  return choosePolicyMove(boardData,color,exp,{policyStride:N19});
 }
 
 // ── Model yükleme ────────────────────────────────────────────────────

@@ -18,13 +18,13 @@ async function context(options={}){
     const file=path.join(ROOT,new URL(route.request().url()).pathname);
     try{await route.fulfill({status:200,contentType:mime(file),body:fs.readFileSync(file)})}catch{await route.abort()}
   });
-  await ctx.addInitScript(({mctsMode,delayMs})=>{
+  await ctx.addInitScript(({mctsMode,delayMs,policyReady})=>{
     window.__workerMessages=[];
     class FakeWorker extends EventTarget{
-      constructor(url){super();this.url=String(url)}
+      constructor(url){super();this.url=String(url);if(this.url.includes('kataWorker'))setTimeout(()=>this.emit({ok:policyReady,type:'READY'}),0)}
       emit(data){this.dispatchEvent(new MessageEvent('message',{data}))}
       postMessage(data){
-        window.__workerMessages.push({...data,boardData:undefined});
+        window.__workerMessages.push({...data,worker:this.url,boardData:undefined});
         if(data.type==='LOAD')return;
         if(data.type==='SCORE'){setTimeout(()=>this.emit({ok:true,type:'SCORE',score:{winner:'white',rawDiff:-6.5,margin:6.5,komi:data.boardData.komi,blackTerritory:[],whiteTerritory:[],blackDead:[],whiteDead:[]},gameId:data.gameId,requestId:data.requestId}),0);return}
         if(data.type==='MOVE'||data.type==='MOVE_PROFILE'){
@@ -35,7 +35,7 @@ async function context(options={}){
       terminate(){}
     }
     window.Worker=FakeWorker;
-  },{mctsMode:options.mctsMode||'move',delayMs:options.delayMs||0});
+  },{mctsMode:options.mctsMode||'move',delayMs:options.delayMs||0,policyReady:options.policyReady??false});
   const page=await ctx.newPage();
   await page.goto(`${BASE}/${options.path||'robot.html?e2e=1'}`,{waitUntil:'domcontentloaded'});
   if(options.waitRobot!==false)await page.waitForFunction(()=>window.__robotTest);
@@ -62,12 +62,12 @@ await test('öğrenme ekranında robot pratik kartı görünür',async()=>{
   await ctx.close();
 });
 
-await test('ekran yalnız Kulüp Robotu seviyesini gösterir',async()=>{
-  const{ctx,page}=await context();const state=await page.evaluate(()=>window.__robotTest.state());
-  assert(state.profile==='club'&&state.settings.profile==='club','club profili etkin değil');
-  await page.getByText('Kulüp Robotu · 8–10 kyu hedefi').waitFor();
-  for(const removed of ['Uyarlanabilir','Başlangıç','Orta','Güçlü','Geçmişi Sıfırla'])assert(await page.getByText(removed,{exact:true}).count()===0,removed+' arayüzde kaldı');
-  assert(await page.locator('#iter-count, #iter-lbl, #diff-grid').count()===0,'teknik sayaç veya eski seviye seçimi kaldı');
+await test('kontrol şeridinde yalnız renk ve oyun düğmeleri bulunur',async()=>{
+  const{ctx,page}=await context();
+  const panelText=(await page.locator('#panel').innerText()).replace(/\s+/g,' ').trim();
+  assert(panelText.toLocaleLowerCase('tr')==='rengin siyah beyaz yeni oyun pas teslim ol','panelde gereksiz içerik var: '+panelText);
+  for(const removed of ['8–10 kyu','Kulüp Robotu','Uyarlanabilir','Başlangıç','Orta','Güçlü','iterasyon','motor','model'])assert(!panelText.toLocaleLowerCase('tr').includes(removed.toLocaleLowerCase('tr')),removed+' panelde kaldı');
+  assert(await page.locator('#engine-badge, #model-loader, #club-profile, #iter-count, #diff-grid').count()===0,'eski teknik DOM bileşeni kaldı');
   await ctx.close();
 });
 
@@ -82,15 +82,20 @@ await test('teslim ikinci onay ister ve yeni oyun akışı çalışır',async()=
   await ctx.close();
 });
 
-await test('renk değişse de sabit komi ve club profili korunur',async()=>{
-  const{ctx,page}=await context();await page.click('#cp-w');const state=await page.evaluate(()=>window.__robotTest.state());
-  assert(state.settings.komi===6.5&&state.settings.handicap.length===0&&state.profile==='club','sabit oyun ayarı bozuldu');
-  await page.waitForFunction(()=>window.__workerMessages.some(m=>m.type==='MOVE_PROFILE'));
-  assert(await page.evaluate(()=>window.__workerMessages.find(m=>m.type==='MOVE_PROFILE').profile==='club'),'worker club profili almadı');await ctx.close();
+await test('politika modeli hazırken ana worker hamleyi üretir',async()=>{
+  const{ctx,page}=await context({policyReady:true});await page.click('#cp-w');
+  await page.waitForFunction(()=>window.__workerMessages.some(m=>m.type==='MOVE'&&m.worker.includes('kataWorker')));
+  assert(!(await page.evaluate(()=>window.__workerMessages.some(m=>m.type==='MOVE_PROFILE'))),'hazır model varken MCTS çağrıldı');await ctx.close();
+});
+
+await test('politika modeli hazır değilken MCTS yedeği kullanılır',async()=>{
+  const{ctx,page}=await context({policyReady:false});await page.click('#cp-w');
+  await page.waitForFunction(()=>window.__workerMessages.some(m=>m.type==='MOVE_PROFILE'&&m.worker.includes('goAI.worker')));
+  await ctx.close();
 });
 
 await test('eski worker cevabı reset sonrası taşa dönüşmez',async()=>{
-  const{ctx,page}=await context({delayMs:250});await page.click('#btn-pass');await page.click('#btn-reset-board');await page.waitForTimeout(400);
+  const{ctx,page}=await context({delayMs:250,policyReady:true});await page.click('#btn-pass');await page.click('#btn-reset-board');await page.waitForTimeout(400);
   const state=await page.evaluate(()=>window.__robotTest.state());assert(state.stones.length===0&&state.moveCount===0,'eski worker cevabı yeni tahtaya uygulandı');await ctx.close();
 });
 
@@ -112,9 +117,9 @@ await test('renk seçimleri erişilebilir durum bildirir',async()=>{
 });
 
 for(const viewport of [{width:390,height:844},{width:1280,height:720}])await test(`${viewport.width}×${viewport.height} temel kontroller erişilebilir`,async()=>{
-  const{ctx,page}=await context({viewport});for(const selector of ['#club-profile','#cp-b','#cp-w','#btn-pass','#btn-resign','#btn-reset-board']){
+  const{ctx,page}=await context({viewport});for(const selector of ['#cp-b','#cp-w','#btn-pass','#btn-resign','#btn-reset-board']){
     const el=page.locator(selector);await el.scrollIntoViewIfNeeded();assert(await el.isVisible(),selector+' görünür değil');const box=await el.boundingBox();assert(box&&box.width>20&&box.height>20,selector+' erişilebilir boyutta değil')
-  }await ctx.close();
+  }const overflow=await page.evaluate(()=>({w:document.documentElement.scrollWidth,vw:innerWidth,p:document.querySelector('#panel').getBoundingClientRect()}));assert(overflow.w<=overflow.vw,'yatay taşma var');assert(overflow.p.left>=0&&overflow.p.right<=overflow.vw+1,'panel ekrandan taşıyor');await ctx.close();
 });
 
 await browser.close();

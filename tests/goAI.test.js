@@ -1,4 +1,4 @@
-import { AI_PROFILES, __test, finalScore, getBestMoveByIterations, getBestMoveForProfile } from '../core/goAI.js';
+import { AI_PROFILES, __test, choosePolicyMove, finalScore, getBestMoveByIterations, getBestMoveForProfile } from '../core/goAI.js';
 import { BoardState } from '../core/boardState.js';
 import { isValidMove } from '../core/ruleEngine.js';
 import { ADAPTIVE_VERSION,HANDICAP_9X9,createAdaptiveState,getAdaptiveGameSettings,loadAdaptiveState,recordCompletedGame,resetAdaptiveState,serializeAdaptiveState } from '../core/adaptiveAI.js';
@@ -14,6 +14,7 @@ function position(size,stones=[],ko=-1){
   return {grid,ko,size};
 }
 function adaptiveSequence(state,outcomes){for(const outcome of outcomes)state=recordCompletedGame(state,{completed:true,outcome,endReason:'score'}).state;return state}
+function policy(entries=[],pass=0){const values=new Float32Array(362).fill(.001);for(const[x,y,p]of entries)values[y*19+x]=p;values[361]=pass;return values}
 
 test('yakalama rakip taşı kaldırır',()=>{
   const board=position(5,[[2,2,2],[1,1,2],[1,2,1],[1,3,2]]);
@@ -34,6 +35,36 @@ test('basit ko hemen geri almayı engeller',()=>{
   ok(capture);
   equal(capture.ko,6);
   equal(__test.play({grid:capture.grid,ko:capture.ko,size:5},2,1,1),null);
+});
+
+test('politika seçimi yakalamayı zayıf hamleden üstün tutar',()=>{
+  const board=position(5,[[2,2,2],[1,1,2],[1,2,1],[1,3,2]]);
+  equal(JSON.stringify(choosePolicyMove(board,1,policy([[0,0,.8],[2,3,.03]]))),JSON.stringify({x:2,y:3}));
+});
+
+test('politika seçimi atarideki taşı kurtarır',()=>{
+  const board=position(5,[[1,2,2],[2,1,2],[2,2,1],[2,3,2]]);
+  equal(JSON.stringify(choosePolicyMove(board,1,policy([[0,0,.8],[2,3,.03]]))),JSON.stringify({x:2,y:3}));
+});
+
+test('politika seçimi ayrı dost grupları bağlar',()=>{
+  const board=position(5,[[1,1,2],[1,3,2]]);
+  equal(JSON.stringify(choosePolicyMove(board,1,policy([[0,0,.5],[2,2,.08]]))),JSON.stringify({x:2,y:2}));
+});
+
+test('politika seçimi ko noktasını eler',()=>{
+  const koBoard={...position(5),ko:0};
+  equal(JSON.stringify(choosePolicyMove(koBoard,1,policy([[0,0,.9],[4,4,.2]]))),JSON.stringify({x:4,y:4}));
+});
+
+test('politika seçimi intihar adayını eler',()=>{
+  const suicide=position(5,[[2,1,2],[2,2,1],[2,3,2],[2,2,3]]);
+  equal(JSON.stringify(choosePolicyMove(suicide,1,policy([[2,2,.9],[4,4,.2]]))),JSON.stringify({x:4,y:4}));
+});
+
+test('politika seçimi boş tahtada yüksek pas olasılığına rağmen erken pas geçmez',()=>{
+  const move=choosePolicyMove(position(9),1,policy([[4,4,.01]],.99));
+  ok(move!=='pass');
 });
 
 test('atarideki grup uzayarak kurtulabilir',()=>{
