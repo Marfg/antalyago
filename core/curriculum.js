@@ -535,6 +535,10 @@ export const CURRICULUM = [
         sourceRefs:['BGA Certificate Level 2 — Double Ataris and Sequences of Ataris','Kansai Ki-in introductory problem sequences'],
         board:[{color:'W',x:4,y:3},{color:'W',x:3,y:4},{color:'B',x:4,y:2},{color:'B',x:4,y:4},{color:'B',x:2,y:4}],
         answer:{x:3,y:3}, turn:'black', size:9, camera:CAM.center,
+        variationsAfterAnswer:[
+          [{color:'W',x:5,y:3},{color:'B',x:3,y:5,capture:[{x:3,y:4}]}],
+          [{color:'W',x:3,y:5},{color:'B',x:5,y:3,capture:[{x:4,y:3}]}],
+        ],
         fb:{t:'İki beyaz grubun kalan nefeslerini birlikte oku.',c:'info'}, fb_ok:'Çift atari — beyaz iki grubu birden kurtaramaz.', fb_err:'Seçtiğin hamlenin her iki beyaz grubun nefesini de bire indirip indirmediğini kontrol et.' },
 
       { text:`<p>★★ <strong>Soru 4/12</strong> — Beyaz A taşı merdiven yolunda bekliyor. Siyah kovalamayı sürdürürse ne olur?</p>`,
@@ -550,9 +554,13 @@ export const CURRICULUM = [
 
       { text:`<p>★★ <strong>Soru 5/12</strong> — Atari vermeden beyazın bütün kaçış yollarını kapat.</p>`,
         concepts:['net'], difficulty:2,
-        sourceRefs:['Falling in Love with Baduk — Net','BGA Certificate Level 2 — Ladders and Nets'],
+        sourceRefs:['Falling in Love with Baduk — Day 4: Net','BGA Certificate Level 2 — Ladders and Nets'],
         board:[{color:'W',x:4,y:4},{color:'B',x:5,y:3},{color:'B',x:5,y:4},{color:'B',x:4,y:5},{color:'B',x:3,y:5}],
         answer:{x:3,y:3}, turn:'black', size:9, camera:CAM.center,
+        variationsAfterAnswer:[
+          [{color:'W',x:4,y:3},{color:'B',x:3,y:4},{color:'W',x:4,y:2},{color:'B',x:5,y:2}],
+          [{color:'W',x:3,y:4},{color:'B',x:4,y:3},{color:'W',x:2,y:4},{color:'B',x:2,y:5}],
+        ],
         fb:{t:'Hedef doğrudan atari değil; kaçış yönlerini birlikte kapatmaktır.',c:'info'}, fb_ok:'Ağ tamamlandı — beyaz hangi yöne uzarsa uzasın yakalanır.', fb_err:'Hamleden sonra beyazın yukarı ve yana kaçışlarını ayrı ayrı kontrol et.' },
 
       { text:`<p>★★★ <strong>Soru 6/12</strong> — Küçük bir taşı kurban ederek daha büyük beyaz grubu snapback ile yakala.</p>`,
@@ -563,12 +571,13 @@ export const CURRICULUM = [
         movesAfterAnswer:[{color:'W',x:5,y:3,capture:[{x:5,y:4}]},{color:'B',x:5,y:4,capture:[{x:5,y:3},{x:4,y:4},{x:4,y:3}]}],
         fb:{t:'İlk hamlenin hemen hayatta kalması gerekmiyor; geri alma sonucunu oku.',c:'info'}, fb_ok:'Snapback — kurban geri alındı ve daha büyük grup yakalandı.', fb_err:'Bir taş kaybetmekten kaçınma; beyaz aldıktan sonra oluşacak tek nefesi hesapla.' },
 
-      { text:`<p>★★★ <strong>Soru 7/12</strong> — Üst kenardaki siyah grubun iki göz yapmasını engelleyen kritik noktayı bul.</p>`,
+      { text:`<p>★★★ <strong>Soru 7/12</strong> — Üst kenardaki siyah grubu tek hamlede iki gerçek gözle yaşat.</p>`,
         concepts:['life_and_death'], difficulty:3,
         sourceRefs:['Falling in Love with Baduk — Eye vs. False Eye','BGA Certificate Level 2 — Living and Dead Groups'],
         board:[{color:'B',x:1,y:0},{color:'B',x:5,y:0},{color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:4,y:1},{color:'B',x:5,y:1},{color:'W',x:0,y:0},{color:'W',x:6,y:0},{color:'W',x:0,y:1},{color:'W',x:6,y:1},{color:'W',x:1,y:2},{color:'W',x:2,y:2},{color:'W',x:3,y:2},{color:'W',x:4,y:2},{color:'W',x:5,y:2}],
-        answer:{x:3,y:0}, turn:'white', size:9, camera:CAM.high,
-        fb:{t:'Üç noktalı iç alanı iki göze bölme ihtimalini değerlendir.',c:'info'}, fb_ok:'Kritik nokta bulundu — siyah iç alanı iki ayrı göze bölemiyor.', fb_err:'Rakibin iki göz yapmak için oynayacağı merkezi noktayı önce sen kapat.' },
+        answer:{x:3,y:0}, turn:'black', size:9, camera:CAM.high,
+        eyePointsAfterAnswer:[{x:2,y:0},{x:4,y:0}],
+        fb:{t:'Üç noktalı iç alanı iki ayrı bölgeye ayır.',c:'info'}, fb_ok:'İki gerçek göz oluştu — siyah grup koşulsuz canlı.', fb_err:'İç alanı iki ayrı tek-noktalı göze bölen merkezi hamleyi bul.' },
 
       { text:`<p>★★ <strong>Soru 8/12</strong> — Beyaz olarak oyna ve iki siyah zincirin bağlantısını kes.</p>`,
         concepts:['connection'], difficulty:2,
@@ -577,26 +586,31 @@ export const CURRICULUM = [
         answer:{x:4,y:3}, turn:'white', size:9, camera:CAM.center,
         fb:{t:'İki siyah zincirin paylaştığı tek bağlantı noktasını bul.',c:'info'}, fb_ok:'Kesme başarılı — siyah artık iki ayrı grup olarak mücadele etmek zorunda.', fb_err:'Hamlen iki siyah zincirin birbirine ulaşmasını gerçekten engelliyor mu?' },
 
-      { text:`<p>★★ <strong>Soru 9/12</strong> — Bu iki beyaz gruba tek hamlede çift atari kurmak mümkün mü?</p>`,
-        concepts:['atari'], difficulty:2,
+      { text:`<p>★★★ <strong>Soru 9/12</strong> — Çift atariyi kur ve beyazın neden iki grubu birden kurtaramadığını oku.</p>`,
+        concepts:['atari'], difficulty:3,
         sourceRefs:['BGA Certificate Level 2 — Double Ataris and Sequences of Ataris'],
-        board:[{color:'W',x:1,y:2},{color:'W',x:7,y:6},{color:'B',x:0,y:2},{color:'B',x:1,y:1},{color:'B',x:8,y:6},{color:'B',x:7,y:5}],
-        auto:true, size:9, camera:CAM.overview,
-        miniQuestion:{text:'Tek hamle iki grubu birden atariye alabilir mi?',options:[
-          {text:'Hayır — grupların ortak komşu noktası yok',correct:true,feedback:'Doğru. Çift atari için aynı hamlenin iki ayrı grubun nefesini bire indirmesi gerekir.'},
-          {text:'Evet — ortadaki bir hamle yeter',correct:false,feedback:'Gruplar birbirinden çok uzak; tek bir kesişim ikisine birden komşu değil.'}
-        ]}, fb:{t:'Taşların görünüşüne değil, iki grubun ortak komşu nokta paylaşıp paylaşmadığına bak.',c:'info'} },
+        board:[{color:'W',x:4,y:3},{color:'W',x:3,y:4},{color:'B',x:4,y:2},{color:'B',x:4,y:4},{color:'B',x:2,y:4}],
+        answer:{x:3,y:3}, turn:'black', size:9, camera:CAM.center,
+        variationsAfterAnswer:[
+          [{color:'W',x:5,y:3},{color:'B',x:3,y:5,capture:[{x:3,y:4}]}],
+          [{color:'W',x:3,y:5},{color:'B',x:5,y:3,capture:[{x:4,y:3}]}],
+        ],
+        fb:{t:'Ortak hamle iki grubu da tek nefese indirmeli; beyaz yalnız birini savunabilir.',c:'info'}, fb_ok:'Çift atari — beyaz hangi grubu kurtarırsa öteki zorunlu olarak yakalanır.', fb_err:'Hamleden sonra iki ayrı beyaz grubun da tek nefesi kalmalı.' },
 
-      { text:`<p>★★★ <strong>Soru 10/12</strong> — Bu kez merdiven yolunda beyaz destek taşı yok. Siyah kovalamayı sürdürmeli mi?</p>`,
-        concepts:['ladder'], difficulty:3,
+      { text:`<p>★★★★ <strong>Soru 10/12</strong> — Beyaz taşı yakalayana kadar zorunlu merdiven dizisini başlat.</p>`,
+        concepts:['ladder'], difficulty:4,
         sourceRefs:['Falling in Love with Baduk — Ladder','BGA Certificate Level 2 — Ladders and Nets'],
-        board:[{color:'W',x:3,y:8},{color:'B',x:2,y:7},{color:'B',x:2,y:8},{color:'B',x:4,y:8},{color:'B',x:3,y:9}],
-        auto:true, size:13, camera:CAM.overview,
-        miniQuestion:{text:'Merdiven yolu boşken doğru karar nedir?',options:[
-          {text:'Kovalamayı sürdür — beyaz köşeye kadar yakalanır',correct:true,feedback:'Doğru. Yol üzerinde beyaz destek taşı yok; merdiven siyah için çalışır.'},
-          {text:'Bırak — beyaz her durumda kaçar',correct:false,feedback:'Bu varyantta merdiveni kıran taş yok; kovalamaca yakalamayla biter.'},
-          {text:'Ağa geçmek zorunlu',correct:false,feedback:'Ağ mümkün olabilir ama bu pozisyonda merdiven yolu zaten temiz.'}
-        ]}, fb:{t:'Soru 4 ile karşılaştır: tek fark merdiven yolundaki destek taşıdır.',c:'info'} },
+        board:[{color:'W',x:2,y:2},{color:'B',x:1,y:2},{color:'B',x:2,y:1},{color:'B',x:3,y:1}],
+        answer:{x:2,y:3}, turn:'black', size:9, camera:CAM.overview,
+        movesAfterAnswer:[
+          {color:'W',x:3,y:2},{color:'B',x:4,y:2},{color:'W',x:3,y:3},{color:'B',x:3,y:4},
+          {color:'W',x:4,y:3},{color:'B',x:5,y:3},{color:'W',x:4,y:4},{color:'B',x:4,y:5},
+          {color:'W',x:5,y:4},{color:'B',x:6,y:4},{color:'W',x:5,y:5},{color:'B',x:5,y:6},
+          {color:'W',x:6,y:5},{color:'B',x:7,y:5},{color:'W',x:6,y:6},{color:'B',x:6,y:7},
+          {color:'W',x:7,y:6},{color:'B',x:8,y:6},{color:'W',x:7,y:7},{color:'B',x:7,y:8},
+          {color:'W',x:8,y:7},{color:'B',x:8,y:8,capture:[{x:2,y:2},{x:3,y:2},{x:3,y:3},{x:4,y:3},{x:4,y:4},{x:5,y:4},{x:5,y:5},{x:6,y:5},{x:6,y:6},{x:7,y:6},{x:7,y:7},{x:8,y:7}]},
+        ],
+        fb:{t:'Her siyah hamle beyazı tek nefese indirmeli; bütün yolu son yakalamaya kadar oku.',c:'info'}, fb_ok:'Merdiven başladı — zorunlu dizi kenarda bütün beyaz zincirin yakalanmasıyla biter.', fb_err:'Beyazın iki kaçışından birini kapatıp grubu tek nefese indiren atariyi bul.' },
 
       { text:`<p>★★★ <strong>Soru 11/12</strong> — Uzak beyaz destek taşı merdiveni kırıyor. Bu yerel konumda en güvenilir yakalama tekniği hangisi?</p>`,
         concepts:['ladder','net'], difficulty:3,

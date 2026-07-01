@@ -18,6 +18,15 @@ function boardFrom(step){
   return board;
 }
 
+function playLegal(state,move,label){
+  const color=move.color==='B'||move.color==='black'?'black':'white';
+  const validity=isValidMove(state,move.x,move.y,color);
+  ok(validity.valid,(label||'devam hamlesi')+' yasadışı: '+color+' '+move.x+','+move.y+' ('+(validity.reason||'')+')');
+  const result=applyMove(state,move.x,move.y,color);
+  if(move.capture) equal(result.captured.length,move.capture.length,(label||'devam hamlesi')+' beklenen taşı yakalamadı');
+  return result;
+}
+
 test('B2 değerlendirmesi 12 puanlanan sorudan oluşur',()=>{
   equal(lesson.steps.length,12);
   equal(blueprint.length,12);
@@ -55,6 +64,20 @@ test('tahta hamlesi gerektiren bütün cevaplar yasal hamledir',()=>{
   }
 });
 
+test('yenilenen soruların tanımlı bütün devam dizileri RuleEngine üzerinde yasaldır',()=>{
+  for(const stepIndex of [2,4,6,8,9]){
+    const step=lesson.steps[stepIndex];
+    const lines=step.variationsAfterAnswer||(step.movesAfterAnswer?[step.movesAfterAnswer]:[]);
+    for(const [lineIndex,line] of lines.entries()){
+      let state=boardFrom(step);
+      if(step.answer) state=playLegal(state,{...step.answer,color:step.turn},'soru '+(stepIndex+1)+' cevabı').newState;
+      for(const [moveIndex,move] of line.entries()){
+        state=playLegal(state,move,'soru '+(stepIndex+1)+' varyant '+(lineIndex+1)+' hamle '+(moveIndex+1)).newState;
+      }
+    }
+  }
+});
+
 test('çift atari sorusu iki ayrı beyaz grubu atariye indirir',()=>{
   const step=lesson.steps[2];
   const board=boardFrom(step);
@@ -63,13 +86,56 @@ test('çift atari sorusu iki ayrı beyaz grubu atariye indirir',()=>{
   ok(groups.every(group=>getLiberties(newState,group).size===1));
 });
 
-test('merdiven eşlenik çifti yalnızca kırıcı taşla ayrışır',()=>{
-  const withBreaker=lesson.steps[3];
-  const withoutBreaker=lesson.steps[9];
-  equal(withBreaker.board.filter(stone=>stone.color==='W').length,2);
-  equal(withoutBreaker.board.filter(stone=>stone.color==='W').length,1);
-  ok(withBreaker.miniQuestion.options.find(option=>option.correct).text.includes('kaçar'));
-  ok(withoutBreaker.miniQuestion.options.find(option=>option.correct).text.includes('yakalanır'));
+test('kaynak temelli ağ sorusu atari vermeden iki kaçış varyantını kapatır',()=>{
+  const step=lesson.steps[4];
+  ok(step.sourceRefs.some(ref=>ref.includes('Day 4: Net')));
+  let state=playLegal(boardFrom(step),{...step.answer,color:step.turn},'ağ cevabı').newState;
+  const target=getGroup(state,4,4);
+  ok(getLiberties(state,target).size>1,'ağ hamlesi doğrudan atari olmamalı');
+  equal(step.variationsAfterAnswer.length,2);
+});
+
+test('iki göz sorusu iki ayrı tek noktalı gerçek göz oluşturur',()=>{
+  const step=lesson.steps[6];
+  const state=playLegal(boardFrom(step),{...step.answer,color:step.turn},'iki göz cevabı').newState;
+  equal(step.eyePointsAfterAnswer.length,2);
+  for(const eye of step.eyePointsAfterAnswer){
+    ok(state.isEmpty(eye.x,eye.y),'göz noktası boş olmalı');
+    ok(state.neighbors(eye.x,eye.y).every(point=>state.colorAt(point.x,point.y)==='black'),'gözün bütün komşuları siyah olmalı');
+  }
+});
+
+test('ikinci çift ataride beyaz hangi grubu savunursa öteki zorunlu kaybolur',()=>{
+  const step=lesson.steps[8];
+  const afterAnswer=playLegal(boardFrom(step),{...step.answer,color:step.turn},'çift atari cevabı').newState;
+  ok([[4,3],[3,4]].every(([x,y])=>getLiberties(afterAnswer,getGroup(afterAnswer,x,y)).size===1));
+  for(const line of step.variationsAfterAnswer){
+    let state=afterAnswer;
+    let captured=0;
+    for(const move of line){
+      const result=playLegal(state,move,'çift atari zorunlu devamı');
+      captured+=result.captured.length;
+      state=result.newState;
+    }
+    ok(captured>=1,'çift atari devamı en az bir beyaz grubu yakalamalı');
+  }
+});
+
+test('tam merdiven dizisi her ataride tek yasal kaçış bırakıp yakalamayla biter',()=>{
+  const step=lesson.steps[9];
+  let state=boardFrom(step);
+  const sequence=[{...step.answer,color:step.turn},...step.movesAfterAnswer];
+  let finalCapture=0;
+  sequence.forEach((move,index)=>{
+    const result=playLegal(state,move,'merdiven hamlesi '+(index+1));
+    state=result.newState;
+    if(move.color==='B'||move.color==='black'||(index===0&&step.turn==='black')){
+      if(index<sequence.length-1) equal(getLiberties(state,getGroup(state,2,2)).size,1,'siyah atarisi tek nefes bırakmalı');
+      finalCapture=result.captured.length;
+    }
+  });
+  equal(finalCapture,12,'merdiven bütün beyaz zinciri yakalamalı');
+  ok(!state.colorAt(2,2),'başlangıçtaki beyaz taş tahtadan kalkmalı');
 });
 
 test('snapback soruları farklı yönlerde aynı diziyi ölçer',()=>{
