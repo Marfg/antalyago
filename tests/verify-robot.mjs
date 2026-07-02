@@ -20,8 +20,9 @@ async function context(options={}){
   });
   await ctx.addInitScript(({mctsMode,delayMs,policyReady,policyMode,policyDelayMs})=>{
     window.__workerMessages=[];
+    window.__workerUrls=[];
     class FakeWorker extends EventTarget{
-      constructor(url){super();this.url=String(url);if(this.url.includes('kataWorker'))setTimeout(()=>this.emit({ok:policyReady,type:'READY'}),0)}
+      constructor(url){super();this.url=String(url);window.__workerUrls.push(this.url);if(this.url.includes('kataWorker'))setTimeout(()=>this.emit({ok:policyReady,type:'READY'}),0)}
       emit(data){this.dispatchEvent(new MessageEvent('message',{data}))}
       postMessage(data){
         window.__workerMessages.push({...data,worker:this.url,boardData:undefined});
@@ -73,6 +74,25 @@ await test('kontrol şeridinde yalnız renk ve oyun düğmeleri bulunur',async()
   await ctx.close();
 });
 
+await test('inceleme düğmesi ve review worker açılışta bulunmaz',async()=>{
+  const{ctx,page}=await context();
+  assert(await page.getByRole('button',{name:'Oyunumu İncele'}).count()===0,'inceleme düğmesi kaldırılmadı');
+  assert(!(await page.evaluate(()=>window.__workerUrls.some(url=>url.includes('reviewWorker')))),'review worker sayfa açılışında yüklendi');
+  await ctx.close();
+});
+
+await test('hızlı motor cevabı dört saniyeden önce tahtaya uygulanmaz',async()=>{
+  const{ctx,page}=await context({policyReady:true});await page.click('#cp-w');
+  await page.waitForFunction(()=>window.__workerMessages.some(m=>m.type==='MOVE'&&m.worker.includes('kataWorker')));
+  const started=Date.now();
+  await page.waitForTimeout(3500);
+  assert((await page.evaluate(()=>window.__robotTest.state().moveCount))===0,'robot dört saniyeden erken oynadı');
+  await page.waitForFunction(()=>window.__robotTest.state().moveCount===1,null,{timeout:1800});
+  assert(Date.now()-started>=3850,'saklanan motor cevabı erken uygulandı');
+  assert(!(await page.locator('#think-bar').evaluate(el=>el.classList.contains('show'))),'başarılı hamleden sonra düşünüyor göstergesi kapanmadı');
+  await ctx.close();
+});
+
 await test('teslim ikinci onay ister ve yeni oyun akışı çalışır',async()=>{
   const{ctx,page}=await context();await page.click('#btn-resign');
   assert(!(await page.evaluate(()=>window.__robotTest.state().gameEnded)),'ilk tıklama oyunu bitirdi');
@@ -108,15 +128,17 @@ await test('yanıt vermeyen politika worker dört saniye sonra tek MCTS hamlesin
 
 await test('timeout sonrasında gelen geç politika cevabı ikinci taş koymaz',async()=>{
   const{ctx,page}=await context({policyReady:true,policyDelayMs:4600});await page.click('#cp-w');
-  await page.waitForTimeout(5200);
+  await page.waitForTimeout(5600);
   const result=await page.evaluate(()=>({state:window.__robotTest.state(),messages:window.__workerMessages}));
   assert(result.state.moveCount===1&&result.state.stones.length===1,'geç politika cevabı ikinci hamle üretti');
   assert(result.messages.filter(m=>m.type==='MOVE_PROFILE').length===1,'MCTS fallback tek istek değil');await ctx.close();
 });
 
-await test('eski worker cevabı reset sonrası taşa dönüşmez',async()=>{
-  const{ctx,page}=await context({policyDelayMs:250,policyReady:true});await page.click('#btn-pass');await page.waitForFunction(()=>window.__workerMessages.some(m=>m.type==='MOVE'&&m.worker.includes('kataWorker')));await page.click('#btn-reset-board');await page.waitForTimeout(400);
-  const state=await page.evaluate(()=>window.__robotTest.state());assert(state.stones.length===0&&state.moveCount===0,'eski worker cevabı yeni tahtaya uygulandı');await ctx.close();
+await test('reset saklanan hızlı cevabı ve görünürlük zamanlayıcısını iptal eder',async()=>{
+  const{ctx,page}=await context({policyReady:true});await page.click('#btn-pass');await page.waitForFunction(()=>window.__workerMessages.some(m=>m.type==='MOVE'&&m.worker.includes('kataWorker')));await page.waitForTimeout(100);
+  assert((await page.evaluate(()=>window.__robotTest.state().moveCount))===0,'cevap reset öncesi bekletilmedi');
+  await page.click('#btn-reset-board');await page.waitForTimeout(4200);
+  const state=await page.evaluate(()=>window.__robotTest.state());assert(state.stones.length===0&&state.moveCount===0,'saklanan cevap yeni tahtaya uygulandı');assert(!(await page.locator('#think-bar').evaluate(el=>el.classList.contains('show'))),'reset sonrası düşünüyor göstergesi açık kaldı');await ctx.close();
 });
 
 await test('iki pas oyunu bitirir',async()=>{

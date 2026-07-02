@@ -79,7 +79,10 @@
       display:flex; flex-direction:column; justify-content:center; gap:1rem;
       padding:1rem .75rem;
       overflow:hidden;
+      animation:panelInRight .48s cubic-bezier(.22,.8,.24,1) both;
     }
+    @keyframes panelInRight { from{opacity:0;transform:translateX(22px)} to{opacity:1;transform:none} }
+    @keyframes panelInUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:none} }
     .sec-label {
       font-size:.6rem; font-weight:700; letter-spacing:.14em;
       text-transform:uppercase; color:var(--gold);
@@ -94,7 +97,7 @@
       cursor:pointer; display:flex; align-items:center;
       justify-content:center; gap:.35rem;
       font-family:'Noto Sans',sans-serif; font-size:.73rem;
-      font-weight:600; color:var(--muted); transition:all .18s;
+      font-weight:600; color:var(--muted); transition:transform .16s ease,background .25s ease,border-color .25s ease,color .25s ease;
     }
     .cp-btn.active-b { border-color:rgba(100,100,130,.9); color:var(--text); background:rgba(30,30,45,.6); }
     .cp-btn.active-w { border-color:rgba(220,216,210,.7); color:var(--text); background:rgba(220,216,210,.08); }
@@ -169,6 +172,7 @@
       font-size:.76rem; font-weight:600; color:var(--text);
       transition:all .18s;
     }
+    .action-btn:active,.cp-btn:active { transform:scale(.96); }
     .action-btn:hover { background:rgba(200,168,75,.08); border-color:var(--gold); color:var(--gold); }
     .action-btn.danger:hover { background:rgba(224,80,80,.08); border-color:var(--red); color:var(--red); }
     .action-btn.confirming { border-color:var(--red); color:var(--red); background:rgba(224,80,80,.06); }
@@ -275,6 +279,7 @@
         height:74px; border-left:none; border-top:1px solid var(--gb);
         display:grid; grid-template-columns:1.25fr 2fr; padding:.55rem;
         gap:.55rem; overflow:hidden;
+        animation-name:panelInUp;
       }
       #panel .sec-label { display:none; }
       .color-pick { height:100%; }
@@ -283,6 +288,7 @@
       #feedback { bottom:84px; }
       #think-bar { top:calc(58px + var(--sat)); }
     }
+    @media(prefers-reduced-motion:reduce){#panel{animation:none}.action-btn,.cp-btn{transition:none}}
 
     /* ── REVIEW OVERLAY ───────────────────────────────────── */
     #review-overlay {
@@ -501,7 +507,6 @@
     <div class="go-komi" id="go-komi"></div>
     <div class="go-territory" id="go-territory"></div>
     <div class="go-actions">
-      <button class="action-btn" onclick="openReview()" aria-label="Oyun analizini aç">Oyunumu İncele</button>
       <button class="action-btn" onclick="resetBoard()" aria-label="Yeni oyun başlat">Yeni Oyun</button>
       <button class="action-btn" onclick="openLearnFeedback()" aria-label="Bu oyundan ne öğrendiğini gör">Ne öğrendim?</button>
     </div>
@@ -1095,21 +1100,33 @@ let aiThinking   = false;
 let policyReady = false;
 const pendingPolicy = new Map();
 const POLICY_TIMEOUT_MS=4000;
+const MIN_MOVE_DISPLAY_MS=4000;
 let lastScoreInfo = null;
 let currentGameId=0;
 let nextRequestId=0;
 let activeRequestId=null;
+let moveVisibleAt=0;
+let delayedMoveTimer=null;
+let delayedMoveData=null;
 
 function invalidatePendingAI(){
   currentGameId++;
   for(const pending of pendingPolicy.values())clearTimeout(pending.timeoutId);
   pendingPolicy.clear();
+  if(delayedMoveTimer!==null)clearTimeout(delayedMoveTimer);
+  delayedMoveTimer=null;
+  delayedMoveData=null;
+  moveVisibleAt=0;
   activeRequestId=null;
   aiThinking=false;
   document.getElementById('think-bar').classList.remove('show');
 }
 
 function finishThinking(){
+  if(delayedMoveTimer!==null)clearTimeout(delayedMoveTimer);
+  delayedMoveTimer=null;
+  delayedMoveData=null;
+  moveVisibleAt=0;
   activeRequestId=null;
   aiThinking=false;
   document.getElementById('think-bar').classList.remove('show');
@@ -1117,17 +1134,28 @@ function finishThinking(){
 
 function handleWorkerMessage(data) {
   if(data.gameId!==currentGameId||data.requestId!==activeRequestId)return;
-  finishThinking();
 
   if (!data.ok) {
+    finishThinking();
     showFeedback('Robot hatası: ' + data.error, 'err');
     console.error('AI Worker error:', data.error);
     return;
   }
 
-  if (data.type === 'SCORE') { showGameOver(data.score); return; }
+  if (data.type === 'SCORE') { finishThinking();showGameOver(data.score); return; }
 
-  applyAIMove(data.move);
+  const applyStoredMove=()=>{
+    if(data.gameId!==currentGameId||data.requestId!==activeRequestId)return;
+    delayedMoveTimer=null;
+    delayedMoveData=null;
+    finishThinking();
+    applyAIMove(data.move);
+  };
+  const remaining=Math.max(0,moveVisibleAt-Date.now());
+  if(remaining>0){
+    delayedMoveData=data;
+    delayedMoveTimer=setTimeout(applyStoredMove,remaining);
+  }else applyStoredMove();
 }
 
 mctsWorker.addEventListener('message', ({ data }) => handleWorkerMessage(data));
@@ -1190,6 +1218,7 @@ function triggerAI() {
   const boardData={grid,ko,size,komi:currentGameSettings.komi};
   const requestId=++nextRequestId;
   activeRequestId=requestId;
+  moveVisibleAt=Date.now()+MIN_MOVE_DISPLAY_MS;
 
   const payload={type:'MOVE',boardData,color:colNum,gameId:currentGameId,requestId};
   if(policyReady){
@@ -1300,7 +1329,7 @@ window.playerPass = function () {
 };
 
 window.playerResign=function(){
-  if(aiThinking||gameEnded)return;
+  if(gameEnded)return;
   const now=Date.now();
   const btn=document.getElementById('btn-resign');
   if(now>resignConfirmUntil){
@@ -1620,7 +1649,8 @@ function getTurkishExplanation(md) {
 }
 
 // ── Review Worker ────────────────────────────────────────────────
-const reviewWorker = new Worker('./workers/reviewWorker.js');
+const REVIEW_ENABLED=false;
+let reviewWorker=null;
 let reviewReady  = false;
 let reviewData   = null;
 let rvIdx        = 0;
@@ -1628,7 +1658,7 @@ let rvStones     = []; // oyunu sıfırdan izlemek için adım adım tahta
 let rvStoneHist  = []; // her hamle sonrası taş listesi (replay için)
 const RV_HOSHI_9 = [[2,2],[6,2],[4,4],[2,6],[6,6]];
 
-reviewWorker.addEventListener('message', ({ data }) => {
+function handleReviewWorkerMessage({ data }) {
   if (data.type === 'REVIEW_READY') {
     reviewReady = data.ok;
     return;
@@ -1652,11 +1682,15 @@ reviewWorker.addEventListener('message', ({ data }) => {
     document.getElementById('rv-move-info').textContent =
       'Analiz başarısız: ' + data.error;
   }
-});
+}
+if(REVIEW_ENABLED){
+  reviewWorker=new Worker('./workers/reviewWorker.js');
+  reviewWorker.addEventListener('message',handleReviewWorkerMessage);
+}
 
 // ── Review Overlay Kontrolü ──────────────────────────────────────
 window.openReview = function () {
-  if (!gameEnded || gameHistory.length === 0) return;
+  if (!REVIEW_ENABLED || !gameEnded || gameHistory.length === 0) return;
   const el = document.getElementById('review-overlay');
   el.classList.add('show');
 
@@ -1685,7 +1719,7 @@ window.closeReview = function () {
 };
 
 function startAnalysis() {
-  if (!reviewReady || gameHistory.length === 0) return;
+  if (!REVIEW_ENABLED || !reviewWorker || !reviewReady || gameHistory.length === 0) return;
   reviewData = null;
   document.getElementById('rv-worst-list').innerHTML = '';
   document.getElementById('rv-move-list').innerHTML = '';
