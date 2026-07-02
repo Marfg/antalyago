@@ -14,10 +14,10 @@ const test = async (name, fn) => {
   try {
     await fn();
     pass += 1;
-    console.log('  ✓', name);
+    console.log('  \u2713', name);
   } catch (error) {
     fail += 1;
-    console.error('  ✗', name, '-', error.message);
+    console.error('  \u2717', name, '-', error.message);
   }
 };
 
@@ -70,41 +70,67 @@ async function waitForAssets(page) {
   });
 }
 
-await test('alt? sayfa tasar?m sistemi ve tema kontrol? ta??yor', async () => {
+await test('altı sayfa tasarım sistemi ve tema kontrolü taşıyor', async () => {
   for (const name of PAGES) {
     const html = fs.readFileSync(name, 'utf8');
-    assertOk(html.includes('styles/design-system.css'), name + ' tasar?m sistemi yok');
+    assertOk(html.includes('styles/design-system.css'), name + ' tasarım sistemi yok');
     assertOk(html.includes('styles/theme-compat.css'), name + ' uyumluluk CSS yok');
-    assertOk(html.includes('core/theme.js'), name + ' tema beti?i yok');
-    assertOk(html.includes('data-theme-toggle'), name + ' tema kontrol? yok');
+    assertOk(html.includes('core/theme.js'), name + ' tema betiği yok');
+    assertOk(html.includes('data-theme-toggle'), name + ' tema kontrolü yok');
+    assertOk(html.includes('data-theme="dark"'), name + ' statik tema dark değil');
   }
 });
 
-await test('ana sayfa yeni i?erik ve hedefleri ta??yor', async () => {
+await test('ana sayfa yeni içerik ve hedefleri taşıyor', async () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assertOk(html.includes('ogren-3d.html'), '??ren CTA yok');
-  assertOk(html.includes('robot.html') && html.includes('9&times;9'), 'robot CTA yanl??');
-  assertOk(!html.includes('Uyarlanabilir robot'), 'eski robot ifadesi kald?');
+  assertOk(html.includes('ogren-3d.html'), 'öğren CTA yok');
+  assertOk(html.includes('robot.html') && html.includes('9&times;9'), 'robot CTA yanlış');
+  assertOk(!html.includes('Uyarlanabilir robot'), 'eski robot ifadesi kaldı');
   assertOk(html.includes('Temel seviye 9&times;9 pratik robotu'), 'yeni robot ifadesi yok');
 });
 
-await test('saklanan tema sayfalar aras?nda korunur ve kontrol e?le?ir', async () => {
+await test('saklanan tema sayfalar arasında korunur ve kontrol eşleşir', async () => {
   const browserContext = await context();
   const page = await browserContext.newPage();
 
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('antalyago-theme')) {
+      localStorage.setItem('antalyago-theme', 'light');
+    }
+  });
   await page.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
   await waitForAssets(page);
-  await page.locator('[data-theme-toggle]').click();
 
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light');
+  await page.locator('[data-theme-toggle]').click();
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark');
 
   await page.goto(BASE + '/go-nedir.html', { waitUntil: 'domcontentloaded' });
   await waitForAssets(page);
 
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark');
-  assert.equal(await page.locator('[data-theme-toggle]').getAttribute('aria-label'), 'Gündüz temasına geç');
+  assert.equal(await page.locator('[data-theme-toggle]').getAttribute('aria-label'), 'G\u00fcnd\u00fcz temas\u0131na ge\u00e7');
   assert.equal(await page.locator('[data-theme-toggle]').getAttribute('aria-pressed'), 'true');
 
+  await browserContext.close();
+});
+
+await test('localStorage hatas\u0131nda dark ile a\u00e7\u0131l\u0131r', async () => {
+  const browserContext = await context();
+  const page = await browserContext.newPage();
+
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('blocked');
+      }
+    });
+  });
+  await page.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
+  await waitForAssets(page);
+
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark');
   await browserContext.close();
 });
 
@@ -112,14 +138,14 @@ for (const viewport of [
   { width: 390, height: 844 },
   { width: 1280, height: 720 }
 ]) {
-  await test(viewport.width + '?' + viewport.height + ' ana sayfada yatay ta?ma yok', async () => {
+  await test(viewport.width + '×' + viewport.height + ' ana sayfada yatay ta\u015fma yok', async () => {
     const browserContext = await context(viewport);
     const page = await browserContext.newPage();
 
     await page.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
     await waitForAssets(page);
 
-    assertOk(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'yatay ta?ma');
+    assertOk(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'yatay ta\u015fma');
     await page.locator('h1').waitFor();
 
     await browserContext.close();
@@ -144,7 +170,7 @@ for (const theme of ['light', 'dark']) {
 }
 
 await browser.close();
-console.log('\nTema/UI do?rulamas?: ' + pass + '/' + (pass + fail));
+console.log('\nTema/UI do\u011frulamas\u0131: ' + pass + '/' + (pass + fail));
 if (fail) {
   process.exit(1);
 }

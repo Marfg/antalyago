@@ -1,5 +1,5 @@
 ﻿<!doctype html>
-<html lang="tr" data-theme="light">
+<html lang="tr" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -25,18 +25,17 @@
 
   <script>
     (function () {
-      var theme = 'light';
+      var theme = 'dark';
       try {
         var saved = localStorage.getItem('antalyago-theme');
         if (saved === 'light' || saved === 'dark') {
           theme = saved;
-        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          theme = 'dark';
         }
       } catch (error) {}
       document.documentElement.dataset.theme = theme;
     }());
   </script>
+
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

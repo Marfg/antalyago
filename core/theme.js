@@ -1,9 +1,8 @@
-export const THEME_KEY = 'antalyago-theme';
+﻿export const THEME_KEY = 'antalyago-theme';
 
 export const isTheme = value => value === 'light' || value === 'dark';
 
-export const resolveTheme = (saved, dark) =>
-  isTheme(saved) ? saved : dark === true ? 'dark' : 'light';
+export const resolveTheme = saved => (isTheme(saved) ? saved : 'dark');
 
 export function safeStoredTheme(storage = globalThis.localStorage) {
   try {
@@ -31,11 +30,11 @@ const icons =
   '<svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
 
 function themeText(theme) {
-  return theme === 'dark' ? 'Gündüz' : 'Gece';
+  return theme === 'dark' ? 'G\u00fcnd\u00fcz' : 'Gece';
 }
 
 function themeLabel(theme) {
-  return theme === 'dark' ? 'Gündüz temasına geç' : 'Gece temasına geç';
+  return theme === 'dark' ? 'G\u00fcnd\u00fcz temas\u0131na ge\u00e7' : 'Gece temas\u0131na ge\u00e7';
 }
 
 export function syncControls(theme, root = document) {
@@ -48,11 +47,8 @@ export function syncControls(theme, root = document) {
   });
 }
 
-export function applyTheme(
-  theme,
-  { root = document, storage = globalThis.localStorage, persist = false } = {}
-) {
-  const next = isTheme(theme) ? theme : 'light';
+export function applyTheme(theme, { root = document, storage = globalThis.localStorage, persist = false } = {}) {
+  const next = isTheme(theme) ? theme : 'dark';
   root.documentElement.dataset.theme = next;
 
   if (persist) {
@@ -63,12 +59,8 @@ export function applyTheme(
   return next;
 }
 
-export function initTheme({
-  root = document,
-  storage = globalThis.localStorage,
-  media = globalThis.matchMedia?.('(prefers-color-scheme: dark)')
-} = {}) {
-  const theme = resolveTheme(safeStoredTheme(storage), media?.matches === true);
+export function initTheme({ root = document, storage = globalThis.localStorage } = {}) {
+  const theme = resolveTheme(safeStoredTheme(storage));
   applyTheme(theme, { root });
 
   root.addEventListener('click', event => {
