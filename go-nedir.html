@@ -2,628 +2,598 @@
 <html lang="tr" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" /><script>(function(){var t="dark";try{var s=localStorage.getItem("antalyago-theme");if(s==="light"||s==="dark")t=s}catch(e){}document.documentElement.dataset.theme=t}())</script>
-  <title>Go Nedir? — Antalya Go</title>
-  <meta name="description" content="Go, 4000 yıllık strateji oyunu. Öğrenmesi bir saate bakıyor, ustalaşması ömre." />
-  <meta property="og:title" content="Go Nedir? — Antalya Go" />
-  <meta property="og:description" content="4000 yıllık strateji oyunu Go'yu tanıyın. Kurallar, tarih ve neden oynamalısınız." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>(function(){var t="dark";try{var s=localStorage.getItem("antalyago-theme");if(s==="light"||s==="dark")t=s}catch(e){}document.documentElement.dataset.theme=t}())</script>
+  <title>Go Nedir? &mdash; AntalyaGo</title>
+  <meta name="description" content="Go nedir, amac&#305; nedir ve neden 9&times;9 ile ba&#351;lan&#305;r? AntalyaGo'da kurallar&#305;, ta&#351; yakalamay&#305; ve stratejik derinli&#287;i T&#252;rk&#231;e &#246;&#287;renin." />
+  <link rel="canonical" href="https://antalyago.net/go-nedir.html" />
+  <meta property="og:site_name" content="AntalyaGo" />
+  <meta property="og:title" content="Go Nedir? &mdash; AntalyaGo" />
+  <meta property="og:description" content="Go'nun kurallar&#305;n&#305;, tarihini ve 9&times;9 ba&#351;lang&#305;c&#305;n&#305; T&#252;rk&#231;e &#246;&#287;renin." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://antalyago.net/go-nedir.html" />
   <meta property="og:image" content="assets/images/og-image.jpg" />
-  <meta property="twitter:card" content="summary_large_image" />
-  <link rel="icon" href="/assets/images/logo.png" />
-
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Go Nedir? &mdash; AntalyaGo" />
+  <meta name="twitter:description" content="Go'nun kurallar&#305;n&#305;, tarihini ve 9&times;9 ba&#351;lang&#305;c&#305;n&#305; T&#252;rk&#231;e &#246;&#287;renin." />
+  <meta name="twitter:image" content="assets/images/og-image.jpg" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Serif:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles/design-system.css" />
+  <link rel="stylesheet" href="styles/theme-compat.css" />
+</head>
+<body class="page-shell app-shell-theme editorial-page">
+  <a class="skip-link" href="#main-content">&#304;&#231;eri&#287;e ge&#231;</a>
 
-  <style>
-    /* ── RESET ── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    /* ── TOKENS ── */
-    :root {
-      --bg:          #F5F0E8;
-      --bg-surface:  #FDFAF5;
-      --fg:          #1C1610;
-      --fg-muted:    #6B5C48;
-      --accent:      #5C6E52;
-      --accent-hover:#48573F;
-      --gold:        #A89060;
-      --border:      #E0D8CC;
-      --shadow:      rgba(28,22,16,0.08);
-      --font-heading:'Fraunces', Georgia, serif;
-      --font-body:   'DM Sans', system-ui, sans-serif;
-    }
-
-    /* ── BASE ── */
-    html, body {
-      min-height: 100vh;
-      background: var(--bg);
-      color: var(--fg);
-      font-family: var(--font-body);
-      -webkit-font-smoothing: antialiased;
-      font-size: 16px;
-      line-height: 1.6;
-    }
-
-    h1, h2, h3 { font-family: var(--font-heading); }
-    a { color: inherit; }
-
-    /* ── HEADER ── */
-    .site-header {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 50;
-      padding: 0 72px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(245, 240, 232, 0.92);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .site-header__logo {
-      height: 36px;
-      width: auto;
-      display: block;
-    }
-
-    .site-nav {
-      display: flex;
-      align-items: center;
-      gap: 32px;
-      list-style: none;
-    }
-
-    .site-nav a {
-      font-family: var(--font-body);
-      font-size: 0.88rem;
-      font-weight: 500;
-      color: var(--fg);
-      text-decoration: none;
-      transition: color 150ms ease;
-    }
-    .site-nav a:hover { color: var(--accent); }
-    .site-nav a[aria-current="page"] {
-      color: var(--accent);
-      border-bottom: 1.5px solid var(--accent);
-      padding-bottom: 2px;
-    }
-    .site-nav a:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 3px;
-      border-radius: 2px;
-    }
-
-    @media (max-width: 768px) {
-      .site-header { padding: 0 24px; }
-      .site-nav { display: none; }
-    }
-
-    /* ── SAYFA BAŞLIĞI ── */
-    .page-hero {
-      padding: 136px 72px 72px;
-      max-width: 820px;
-    }
-
-    .page-eyebrow {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 16px;
-      opacity: 0;
-      animation: fadeUp 0.5s ease-out 0.1s forwards;
-    }
-
-    .page-hero h1 {
-      font-size: clamp(2.4rem, 5vw, 3.8rem);
-      font-weight: 700;
-      line-height: 1.1;
-      color: var(--fg);
-      margin-bottom: 24px;
-      opacity: 0;
-      animation: fadeUp 0.5s ease-out 0.25s forwards;
-    }
-
-    .page-hero__lead {
-      font-size: 1.15rem;
-      line-height: 1.75;
-      color: var(--fg-muted);
-      max-width: 58ch;
-      opacity: 0;
-      animation: fadeUp 0.5s ease-out 0.4s forwards;
-    }
-
-    @media (max-width: 768px) {
-      .page-hero { padding: 96px 24px 48px; }
-    }
-
-    /* ── BÖLÜM GENEL ── */
-    .section { border-top: 1px solid var(--border); }
-    .section--alt { background: var(--bg-surface); }
-
-    .section-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 80px 72px;
-    }
-
-    .section-eyebrow {
-      display: block;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 12px;
-    }
-
-    @media (max-width: 768px) {
-      .section-inner { padding: 56px 24px; }
-    }
-
-    /* ── NASIL OYNANIR — iki sütun ── */
-    .two-col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 64px;
-      align-items: center;
-    }
-
-    .two-col h2 {
-      font-size: clamp(1.5rem, 2.5vw, 2.1rem);
-      font-weight: 600;
-      color: var(--fg);
-      margin-bottom: 20px;
-      line-height: 1.25;
-    }
-
-    .two-col p {
-      color: var(--fg-muted);
-      line-height: 1.8;
-      margin-bottom: 14px;
-    }
-
-    .two-col p:last-child { margin-bottom: 0; }
-
-    .two-col img {
-      width: 100%;
-      height: auto;
-      border-radius: 6px;
-      box-shadow: 0 8px 32px var(--shadow);
-      display: block;
-    }
-
-    @media (max-width: 768px) {
-      .two-col { grid-template-columns: 1fr; gap: 36px; }
-      .two-col .visual-first { order: -1; }
-    }
-
-    /* ── NEDEN GO — kart grid ── */
-    .cards-header { margin-bottom: 40px; }
-    .cards-header h2 {
-      font-size: clamp(1.5rem, 2.5vw, 2.1rem);
-      font-weight: 600;
-      color: var(--fg);
-    }
-
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 16px;
-    }
-
-    .info-card {
-      padding: 24px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-    }
-
-    .section--alt .info-card { background: var(--bg-surface); }
-
-    .info-card__glyph {
-      font-size: 1.5rem;
-      color: var(--accent);
-      margin-bottom: 12px;
-      display: block;
-      line-height: 1;
-    }
-
-    .info-card h3 {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--fg);
-      margin-bottom: 8px;
-    }
-
-    .info-card p {
-      font-size: 0.875rem;
-      color: var(--fg-muted);
-      line-height: 1.65;
-    }
-
-    /* ── ALINTI ŞERİDİ ── */
-    .quote-strip {
-      background: var(--accent);
-      padding: 48px 72px;
-      text-align: center;
-    }
-
-    .quote-strip blockquote p {
-      font-family: var(--font-heading);
-      font-size: clamp(1.1rem, 2vw, 1.45rem);
-      font-style: italic;
-      color: #F5F0E8;
-      max-width: 62ch;
-      margin: 0 auto 12px;
-      line-height: 1.65;
-    }
-
-    .quote-strip blockquote footer {
-      font-size: 0.8rem;
-      color: rgba(245,240,232,0.6);
-      letter-spacing: 0.06em;
-    }
-
-    @media (max-width: 768px) {
-      .quote-strip { padding: 40px 24px; }
-    }
-
-    /* ── BUTONLAR ── */
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      padding: 14px 28px;
-      background: var(--accent);
-      color: #FDFAF5;
-      font-family: var(--font-body);
-      font-weight: 600;
-      font-size: 0.95rem;
-      border-radius: 4px;
-      text-decoration: none;
-      transition: background 0.2s ease, transform 0.2s ease;
-    }
-    .btn-primary:hover { background: var(--accent-hover); transform: scale(1.02); }
-    .btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      padding: 14px 28px;
-      background: transparent;
-      color: var(--fg);
-      font-family: var(--font-body);
-      font-weight: 500;
-      font-size: 0.95rem;
-      border: 1.5px solid var(--border);
-      border-radius: 4px;
-      text-decoration: none;
-      transition: border-color 0.2s ease, color 0.2s ease;
-    }
-    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-
-    .cta-row {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 28px;
-    }
-
-    /* ── KAYNAKLAR ── */
-    .resources-header {
-      margin-bottom: 24px;
-    }
-
-    .resources-header h2 {
-      font-size: 1.4rem;
-      font-weight: 600;
-      color: var(--fg);
-    }
-
-    .resources-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .resource-link {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 14px 18px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      text-decoration: none;
-      color: var(--fg);
-      font-size: 0.9rem;
-      transition: border-color 0.2s, color 0.2s;
-      max-width: 520px;
-    }
-    .resource-link:hover { border-color: var(--accent); color: var(--accent); }
-    .resource-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
-
-    .resource-link__name { font-weight: 600; }
-    .resource-link__desc { font-size: 0.82rem; color: var(--fg-muted); }
-
-    /* ── FOOTER ── */
-    .site-footer {
-      padding: 24px 72px;
-      border-top: 1px solid var(--border);
-      background: var(--bg);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .site-footer__brand { font-size: 0.82rem; color: var(--fg-muted); }
-
-    .site-footer__link {
-      font-size: 0.78rem;
-      color: var(--fg-muted);
-      text-decoration: none;
-      transition: color 150ms;
-    }
-    .site-footer__link:hover { color: var(--fg); }
-
-    @media (max-width: 768px) {
-      .site-footer { padding: 20px 24px; }
-    }
-
-    /* ── SCROLL REVEAL ── */
-    .reveal {
-      opacity: 0;
-      transform: translateY(16px);
-      transition: opacity 0.5s ease, transform 0.5s ease;
-    }
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* ── ANİMASYONLAR ── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── REDUCED MOTION ── */
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-      .reveal { opacity: 1; transform: none; }
-      .page-eyebrow, .page-hero h1, .page-hero__lead { opacity: 1; }
-    }
-  </style>
-<link rel="stylesheet" href="styles/design-system.css" /><link rel="stylesheet" href="styles/theme-compat.css" /></head>
-<body class="app-shell-theme"><a class="skip-link" href="#main-content">İçeriğe geç</a>
-
-<!-- ══ HEADER ══ -->
-<header class="site-header"><div class="site-header__inner"><a class="site-brand" href="index.html" aria-label="AntalyaGo ana sayfa"><img src="assets/images/logo.png" alt=""><span>AntalyaGo</span></a><button class="nav-toggle" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menüyü aç"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><nav class="site-nav" id="site-nav" data-site-nav aria-label="Ana navigasyon"><a href="ogren-3d.html">Öğren</a><a href="problem.html">Problemler</a><a href="robot.html">Robotla Oyna</a><a href="oyna.html">Go Odaları</a><a href="index.html#topluluk">Topluluk</a><button class="theme-toggle" data-theme-toggle type="button" aria-label="Gece temasına geç" aria-pressed="false">Gece</button></nav></div></header>
-
-<!-- ══ SAYFA BAŞLIĞI ══ -->
-<main id="main-content"><div class="page-hero">
-  <span class="page-eyebrow">Strateji · Tarih · Derinlik</span>
-  <h1>Go Nedir?</h1>
-  <p class="page-hero__lead">
-    4.000 yılı aşkın geçmişiyle dünyanın en eski strateji oyunlarından biri.
-    Çin'de <em>Weiqi</em>, Japonya'da <em>Go</em>, Kore'de <em>Baduk</em>.
-    Öğrenmesi bir saate bakıyor. Ustalaşması ömre.
-  </p>
-</div>
-
-<!-- ══ NASIL OYNANIR ══ -->
-<section class="section" aria-labelledby="nasil-heading">
-  <div class="section-inner">
-    <div class="two-col">
-
-      <div class="reveal">
-        <span class="section-eyebrow">Temel</span>
-        <h2 id="nasil-heading">İki oyuncu, bir tahta, sonsuz olasılık</h2>
-        <p>
-          Siyah ve beyaz taşlarla oynanan Go'da amaç basit: tahtada daha fazla
-          bölge çevirmek ve rakip taşları esir almak.
-        </p>
-        <p>
-          Satranç gibi karmaşık figürler yok, ezberlenecek hamle yok.
-          Birkaç temel kural — ama bu kurallardan doğan stratejinin derinliği
-          hiçbir oyunla karşılaştırılamaz.
-        </p>
-        <p>
-          Olası Go partisi sayısı, evrendeki atom sayısını geçer.
-          Her oyun yeni bir evren.
-        </p>
-      </div>
-
-      <div class="reveal visual-first">
-        <img
-          src="assets/images/illus-tahta-sonbahar.webp"
-          alt="Sonbahar ışığında bir Go tahtası"
-          width="520"
-          height="480"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="site-brand" href="index.html" aria-label="AntalyaGo ana sayfa">
+        <img src="assets/images/logo.png" alt="" />
+        <span>AntalyaGo</span>
+      </a>
+      <button class="nav-toggle" data-nav-toggle type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Men&#252;y&#252; a&#231;">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+      </button>
+      <nav class="site-nav" id="site-nav" data-site-nav aria-label="Ana navigasyon">
+        <a href="ogren-3d.html">&#214;&#287;ren</a>
+        <a href="problem.html">Problemler</a>
+        <a href="robot.html">Robotla Oyna</a>
+        <a href="oyna.html">Go Odalar&#305;</a>
+        <a href="index.html#topluluk">Topluluk</a>
+        <button class="theme-toggle" data-theme-toggle type="button" aria-pressed="false" aria-label="Gece temas&#305;na ge&#231;">Gece</button>
+      </nav>
     </div>
-  </div>
-</section>
+  </header>
 
-<!-- ══ NEDEN GO ══ -->
-<section class="section section--alt" aria-labelledby="neden-heading">
-  <div class="section-inner">
+  <main id="main-content">
+    <section class="editorial-hero" id="giris">
+      <div class="content-container editorial-grid">
+        <div class="editorial-copy">
+          <span class="section-label">Strateji &middot; Tarih &middot; Derinlik</span>
+          <h1>Go Nedir?</h1>
+          <div class="prose prose-lead">
+            <p>4.000 y&#305;l&#305; a&#351;k&#305;n ge&#231;mi&#351;iyle d&#252;nyan&#305;n en eski strateji oyunlar&#305;ndan biri. &#199;in'de <em>Weiqi</em>, Japonya'da <em>Go</em>, Kore'de <em>Baduk</em>.</p>
+            <p>Kurallar&#305; birka&#231; dakikada &#246;&#287;renilir; ustala&#351;mas&#305; &#246;m&#252;r boyu s&#252;rer.</p>
+          </div>
+          <div class="action-row" aria-label="Go sayfas&#305; h&#305;zl&#305; eylemler">
+            <a class="button button-primary" href="#uc-temel-kural">Temel kurallar&#305; ke&#351;fet</a>
+            <a class="button button-secondary" href="ogren-3d.html">&#304;lk derse ba&#351;la</a>
+          </div>
+        </div>
 
-    <div class="cards-header reveal">
-      <span class="section-eyebrow">Neden Go?</span>
-      <h2 id="neden-heading">Strateji oyunlarının zirvesi</h2>
+        <figure class="editorial-media">
+          <div class="media-frame">
+            <img src="assets/images/hero-board.png" alt="Ah&#351;ap Go tahtas&#305;nda siyah ve beyaz ta&#351;lar&#305;n yer ald&#305;&#287;&#305; s&#305;cak tonlu kompozisyon" width="900" height="675" decoding="async" fetchpriority="high" />
+          </div>
+          <figcaption class="media-caption">Az say&#305;da kural, her ta&#351;la de&#287;i&#351;en say&#305;s&#305;z olas&#305;l&#305;k.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <div class="content-container">
+      <nav class="chapter-nav" aria-label="Sayfa b&#246;l&#252;mleri">
+        <a href="#giris" aria-current="page">&#214;zet</a>
+        <a href="#uc-temel-kural">Kurallar</a>
+        <a href="#nefes-ve-yakalama">Yakalama</a>
+        <a href="#neden-9x9">9&times;9</a>
+      </nav>
     </div>
 
-    <div class="cards-grid">
+    <section class="editorial-section editorial-section--alt" id="bir-dakikada-go" aria-labelledby="minute-go-heading">
+      <div class="content-container section-stack">
+        <div class="section-stack">
+          <span class="section-label">Bir dakikada Go</span>
+          <h2 id="minute-go-heading">Temel ak&#305;&#351;&#305; bir bak&#305;&#351;ta g&ouml;r</h2>
+          <p class="prose prose-lead">Go birka&#231; b&#252;y&#252;k fikrin etraf&#305;nda d&ouml;ner: kesi&#351;ime ta&#351; koyars&#305;n, nefesleri kapat&#305;rs&#305;n, sonra &ccedil;evreledi&#287;in alanla sonucu belirlersin.</p>
+        </div>
 
-      <div class="info-card reveal">
-        <span class="info-card__glyph" aria-hidden="true">◈</span>
-        <h3>Sonsuz derinlik</h3>
-        <p>Kurallar birkaç dakikada öğrenilir. Mümkün parti sayısı evrendeki atomları geçer.</p>
-      </div>
+        <div class="fact-grid">
+          <article class="fact-card">
+            <div class="inline-diagram">
+<svg viewBox="0 0 360 240" role="img" aria-labelledby="placing-title placing-desc">
+  <title id="placing-title">Ta&#351; yerle&#351;tirme diyagram&#305;</title>
+  <desc id="placing-desc">Siyah ve beyaz ta&#351;lar&#305;n &#231;izgi kesi&#351;imlerine yerle&#351;tirildi&#287;ini g&ouml;steren basit Go tahtas&#305;.</desc>
+  <rect x="8" y="8" width="344" height="224" rx="20" fill="#d9b27a" />
+  <g stroke="rgba(54, 38, 22, 0.38)" stroke-width="1.5" stroke-linecap="round">
+    <path d="M64 48H296" />
+    <path d="M64 88H296" />
+    <path d="M64 128H296" />
+    <path d="M64 168H296" />
+    <path d="M64 208H296" />
+    <path d="M64 48V208" />
+    <path d="M104 48V208" />
+    <path d="M144 48V208" />
+    <path d="M184 48V208" />
+    <path d="M224 48V208" />
+    <path d="M264 48V208" />
+    <path d="M304 48V208" />
+  </g>
+  <circle cx="104" cy="88" r="16" fill="#1d1a1f" />
+  <circle cx="224" cy="168" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="104" cy="88" r="4" fill="#0d0b14" opacity="0.35" />
+  <circle cx="224" cy="168" r="4" fill="#0d0b14" opacity="0.18" />
+  <text x="26" y="34" fill="#5f5763" font-family="Noto Sans, sans-serif" font-size="14">Kesi&#351;imlere ta&#351; koy</text>
+</svg></div>
+            <h3>Ta&#351; yerle&#351;tir</h3>
+            <p>Siyah ve beyaz ta&#351;lar s&#305;rayla bo&#351; kesi&#351;imlere yerle&#351;tirilir.</p>
+          </article>
 
-      <div class="info-card reveal">
-        <span class="info-card__glyph" aria-hidden="true">◎</span>
-        <h3>Sezgi ve strateji</h3>
-        <p>Satranç hesaba dayanır, Go sezgiye. Büyük resmi görmek küçük taktiklerden daha önemlidir.</p>
-      </div>
+          <article class="fact-card">
+            <div class="inline-diagram">
+<svg viewBox="0 0 360 240" role="img" aria-labelledby="capture-title capture-desc">
+  <title id="capture-title">Nefes ve yakalama diyagram&#305;</title>
+  <desc id="capture-desc">Bir ta&#351;&#305;n d&ouml;rt nefesi ve son nefes kapan&#305;nca tahtadan kald&#305;r&#305;lmas&#305; iki k&uuml;&ccedil;&uuml;k pano ile g&ouml;sterilir.</desc>
+  <rect x="8" y="8" width="344" height="224" rx="20" fill="#d9b27a" />
+  <g stroke="rgba(54, 38, 22, 0.38)" stroke-width="1.5" stroke-linecap="round">
+    <path d="M48 64H152" />
+    <path d="M48 104H152" />
+    <path d="M48 144H152" />
+    <path d="M48 184H152" />
+    <path d="M48 64V184" />
+    <path d="M88 64V184" />
+    <path d="M128 64V184" />
+    <path d="M168 64V184" />
+    <path d="M208 64H312" />
+    <path d="M208 104H312" />
+    <path d="M208 144H312" />
+    <path d="M208 184H312" />
+    <path d="M208 64V184" />
+    <path d="M248 64V184" />
+    <path d="M288 64V184" />
+    <path d="M328 64V184" />
+  </g>
+  <circle cx="104" cy="124" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="64" cy="124" r="9" fill="none" stroke="#8969a2" stroke-width="3" />
+  <circle cx="104" cy="84" r="9" fill="none" stroke="#8969a2" stroke-width="3" />
+  <circle cx="144" cy="124" r="9" fill="none" stroke="#8969a2" stroke-width="3" />
+  <circle cx="104" cy="164" r="9" fill="none" stroke="#8969a2" stroke-width="3" />
+  <path d="M156 124H196" stroke="#8969a2" stroke-width="4" stroke-linecap="round" />
+  <path d="M198 124l-10 -7v14z" fill="#8969a2" />
+  <circle cx="272" cy="124" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="232" cy="124" r="9" fill="#1d1a1f" />
+  <circle cx="272" cy="84" r="9" fill="#1d1a1f" />
+  <circle cx="312" cy="124" r="9" fill="#1d1a1f" />
+  <circle cx="272" cy="164" r="9" fill="#1d1a1f" />
+  <text x="34" y="36" fill="#5f5763" font-family="Noto Sans, sans-serif" font-size="14">Son nefes kapanmadan &ouml;nce</text>
+  <text x="206" y="36" fill="#5f5763" font-family="Noto Sans, sans-serif" font-size="14">Son nefes kapan&#305;nca</text>
+</svg></div>
+            <h3>Nefesleri kapat</h3>
+            <p>Bir ta&#351;&#305;n veya grubun b&uuml;t&uuml;n nefesleri kapan&#305;rsa ta&#351;lar tahtadan kald&#305;r&#305;l&#305;r.</p>
+          </article>
 
-      <div class="info-card reveal">
-        <span class="info-card__glyph" aria-hidden="true">◐</span>
-        <h3>Her yaşa açık</h3>
-        <p>8 yaşında çocuk da 80 yaşında büyükanne de aynı tahtada eşit başlar. Deneyim değil, düşünce belirler.</p>
-      </div>
-
-      <div class="info-card reveal">
-        <span class="info-card__glyph" aria-hidden="true">◑</span>
-        <h3>Konsantrasyon</h3>
-        <p>Her hamle tüm tahtayı etkiler. Go oynamak, dikkatini tek bir noktada tutmayı öğretir.</p>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- ══ ALINTI ŞERİDİ ══ -->
-<div class="quote-strip" role="complementary">
-  <blockquote>
-    <p>
-      "2016'ya kadar yapay zeka bir Go ustasını yenemedi.
-      Satranç makineleri insanı onlarca yıl önce geçmişti —
-      Go o kadar derin."
-    </p>
-    <footer>— AlphaGo · DeepMind · 2016</footer>
-  </blockquote>
-</div>
-
-<!-- ══ 9×9 BAŞLANGIÇ ══ -->
-<section class="section" aria-labelledby="baslangic-heading">
-  <div class="section-inner">
-    <div class="two-col">
-
-      <div class="reveal visual-first">
-        <img
-          src="assets/images/tahta-render.png"
-          alt="Go tahtası render görseli"
-          width="520"
-          height="480"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-
-      <div class="reveal">
-        <span class="section-eyebrow">Başlangıç</span>
-        <h2 id="baslangic-heading">9×9 tahtayla başlayın</h2>
-        <p>
-          Tam boyut 19×19 tahta ilk bakışta büyük görünebilir.
-          9×9 tahta, temel kavramların tamamını — nefes noktaları,
-          taş alma, bölge, esir — kısa sürede öğrenmek için mükemmeldir.
-        </p>
-        <p>
-          Antalya Go eğitimlerinde ve bu platformda hep 9×9 ile başlarız.
-          İlk partini birkaç dakika içinde oynayabilirsin.
-        </p>
-        <div class="cta-row">
-          <a href="ogren-3d.html" class="btn-primary">Öğrenmeye Başla</a>
-          <a href="oyna.html" class="btn-secondary">Şimdi Oyna</a>
+          <article class="fact-card">
+            <div class="inline-diagram">
+<svg viewBox="0 0 360 240" role="img" aria-labelledby="territory-title territory-desc">
+  <title id="territory-title">Alan ve ba&#287;lant&#305; diyagram&#305;</title>
+  <desc id="territory-desc">Ba&#287;l&#305; ta&#351;lar&#305;n birlikte ya&#351;ad&#305;&#287;&#305;n&#305; ve &#231;evrelenen alan&#305;n puan oldu&#287;unu anlatan basit Go tahtas&#305;.</desc>
+  <rect x="8" y="8" width="344" height="224" rx="20" fill="#d9b27a" />
+  <g stroke="rgba(54, 38, 22, 0.38)" stroke-width="1.5" stroke-linecap="round">
+    <path d="M48 48H312" />
+    <path d="M48 88H312" />
+    <path d="M48 128H312" />
+    <path d="M48 168H312" />
+    <path d="M48 208H312" />
+    <path d="M48 48V208" />
+    <path d="M88 48V208" />
+    <path d="M128 48V208" />
+    <path d="M168 48V208" />
+    <path d="M208 48V208" />
+    <path d="M248 48V208" />
+    <path d="M288 48V208" />
+    <path d="M328 48V208" />
+  </g>
+  <path d="M88 128C88 92 128 92 128 128C128 164 88 164 88 128Z" fill="rgba(51, 33, 63, 0.09)" />
+  <path d="M128 128C128 92 168 92 168 128C168 164 128 164 128 128Z" fill="rgba(51, 33, 63, 0.09)" />
+  <circle cx="88" cy="128" r="16" fill="#1d1a1f" />
+  <circle cx="128" cy="128" r="16" fill="#1d1a1f" />
+  <circle cx="168" cy="128" r="16" fill="#1d1a1f" />
+  <circle cx="248" cy="88" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="248" cy="128" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="248" cy="168" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <text x="30" y="34" fill="#5f5763" font-family="Noto Sans, sans-serif" font-size="14">Ba&#287;l&#305; ta&#351;lar birlikte ya&#351;ar</text>
+</svg></div>
+            <h3>Alan olu&#351;tur</h3>
+            <p>Oyunun sonunda &ccedil;evreledi&#287;in alan ve ya&#351;ayan ta&#351;lar&#305;n sonucu belirler.</p>
+          </article>
         </div>
       </div>
+    </section>
 
+    <section class="editorial-section" id="oyunun-amaci" aria-labelledby="goal-heading">
+      <div class="content-container editorial-grid">
+        <div class="editorial-copy prose">
+          <span class="section-label">Oyunun amac&#305;</span>
+          <h2 id="goal-heading">Ama&#231; yaln&#305;zca ta&#351; almak de&#287;ildir.</h2>
+          <p>Go'da nihai hedef, rakibin ta&#351;lar&#305;n&#305; azalt&#305;rken tahtan&#305;n sonunda daha g&#252;venli ve daha b&#252;y&#252;k alan kurmakt&#305;r. Bu y&#252;zden her hamle yaln&#305;zca yerel bir karar de&#287;il, t&uuml;m tahtay&#305; etkileyen bir se&#231;imdir.</p>
+          <p>Bir hamle bazen do&#287;rudan ta&#351; almaz; buna ra&#287;men &#351;ekli g&#252;&#231;lendirir, bo&#351;luklar&#305; kapat&#305;r ve ileride gelecek sava&#351;&#305; kazanman i&#231;in zemin kurar.</p>
+          <div class="callout">
+            <p>Kurallar&#305; azd&#305;r; her ta&#351; di&#287;er b&uuml;t&uuml;n ta&#351;lar&#305;n de&#287;erini de&#287;i&#351;tirebilir.</p>
+          </div>
+        </div>
+
+        <div class="quote-card">
+          <blockquote>
+            <p>&quot;2016'ya kadar yapay zeka bir Go ustas&#305;n&#305; yenemedi. Satran&#231; makineleri insan&#305; onlarca y&#305;l &ouml;nce ge&#231;mi&#351;ti &mdash; Go o kadar derin.&quot;</p>
+            <footer>&mdash; AlphaGo &middot; DeepMind &middot; 2016</footer>
+          </blockquote>
+        </div>
+      </div>
+    </section>
+
+    <section class="editorial-section editorial-section--alt" id="uc-temel-kural" aria-labelledby="rules-heading">
+      <div class="content-container section-stack">
+        <div class="section-stack">
+          <span class="section-label">&#220;&#231; temel kural</span>
+          <h2 id="rules-heading">Bu oyunu ayakta tutan &#252;&#231; basit ilke</h2>
+          <p class="prose prose-lead">&#304;yi bir ba&#351;lang&#305;&#231;, kurallar&#305;n kendisini de&#287;il onlar&#305;n oyun &#252;st&#252;ndeki etkisini g&ouml;rmeyi gerektirir. Buradaki &#252;&#231; blok, ilk derste tekrar tekrar kullanaca&#287;&#305;n omurgay&#305; verir.</p>
+        </div>
+
+        <div class="section-stack">
+          <article class="rule-card" id="kural-1">
+            <div>
+              <div class="rule-card__number">1</div>
+              <div class="rule-card__media inline-diagram">
+<svg viewBox="0 0 360 240" role="img" aria-labelledby="placing-title placing-desc">
+  <title id="placing-title">Ta&#351; yerle&#351;tirme diyagram&#305;</title>
+  <desc id="placing-desc">Siyah ve beyaz ta&#351;lar&#305;n &#231;izgi kesi&#351;imlerine yerle&#351;tirildi&#287;ini g&ouml;steren basit Go tahtas&#305;.</desc>
+  <rect x="8" y="8" width="344" height="224" rx="20" fill="#d9b27a" />
+  <g stroke="rgba(54, 38, 22, 0.38)" stroke-width="1.5" stroke-linecap="round">
+    <path d="M64 48H296" />
+    <path d="M64 88H296" />
+    <path d="M64 128H296" />
+    <path d="M64 168H296" />
+    <path d="M64 208H296" />
+    <path d="M64 48V208" />
+    <path d="M104 48V208" />
+    <path d="M144 48V208" />
+    <path d="M184 48V208" />
+    <path d="M224 48V208" />
+    <path d="M264 48V208" />
+    <path d="M304 48V208" />
+  </g>
+  <circle cx="104" cy="88" r="16" fill="#1d1a1f" />
+  <circle cx="224" cy="168" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="104" cy="88" r="4" fill="#0d0b14" opacity="0.35" />
+  <circle cx="224" cy="168" r="4" fill="#0d0b14" opacity="0.18" />
+  <text x="26" y="34" fill="#5f5763" font-family="Noto Sans, sans-serif" font-size="14">Kesi&#351;imlere ta&#351; koy</text>
+</svg></div>
+            </div>
+            <div>
+              <h3>Ta&#351;lar kesi&#351;imlere yerle&#351;tirilir</h3>
+              <p>Go tahtas&#305;nda ta&#351;lar karelerin i&#231;ine de&#287;il, &ccedil;izgilerin kesi&#351;ti&#287;i noktalara konur. Bu k&uuml;&ccedil;&uuml;k ayr&#305;m oyunun b&uuml;t&uuml;n geometrisini belirler.</p>
+              <p>Hamleler s&#305;rayla yap&#305;l&#305;r; her yeni ta&#351;, yak&#305;n &ccedil;evredeki ba&#287;lant&#305; ve ka&ccedil;&#305;&#351; yollar&#305;n&#305; de&#287;i&#351;tirir.</p>
+              <a class="button button-ghost" href="ogren-3d.html">Derste dene</a>
+            </div>
+          </article>
+
+          <article class="rule-card" id="kural-2">
+            <div>
+              <div class="rule-card__number">2</div>
+              <div class="rule-card__media inline-diagram">
+<svg viewBox="0 0 360 240" role="img" aria-labelledby="capture-title capture-desc">
+  <title id="capture-title">Nefes ve yakalama diyagram&#305;</title>
+  <desc id="capture-desc">Bir ta&#351;&#305;n d&ouml;rt nefesi ve son nefes kapan&#305;nca tahtadan kald&#305;r&#305;lmas&#305; iki k&uuml;&ccedil;&uuml;k pano ile g&ouml;sterilir.</desc>
+  <rect x="8" y="8" width="344" height="224" rx="20" fill="#d9b27a" />
+  <g stroke="rgba(54, 38, 22, 0.38)" stroke-width="1.5" stroke-linecap="round">
+    <path d="M48 64H152" />
+    <path d="M48 104H152" />
+    <path d="M48 144H152" />
+    <path d="M48 184H152" />
+    <path d="M48 64V184" />
+    <path d="M88 64V184" />
+    <path d="M128 64V184" />
+    <path d="M168 64V184" />
+    <path d="M208 64H312" />
+    <path d="M208 104H312" />
+    <path d="M208 144H312" />
+    <path d="M208 184H312" />
+    <path d="M208 64V184" />
+    <path d="M248 64V184" />
+    <path d="M288 64V184" />
+    <path d="M328 64V184" />
+  </g>
+  <circle cx="104" cy="124" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="64" cy="124" r="9" fill="none" stroke="#8969a2" stroke-width="3" />
+  <circle cx="104" cy="84" r="9" fill="none" stroke="#8969a2" stroke-width="3" />
+  <circle cx="144" cy="124" r="9" fill="none" stroke="#8969a2" stroke-width="3" />
+  <circle cx="104" cy="164" r="9" fill="none" stroke="#8969a2" stroke-width="3" />
+  <path d="M156 124H196" stroke="#8969a2" stroke-width="4" stroke-linecap="round" />
+  <path d="M198 124l-10 -7v14z" fill="#8969a2" />
+  <circle cx="272" cy="124" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="232" cy="124" r="9" fill="#1d1a1f" />
+  <circle cx="272" cy="84" r="9" fill="#1d1a1f" />
+  <circle cx="312" cy="124" r="9" fill="#1d1a1f" />
+  <circle cx="272" cy="164" r="9" fill="#1d1a1f" />
+  <text x="34" y="36" fill="#5f5763" font-family="Noto Sans, sans-serif" font-size="14">Son nefes kapanmadan &ouml;nce</text>
+  <text x="206" y="36" fill="#5f5763" font-family="Noto Sans, sans-serif" font-size="14">Son nefes kapan&#305;nca</text>
+</svg></div>
+            </div>
+            <div>
+              <h3>Nefesi kalmayan ta&#351;lar yakalan&#305;r</h3>
+              <p>Bir ta&#351;&#305;n ya da grubun &ccedil;evresindeki b&uuml;t&uuml;n &ouml;zg&uuml;r kesi&#351;imler kapan&#305;rsa o grup tahtadan kald&#305;r&#305;l&#305;r. Tek ta&#351;lar ve b&uuml;y&uuml;k gruplar ayn&#305; ilkeyi payla&#351;&#305;r.</p>
+              <p>Bu y&uuml;zden nefes, Go'da hem savunman&#305;n hem sald&#305;r&#305;n&#305;n ortak dili gibidir.</p>
+              <a class="button button-ghost" href="ogren-3d.html">Derste dene</a>
+            </div>
+          </article>
+
+          <article class="rule-card" id="kural-3">
+            <div>
+              <div class="rule-card__number">3</div>
+              <div class="rule-card__media inline-diagram">
+<svg viewBox="0 0 360 240" role="img" aria-labelledby="ko-title ko-desc">
+  <title id="ko-title">Ko kural&#305; diyagram&#305;</title>
+  <desc id="ko-desc">Ayn&#305; durumun ard&#305;&#351;&#305;k tekrar&#305;n&#305; engelleyen ko kural&#305;n&#305; g&ouml;steren iki k&uuml;&ccedil;&uuml;k pano ve aradaki ok.</desc>
+  <rect x="8" y="8" width="344" height="224" rx="20" fill="#d9b27a" />
+  <g stroke="rgba(54, 38, 22, 0.38)" stroke-width="1.5" stroke-linecap="round">
+    <path d="M48 56H144" />
+    <path d="M48 96H144" />
+    <path d="M48 136H144" />
+    <path d="M48 176H144" />
+    <path d="M48 56V176" />
+    <path d="M88 56V176" />
+    <path d="M128 56V176" />
+    <path d="M168 56V176" />
+    <path d="M216 56H312" />
+    <path d="M216 96H312" />
+    <path d="M216 136H312" />
+    <path d="M216 176H312" />
+    <path d="M216 56V176" />
+    <path d="M256 56V176" />
+    <path d="M296 56V176" />
+    <path d="M336 56V176" />
+  </g>
+  <circle cx="88" cy="96" r="15" fill="#1d1a1f" />
+  <circle cx="88" cy="136" r="15" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="128" cy="96" r="9" fill="#1d1a1f" />
+  <circle cx="128" cy="136" r="9" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="256" cy="96" r="15" fill="#1d1a1f" />
+  <circle cx="256" cy="136" r="15" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="296" cy="96" r="9" fill="#1d1a1f" />
+  <circle cx="296" cy="136" r="9" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <text x="164" y="120" fill="#8969a2" font-family="Noto Sans, sans-serif" font-size="20" font-weight="700">?</text>
+  <text x="34" y="36" fill="#5f5763" font-family="Noto Sans, sans-serif" font-size="14">Ayn&#305; durumun tekrar&#305;na izin verme</text>
+  <text x="204" y="36" fill="#5f5763" font-family="Noto Sans, sans-serif" font-size="14">Ko ile yeni bir yol a&#231;</text>
+</svg></div>
+            </div>
+            <div>
+              <h3>Ko kural&#305; ayn&#305;s&#305;n&#305; birebir tekrar etmeyi engeller</h3>
+              <p>Tahta &uuml;zerindeki durumun hi&#231; de&#287;i&#351;meden tekrar olu&#351;mas&#305; sonsuz d&ouml;ng&uuml; yarat&#305;r. Ko kural&#305; bu d&ouml;ng&uuml;y&uuml; keserek oyunu ilerletir.</p>
+              <p>Bu sayede tehdit, cevap ve tempo zinciri oyunun do&#287;al ritmini kurar.</p>
+              <a class="button button-ghost" href="ogren-3d.html">Derste dene</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="editorial-section" id="nefes-ve-yakalama" aria-labelledby="capture-heading">
+      <div class="content-container editorial-grid">
+        <figure class="editorial-media">
+          <div class="media-frame inline-diagram">
+<svg viewBox="0 0 360 240" role="img" aria-labelledby="capture-title capture-desc">
+  <title id="capture-title">Nefes ve yakalama diyagram&#305;</title>
+  <desc id="capture-desc">Bir ta&#351;&#305;n d&ouml;rt nefesi ve son nefes kapan&#305;nca tahtadan kald&#305;r&#305;lmas&#305; iki k&uuml;&ccedil;&uuml;k pano ile g&ouml;sterilir.</desc>
+  <rect x="8" y="8" width="344" height="224" rx="20" fill="#d9b27a" />
+  <g stroke="rgba(54, 38, 22, 0.38)" stroke-width="1.5" stroke-linecap="round">
+    <path d="M48 64H152" />
+    <path d="M48 104H152" />
+    <path d="M48 144H152" />
+    <path d="M48 184H152" />
+    <path d="M48 64V184" />
+    <path d="M88 64V184" />
+    <path d="M128 64V184" />
+    <path d="M168 64V184" />
+    <path d="M208 64H312" />
+    <path d="M208 104H312" />
+    <path d="M208 144H312" />
+    <path d="M208 184H312" />
+    <path d="M208 64V184" />
+    <path d="M248 64V184" />
+    <path d="M288 64V184" />
+    <path d="M328 64V184" />
+  </g>
+  <circle cx="104" cy="124" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="64" cy="124" r="9" fill="none" stroke="#8969a2" stroke-width="3" />
+  <circle cx="104" cy="84" r="9" fill="none" stroke="#8969a2" stroke-width="3" />
+  <circle cx="144" cy="124" r="9" fill="none" stroke="#8969a2" stroke-width="3" />
+  <circle cx="104" cy="164" r="9" fill="none" stroke="#8969a2" stroke-width="3" />
+  <path d="M156 124H196" stroke="#8969a2" stroke-width="4" stroke-linecap="round" />
+  <path d="M198 124l-10 -7v14z" fill="#8969a2" />
+  <circle cx="272" cy="124" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="232" cy="124" r="9" fill="#1d1a1f" />
+  <circle cx="272" cy="84" r="9" fill="#1d1a1f" />
+  <circle cx="312" cy="124" r="9" fill="#1d1a1f" />
+  <circle cx="272" cy="164" r="9" fill="#1d1a1f" />
+  <text x="34" y="36" fill="#5f5763" font-family="Noto Sans, sans-serif" font-size="14">Son nefes kapanmadan &ouml;nce</text>
+  <text x="206" y="36" fill="#5f5763" font-family="Noto Sans, sans-serif" font-size="14">Son nefes kapan&#305;nca</text>
+</svg></div>
+          <figcaption class="media-caption">Nefes noktalar&#305;, ta&#351;lar&#305;n tahtada kal&#305;p kalmayaca&#287;&#305;n&#305; belirler. G&ouml;sterimdeki halkalar &ouml;zg&uuml;r kesi&#351;imleri vurgular.</figcaption>
+        </figure>
+
+        <div class="editorial-copy prose">
+          <span class="section-label">Nefes ve ta&#351; yakalama</span>
+          <h2 id="capture-heading">Bir ta&#351;&#305;n g&uuml;c&uuml;, nefeslerinin say&#305;s&#305;yla &ouml;l&#231;&uuml;l&uuml;r.</h2>
+          <p>Ta&#351;&#305;n d&ouml;rt yan&#305; bo&#351;ken d&ouml;rt nefesi vard&#305;r; kenarlara ve k&ouml;&#351;elere yakla&#351;t&#305;k&ccedil;a bu say&#305; azal&#305;r. Bir grup ta&#351; kom&#351;u kesi&#351;imleri payla&#351;&#305;r, bu y&uuml;zden grubun nefesleri de ortakt&#305;r.</p>
+          <p>Son nefes kapanmadan &ouml;nce savunma yapabilir, ba&#287;lant&#305; kurabilir ya da kar&#351;&#305; grubu tehdit alt&#305;na alabilirsin. Son nefes kapand&#305;&#287;&#305;nda ise grup tahtadan kalkar.</p>
+          <div class="callout">
+            <p>Ta&#351;lar karelerde de&#287;il, kesi&#351;imlerde ya&#351;ar; nefes de o kesi&#351;imlerin etraf&#305;ndaki ya&#351;am alan&#305;d&#305;r.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="editorial-section editorial-section--alt" id="alan-ve-baglanti" aria-labelledby="territory-heading">
+      <div class="content-container editorial-grid">
+        <div class="editorial-copy prose">
+          <span class="section-label">Alan ve ba&#287;lant&#305;</span>
+          <h2 id="territory-heading">Bir grubun de&#287;eri, yaln&#305;zca ta&#351; say&#305;s&#305;nda de&#287;ildir.</h2>
+          <p>Ba&#287;lant&#305;, bir grubun hayatta kalma &#351;ans&#305;n&#305; y&uuml;kseltir. Birbirine ba&#287;l&#305; ta&#351;lar nefes payla&#351;&#305;r, tek tek zay&#305;f g&ouml;r&uuml;nen ta&#351;lar birlikte g&uuml;&ccedil;l&uuml; bir &#351;ekil olu&#351;turur.</p>
+          <p>Bu y&uuml;zden Go'da bazen tek bir ba&#287;lant&#305; hamlesi, do&#287;rudan bir ta&#351; almaktan daha y&uuml;ksek de&#287;er ta&#351;&#305;r. Alan, &#351;ekil ve tempo ayn&#305; karar&#305; payla&#351;&#305;r.</p>
+          <div class="quote-card">
+            <blockquote>
+              <p>Her ta&#351;, kom&#351;ular&#305;n&#305;n kaderini de&#287;i&#351;tirir; bu y&uuml;zden k&uuml;&ccedil;&uuml;k farklar b&uuml;y&uuml;k sonu&ccedil; &uuml;retir.</p>
+            </blockquote>
+          </div>
+        </div>
+
+        <figure class="editorial-media">
+          <div class="media-frame inline-diagram">
+<svg viewBox="0 0 360 240" role="img" aria-labelledby="territory-title territory-desc">
+  <title id="territory-title">Alan ve ba&#287;lant&#305; diyagram&#305;</title>
+  <desc id="territory-desc">Ba&#287;l&#305; ta&#351;lar&#305;n birlikte ya&#351;ad&#305;&#287;&#305;n&#305; ve &#231;evrelenen alan&#305;n puan oldu&#287;unu anlatan basit Go tahtas&#305;.</desc>
+  <rect x="8" y="8" width="344" height="224" rx="20" fill="#d9b27a" />
+  <g stroke="rgba(54, 38, 22, 0.38)" stroke-width="1.5" stroke-linecap="round">
+    <path d="M48 48H312" />
+    <path d="M48 88H312" />
+    <path d="M48 128H312" />
+    <path d="M48 168H312" />
+    <path d="M48 208H312" />
+    <path d="M48 48V208" />
+    <path d="M88 48V208" />
+    <path d="M128 48V208" />
+    <path d="M168 48V208" />
+    <path d="M208 48V208" />
+    <path d="M248 48V208" />
+    <path d="M288 48V208" />
+    <path d="M328 48V208" />
+  </g>
+  <path d="M88 128C88 92 128 92 128 128C128 164 88 164 88 128Z" fill="rgba(51, 33, 63, 0.09)" />
+  <path d="M128 128C128 92 168 92 168 128C168 164 128 164 128 128Z" fill="rgba(51, 33, 63, 0.09)" />
+  <circle cx="88" cy="128" r="16" fill="#1d1a1f" />
+  <circle cx="128" cy="128" r="16" fill="#1d1a1f" />
+  <circle cx="168" cy="128" r="16" fill="#1d1a1f" />
+  <circle cx="248" cy="88" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="248" cy="128" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <circle cx="248" cy="168" r="16" fill="#f5f1ea" stroke="rgba(34, 29, 37, 0.28)" />
+  <text x="30" y="34" fill="#5f5763" font-family="Noto Sans, sans-serif" font-size="14">Ba&#287;l&#305; ta&#351;lar birlikte ya&#351;ar</text>
+</svg></div>
+          <figcaption class="media-caption">Ba&#287;l&#305; ta&#351;lar birlikte ya&#351;ar; &ccedil;evrelenen bo&#351;luk ise oyunun sonunda puana d&ouml;n&uuml;&#351;&uuml;r.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="editorial-section" id="stratejik-derinlik" aria-labelledby="depth-heading">
+      <div class="content-container section-stack">
+        <div class="section-stack">
+          <span class="section-label">Go'nun stratejik derinli&#287;i</span>
+          <h2 id="depth-heading">Sadece &quot;ok fazla olas&#305;l&#305;k var&quot; demek yeterli de&#287;ildir.</h2>
+          <p class="prose prose-lead">Go'nun derinli&#287;i, say&#305;lar&#305;n b&uuml;y&uuml;kl&uuml;&#287;&uuml;nden &ccedil;ok etkile&#351;imlerin zincirleme etkisinden gelir. Her ta&#351;; ba&#287;lant&#305;y&#305;, kesmeyi, etki alan&#305;n&#305; ve gelecekteki alan pay&#305;n&#305; de&#287;i&#351;tirir.</p>
+        </div>
+
+        <div class="fact-grid">
+          <article class="fact-card">
+            <h3>Ba&#287;lant&#305;</h3>
+            <p>Ta&#351;lar&#305; birlikte ya&#351;at&#305;r; zay&#305;f noktalar&#305; kapat&#305;r ve grubu g&uuml;venceye al&#305;r.</p>
+          </article>
+
+          <article class="fact-card">
+            <h3>Kesme</h3>
+            <p>Rakibin ta&#351;lar&#305;n&#305; ay&#305;r&#305;r; tek tek par&ccedil;alar&#305; savunmas&#305; daha zor hale getirir.</p>
+          </article>
+
+          <article class="fact-card">
+            <h3>Etki</h3>
+            <p>Hen&uuml;z kurulmam&#305;&#351; alan&#305; bile &#351;ekillendirir; uzak noktalar&#305;n de&#287;erini de&#287;i&#351;tirir.</p>
+          </article>
+
+          <article class="fact-card">
+            <h3>Alan</h3>
+            <p>Oyunun sonunda puana d&ouml;n&uuml;&#351;en g&uuml;venli b&ouml;lgeleri kurar.</p>
+          </article>
+        </div>
+
+        <div class="callout">
+          <p>Kurallar&#305; azd&#305;r; her ta&#351; di&#287;er b&uuml;t&uuml;n ta&#351;lar&#305;n de&#287;erini de&#287;i&#351;tirir. Bu y&uuml;zden Go, yaln&#305;zca taktik de&#287;il, uzun vadeli konum okuma oyunudur.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="editorial-section editorial-section--alt" id="neden-9x9" aria-labelledby="start-heading">
+      <div class="content-container section-stack">
+        <div class="section-stack">
+          <span class="section-label">Neden 9&times;9?</span>
+          <h2 id="start-heading">Yeni ba&#351;layanlar neden k&uuml;&ccedil;&uuml;k tahtayla ba&#351;lamal&#305;?</h2>
+          <p class="prose prose-lead">9&times;9 tahta, temel kavramlar&#305; h&#305;zla g&ouml;r&uuml;n&uuml;r hale getirir. Oyun k&#305;sa s&uuml;rer, hatalar daha okunur olur ve grup ili&#351;kilerini g&ouml;zle takip etmek kolayla&#351;&#305;r.</p>
+        </div>
+
+        <div class="fact-grid">
+          <article class="fact-card is-selected">
+            <span class="badge">&Ouml;nerilen</span>
+            <h3>9&times;9</h3>
+            <p>Daha k&#305;sa oyun, daha h&#305;zl&#305; geri bildirim ve daha net ba&#351;lang&#305;&ccedil; dersleri sunar.</p>
+          </article>
+
+          <article class="fact-card">
+            <h3>13&times;13</h3>
+            <p>Temel fikirler oturduktan sonra orta &ouml;l&ccedil;ekli oyun hissini g&uuml;&ccedil;lendirir.</p>
+          </article>
+
+          <article class="fact-card">
+            <h3>19&times;19</h3>
+            <p>Tam oyun tahtas&#305;d&#305;r; daha geni&#351; plan ve uzun vadeli etki okumalar&#305; burada y&uuml;kselir.</p>
+          </article>
+        </div>
+
+        <div class="callout">
+          <p>9&times;9, alan ve grup ili&#351;kisini yeni ba&#351;layan g&ouml;z i&ccedil;in en okunur hale getirir; bu y&uuml;zden ilk ders i&ccedil;in en g&uuml;venli ba&#351;lang&#305;tt&#305;r.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="editorial-section" id="ilk-ders" aria-labelledby="cta-heading">
+      <div class="content-container">
+        <div class="closing-cta">
+          <div class="section-stack">
+            <span class="section-label">&#304;lk derse ge&#231;</span>
+            <h2 id="cta-heading">9&times;9 ile ilk dersine ba&#351;la.</h2>
+            <p class="prose">Go'nun temel kurallar&#305;n&#305; art&#305;k g&ouml;r&uuml;yorsun. &#350;imdi bunlar&#305; etkile&#351;imli dersle tahtada dene; ard&#305;ndan istersen robotla k&#305;sa bir pratik yap.</p>
+          </div>
+          <div class="closing-cta__actions">
+            <a class="button button-primary" href="ogren-3d.html">9&times;9 ile ilk dersine ba&#351;la</a>
+            <a class="button button-secondary" href="robot.html">&Ouml;nce robotla dene</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="editorial-section editorial-section--alt" id="footer">
+    <div class="content-container section-stack">
+      <div class="section-stack">
+        <span class="section-label">Kaynaklar</span>
+        <p class="prose">Daha ileri okumalar ve topluluk ba&#287;lant&#305;lar&#305;.</p>
+      </div>
+
+      <div class="fact-grid">
+        <a class="fact-card card-interactive" href="https://online-go.com" target="_blank" rel="noopener noreferrer" aria-label="online-go.com, yeni sekmede a&#231;&#305;l&#305;r">
+          <h3>online-go.com</h3>
+          <p>Online oynama platformu.</p>
+        </a>
+
+        <a class="fact-card card-interactive" href="https://www.tgod.org.tr" target="_blank" rel="noopener noreferrer" aria-label="T&uuml;rkiye Go Derne&#287;i, yeni sekmede a&#231;&#305;l&#305;r">
+          <h3>tgod.org.tr</h3>
+          <p>T&uuml;rkiye Go Derne&#287;i.</p>
+        </a>
+
+        <a class="fact-card card-interactive" href="https://online-go.com/ladder/44303" target="_blank" rel="noopener noreferrer" aria-label="AntGO 13x13 OGS Merdiveni, yeni sekmede a&#231;&#305;l&#305;r">
+          <h3>AntGO 13&times;13 OGS Merdiveni</h3>
+          <p>Toplulu&#287;un online ligi.</p>
+        </a>
+      </div>
+
+      <div class="section-stack">
+        <p class="media-caption">Antalya Go Toplulu&#287;u &middot; Go'yu &ouml;&#287;renmek isteyen herkes i&ccedil;in.</p>
+        <a class="button button-ghost" href="/">Ana sayfa</a>
+      </div>
     </div>
-  </div>
-</section>
+  </footer>
 
-<!-- ══ KAYNAKLAR ══ -->
-<section class="section section--alt" aria-labelledby="kaynaklar-heading">
-  <div class="section-inner">
-
-    <div class="resources-header reveal">
-      <span class="section-eyebrow">Daha Fazlası</span>
-      <h2 id="kaynaklar-heading">Kaynaklar</h2>
-    </div>
-
-    <div class="resources-list">
-
-      <a
-        href="https://online-go.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="resource-link reveal"
-        aria-label="online-go.com — Online Go oynama platformu, yeni sekmede açılır"
-      >
-        <span class="resource-link__name">online-go.com</span>
-        <span class="resource-link__desc">Online oynama platformu →</span>
-      </a>
-
-      <a
-        href="https://www.tgod.org.tr"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="resource-link reveal"
-        aria-label="Türkiye Go Derneği — tgod.org.tr, yeni sekmede açılır"
-      >
-        <span class="resource-link__name">tgod.org.tr</span>
-        <span class="resource-link__desc">Türkiye Go Derneği →</span>
-      </a>
-
-      <a
-        href="https://online-go.com/ladder/44303"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="resource-link reveal"
-        aria-label="AntGO 13x13 OGS Merdiveni, yeni sekmede açılır"
-      >
-        <span class="resource-link__name">AntGO 13×13 OGS Merdiveni</span>
-        <span class="resource-link__desc">Topluluğun online ligi →</span>
-      </a>
-
-    </div>
-  </div>
-</section>
-
-</main><!-- ══ FOOTER ══ -->
-</main><footer>
-  <div class="site-footer">
-    <span class="site-footer__brand">Antalya Go Topluluğu</span>
-    <a href="/" class="site-footer__link">← Ana Sayfa</a>
-  </div>
-</footer>
-
-<script>
-(function () {
-  var items = document.querySelectorAll('.reveal');
-  if (!items.length) return;
-  var observer = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry) {
-      if (!entry.isIntersecting) return;
-      entry.target.classList.add('visible');
-      observer.unobserve(entry.target);
-    });
-  }, { threshold: 0.12 });
-  items.forEach(function (el) { observer.observe(el); });
-})();
-</script>
-
-<script type="module" src="core/theme.js"></script></body>
+  <script type="module" src="core/theme.js"></script>
+</body>
 </html>
