@@ -72,6 +72,7 @@ function isLegal(grid, size, idx, color, ko) {
 
 function buildInputs(boardData, color) {
   const { grid, ko, size } = boardData;
+  const komi = boardData.komi ?? KOMI;
   const binInputs    = new Float32Array(NB19 * NC);
   const globalInputs = new Float32Array(19);
 
@@ -110,7 +111,7 @@ function buildInputs(boardData, color) {
   }
 
   // Komi (kanal 5)
-  globalInputs[5] = (aiColor === 2 ? KOMI + 1 : -KOMI) / 20.0;
+  globalInputs[5] = (aiColor === 2 ? komi + 1 : -komi) / 20.0;
 
   // Tahta boyutu — KataGo variable-size desteği
   globalInputs[8]  = size / 19.0;

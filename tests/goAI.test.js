@@ -1,4 +1,4 @@
-import { AI_PROFILES, __test, choosePolicyMove, finalScore, getBestMoveByIterations, getBestMoveForProfile } from '../core/goAI.js';
+import { AI_PROFILES, __test, choosePolicyMove, finalScore, getBestMoveByIterations, getBestMoveForProfile, refineEndgameMove } from '../core/goAI.js';
 import { BoardState } from '../core/boardState.js';
 import { isValidMove } from '../core/ruleEngine.js';
 import { ADAPTIVE_VERSION,HANDICAP_9X9,createAdaptiveState,getAdaptiveGameSettings,loadAdaptiveState,recordCompletedGame,resetAdaptiveState,serializeAdaptiveState } from '../core/adaptiveAI.js';
@@ -65,6 +65,50 @@ test('politika seçimi intihar adayını eler',()=>{
 test('politika seçimi boş tahtada yüksek pas olasılığına rağmen erken pas geçmez',()=>{
   const move=choosePolicyMove(position(9),1,policy([[4,4,.01]],.99));
   ok(move!=='pass');
+});
+
+test('rakip pas geçti ve güvenli hamle kalmadıysa robot pas geçer',()=>{
+  const stones=[];for(let y=0;y<3;y++)for(let x=0;x<3;x++)stones.push([1,x,y]);
+  equal(refineEndgameMove({...position(3,stones),previousPass:true,moveCount:40},1,{x:1,y:1}),'pass');
+});
+
+test('rakip pas geçti ama açık dame varsa robot oynar',()=>{
+  const board={...position(5,[[1,0,0],[2,4,4]]),previousPass:true,moveCount:40};
+  ok(refineEndgameMove(board,1,'pass')!=='pass');
+});
+
+test('yakalanabilir rakip taş varken robot pas geçmez',()=>{
+  const board={...position(5,[[2,2,2],[1,1,2],[1,2,1],[1,3,2]]),previousPass:true,moveCount:40};
+  equal(JSON.stringify(refineEndgameMove(board,1,'pass')),JSON.stringify({x:2,y:3}));
+});
+
+test('kurtarılabilir kendi grup varken robot pas geçmez',()=>{
+  const board={...position(5,[[1,2,2],[2,1,2],[2,2,1],[2,3,2]]),previousPass:true,moveCount:40};
+  equal(JSON.stringify(refineEndgameMove(board,1,'pass')),JSON.stringify({x:2,y:3}));
+});
+
+test('ko açıkken robot pas geçmez',()=>{
+  const board={...position(5),ko:0,previousPass:true,moveCount:40};
+  ok(refineEndgameMove(board,1,'pass')!=='pass');
+});
+
+test('kazanan robot kendi güvenli bölgesini gereksiz doldurmaz',()=>{
+  const ring=[[1,0,0],[1,1,0],[1,2,0],[1,0,1],[1,2,1],[1,0,2],[1,1,2],[1,2,2]];
+  const board={...position(3,ring),komi:.5,previousPass:true,moveCount:40};
+  equal(refineEndgameMove(board,1,{x:1,y:1}),'pass');
+});
+
+test('kaybeden robot erken pas geçmez',()=>{
+  const board={...position(5),komi:6.5,previousPass:false,moveCount:40};
+  ok(refineEndgameMove(board,1,'pass')!=='pass');
+});
+
+test('politika ve MCTS aynı merkezi endgame filtresini kullanır',()=>{
+  const board={...position(3,[[2,1,1],[1,0,1],[1,1,0],[1,2,1],[2,0,0],[2,2,0],[2,0,2],[2,2,2]]),previousPass:true,moveCount:20};
+  const fromPolicy=choosePolicyMove(board,1,policy([],1));
+  const fromMcts=getBestMoveByIterations(board,1,40,{seed:9});
+  equal(JSON.stringify(fromPolicy),JSON.stringify({x:1,y:2}));
+  equal(JSON.stringify({x:fromMcts.x,y:fromMcts.y}),JSON.stringify(fromPolicy));
 });
 
 test('atarideki grup uzayarak kurtulabilir',()=>{

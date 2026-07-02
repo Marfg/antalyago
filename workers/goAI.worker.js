@@ -4,7 +4,7 @@
  * Ana thread ↔ MCTS motoru köprüsü.
  * Gelen mesaj: MOVE için { boardData, color, timeMs };
  *               MOVE_ITERATIONS için { boardData, color, iterations, seed };
- *               MOVE_PROFILE için { boardData, color, profile, seed }
+ *               MOVE_PROFILE için { boardData:{ grid,ko,size,komi,previousPass,moveCount }, color, profile, seed }
  * Giden mesaj: { ok, move } | { ok: false, error }
  */
 

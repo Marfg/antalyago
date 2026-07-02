@@ -25,7 +25,8 @@ async function context(options={}){
       constructor(url){super();this.url=String(url);window.__workerUrls.push(this.url);if(this.url.includes('kataWorker'))setTimeout(()=>this.emit({ok:policyReady,type:'READY'}),0)}
       emit(data){this.dispatchEvent(new MessageEvent('message',{data}))}
       postMessage(data){
-        window.__workerMessages.push({...data,worker:this.url,boardData:undefined});
+        const boardContext=data.boardData?{previousPass:data.boardData.previousPass,moveCount:data.boardData.moveCount,komi:data.boardData.komi}:undefined;
+        window.__workerMessages.push({...data,worker:this.url,boardData:undefined,boardContext});
         if(data.type==='LOAD')return;
         if(data.type==='SCORE'){setTimeout(()=>this.emit({ok:true,type:'SCORE',score:{winner:'white',rawDiff:-6.5,margin:6.5,komi:data.boardData.komi,blackTerritory:[],whiteTerritory:[],blackDead:[],whiteDead:[]},gameId:data.gameId,requestId:data.requestId}),0);return}
         if(data.type==='MOVE'||data.type==='MOVE_PROFILE'){
@@ -108,6 +109,13 @@ await test('politika modeli hazırken ana worker hamleyi üretir',async()=>{
   const{ctx,page}=await context({policyReady:true});await page.click('#cp-w');
   await page.waitForFunction(()=>window.__workerMessages.some(m=>m.type==='MOVE'&&m.worker.includes('kataWorker')));
   assert(!(await page.evaluate(()=>window.__workerMessages.some(m=>m.type==='MOVE_PROFILE'))),'hazır model varken MCTS çağrıldı');await ctx.close();
+});
+
+await test('worker isteği pas, hamle sayısı ve komi bağlamını taşır',async()=>{
+  const{ctx,page}=await context({policyReady:true});await page.click('#btn-pass');
+  await page.waitForFunction(()=>window.__workerMessages.some(m=>m.type==='MOVE'&&m.worker.includes('kataWorker')));
+  const contextData=await page.evaluate(()=>window.__workerMessages.find(m=>m.type==='MOVE'&&m.worker.includes('kataWorker')).boardContext);
+  assert(contextData.previousPass===true&&contextData.moveCount===0&&contextData.komi===6.5,'endgame bağlamı worker isteğine aktarılmadı');await ctx.close();
 });
 
 await test('politika modeli hazır değilken MCTS yedeği kullanılır',async()=>{

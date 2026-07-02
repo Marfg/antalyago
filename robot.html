@@ -1215,7 +1215,7 @@ function triggerAI() {
   const ko     = board.koPoint
     ? board.koPoint.y * size + board.koPoint.x : -1;
   const colNum = aiColor === 'black' ? 1 : 2;
-  const boardData={grid,ko,size,komi:currentGameSettings.komi};
+  const boardData={grid,ko,size,komi:currentGameSettings.komi,previousPass:passCount===1,moveCount};
   const requestId=++nextRequestId;
   activeRequestId=requestId;
   moveVisibleAt=Date.now()+MIN_MOVE_DISPLAY_MS;

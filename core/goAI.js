@@ -505,6 +505,66 @@ function profileSearchResult(search, profile, rng, iters) {
   return { x:chosen.move%search.size, y:(chosen.move/search.size)|0, iters, profile:profile.id };
 }
 
+/**
+ * Her motorun önerisini aynı muhafazakâr oyun-sonu kurallarıyla denetler.
+ * Ölü taş/seki tahmini yapmaz; yalnız kesin atari, yasallık, ko ve alan skoru kullanır.
+ */
+export function refineEndgameMove(boardData,color,proposedMove,options={}){
+  const {grid,size,ko=-1}=boardData,nbr=getNeighborTable(size);
+  const komi=boardData.komi??DEFAULT_KOMI;
+  const previousPass=Boolean(boardData.previousPass);
+  const moveCount=Number.isFinite(boardData.moveCount)?boardData.moveCount:0;
+  const occupied=grid.reduce((count,cell)=>count+(cell!==0),0);
+  const endgame=moveCount>=Math.max(20,Math.floor(size*size*.55))||occupied/grid.length>=.65;
+  const scoreSign=color===1?1:-1;
+  const baseScore=scoreBoard(grid,nbr,size,komi)*scoreSign;
+  const threshold=options.scoreThreshold??.25;
+  const candidates=[];
+  for(let i=0;i<grid.length;i++){
+    const result=placeStone(grid,nbr,size,i,color,ko);
+    if(!result)continue;
+    const beforeAllies=new Map();
+    for(const n of nbr[i])if(grid[n]===color){
+      const ally=groupAndLibs(grid,nbr,n),key=Math.min(...ally.group);
+      beforeAllies.set(key,ally.libs.size);
+    }
+    const ownAfter=groupAndLibs(result.grid,nbr,i);
+    const savesAtari=[...beforeAllies.values()].some(libs=>libs===1)&&ownAfter.libs.size>1;
+    const scoreGain=scoreBoard(result.grid,nbr,size,komi)*scoreSign-baseScore;
+    candidates.push({
+      i,x:i%size,y:(i/size)|0,result,scoreGain,
+      capturesAtari:result.captured.length>0,
+      savesAtari,
+      ownEye:isOwnEye(grid,nbr,i,color),
+    });
+  }
+  if(!candidates.length)return 'pass';
+  candidates.sort((a,b)=>
+    Number(b.capturesAtari)-Number(a.capturesAtari)||
+    Number(b.savesAtari)-Number(a.savesAtari)||
+    b.scoreGain-a.scoreGain||Number(a.ownEye)-Number(b.ownEye)||a.i-b.i
+  );
+  const critical=candidates.find(c=>c.capturesAtari||c.savesAtari);
+  const meaningful=candidates.find(c=>!c.ownEye&&c.scoreGain>threshold);
+  const sensible=candidates.find(c=>!c.ownEye)||candidates[0];
+  const proposed=proposedMove==='pass'?null:candidates.find(c=>c.x===proposedMove?.x&&c.y===proposedMove?.y);
+
+  if(critical)return {x:critical.x,y:critical.y};
+  if(proposedMove==='pass'){
+    if(meaningful)return {x:meaningful.x,y:meaningful.y};
+    if(ko>=0||!endgame||baseScore<0||(!previousPass&&sensible.scoreGain>threshold))return {x:sensible.x,y:sensible.y};
+    return 'pass';
+  }
+  if(!proposed)return meaningful?{x:meaningful.x,y:meaningful.y}:{x:sensible.x,y:sensible.y};
+  if(proposed.ownEye&&proposed.scoreGain<=threshold){
+    if(meaningful)return {x:meaningful.x,y:meaningful.y};
+    if(endgame&&ko<0&&baseScore>=0)return 'pass';
+    return {x:sensible.x,y:sensible.y};
+  }
+  if(endgame&&ko<0&&!meaningful&&proposed.scoreGain<=threshold&&baseScore>=0)return 'pass';
+  return proposedMove;
+}
+
 export function getBestMove(boardData, color, timeMs = 2000) {
   const rng = createRng();
   const search = createSearch(boardData, color, rng);
@@ -515,7 +575,7 @@ export function getBestMove(boardData, color, timeMs = 2000) {
     runIteration(search, rng);
     iters++;
   }
-  return searchResult(search.root, search.size, iters);
+  return refineEndgameMove(boardData,color,searchResult(search.root,search.size,iters));
 }
 
 /** Sabit iterasyonlu, seed edilebilir arama. Süre tabanlı API'yi değiştirmez. */
@@ -524,7 +584,7 @@ export function getBestMoveByIterations(boardData, color, iterations, options = 
   const rng = createRng(options.seed);
   const search = createSearch(boardData, color, rng);
   for (let i = 0; i < iterations; i++) runIteration(search, rng);
-  return searchResult(search.root, search.size, iterations);
+  return refineEndgameMove(boardData,color,searchResult(search.root,search.size,iterations));
 }
 
 /** Merkezi profil bütçesi ve seçim politikasıyla seed edilebilir hamle üretir. */
@@ -533,7 +593,7 @@ export function getBestMoveForProfile(boardData, color, profileId, options = {})
   const rng = createRng(options.seed);
   const search = createSearch(boardData, color, rng);
   for (let i=0;i<profile.iterations;i++) runIteration(search,rng);
-  return profileSearchResult(search,profile,rng,profile.iterations);
+  return refineEndgameMove(boardData,color,profileSearchResult(search,profile,rng,profile.iterations));
 }
 
 /** Politika modelinin olasılıklarını kurallar ve temel taktiklerle yeniden sıralar. */
@@ -557,11 +617,8 @@ export function choosePolicyMove(boardData,color,policy,{policyStride=19}={}){
   }
   if(!candidates.length)return 'pass';
   candidates.sort((a,b)=>b.score-a.score||b.probability-a.probability||a.i-b.i);
-  const occupied=grid.reduce((count,cell)=>count+(cell!==0),0);
-  const passProbability=Number(policy[policyStride*policyStride])||0;
-  const lead=scoreBoard(grid,nbr,size,boardData.komi??DEFAULT_KOMI)*(color===1?1:-1);
-  if(occupied/grid.length>=.72&&lead>2&&passProbability>candidates[0].probability*1.15)return 'pass';
-  return {x:candidates[0].x,y:candidates[0].y};
+  const proposed=(Number(policy[policyStride*policyStride])||0)>candidates[0].probability?'pass':{x:candidates[0].x,y:candidates[0].y};
+  return refineEndgameMove(boardData,color,proposed);
 }
 
 // Kural ve rollout özelliklerini üretim API'sini genişletmeden doğrulayan test yüzeyi.
