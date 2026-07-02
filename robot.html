@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" /><script>(function(){var t="light";try{var s=localStorage.getItem("antalyago-theme");if(s==="light"||s==="dark")t=s;else if(matchMedia("(prefers-color-scheme: dark)").matches)t="dark"}catch(e){}document.documentElement.dataset.theme=t}())</script>
   <title>Yapay Zekaya Karşı – Antalya Go Topluluğu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@700&family=Noto+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -455,15 +455,15 @@
       #rv-board-pane { padding:.5rem; }
     }
   </style>
-</head>
-<body>
+<link rel="stylesheet" href="styles/design-system.css" /><link rel="stylesheet" href="styles/theme-compat.css" /></head>
+<body class="app-shell-theme"><a class="skip-link" href="#main-content">İçeriğe geç</a>
 
-<canvas id="c"></canvas>
+<main id="main-content"><canvas id="c"></canvas></main>
 
 <!-- Topbar -->
 <div id="topbar">
   <a class="back-btn" href="index.html">← Ana</a>
-  <div id="tb-status">
+  <button class="theme-toggle app-theme-toggle" data-theme-toggle type="button" aria-label="Gece temasına geç" aria-pressed="false">Gece</button><div id="tb-status">
     <div class="s-stone black active" id="stone-b"></div>
     <span id="s-label">Siyah'ın sırası</span>
     <div class="s-stone white" id="stone-w"></div>
@@ -2067,5 +2067,5 @@ window.resetBoard = function() {
   _origReset();
 };
 </script>
-</body>
+<script type="module" src="core/theme.js"></script></body>
 </html>

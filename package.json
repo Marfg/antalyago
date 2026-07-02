@@ -11,6 +11,8 @@
     "test-b2": "node tests/b2Assessment.test.js",
     "test-ai": "node tests/goAI.test.js",
     "test-robot": "node tests/verify-robot.mjs",
+    "test-theme": "node tests/theme.test.js && node tests/home-content.test.js && node tests/verify-theme.mjs",
+    "test-home-content": "node tests/home-content.test.js",
     "benchmark-ai": "node scripts/ai/benchmark.mjs"
   },
   "devDependencies": {

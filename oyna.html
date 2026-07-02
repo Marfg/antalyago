@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" /><script>(function(){var t="light";try{var s=localStorage.getItem("antalyago-theme");if(s==="light"||s==="dark")t=s;else if(matchMedia("(prefers-color-scheme: dark)").matches)t="dark"}catch(e){}document.documentElement.dataset.theme=t}())</script>
   <title>İnsanlarla Oyna – Antalya Go Topluluğu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Noto+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -433,8 +433,8 @@
       #screen-lobby, #screen-game { padding:1rem .75rem; }
     }
   </style>
-</head>
-<body>
+<link rel="stylesheet" href="styles/design-system.css" /><link rel="stylesheet" href="styles/theme-compat.css" /></head>
+<body class="app-shell-theme"><a class="skip-link" href="#main-content">İçeriğe geç</a>
 
 <!-- ─── TOPBAR ─── -->
 <div class="topbar">
@@ -442,7 +442,7 @@
     <a class="back-btn" href="index.html">← Ana Sayfa</a>
     <span class="page-title">Go Odaları</span>
   </div>
-  <div class="user-chip" id="user-chip" style="display:none">
+  <button class="theme-toggle app-theme-toggle" data-theme-toggle type="button" aria-label="Gece temasına geç" aria-pressed="false">Gece</button><div class="user-chip" id="user-chip" style="display:none">
     <div class="user-avatar" id="topbar-avatar"></div>
     <span id="topbar-name"></span>
     <button class="logout-btn" onclick="doLogout()">Çıkış</button>
@@ -450,7 +450,7 @@
 </div>
 
 <!-- ─── LOGIN SCREEN ─── -->
-<div class="screen active" id="screen-login">
+<main id="main-content"><div class="screen active" id="screen-login">
   <div class="login-logo">围棋<br/><span style="font-size:1.1rem;letter-spacing:.2em">GO ODALARI</span></div>
   <div class="login-tagline">Arkadaşlarınla oyna</div>
   <div class="login-card">
@@ -1615,5 +1615,5 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
   });
 })();
 </script>
-</body>
+</main><script type="module" src="core/theme.js"></script></body>
 </html>

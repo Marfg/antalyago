@@ -1,0 +1,45 @@
+/* Faz 1 compatibility layer: bind existing app shell tokens to the shared semantic palette. */
+.app-shell-theme {
+  --bg: var(--page-bg);
+  --bg-surface: var(--surface);
+  --fg: var(--text-primary);
+  --fg-muted: var(--text-muted);
+  --paper: var(--page-bg);
+  --paper-dark: var(--page-bg-secondary);
+  --panel: var(--surface);
+  --ink: var(--text-primary);
+  --muted: var(--text-muted);
+  --glass: var(--surface);
+  --gb: var(--border);
+  --gborder: var(--border);
+  --dark: var(--page-bg);
+  --text: var(--text-primary);
+}
+
+.app-shell-theme .back-btn {
+  color: var(--primary) !important;
+  border-color: var(--border-strong) !important;
+}
+
+.app-shell-theme .back-btn:hover {
+  background: var(--primary) !important;
+  color: var(--primary-text) !important;
+}
+
+.app-shell-theme input,
+.app-shell-theme select,
+.app-shell-theme textarea {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+[data-theme='dark'] .app-shell-theme {
+  background-image: none;
+}
+
+.app-shell-theme .theme-toggle {
+  color: var(--text-primary) !important;
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--border-strong) !important;
+}

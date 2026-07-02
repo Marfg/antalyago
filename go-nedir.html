@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" /><script>(function(){var t="light";try{var s=localStorage.getItem("antalyago-theme");if(s==="light"||s==="dark")t=s;else if(matchMedia("(prefers-color-scheme: dark)").matches)t="dark"}catch(e){}document.documentElement.dataset.theme=t}())</script>
   <title>Go Nedir? — Antalya Go</title>
   <meta name="description" content="Go, 4000 yıllık strateji oyunu. Öğrenmesi bir saate bakıyor, ustalaşması ömre." />
   <meta property="og:title" content="Go Nedir? — Antalya Go" />
@@ -410,31 +410,14 @@
       .page-eyebrow, .page-hero h1, .page-hero__lead { opacity: 1; }
     }
   </style>
-</head>
-<body>
+<link rel="stylesheet" href="styles/design-system.css" /><link rel="stylesheet" href="styles/theme-compat.css" /></head>
+<body class="app-shell-theme"><a class="skip-link" href="#main-content">İçeriğe geç</a>
 
 <!-- ══ HEADER ══ -->
-<header class="site-header">
-  <a href="/" aria-label="Antalya Go Ana Sayfa">
-    <img
-      class="site-header__logo"
-      src="assets/images/logo.png"
-      alt="Antalya Go"
-      loading="eager"
-      fetchpriority="high"
-    />
-  </a>
-  <nav aria-label="Ana navigasyon">
-    <ul class="site-nav">
-      <li><a href="/">Ana Sayfa</a></li>
-      <li><a href="go-nedir.html" aria-current="page">Go Nedir?</a></li>
-      <li><a href="/#topluluk">Topluluk</a></li>
-    </ul>
-  </nav>
-</header>
+<header class="site-header"><div class="site-header__inner"><a class="site-brand" href="index.html" aria-label="AntalyaGo ana sayfa"><img src="assets/images/logo.png" alt=""><span>AntalyaGo</span></a><button class="nav-toggle" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menüyü aç"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><nav class="site-nav" id="site-nav" data-site-nav aria-label="Ana navigasyon"><a href="ogren-3d.html">Öğren</a><a href="problem.html">Problemler</a><a href="robot.html">Robotla Oyna</a><a href="oyna.html">Go Odaları</a><a href="index.html#topluluk">Topluluk</a><button class="theme-toggle" data-theme-toggle type="button" aria-label="Gece temasına geç" aria-pressed="false">Gece</button></nav></div></header>
 
 <!-- ══ SAYFA BAŞLIĞI ══ -->
-<div class="page-hero">
+<main id="main-content"><div class="page-hero">
   <span class="page-eyebrow">Strateji · Tarih · Derinlik</span>
   <h1>Go Nedir?</h1>
   <p class="page-hero__lead">
@@ -619,8 +602,8 @@
   </div>
 </section>
 
-<!-- ══ FOOTER ══ -->
-<footer>
+</main><!-- ══ FOOTER ══ -->
+</main><footer>
   <div class="site-footer">
     <span class="site-footer__brand">Antalya Go Topluluğu</span>
     <a href="/" class="site-footer__link">← Ana Sayfa</a>
@@ -642,5 +625,5 @@
 })();
 </script>
 
-</body>
+<script type="module" src="core/theme.js"></script></body>
 </html>

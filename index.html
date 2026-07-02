@@ -1,1219 +1,677 @@
-<!DOCTYPE html>
-<html lang="tr">
+﻿<!doctype html>
+<html lang="tr" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Antalya Go — Go Öğrenme Platformu</title>
-  <meta name="description" content="4000 yıllık gizemle tanışmak ister misiniz? Go'yu adım adım öğrenin." />
-  <meta property="og:title" content="Antalya Go — Go Öğrenme Platformu" />
-  <meta property="og:description" content="4000 yıllık gizemle tanışmak ister misiniz? Go'yu adım adım öğrenin." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://antalyago.net" />
-  <meta property="og:image" content="assets/images/og-image.jpg" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:image" content="assets/images/og-image.jpg" />
-  <link rel="icon" href="/assets/images/logo.png" />
-  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AntalyaGo &mdash; Go'yu oynayarak &ouml;&#287;ren</title>
+  <meta name="description" content="T&uuml;rk&ccedil;e ve etkile&#351;imli Go &ouml;&#287;renme platformu.">
+  <link rel="canonical" href="https://antalyago.net/">
+  <meta property="og:site_name" content="AntalyaGo">
+  <meta property="og:title" content="AntalyaGo &mdash; Go'yu oynayarak &ouml;&#287;ren">
+  <meta property="og:description" content="T&uuml;rk&ccedil;e ve etkile&#351;imli Go &ouml;&#287;renme platformu.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://antalyago.net/">
+  <meta property="og:image" content="assets/images/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AntalyaGo &mdash; Go'yu oynayarak &ouml;&#287;ren">
+  <meta name="twitter:description" content="T&uuml;rk&ccedil;e ve etkile&#351;imli Go &ouml;&#287;renme platformu.">
+  <meta name="twitter:image" content="assets/images/og-image.jpg">
+  <link rel="icon" href="/assets/images/logo.png">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>
+    (function () {
+      var theme = 'light';
+      try {
+        var saved = localStorage.getItem('antalyago-theme');
+        if (saved === 'light' || saved === 'dark') {
+          theme = saved;
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+      } catch (error) {}
+      document.documentElement.dataset.theme = theme;
+    }());
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Serif:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/design-system.css">
+  <link rel="stylesheet" href="styles/theme-compat.css">
 
   <style>
-    /* ── RESET ── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    /* ── TOKENS ── */
-    :root {
-      --bg:          #F5F0E8;
-      --bg-surface:  #FDFAF5;
-      --fg:          #1C1610;
-      --fg-muted:    #6B5C48;
-      --accent:      #5C6E52;
-      --accent-hover:#48573F;
-      --gold:        #A89060;
-      --border:      #E0D8CC;
-      --shadow:      rgba(28,22,16,0.08);
-      --grid-line:   rgba(28,22,16,0.06);
-      --font-heading:'Fraunces', Georgia, serif;
-      --font-body:   'DM Sans', system-ui, sans-serif;
+    /* Page-specific composition */
+    body {
+      overflow-x: hidden;
     }
 
-    /* ── BASE ── */
-    html, body {
-      min-height: 100vh;
-      background: var(--bg);
-      color: var(--fg);
-      font-family: var(--font-body);
-      -webkit-font-smoothing: antialiased;
-      font-size: 16px;
-      line-height: 1.6;
+    .home-section {
+      padding: 72px 0;
     }
 
-    h1, h2, h3 { font-family: var(--font-heading); }
-
-    a { color: inherit; }
-
-    /* ── HEADER ── */
-    .site-header {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 50;
-      padding: 0 72px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(245, 240, 232, 0.92);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
+    .home-section.alt {
+      background: var(--page-bg-secondary);
     }
 
-    .site-header__logo {
-      height: 36px;
-      width: auto;
-      display: block;
-    }
-
-    .site-nav {
-      display: flex;
-      align-items: center;
-      gap: 32px;
-      list-style: none;
-    }
-
-    .site-nav a {
-      font-family: var(--font-body);
-      font-size: 0.88rem;
-      font-weight: 500;
-      color: var(--fg);
-      text-decoration: none;
-      transition: color 150ms ease;
-    }
-    .site-nav a:hover { color: var(--accent); }
-    .site-nav a:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 3px;
-      border-radius: 2px;
-    }
-
-    @media (max-width: 768px) {
-      .site-header { padding: 0 24px; }
-      .site-nav { display: none; }
-    }
-
-    /* ── HERO ── */
     .hero {
+      min-height: min(85vh, 760px);
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      min-height: 100vh;
-      max-height: 860px;
-      position: relative;
-      overflow: hidden;
-      background: var(--bg);
-      margin-top: 64px; /* header height */
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+      gap: var(--space-7);
+      align-items: center;
+      padding: var(--space-6) 0;
     }
 
-    .hero-media {
-      position: relative;
-      overflow: hidden;
-      order: 2;
+    .hero-copy {
+      max-width: 640px;
     }
 
-    .hero-image {
+    .hero h1 {
+      font-size: clamp(3rem, 6vw, 5.8rem);
+      letter-spacing: -0.045em;
+      margin: 12px 0 20px;
+      max-width: 640px;
+    }
+
+    .hero p {
+      max-width: 620px;
+      color: var(--text-secondary);
+      font-size: clamp(1.05rem, 2vw, 1.25rem);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .hero-visual {
+      position: relative;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      background: var(--board-surround);
+      box-shadow: var(--shadow-lg);
+      aspect-ratio: 1 / 1;
+    }
+
+    .hero-visual img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 35%;
-      will-change: transform;
-      transition: transform 0.1s linear;
     }
 
-    .hero-overlay {
+    .hero-visual::after {
+      content: "";
       position: absolute;
-      inset: 0;
-      background: linear-gradient(
-        to right,
-        var(--bg) 0%,
-        rgba(245,240,232,0.4) 30%,
-        transparent 100%
-      );
-      pointer-events: none;
+      inset: auto 0 0;
+      height: 6px;
+      background: var(--accent);
     }
 
-    .hero-content {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 80px 48px 80px 72px;
-      order: 1;
-      z-index: 1;
+    .section-head {
+      max-width: 680px;
+      margin-bottom: 32px;
     }
 
-    .hero-eyebrow {
-      font-family: var(--font-body);
-      font-size: 0.8rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 16px;
-      opacity: 0;
-      animation: fadeUp 0.6s ease-out 0.2s forwards;
-    }
-
-    .hero-title {
-      font-family: var(--font-heading);
+    .section-head h2 {
       font-size: clamp(2rem, 4vw, 3.5rem);
-      font-weight: 700;
-      line-height: 1.15;
-      color: var(--fg);
-      margin-bottom: 20px;
-      text-wrap: balance;
-      opacity: 0;
-      animation: fadeUp 0.6s ease-out 0.4s forwards;
+      margin: 8px 0 0;
     }
 
-    .hero-sub {
-      font-family: var(--font-body);
-      font-size: 1.05rem;
-      line-height: 1.7;
-      color: var(--fg-muted);
-      max-width: 44ch;
-      margin-bottom: 36px;
-      opacity: 0;
-      animation: fadeUp 0.6s ease-out 0.6s forwards;
+    .section-head p,
+    .card p {
+      color: var(--text-secondary);
     }
 
-    .hero-cta {
+    .three-grid,
+    .learning-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .learning-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .step-number {
+      color: var(--secondary);
+      font-weight: 800;
+    }
+
+    .card h3 {
+      margin: 12px 0 6px;
+      font-size: 1.25rem;
+    }
+
+    .card-link {
+      display: block;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .robot-grid,
+    .community-grid,
+    .story-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 48px;
+      align-items: center;
+    }
+
+    .feature-image {
+      width: 100%;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
+    }
+
+    .meeting {
+      border-left: 4px solid var(--accent);
+    }
+
+    .meeting strong {
+      display: block;
+      font-size: 1.3rem;
+      color: var(--heading);
+    }
+
+    .socials {
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
-      opacity: 0;
-      animation: fadeUp 0.6s ease-out 0.8s forwards;
+      margin-top: 20px;
     }
 
-    /* ── BUTONLAR ── */
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      padding: 14px 28px;
-      background: var(--accent);
-      color: #FDFAF5;
-      font-family: var(--font-body);
-      font-weight: 600;
-      font-size: 0.95rem;
-      border-radius: 4px;
-      text-decoration: none;
-      transition: background 0.2s ease, transform 0.2s ease;
-    }
-    .btn-primary:hover { background: var(--accent-hover); transform: scale(1.02); }
-    .btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      padding: 14px 28px;
-      background: transparent;
-      color: var(--fg);
-      font-family: var(--font-body);
-      font-weight: 500;
-      font-size: 0.95rem;
-      border: 1.5px solid var(--border);
-      border-radius: 4px;
-      text-decoration: none;
-      transition: border-color 0.2s ease, color 0.2s ease;
-    }
-    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-
-    /* ── Instagram Butonu ── */
-    .btn-instagram {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 9px 16px;
-      border: 1px solid rgba(184,149,90,0.35);
-      border-radius: 6px;
-      background: transparent;
-      color: var(--fg-muted);
-      font-family: inherit;
-      font-size: 0.85rem;
-      font-weight: 500;
-      text-decoration: none;
-      cursor: pointer;
-      transition: border-color 200ms ease, color 200ms ease, background 200ms ease;
-    }
-    .btn-instagram svg {
-      width: 15px; height: 15px;
-      flex-shrink: 0;
-      opacity: 0.75;
-      transition: opacity 200ms ease;
-    }
-    .btn-instagram:hover {
-      border-color: var(--accent);
-      color: var(--fg);
-      background: rgba(184,149,90,0.06);
-    }
-    .btn-instagram:hover svg { opacity: 1; }
-    .btn-instagram:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-
-
-    /* ── 9×9 ROBOT ÇAĞRISI ── */
-    .robot-callout {
+    .timeline-grid {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 28px;
-      margin: 32px 72px 0;
-      padding: 28px 32px;
-      background:
-        radial-gradient(circle at 15% 15%, rgba(184,149,90,.18), transparent 34%),
-        var(--bg-surface);
-      border: 1px solid rgba(184,149,90,.28);
-      border-radius: 14px;
-      box-shadow: 0 12px 36px var(--shadow);
-    }
-    .robot-callout__board {
-      width: 92px;
-      height: 92px;
-      border-radius: 12px;
-      border: 1px solid rgba(184,149,90,.35);
-      background:
-        linear-gradient(rgba(184,149,90,.28) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(184,149,90,.28) 1px, transparent 1px),
-        rgba(184,149,90,.08);
-      background-size: 11.5px 11.5px;
-      position: relative;
-      flex-shrink: 0;
-    }
-    .robot-callout__board span {
-      position: absolute;
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: var(--gold);
-      box-shadow: 0 0 10px rgba(184,149,90,.28);
-    }
-    .robot-callout__board span:nth-child(1) { left: 18px; top: 18px; background: #15120e; }
-    .robot-callout__board span:nth-child(2) { left: 42px; top: 18px; background: #f7efe0; }
-    .robot-callout__board span:nth-child(3) { left: 66px; top: 18px; background: #15120e; }
-    .robot-callout__board span:nth-child(4) { left: 30px; top: 42px; background: #f7efe0; }
-    .robot-callout__board span:nth-child(5) { left: 54px; top: 42px; background: #15120e; }
-    .robot-callout__board span:nth-child(6) { left: 18px; top: 66px; background: #f7efe0; }
-    .robot-callout__board span:nth-child(7) { left: 42px; top: 66px; background: #15120e; }
-    .robot-callout__board span:nth-child(8) { left: 66px; top: 66px; background: #f7efe0; }
-    .robot-callout__board span:nth-child(9) { left: 42px; top: 42px; background: var(--gold); }
-    .robot-callout__content { min-width: 0; }
-    .robot-callout__eyebrow {
-      margin: 0 0 6px;
-      font-size: .78rem;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: var(--accent);
-      font-weight: 700;
-    }
-    .robot-callout h2 {
-      margin: 0 0 8px;
-      font-family: var(--font-heading);
-      font-size: clamp(1.65rem, 3vw, 2.35rem);
-      color: var(--fg);
-    }
-    .robot-callout p {
-      margin: 0 0 10px;
-      color: var(--fg-muted);
-      line-height: 1.6;
-      max-width: 640px;
-    }
-    .robot-callout span {
-      color: var(--accent);
-      font-size: .9rem;
-      font-weight: 600;
-    }
-    .robot-callout__button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 52px;
-      padding: 0 28px;
-      border-radius: 8px;
-      background: var(--accent);
-      color: #FDFAF5;
-      text-decoration: none;
-      font-weight: 700;
-      white-space: nowrap;
-      box-shadow: 0 8px 22px rgba(184,149,90,.22);
-      transition: transform .18s ease, background .18s ease;
-    }
-    .robot-callout__button:hover { background: var(--accent-hover); transform: translateY(-1px); }
-    .robot-callout__button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-
-
-    /* ── ÖĞRENİM MODÜLLERİ ── */
-    .modules {
-      padding: 96px 72px;
-      background: var(--bg);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
     }
 
-    .modules-header {
-      margin-bottom: 48px;
-    }
-    .modules-header h2 {
-      font-family: var(--font-heading);
-      font-size: 2rem;
-      color: var(--fg);
-      margin-bottom: 8px;
-    }
-    .modules-header p {
-      color: var(--fg-muted);
-      font-size: 1rem;
-    }
-
-    .modules-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 20px;
-    }
-
-    .module-card {
+    .timeline-card {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      padding: 28px 24px;
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      box-shadow: 0 2px 8px var(--shadow);
-      text-decoration: none;
-      color: inherit;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .module-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px var(--shadow);
-    }
-    .module-card:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 3px;
+      gap: 10px;
     }
 
-    .module-number {
-      font-family: var(--font-heading);
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--gold);
-      line-height: 1;
+    .timeline-card .year {
+      color: var(--secondary);
+      font-weight: 800;
     }
 
-    .module-card h3 {
-      font-family: var(--font-heading);
-      font-size: 1.1rem;
-      color: var(--fg);
-      margin: 0;
-    }
-
-    .module-card p {
-      font-size: 0.875rem;
-      color: var(--fg-muted);
-      line-height: 1.6;
-      flex: 1;
-      margin: 0;
-    }
-
-    .module-link {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--accent);
-    }
-
-    /* ── TOPLULUK ── */
-    .community {
-      padding: 64px 72px;
-      background: var(--bg-surface);
-      border-top: 1px solid var(--border);
-      text-align: center;
-    }
-    .community h2 {
-      font-family: var(--font-heading);
-      font-size: 1.6rem;
-      color: var(--fg);
-      margin-bottom: 8px;
-    }
-    .community p {
-      color: var(--fg-muted);
-      margin-bottom: 20px;
-    }
-    .community-links {
-      display: flex;
-      gap: 24px;
-      justify-content: center;
-    }
-    .community-links a {
-      color: var(--accent);
-      font-weight: 500;
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    .community-links a:hover { color: var(--accent-hover); }
-    .community-links a:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 3px;
-      border-radius: 2px;
-    }
-
-    /* ── STORY ── */
-    .story {
-      padding: 96px 72px;
-      background: var(--bg-surface);
-    }
-    .story-inner {
-      max-width: 1100px;
-      margin: 0 auto;
+    .timeline-meta {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 64px;
-      align-items: center;
+      gap: 8px;
+      color: var(--text-secondary);
     }
+
+    .timeline-podium {
+      display: grid;
+      gap: 6px;
+      color: var(--text-secondary);
+    }
+
+    .timeline-card.is-muted {
+      border-style: dashed;
+      background: var(--surface-soft);
+    }
+
     .story-media {
       position: relative;
-      height: 400px;
+      width: 100%;
+      max-width: 100%;
+      min-height: 380px;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
     }
+
     .story-img {
       position: absolute;
-      width: 78%;
-      height: auto;
-      border-radius: 4px;
+      inset: 0;
+      width: 100%;
+      height: 100%;
       object-fit: cover;
-      box-shadow: 0 12px 40px var(--shadow);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
     }
+
     .story-img--back {
-      top: 0; left: 0;
-      transform: rotate(2deg);
-      z-index: 1;
+      transform: translate(-12px, 12px) rotate(-3deg);
+      opacity: 0.95;
     }
+
     .story-img--front {
-      bottom: 0; right: 0;
-      transform: rotate(-1.5deg);
-      z-index: 2;
-    }
-    .section-eyebrow {
-      display: block;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 12px;
-    }
-    .story-text h2,
-    .timeline-inner > h2,
-    .today-text h2 {
-      font-family: var(--font-heading);
-      font-size: clamp(1.6rem, 3vw, 2.4rem);
-      font-weight: 600;
-      color: var(--fg);
-      line-height: 1.2;
-      margin: 0 0 20px;
-    }
-    .story-text p,
-    .today-text p {
-      color: var(--fg-muted);
-      line-height: 1.7;
-      margin: 0 0 16px;
-    }
-    @media (max-width: 768px) {
-      .story { padding: 64px 24px; }
-      .story-inner { grid-template-columns: 1fr; gap: 40px; }
-      .story-media { height: 240px; }
+      transform: translate(10px, -6px) rotate(2deg);
     }
 
-    /* ── TIMELINE ── */
-    .timeline {
-      padding: 96px 72px;
-      background: var(--bg);
-    }
-    .timeline-inner {
-      max-width: 760px;
-      margin: 0 auto;
-    }
-    .timeline-inner > h2 {
-      margin-bottom: 48px;
-    }
-    .timeline-list {
-      position: relative;
-    }
-    .timeline-list::before {
-      content: '';
-      position: absolute;
-      left: 91px;
-      top: 8px;
-      bottom: 8px;
-      width: 1px;
-      background: var(--border);
-    }
-    .timeline-item {
+    .story-stats {
       display: grid;
-      grid-template-columns: 80px 24px 1fr;
-      gap: 0 16px;
-      align-items: start;
-      padding-bottom: 36px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 24px;
     }
-    .timeline-year {
+
+    .story-stat .stat-number {
       font-family: var(--font-heading);
+      color: var(--heading);
+      font-size: 1.7rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .story-stat .stat-label {
+      margin-top: 6px;
+      color: var(--text-secondary);
       font-size: 0.88rem;
-      font-weight: 600;
-      color: var(--fg-muted);
-      padding-top: 3px;
-      text-align: right;
-    }
-    .timeline-year--dim { color: var(--border); }
-
-    .timeline-dot {
-      width: 10px;
-      height: 10px;
-      background: var(--accent);
-      border-radius: 50%;
-      margin-top: 5px;
-      position: relative;
-      z-index: 1;
-      justify-self: center;
-    }
-    .timeline-dot--gold   { background: var(--gold); }
-    .timeline-dot--dim    { background: var(--border); }
-
-    .timeline-card h3 {
-      font-family: var(--font-heading);
-      font-size: 1rem;
-      font-weight: 500;
-      color: var(--fg);
-      margin: 0 0 6px;
-    }
-    .timeline-card--dim h3 { color: var(--fg-muted); }
-
-    .timeline-card p {
-      font-size: 0.88rem;
-      color: var(--fg-muted);
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    .tl-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      margin-bottom: 8px;
-    }
-    .tl-meta span {
-      font-size: 0.82rem;
-      color: var(--fg-muted);
-      line-height: 1.5;
-    }
-    .tl-meta span strong {
-      color: var(--fg);
-      font-weight: 500;
-    }
-
-    .tl-podium {
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .tl-podium span {
-      font-size: 0.82rem;
-      color: var(--fg);
-      font-weight: 500;
-    }
-    .tl-podium span em {
-      font-style: normal;
-      color: var(--fg-muted);
-      margin-right: 6px;
-    }
-
-    .tl-badge {
-      display: inline-block;
-      background: var(--gold);
-      color: #FDFAF5;
-      font-family: var(--font-body);
-      font-size: 0.65rem;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      padding: 2px 8px;
-      border-radius: 2px;
-      margin-bottom: 8px;
     }
 
-    .tl-unknown {
-      font-size: 0.78rem;
-      color: var(--border);
-      font-style: italic;
-    }
-
-    @media (max-width: 768px) {
-      .timeline { padding: 64px 24px; }
-    }
-
-    /* ── TODAY ── */
-    .today {
-      padding: 96px 72px;
-      background: var(--bg-surface);
-    }
-    .today-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 64px;
-      align-items: center;
-    }
-    .today-text h2 {
-      margin-bottom: 24px;
-    }
-    .meeting-card {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 24px;
-      margin-bottom: 20px;
-    }
-    .meeting-card__label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 8px;
-    }
-    .meeting-card__time {
-      font-family: var(--font-heading);
-      font-size: 1.15rem;
-      font-weight: 600;
-      color: var(--fg);
-      margin-bottom: 4px;
-    }
-    .meeting-card__place {
-      font-size: 0.88rem;
-      color: var(--fg-muted);
-    }
     .today-quote {
+      margin: 18px 0 0;
+      color: var(--text-secondary);
       font-style: italic;
-      color: var(--fg-muted);
-      font-size: 0.92rem;
-      line-height: 1.7;
-      border-left: 2px solid var(--gold);
-      padding-left: 14px;
-      margin: 0 0 20px;
     }
-    .today-links {
+
+    .site-footer {
+      padding: 32px 0;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .footer-inner {
       display: flex;
+      justify-content: space-between;
       gap: 20px;
       flex-wrap: wrap;
     }
-    .today-links a {
-      font-size: 0.88rem;
-      color: var(--accent);
-      font-weight: 500;
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    .today-links a:hover { color: var(--accent-hover); }
-    .today-media img {
-      width: 100%;
-      height: auto;
-      border-radius: 6px;
-      object-fit: cover;
-    }
-    @media (max-width: 768px) {
-      .today { padding: 64px 24px; }
-      .today-inner { grid-template-columns: 1fr; gap: 40px; }
-      .today-media { order: -1; }
-    }
 
-    /* ── STATS BAR ── */
-    .stats-bar {
-      background: var(--accent);
-      padding: 52px 72px;
-    }
-    .stats-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 24px;
-      text-align: center;
-    }
-    .stat-number {
-      font-family: var(--font-heading);
-      font-size: clamp(2rem, 4vw, 2.8rem);
-      font-weight: 600;
-      color: #F5F0E8;
-      line-height: 1;
-      margin-bottom: 6px;
-    }
-    .stat-label {
-      font-size: 0.8rem;
-      color: rgba(245,240,232,0.72);
-      letter-spacing: 0.04em;
-    }
-    @media (max-width: 768px) {
-      .stats-bar { padding: 40px 24px; }
-      .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 32px; }
-    }
-
-    /* ── FOOTER ── */
-    .site-footer {
-      padding: 24px 72px;
-      border-top: 1px solid var(--border);
-      background: var(--bg);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .site-footer__brand {
-      font-size: 0.82rem;
-      color: var(--fg-muted);
-    }
-    .site-footer__link {
-      font-size: 0.78rem;
-      color: var(--fg-muted);
-      text-decoration: none;
-      transition: color 150ms;
-    }
-    .site-footer__link:hover { color: var(--fg); }
-
-    /* ── SCROLL REVEAL ── */
     .reveal {
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 0.5s ease, transform 0.5s ease;
-    }
-    .reveal.visible {
       opacity: 1;
-      transform: translateY(0);
+      transform: none;
     }
 
-    /* ── ANİMASYONLAR ── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
+    .js .reveal {
+      opacity: 0.92;
+      transform: translateY(10px);
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
+    .js .reveal.visible {
+      opacity: 1;
+      transform: none;
+      transition: opacity 0.35s ease, transform 0.35s ease;
     }
 
-    /* ── MOBİL ── */
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
       .hero {
         grid-template-columns: 1fr;
-        max-height: none;
-        min-height: 100svh;
+        min-height: auto;
+        gap: 32px;
       }
-      .hero-media {
-        order: 1;
-        height: 55vw;
-        min-height: 240px;
+
+      .hero-visual {
+        max-height: 430px;
       }
-      .hero-image { object-position: center 40%; }
-      .hero-overlay {
-        background: linear-gradient(
-          to bottom,
-          transparent 0%,
-          rgba(245,240,232,0.6) 60%,
-          var(--bg) 100%
-        );
+
+      .learning-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
-      .hero-content {
-        order: 2;
-        padding: 32px 24px 48px;
-      }
-      .hero-title { font-size: clamp(1.8rem, 7vw, 2.4rem); }
-      .robot-callout {
+
+      .three-grid,
+      .timeline-grid {
         grid-template-columns: 1fr;
-        gap: 18px;
-        margin: 20px 24px 0;
-        padding: 24px;
       }
-      .robot-callout__board {
-        width: 78px;
-        height: 78px;
+
+      .robot-grid,
+      .community-grid,
+      .story-grid {
+        grid-template-columns: 1fr;
       }
-      .robot-callout__button {
+
+      .story-media {
         width: 100%;
-        min-height: 54px;
+        max-width: 100%;
       }
-      .modules { padding: 48px 24px; }
-      .community { padding: 48px 24px; }
-      .site-footer { padding: 20px 24px; }
+
+      .story-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .home-section {
+        padding: 56px 0;
+      }
     }
 
-    @media (hover: none) {
-      .module-card { transition: none; }
-      .module-card:hover { transform: none; box-shadow: 0 2px 8px var(--shadow); }
+    @media (max-width: 560px) {
+      .hero {
+        padding: 32px 0;
+      }
+
+      .hero h1 {
+        font-size: 2.9rem;
+      }
+
+      .hero-visual {
+        aspect-ratio: 4 / 3;
+      }
+
+      .learning-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .story-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .home-section {
+        padding: 44px 0;
+      }
+
+      .button {
+        width: 100%;
+      }
     }
 
-    /* ── REDUCED MOTION ── */
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+      .js .reveal {
+        opacity: 1;
+        transform: none;
       }
-      .reveal { opacity: 1; transform: none; }
-      .hero-eyebrow, .hero-title, .hero-sub,
-      .hero-cta { opacity: 1; }
     }
   </style>
+
+  <script>
+    document.documentElement.classList.add('js');
+  </script>
 </head>
-<body>
+<body class="page-shell">
+  <a class="skip-link" href="#main">&#304;&ccedil;eri&#287;e ge&ccedil;</a>
 
-<!-- ══ HEADER ══ -->
-<header class="site-header">
-  <a href="/" aria-label="Antalya Go Ana Sayfa">
-    <img
-      class="site-header__logo"
-      src="assets/images/logo.png"
-      alt="Antalya Go"
-      loading="eager"
-      fetchpriority="high"
-    />
-  </a>
-  <nav aria-label="Ana navigasyon">
-    <ul class="site-nav">
-      <li><a href="/">Ana Sayfa</a></li>
-      <li><a href="go-nedir.html">Go Nedir?</a></li>
-      <li><a href="robot.html">Robotla Oyna</a></li>
-      <li><a href="#topluluk">Topluluk</a></li>
-    </ul>
-  </nav>
-</header>
+  <!-- Shared header -->
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="site-brand" href="index.html" aria-label="AntalyaGo ana sayfa" aria-current="page">
+        <img src="assets/images/logo.png" alt="" width="40" height="40">
+        <span>AntalyaGo</span>
+      </a>
 
-<!-- ══ HERO ══ -->
-<section class="hero" aria-label="Giriş">
+      <button class="nav-toggle" data-nav-toggle type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Men&uuml;y&uuml; a&ccedil;">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"></path>
+        </svg>
+      </button>
 
-  <!-- Fotoğraf (sağ) -->
-  <div class="hero-media">
-    <picture>
-      <img
-        src="assets/images/hero-clean.png"
-        alt="Antalya Go buluşmasında tahtanın üzerinde siyah ve beyaz taşlar, bir el taş yerleştiriyor"
-        class="hero-image"
-        loading="eager"
-        fetchpriority="high"
-      >
-    </picture>
-    <div class="hero-overlay" aria-hidden="true"></div>
-  </div>
-
-  <!-- İçerik (sol) -->
-  <div class="hero-content">
-    <p class="hero-eyebrow">Go Öğrenme Platformu</p>
-    <h1 class="hero-title">4000 yıllık gizemle<br>tanışmak ister misiniz?</h1>
-    <p class="hero-sub">
-      Go'yu adım adım öğrenin. Basit kurallardan derin stratejiye uzanan
-      yolculuğunuza bugün başlayın.
-    </p>
-    <div class="hero-cta">
-      <a href="ogren-3d.html" class="btn-primary">Öğrenmeye Başla</a>
-      <a href="ogren-3d.html" class="btn-secondary">İlk Dersi Aç</a>
+      <nav class="site-nav" id="site-nav" data-site-nav aria-label="Ana navigasyon">
+        <a href="ogren-3d.html">&Ouml;&#287;ren</a>
+        <a href="problem.html">Problemler</a>
+        <a href="robot.html">Robotla Oyna</a>
+        <a href="oyna.html">Go Odalar&#305;</a>
+        <a href="index.html#topluluk">Topluluk</a>
+        <button class="theme-toggle" data-theme-toggle type="button" aria-pressed="false" aria-label="Gece temas&#305;na ge&ccedil;">Gece</button>
+      </nav>
     </div>
+  </header>
 
-  </div>
-
-</section>
-
-<!-- ══ 9×9 ROBOT ÇAĞRISI ══ -->
-<section class="robot-callout" aria-labelledby="robot-callout-title">
-  <div class="robot-callout__board" aria-hidden="true">
-    <span></span><span></span><span></span><span></span><span></span>
-    <span></span><span></span><span></span><span></span>
-  </div>
-  <div class="robot-callout__content">
-    <p class="robot-callout__eyebrow">Pratik modu</p>
-    <h2 id="robot-callout-title">9×9 Robotla Oyna</h2>
-    <p>Küçük tahtada hızlı bir parti yap. Robot seviyesini sana göre ayarlasın; hata yap, dene, öğren.</p>
-    <span>Yeni başlayanlar için önerilir · Uyarlanabilir robot rakip</span>
-  </div>
-  <a href="robot.html" class="robot-callout__button">9×9 Oyuna Başla</a>
-</section>
-
-<!-- ══ ÖĞRENME MODÜLLERİ ══ -->
-<section class="modules" aria-labelledby="modules-heading">
-  <div class="modules-header">
-    <h2 id="modules-heading">Öğrenme Yolun</h2>
-    <p>Nereden başlayacağını bilmiyorsan, buradan başla.</p>
-  </div>
-  <div class="modules-grid">
-
-    <a href="ogren-3d.html" class="module-card reveal" data-delay="0">
-      <div class="module-number">01</div>
-      <h3>Tahta ve Taşlar</h3>
-      <p>19×19'dan 9×9'a Go tahtasını ve taşları tanı.</p>
-      <span class="module-link">Başla →</span>
-    </a>
-
-    <a href="ogren-3d.html" class="module-card reveal" data-delay="80">
-      <div class="module-number">02</div>
-      <h3>Temel Kurallar</h3>
-      <p>Nefes noktaları, taş alma ve yasak hamleler.</p>
-      <span class="module-link">Başla →</span>
-    </a>
-
-    <a href="ogren-3d.html" class="module-card reveal" data-delay="160">
-      <div class="module-number">03</div>
-      <h3>9×9 Başlangıç</h3>
-      <p>Küçük tahtada ilk partini oyna. Hata yap, öğren.</p>
-      <span class="module-link">Başla →</span>
-    </a>
-
-    <a href="ogren-3d.html" class="module-card reveal" data-delay="240">
-      <div class="module-number">04</div>
-      <h3>Temel Teknikler</h3>
-      <p>Atari, yakalama, göz ve canlı gruplar.</p>
-      <span class="module-link">Başla →</span>
-    </a>
-
-    <a href="problem.html" class="module-card reveal" data-delay="320">
-      <div class="module-number">05</div>
-      <h3>Problemler</h3>
-      <p>Tsumego problemleriyle örüntü görme yeteneği kazan.</p>
-      <span class="module-link">Başla →</span>
-    </a>
-
-  </div>
-</section>
-
-<!-- ══ STORY ══ -->
-<section class="story">
-  <div class="story-inner">
-
-    <div class="story-media reveal" data-delay="0">
-      <img class="story-img story-img--back"
-           src="assets/images/afis-1-turnuva-2013.jpg"
-           alt="2013 Antalya Go Turnuvası afişi" width="480" height="360" decoding="async" />
-      <img class="story-img story-img--front"
-           src="assets/images/turnuva-5-kupalar.webp"
-           alt="Turnuva kupaları" width="480" height="360" decoding="async" />
-    </div>
-
-    <div class="story-text reveal" data-delay="120">
-      <span class="section-eyebrow">Hikâye</span>
-      <h2>Bir taştan büyük bir topluluğa</h2>
-      <p>2013'te birkaç meraklının bir kafede bir araya gelmesiyle başladı. Kimse o gün on yılı aşkın bir serüvenin kapısını araladığını bilmiyordu.</p>
-      <p>Bugün Antalya Go Topluluğu; düzenli buluşmalar, turnuvalar ve bu öğrenme platformuyla şehrin en köklü düşünce çevrelerinden biri olmaya devam ediyor.</p>
-    </div>
-
-  </div>
-</section>
-
-<!-- ══ TIMELINE ══ -->
-<section class="timeline">
-  <div class="timeline-inner">
-    <span class="section-eyebrow reveal" data-delay="0">Turnuvalar</span>
-    <h2 class="reveal" data-delay="60">Antalya Go Turnuvaları</h2>
-
-    <div class="timeline-list">
-
-      <!-- 1. TURNUVA -->
-      <div class="timeline-item reveal" data-delay="0">
-        <span class="timeline-year">2013</span>
-        <span class="timeline-dot"></span>
-        <div class="timeline-card">
-          <h3>1. Antalya Go Turnuvası</h3>
-          <div class="tl-meta">
-            <span><strong>Tarih:</strong> 17–18 Ağustos 2013</span>
-            <span><strong>Mekân:</strong> Antalya</span>
+  <main id="main">
+    <!-- Hero -->
+    <section class="home-section">
+      <div class="content-container hero">
+        <div class="hero-copy reveal">
+          <span class="section-label">T&uuml;rk&ccedil;e Go &ouml;&#287;renme platformu</span>
+          <h1>Go'yu oynayarak &ouml;&#287;ren.</h1>
+          <p>Kurallardan ilk 9&times;9 oyununa uzanan T&uuml;rk&ccedil;e ve etkile&#351;imli bir &ouml;&#287;renme yolu.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="ogren-3d.html">&Ouml;&#287;renmeye ba&#351;la</a>
+            <a class="button button-secondary" href="robot.html">9&times;9 robotla oyna</a>
           </div>
-          <p>Topluluğun kuruluş turnuvası — Antalya'da Go serüveninin başlangıcı.</p>
+        </div>
+        <div class="hero-visual reveal" aria-label="Go tahtas&#305; kompozisyonu">
+          <img src="assets/images/hero-board.png" alt="Ah&#351;ap Go tahtas&#305;nda siyah ve beyaz ta&#351;lar" width="900" height="675" decoding="async" fetchpriority="high">
         </div>
       </div>
+    </section>
 
-      <!-- 2. TURNUVA -->
-      <div class="timeline-item reveal" data-delay="60">
-        <span class="timeline-year">2014</span>
-        <span class="timeline-dot"></span>
-        <div class="timeline-card">
-          <h3>2. Antalya Go Turnuvası</h3>
-          <div class="tl-meta">
-            <span><strong>Tarih:</strong> 2014</span>
-            <span><strong>Mekân:</strong> Konyaaltı Belediyesi Kültür Merkezi</span>
-          </div>
-          <p>Belediye desteğiyle ilk kurumsal organizasyon.</p>
+    <!-- How it works -->
+    <section class="home-section alt">
+      <div class="content-container">
+        <div class="section-head">
+          <span class="section-label">Nas&#305;l &ccedil;al&#305;&#351;&#305;r?</span>
+          <h2>Tahtaya ad&#305;m ad&#305;m yakla&#351;.</h2>
+        </div>
+        <div class="three-grid">
+          <article class="card reveal">
+            <span class="step-number">01</span>
+            <h3>&Ouml;&#287;ren</h3>
+            <p>K&#305;sa, etkile&#351;imli derslerle kurallar&#305; ve temel teknikleri kavra.</p>
+          </article>
+          <article class="card reveal">
+            <span class="step-number">02</span>
+            <h3>Uygula</h3>
+            <p>9&times;9 tahtada hamle yaparak bilgiyi oyuna d&ouml;n&uuml;&#351;t&uuml;r.</p>
+          </article>
+          <article class="card reveal">
+            <span class="step-number">03</span>
+            <h3>De&#287;erlendir</h3>
+            <p>Problemlerle &ouml;r&uuml;nt&uuml;leri g&ouml;r, eksiklerini hemen fark et.</p>
+          </article>
         </div>
       </div>
+    </section>
 
-      <!-- 3. TURNUVA -->
-      <div class="timeline-item reveal" data-delay="120">
-        <span class="timeline-year">2019</span>
-        <span class="timeline-dot"></span>
-        <div class="timeline-card">
-          <h3>3. Antalya Go Turnuvası</h3>
-          <div class="tl-meta">
-            <span><strong>Tarih:</strong> 27–28 Temmuz 2019</span>
-            <span><strong>Mekân:</strong> Konyaaltı Belediyesi</span>
-            <span><strong>Not:</strong> Öncesinde 22–26 Temmuz Olimpos Yaz Kampı</span>
+    <!-- Learning path -->
+    <section class="home-section">
+      <div class="content-container">
+        <div class="section-head">
+          <span class="section-label">&Ouml;&#287;renme yolu</span>
+          <h2>&#304;lk ta&#351;tan ilk oyuna.</h2>
+          <p>Nereden ba&#351;layaca&#287;&#305;n&#305; bilmiyorsan bu s&#305;ray&#305; izle.</p>
+        </div>
+        <div class="learning-grid">
+          <a class="card card-interactive card-link reveal" href="ogren-3d.html">
+            <span class="step-number">01</span>
+            <h3>Tahta ve Ta&#351;lar</h3>
+            <p>Go tahtas&#305;n&#305; ve ta&#351;lar&#305; tan&#305;.</p>
+          </a>
+          <a class="card card-interactive card-link reveal" href="ogren-3d.html">
+            <span class="step-number">02</span>
+            <h3>Temel Kurallar</h3>
+            <p>Nefes, ta&#351; alma ve yasak hamleler.</p>
+          </a>
+          <a class="card card-interactive card-link reveal" href="ogren-3d.html">
+            <span class="step-number">03</span>
+            <h3>9&times;9 Ba&#351;lang&#305;&ccedil;</h3>
+            <p>K&uuml;&ccedil;&uuml;k tahtada ilk partini oyna.</p>
+          </a>
+          <a class="card card-interactive card-link reveal" href="ogren-3d.html">
+            <span class="step-number">04</span>
+            <h3>Temel Teknikler</h3>
+            <p>Atari, g&ouml;z ve canl&#305; gruplar.</p>
+          </a>
+          <a class="card card-interactive card-link reveal" href="problem.html">
+            <span class="step-number">05</span>
+            <h3>Problemler</h3>
+            <p>&Ouml;r&uuml;nt&uuml; g&ouml;rme becerini geli&#351;tir.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Robot practice -->
+    <section class="home-section alt">
+      <div class="content-container robot-grid">
+        <div class="reveal">
+          <span class="section-label">Robot prati&#287;i</span>
+          <h2>9&times;9 Robotla Oyna</h2>
+          <p>K&uuml;&ccedil;&uuml;k tahtada h&#305;zl&#305; bir parti yap; hamlelerini deneyerek temel kararlar&#305; peki&#351;tir.</p>
+          <p><strong>Temel seviye 9&times;9 pratik robotu</strong></p>
+          <a class="button button-primary" href="robot.html">9&times;9 Oyuna Ba&#351;la</a>
+        </div>
+        <img class="feature-image reveal" src="assets/images/tahta-render.png" alt="9&times;9 Go tahtas&#305;" width="349" height="658" decoding="async">
+      </div>
+    </section>
+
+    <!-- Community -->
+    <section class="home-section" id="topluluk">
+      <div class="content-container community-grid">
+        <div class="reveal">
+          <span class="section-label">Topluluk</span>
+          <h2>Kap&#305; her hafta a&ccedil;&#305;k.</h2>
+          <p>Go &ouml;&#287;renmek i&ccedil;in deneyimli olmak gerekmez. Sadece merak yeterli.</p>
+          <div class="socials">
+            <a class="button button-secondary" href="https://www.instagram.com/antalyago/">Instagram</a>
+            <a class="button button-ghost" href="https://facebook.com/AntalyaGo">Facebook</a>
           </div>
-          <div class="tl-podium">
-            <span><em>1.</em>Özgür Değirmenci</span>
-            <span><em>2.</em>Altan Kuntay</span>
-            <span><em>3.</em>Hüsrev Aksüt</span>
+          <p class="today-quote">"Go &ouml;&#287;renmek i&ccedil;in deneyimli olmak gerekmez. Sadece merak yeterli."</p>
+        </div>
+        <div class="card meeting reveal">
+          <span class="section-label">Haftal&#305;k Bulu&#351;ma</span>
+          <strong>Her Per&#351;embe &middot; 19:00</strong>
+          <p>Jiraf Coffee &amp; Book, Antalya</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Story -->
+    <section class="home-section alt">
+      <div class="content-container story-grid">
+        <div class="story-media reveal" aria-hidden="true">
+          <img class="story-img story-img--back" src="assets/images/afis-1-turnuva-2013.jpg" alt="" width="480" height="360" decoding="async">
+          <img class="story-img story-img--front" src="assets/images/turnuva-5-kupalar.webp" alt="" width="1080" height="1350" decoding="async">
+        </div>
+        <div class="reveal">
+          <span class="section-label">AntalyaGo hik&acirc;yesi</span>
+          <h2>Bir ta&#351;tan b&uuml;y&uuml;k bir toplulu&#287;a.</h2>
+          <p>2013&#39;te birka&ccedil; merakl&#305;n&#305;n bir kafede bir araya gelmesiyle ba&#351;lad&#305;. Kimse o g&uuml;n on y&#305;l&#305; a&#351;k&#305;n bir ser&uuml;venin kap&#305;s&#305;n&#305; aralad&#305;&#287;&#305;n&#305; bilmiyordu.</p>
+          <p>Bug&uuml;n Antalya Go Toplulu&#287;u; d&uuml;zenli bulu&#351;malar, turnuvalar ve bu &ouml;&#287;renme platformuyla &#351;ehrin en k&ouml;kl&uuml; d&uuml;&#351;&uuml;nce &ccedil;evrelerinden biri olmaya devam ediyor.</p>
+          <div class="story-stats">
+            <article class="card story-stat">
+              <div class="stat-number">10+</div>
+              <div class="stat-label">Y&#305;l</div>
+            </article>
+            <article class="card story-stat">
+              <div class="stat-number">60+</div>
+              <div class="stat-label">&Uuml;ye</div>
+            </article>
+            <article class="card story-stat">
+              <div class="stat-number">6</div>
+              <div class="stat-label">Turnuva</div>
+            </article>
+            <article class="card story-stat">
+              <div class="stat-number">33</div>
+              <div class="stat-label">Ders Ad&#305;m&#305;</div>
+            </article>
           </div>
         </div>
       </div>
+    </section>
 
-      <!-- 4. TURNUVA -->
-      <div class="timeline-item reveal" data-delay="180">
-        <span class="timeline-year timeline-year--dim">—</span>
-        <span class="timeline-dot timeline-dot--dim"></span>
-        <div class="timeline-card timeline-card--dim">
-          <h3>4. Antalya Go Turnuvası</h3>
-          <p class="tl-unknown">Tarih ve mekân bilgisi derleniyor.</p>
+    <!-- Tournaments -->
+    <section class="home-section">
+      <div class="content-container">
+        <div class="section-head">
+          <span class="section-label">Turnuvalar</span>
+          <h2>Antalya Go Turnuvalar&#305;</h2>
+        </div>
+        <div class="timeline-grid">
+          <article class="card timeline-card reveal">
+            <span class="year">2013</span>
+            <h3>1. Antalya Go Turnuvas&#305;</h3>
+            <div class="timeline-meta">
+              <span><strong>Tarih:</strong> 17&ndash;18 A&#287;ustos 2013</span>
+              <span><strong>Mek&acirc;n:</strong> Antalya</span>
+            </div>
+            <p>Toplulu&#287;un kurulu&#351; turnuvas&#305; &mdash; Antalya'da Go ser&uuml;veninin ba&#351;lang&#305;c&#305;.</p>
+          </article>
+
+          <article class="card timeline-card reveal">
+            <span class="year">2014</span>
+            <h3>2. Antalya Go Turnuvas&#305;</h3>
+            <div class="timeline-meta">
+              <span><strong>Tarih:</strong> 2014</span>
+              <span><strong>Mek&acirc;n:</strong> Konyaalt&#305; Belediyesi K&uuml;lt&uuml;r Merkezi</span>
+            </div>
+            <p>Belediye deste&#287;iyle ilk kurumsal organizasyon.</p>
+          </article>
+
+          <article class="card timeline-card reveal">
+            <span class="year">2019</span>
+            <h3>3. Antalya Go Turnuvas&#305;</h3>
+            <div class="timeline-meta">
+              <span><strong>Tarih:</strong> 27&ndash;28 Temmuz 2019</span>
+              <span><strong>Mek&acirc;n:</strong> Konyaalt&#305; Belediyesi</span>
+              <span><strong>Not:</strong> 22&ndash;26 Temmuz Olimpos Yaz Kamp&#305;</span>
+            </div>
+            <div class="timeline-podium">
+              <span><em>1.</em> &Ouml;zg&uuml;r De&#287;irmenci</span>
+              <span><em>2.</em> Altan Kuntay</span>
+              <span><em>3.</em> H&uuml;srev Aks&uuml;t</span>
+            </div>
+          </article>
+
+          <article class="card timeline-card is-muted reveal">
+            <span class="year">&mdash;</span>
+            <h3>4. Antalya Go Turnuvas&#305;</h3>
+            <p>Tarih ve mek&acirc;n bilgisi derleniyor.</p>
+          </article>
+
+          <article class="card timeline-card is-muted reveal">
+            <span class="year">&mdash;</span>
+            <h3>5. Antalya Go Turnuvas&#305;</h3>
+            <div class="timeline-meta">
+              <span><strong>Tarih:</strong> derleniyor</span>
+              <span><strong>Mek&acirc;n:</strong> Varuna Gezgin Cafe, Kalei&ccedil;i</span>
+            </div>
+          </article>
+
+          <article class="card timeline-card reveal">
+            <span class="year">2023</span>
+            <h3>6. Antalya Go Turnuvas&#305;</h3>
+            <div class="timeline-meta">
+              <span><strong>Tarih:</strong> 2023</span>
+              <span><strong>Not:</strong> Rekor kat&#305;l&#305;m</span>
+              <span><strong>Birincilik:</strong> H&uuml;srev Aks&uuml;t</span>
+            </div>
+          </article>
         </div>
       </div>
+    </section>
+  </main>
 
-      <!-- 5. TURNUVA -->
-      <div class="timeline-item reveal" data-delay="240">
-        <span class="timeline-year timeline-year--dim">—</span>
-        <span class="timeline-dot timeline-dot--dim"></span>
-        <div class="timeline-card timeline-card--dim">
-          <h3>5. Antalya Go Turnuvası</h3>
-          <div class="tl-meta">
-            <span><strong>Tarih:</strong> <span class="tl-unknown">derleniyor</span></span>
-            <span><strong>Mekân:</strong> Varuna Gezgin Cafe, Kaleiçi</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 6. TURNUVA -->
-      <div class="timeline-item reveal" data-delay="300">
-        <span class="timeline-year">2023</span>
-        <span class="timeline-dot"></span>
-        <div class="timeline-card">
-          <h3>6. Antalya Go Turnuvası</h3>
-          <div class="tl-meta">
-            <span><strong>Tarih:</strong> 2023</span>
-            <span><strong>Not:</strong> Rekor katılım</span>
-          </div>
-          <div class="tl-podium">
-            <span><em>1.</em>Hüsrev Aksüt</span>
-          </div>
-        </div>
-      </div>
-
-
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="content-container footer-inner">
+      <span>Antalya Go Toplulu&#287;u</span>
+      <a href="https://antalyago.org">antalyago.org</a>
     </div>
-  </div>
-</section>
+  </footer>
 
-<!-- ══ TODAY ══ -->
-<section class="today" id="topluluk">
-  <div class="today-inner">
+  <script type="module" src="core/theme.js"></script>
+  <script>
+    if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.08 });
 
-    <div class="today-text reveal" data-delay="0">
-      <span class="section-eyebrow">Bugün</span>
-      <h2>Kapı her hafta açık</h2>
-
-      <div class="meeting-card">
-        <div class="meeting-card__label">Haftalık Buluşma</div>
-        <div class="meeting-card__time">Her Perşembe · 19:00</div>
-        <div class="meeting-card__place">Jiraf Coffee &amp; Book, Antalya</div>
-      </div>
-
-      <p class="today-quote">
-        "Go öğrenmek için deneyimli olmak gerekmez. Sadece merak yeterli."
-      </p>
-
-      <div class="today-links">
-        <a href="https://www.instagram.com/antalyago/" target="_blank" rel="noopener noreferrer" class="btn-instagram">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-          </svg>
-          @antalyago
-        </a>
-        <a href="https://facebook.com/AntalyaGo" target="_blank" rel="noopener noreferrer">Facebook</a>
-      </div>
-    </div>
-
-    <div class="today-media reveal" data-delay="120">
-      <img src="assets/images/illus-tahta-sonbahar.webp"
-           alt="Sonbahar ışığında bir Go tahtası"
-           width="520" height="480" decoding="async" />
-    </div>
-
-  </div>
-</section>
-
-<!-- ══ STATS ══ -->
-<section class="stats-bar">
-  <div class="stats-inner">
-    <div class="reveal" data-delay="0">
-      <div class="stat-number">10+</div>
-      <div class="stat-label">Yıl</div>
-    </div>
-    <div class="reveal" data-delay="80">
-      <div class="stat-number">60+</div>
-      <div class="stat-label">Üye</div>
-    </div>
-    <div class="reveal" data-delay="160">
-      <div class="stat-number">6</div>
-      <div class="stat-label">Turnuva</div>
-    </div>
-    <div class="reveal" data-delay="240">
-      <div class="stat-number">33</div>
-      <div class="stat-label">Ders Adımı</div>
-    </div>
-  </div>
-</section>
-
-<!-- ══ FOOTER ══ -->
-<footer>
-  <div class="site-footer">
-    <span class="site-footer__brand">Antalya Go Topluluğu</span>
-    <a href="https://antalyago.org" target="_blank" rel="noopener" class="site-footer__link">antalyago.org</a>
-  </div>
-</footer>
-
-<script>
-/* ── Parallax — yalnızca desktop + no prefers-reduced-motion ── */
-(function () {
-  const heroImg = document.querySelector('.hero-image');
-  if (!heroImg) return;
-  if (!window.matchMedia('(min-width: 768px) and (prefers-reduced-motion: no-preference)').matches) return;
-  window.addEventListener('scroll', function () {
-    heroImg.style.transform = 'translateY(' + (window.scrollY * 0.12) + 'px)';
-  }, { passive: true });
-})();
-
-/* ── Scroll Reveal ── */
-(function () {
-  const items = document.querySelectorAll('.reveal');
-  if (!items.length) return;
-  const observer = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry) {
-      if (!entry.isIntersecting) return;
-      var delay = +(entry.target.dataset.delay || 0);
-      setTimeout(function () {
-        entry.target.classList.add('visible');
-      }, delay);
-      observer.unobserve(entry.target);
-    });
-  }, { threshold: 0.1 });
-  items.forEach(function (el) { observer.observe(el); });
-})();
-</script>
-
+      document.querySelectorAll('.reveal').forEach(function (element) {
+        observer.observe(element);
+      });
+    } else {
+      document.querySelectorAll('.reveal').forEach(function (element) {
+        element.classList.add('visible');
+      });
+    }
+  </script>
 </body>
 </html>

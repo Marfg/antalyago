@@ -1,0 +1,11 @@
+import assert from'node:assert/strict';import{isTheme,resolveTheme,safeStoredTheme,persistTheme,THEME_KEY}from'../core/theme.js';
+let passed=0;const test=(n,f)=>{f();passed++;console.log('  ✓',n)};
+test('yalnız light ve dark geçerlidir',()=>{assert(isTheme('light'));assert(isTheme('dark'));assert(!isTheme('sepia'))});
+test('kayıtlı light uygulanır',()=>assert.equal(resolveTheme('light',true),'light'));
+test('kayıtlı dark uygulanır',()=>assert.equal(resolveTheme('dark',false),'dark'));
+test('tercih yoksa sistem kullanılır',()=>assert.equal(resolveTheme(null,true),'dark'));
+test('sistem yoksa light kullanılır',()=>assert.equal(resolveTheme(null,undefined),'light'));
+test('geçersiz kayıt yok sayılır',()=>assert.equal(resolveTheme('x',false),'light'));
+test('okuma hatası güvenlidir',()=>assert.equal(safeStoredTheme({getItem(){throw Error()}}),null));
+test('tercih saklanır',()=>{let v;assert(persistTheme('dark',{setItem(k,x){assert.equal(k,THEME_KEY);v=x}}));assert.equal(v,'dark')});
+test('yazma hatası güvenlidir',()=>assert.equal(persistTheme('light',{setItem(){throw Error()}}),false));console.log(`\nTema birim testleri: ${passed}/${passed}`);

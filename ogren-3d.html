@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" /><script>(function(){var t="light";try{var s=localStorage.getItem("antalyago-theme");if(s==="light"||s==="dark")t=s;else if(matchMedia("(prefers-color-scheme: dark)").matches)t="dark"}catch(e){}document.documentElement.dataset.theme=t}())</script>
   <title>Go'yu Öğren – Antalya Go Topluluğu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&family=Noto+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -818,8 +818,8 @@
       #swipe-hint.show { opacity: 1; }
     }
   </style>
-</head>
-<body>
+<link rel="stylesheet" href="styles/design-system.css" /><link rel="stylesheet" href="styles/theme-compat.css" /></head>
+<body class="app-shell-theme"><a class="skip-link" href="#main-content">İçeriğe geç</a>
 
 <!-- Complete screen -->
 <div id="complete-screen">
@@ -856,7 +856,7 @@
 </div>
 
 <!-- Canvas (3D board) -->
-<canvas id="c"></canvas>
+<main id="main-content"><canvas id="c"></canvas></main>
 
 <!-- Feedback flash overlay -->
 <div id="flash"></div>
@@ -892,7 +892,7 @@
         <span class="pm-chip-nick"></span>
         <button class="pm-chip-reset" onclick="pmReset()" title="Profili sıfırla">↺</button>
       </div>
-      <div class="lang-switcher">
+      <button class="theme-toggle app-theme-toggle" data-theme-toggle type="button" aria-label="Gece temasına geç" aria-pressed="false">Gece</button><div class="lang-switcher">
         <button class="lang-btn active" data-lang="tr" onclick="setLang('tr')">TR</button>
         <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
         <button class="lang-btn" data-lang="ru" onclick="setLang('ru')">RU</button>
@@ -3989,5 +3989,5 @@ if (!_pmProfile) {
   }, 200);
 })();
 </script>
-</body>
+<script type="module" src="core/theme.js"></script></body>
 </html>
