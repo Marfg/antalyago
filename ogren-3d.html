@@ -128,6 +128,13 @@
     .lang-btn { padding:3px 8px; font-size:.7rem; font-weight:700; letter-spacing:.04em; border:1px solid var(--gborder); border-radius:4px; background:transparent; color:var(--muted); cursor:pointer; transition:all .15s; }
     .lang-btn:hover { border-color:var(--gold); color:var(--gold); }
     .lang-btn.active { background:var(--gold); color:var(--dark); border-color:var(--gold); }
+    .more-menu-shell { position: relative; display: flex; align-items: center; }
+    .more-menu-btn { display:none; }
+    .more-menu { position: absolute; top: calc(100% + .4rem); right: 0; min-width: 210px; z-index: 80; background: var(--glass); backdrop-filter: blur(16px); border: 1px solid var(--gborder); border-radius: 12px; padding: .6rem; box-shadow: 0 18px 40px rgba(0,0,0,.25); display: grid; gap: .35rem; }
+    .more-menu[hidden] { display:none; }
+    .more-menu a, .more-menu button { width: 100%; text-align: left; border: 1px solid var(--gborder); border-radius: 8px; padding: .65rem .75rem; background: rgba(255,255,255,.03); color: var(--text); font: inherit; font-size: .86rem; cursor: pointer; }
+    .more-menu a { text-decoration: none; display: block; box-sizing: border-box; }
+    .more-menu a:hover, .more-menu button:hover, .more-menu a:focus-visible, .more-menu button:focus-visible { border-color: var(--gold); color: var(--gold); outline: none; }
 
     /* ── SIDEBAR ── */
     #sidebar {
@@ -308,6 +315,8 @@
       transition: all .22s;
     }
     #feedback.correct { background: rgba(62,207,128,.1);  border-color: var(--green); color: var(--green); }
+    body[data-lesson-stage="De?erlendirme"]:not([data-lesson-assessment-revealed="true"]) #feedback { display: none; }
+    body[data-lesson-assessment-state="locked"] #feedback { display: none !important; }
     #feedback.wrong   { background: rgba(224,80,80,.1);   border-color: var(--red);   color: var(--red); }
     #feedback.info    { background: rgba(200,168,75,.08); border-color: var(--gborder); color: var(--muted); }
     .fb-icon { font-size: 1rem; flex-shrink: 0; }
@@ -565,36 +574,45 @@
       #tb-row1 { display: contents; }
       .tb-right { margin-left: auto; }
       .mob-menu-btn { display: flex; align-items: center; }
+      .back-btn { display: none; }
       .lang-switcher { display: none; }
-      .page-title { display: block; font-size: .85rem; font-family: 'Noto Serif', serif; font-weight: 700; }
+      .page-title { display: block; font-size: .85rem; font-family: 'Noto Serif', serif; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       #tb-title-center { display: none; }
       #tb-curric-track { display: none; }
-      #tb-dots { display: flex; }
+      #tb-dots { display: none; }
       #tb-stepdots { display: none; }
+      .more-menu-btn { display: flex; align-items: center; justify-content: center; }
+      .more-menu-shell { margin-left: .1rem; }
 
       /* Sidebar overlay */
       #sidebar {
         display: block;
         top: 0;
-        width: 82vw; max-width: 300px;
+        width: min(86vw, 340px);
+        max-width: 340px;
         transform: translateX(-100%);
         z-index: 21;
         padding-top: var(--sat);
+        pointer-events: none;
       }
-      #sidebar.mob-open { transform: translateX(0); }
+      #sidebar.mob-open {
+        transform: translateX(0);
+        pointer-events: auto;
+      }
 
       /* Drag handle */
       .panel-handle { display: block; }
 
       /* Ctrl zone */
-      #ctrl-zone { display: flex; }
-      #theme-fab { display: flex; }
+      #ctrl-zone { display: none; }
+      #theme-fab { display: none; }
 
       /* Lesson panel: saydam bottom sheet — varsayılan kapalı */
       #lesson-panel {
-        top: auto; bottom: 0;
+        top: auto; bottom: calc(60px + env(safe-area-inset-bottom, 0px));
         left: 0; right: 0; width: 100%;
-        max-height: 68px;
+        min-height: 210px;
+        max-height: 248px;
         overflow: hidden;
         border-left: none;
         border-top: 1px solid rgba(200,168,75,.18);
@@ -606,16 +624,28 @@
       }
       /* Açık durum */
       #lesson-panel.expanded {
-        max-height: calc(52vh + var(--sab));
+        max-height: calc(62vh - env(safe-area-inset-top, 0px));
         overflow-y: auto;
       }
 
       /* Bölüm etiketi gizle */
       .ch-tag { display: none; }
 
-      /* Nav bar ve rotate toggle gizle */
-      #nav-bar { display: none; }
+      /* Nav bar ve rotate toggle */
+      #nav-bar {
+        display: flex;
+        bottom: calc(var(--sab));
+        left: 0; right: 0; width: 100%;
+        height: 60px;
+        border-radius: 0;
+        border-left: none;
+        border-top: 1px solid rgba(200,168,75,.18);
+        padding-inline: max(1rem, env(safe-area-inset-left, 0px));
+        padding-inline-end: max(1rem, env(safe-area-inset-right, 0px));
+      }
       #rotate-toggle { display: none; }
+      #ctrl-zone { display: none; }
+      #theme-fab { display: none; }
 
       /* Canvas nav pill: mobilde gizle (ctrl-zone devraldı) */
       #canvas-nav { display: none; }
@@ -818,8 +848,8 @@
       #swipe-hint.show { opacity: 1; }
     }
   </style>
-<link rel="stylesheet" href="styles/design-system.css" /><link rel="stylesheet" href="styles/theme-compat.css" /></head>
-<body class="app-shell-theme"><a class="skip-link" href="#main-content">İçeriğe geç</a>
+<link rel="stylesheet" href="styles/design-system.css" /><link rel="stylesheet" href="styles/theme-compat.css" /><link rel="stylesheet" href="styles/learning-ui.css" /></head>
+<body class="app-shell-theme learning-ui"><a class="skip-link" href="#main-content">İçeriğe geç</a>
 
 <!-- Complete screen -->
 <div id="complete-screen">
@@ -892,7 +922,18 @@
         <span class="pm-chip-nick"></span>
         <button class="pm-chip-reset" onclick="pmReset()" title="Profili sıfırla">↺</button>
       </div>
-      <button class="theme-toggle app-theme-toggle" data-theme-toggle type="button" aria-label="Gece temasına geç" aria-pressed="false">Gece</button><div class="lang-switcher">
+      <button class="theme-toggle app-theme-toggle" data-theme-toggle type="button" aria-label="Gece temas?na ge?" aria-pressed="false">Gece</button>
+      <div class="more-menu-shell">
+        <button class="mob-menu-btn more-menu-btn" id="more-menu-btn" type="button" aria-expanded="false" aria-controls="more-menu" aria-label="Daha fazla" onclick="toggleMoreMenu()">&#8942;</button>
+        <div id="more-menu" class="more-menu" hidden>
+          <a href="index.html">Ana sayfa</a>
+          <button type="button" onclick="openProfilePicker()">Profil / rumuz</button>
+          <button type="button" data-lang="tr" onclick="setLang('tr'); toggleMoreMenu(false);">TR</button>
+          <button type="button" data-lang="en" onclick="setLang('en'); toggleMoreMenu(false);">EN</button>
+          <button type="button" data-lang="ru" onclick="setLang('ru'); toggleMoreMenu(false);">RU</button>
+        </div>
+      </div>
+      <div class="lang-switcher">
         <button class="lang-btn active" data-lang="tr" onclick="setLang('tr')">TR</button>
         <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
         <button class="lang-btn" data-lang="ru" onclick="setLang('ru')">RU</button>
@@ -920,7 +961,7 @@
 </button>
 
 <!-- Sidebar -->
-<div id="sidebar" class="collapsed">
+<div id="sidebar" class="collapsed" aria-hidden="true" inert>
   <div class="sb-header">Müfredat</div>
   <div id="curriculum"></div>
 </div>
@@ -943,10 +984,10 @@
 </div>
 
 <!-- Lesson panel -->
-<div id="lesson-panel">
+<div id="lesson-panel" role="complementary" aria-label="Ders paneli" aria-labelledby="lesson-title">
   <div class="panel-handle" onclick="togglePanel()"></div>
   <div id="lp-header">
-    <span id="lp-header-title">Ders Notları</span>
+    <span id="lp-header-title">Ders</span>
     <button id="lp-hide-btn" onclick="toggleLessonPanel()">✕ Gizle</button>
   </div>
   <div class="ch-tag"  id="chapter-tag"></div>
@@ -972,7 +1013,7 @@
   <a class="robot-practice-link" href="robot.html">Pratik yap: 9×9 Robotla Oyna</a>
   <div id="ctx-buttons"></div>
 
-  <div id="feedback" class="info">
+  <div id="feedback" class="info" role="status" aria-live="polite">
     <span class="fb-icon">💡</span>
     <span id="fb-text">Bir ders seçin.</span>
   </div>
@@ -996,6 +1037,7 @@ import { BoardState }                           from './core/boardState.js';
 import { LessonEngine, isCorrectAnswer, stepRequiresAnswer } from './core/lessonEngine.js';
 import { ActionHandler }                        from './core/actionHandler.js';
 import { CAM, CURRICULUM }                      from './core/curriculum.js';
+import { classifyCurriculumStep, isAssessmentLesson, responseTypeOf, stripMarkup } from './core/learningContext.js';
 
 /* ═══════════════════════════════════════════════════════
    3D ENGINE
@@ -1014,15 +1056,94 @@ let camYaw = 0.50, camPitch = isMobile ? 1.45 : 0.88, camDist = 500;
 let camTarget = null, camStart = null, camLerpT = 1;
 const CAM_DUR = 0.65;
 
+let currentLessonTipHtml = "";
+
+function ensureLearningUiScaffold() {
+  const panel = document.getElementById("lesson-panel");
+  if (!panel || document.getElementById("lesson-progress")) return;
+
+  const chapterTag = document.getElementById("chapter-tag");
+  if (chapterTag) {
+    chapterTag.insertAdjacentHTML("afterend", "<div class=\"lesson-progress\" id=\"lesson-progress\" aria-label=\"Ders ilerlemesi\"><div class=\"lesson-progress__meta\"><span id=\"lesson-progress-label\"></span><span id=\"lesson-progress-count\"></span></div><div class=\"progress\" id=\"lesson-progressbar\" role=\"progressbar\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"0\"><span id=\"lesson-progress-fill\"></span></div></div>");
+  }
+
+  const title = document.getElementById("lesson-title");
+  if (title) {
+    title.insertAdjacentHTML("beforebegin", "<div class=\"lesson-stage\" id=\"lesson-stage\">Anlat\u0131m</div>");
+    title.insertAdjacentHTML("afterend", "<div id=\"lesson-summary\"></div>");
+  }
+
+  const body = document.getElementById("lesson-body");
+  if (body) {
+    body.insertAdjacentHTML("afterend", "<button id=\"lesson-tip-toggle\" type=\"button\" aria-expanded=\"false\" aria-controls=\"lesson-tip\" hidden>\u0130pucu g\u00f6ster</button><div id=\"lesson-tip\" hidden></div>");
+  }
+
+  const nav = document.getElementById("nav-bar");
+  if (nav) nav.setAttribute("aria-label", "Ders gezinmesi");
+
+  const moreBtn = document.getElementById('more-menu-btn');
+  const moreMenu = document.getElementById('more-menu');
+  if (moreBtn && moreMenu && !moreBtn.dataset.bound) {
+    moreBtn.dataset.bound = '1';
+    const close = () => {
+      moreMenu.hidden = true;
+      moreBtn.setAttribute('aria-expanded', 'false');
+    };
+    document.addEventListener('click', e => {
+      if (!moreMenu.contains(e.target) && e.target !== moreBtn) close();
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    moreMenu.querySelectorAll('a, button').forEach(el => el.addEventListener('click', close));
+  }
+
+  const ctxButtons = document.getElementById("ctx-buttons");
+  if (ctxButtons) ctxButtons.setAttribute("aria-label", "Ba\u011flamsal eylemler");
+
+  const bp = document.getElementById("board-picker");
+  if (bp) {
+    bp.setAttribute("aria-label", "Tahta boyutu se\u00e7imi");
+    bp.querySelectorAll(".bp-btn").forEach(btn => {
+      btn.setAttribute("aria-pressed", btn.classList.contains("active") ? "true" : "false");
+    });
+  }
+
+  const tipToggle = document.getElementById("lesson-tip-toggle");
+  const tip = document.getElementById("lesson-tip");
+  if (tipToggle && tip && !tipToggle.dataset.bound) {
+    tipToggle.dataset.bound = "1";
+    tipToggle.addEventListener("click", () => {
+      if (!currentLessonTipHtml) return;
+      const open = tip.hidden;
+      tip.hidden = !open;
+      tip.classList.toggle("show", open);
+      tipToggle.setAttribute("aria-expanded", String(open));
+      tipToggle.textContent = open ? "\u0130pucunu gizle" : "\u0130pucu g\u00f6ster";
+    });
+  }
+}
+
+ensureLearningUiScaffold();
+function syncSidebarState(open, mobile = false) {
+  const sb = document.getElementById('sidebar');
+  const sbToggle = document.getElementById('sb-toggle');
+  if (!sb) return;
+  sb.setAttribute('aria-hidden', String(!open));
+  if ('inert' in sb) sb.inert = !open;
+  if (sbToggle) sbToggle.setAttribute('aria-expanded', String(open));
+  sb.classList.toggle('mob-open', mobile && open);
+  sb.classList.toggle('collapsed', !open);
+}
+
 window.togglePanel = function togglePanel() {
   /* S10: Drawer açıksa önce onu kapat */
   const sb = document.getElementById('sidebar');
   if(sb && sb.classList.contains('mob-open')) {
     document.getElementById('mob-overlay').classList.remove('show');
-    sb.classList.remove('mob-open');
+    syncSidebarState(false, true);
   }
   panelExpanded = !panelExpanded;
   document.getElementById('lesson-panel').classList.toggle('expanded', panelExpanded);
+  syncPanelChrome();
   /* S6: floating pill panel açılınca yukarı kayar */
   document.getElementById('ctrl-zone')?.classList.toggle('panel-up', panelExpanded);
   document.getElementById('theme-fab')?.classList.toggle('panel-up', panelExpanded);
@@ -1030,10 +1151,12 @@ window.togglePanel = function togglePanel() {
 }
 
 function updateProjCenter() {
-  if(innerWidth <= 640) {
+  if(innerWidth <= 1024) {
     const topbarH = document.getElementById('topbar').getBoundingClientRect().height || 46;
-    const panelH = panelExpanded ? innerHeight * 0.52 : 68;
-    projCY = topbarH + (innerHeight - topbarH - panelH) / 2;
+    const navEl = document.getElementById('nav-bar');
+    const navH = navEl && getComputedStyle(navEl).display !== 'none' ? 60 : 0;
+    const panelH = panelExpanded ? Math.min(innerHeight * 0.62, 520) : (innerWidth <= 640 ? 248 : 300);
+    projCY = topbarH + (innerHeight - topbarH - panelH - navH) / 2;
   } else {
     projCY = H / 2;
   }
@@ -2204,11 +2327,11 @@ window.toggleRotate = function() {
 window.toggleSidebar = function() {
   const sb  = document.getElementById('sidebar');
   const tgl = document.getElementById('sb-toggle');
-  sb.classList.toggle('collapsed');
-  tgl.classList.toggle('collapsed');
-  const isOpen = !sb.classList.contains('collapsed');
+  const isOpen = sb.classList.contains('collapsed');
+  syncSidebarState(isOpen, false);
+  tgl.classList.toggle('collapsed', !isOpen);
   const arrow = tgl.querySelector('.sbt-arrow');
-  if (arrow) arrow.textContent = isOpen ? '◀' : '▶';
+  if (arrow) arrow.textContent = isOpen ? '?' : '?';
   // Shift floating elements with sidebar
   const nav = document.getElementById('canvas-nav');
   const rt  = document.getElementById('rotate-toggle');
@@ -2218,21 +2341,30 @@ window.toggleSidebar = function() {
   if (rt)  rt.style.left  = isOpen ? '228px' : '10px';
   if (ht)  ht.style.left  = isOpen ? '228px' : '10px';
   if (tc)  tc.classList.toggle('sb-open', isOpen);
+  if (isOpen) tgl.focus();
 };
 
 let _panelHidden = false;
 window.toggleLessonPanel = function() {
+  if (isMobile) {
+    panelExpanded = !panelExpanded;
+    document.getElementById('lesson-panel').classList.toggle('expanded', panelExpanded);
+    syncPanelChrome();
+    updateProjCenter();
+    return;
+  }
   _panelHidden = !_panelHidden;
   document.getElementById('lesson-panel').classList.toggle('panel-hidden', _panelHidden);
   document.getElementById('nav-bar').classList.toggle('panel-hidden', _panelHidden);
   const tab = document.getElementById('ap-tab');
   if (tab) tab.classList.toggle('show', _panelHidden);
+  syncPanelChrome();
 };
 
-window.toggleMobileMenu = function() {
-  /* S2: Badge drawer'ı örtmesin */
+window.toggleMobileMenu = function(force) {
+  /* S2: Badge drawer'?? ??rtmesin */
   hideMobFb();
-  /* S10: Panel açıksa kapat */
+  /* S10: Panel a????ksa kapat */
   if(panelExpanded) {
     panelExpanded = false;
     document.getElementById('lesson-panel').classList.remove('expanded');
@@ -2241,12 +2373,36 @@ window.toggleMobileMenu = function() {
   }
   const sb=document.getElementById('sidebar');
   const ov=document.getElementById('mob-overlay');
-  const open=sb.classList.toggle('mob-open');
+  const btn=document.getElementById('mob-menu-btn');
+  const open = typeof force === 'boolean' ? force : !sb.classList.contains('mob-open');
+  syncSidebarState(open, true);
   ov.classList.toggle('show', open);
+  if (btn) btn.setAttribute('aria-expanded', String(open));
+  if (!open && btn) btn.focus();
 };
 
-/* ═══════════════════════════════════════════════════════
-   LOCALISATION
+window.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('mob-overlay');
+  const btn = document.getElementById('mob-menu-btn');
+  const sideBtn = document.getElementById('sb-toggle');
+  if (sb?.classList.contains('mob-open')) {
+    ov?.classList.remove('show');
+    syncSidebarState(false, true);
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'false');
+      btn.focus();
+    }
+  } else if (sb && !sb.classList.contains('collapsed')) {
+    syncSidebarState(false, false);
+    sideBtn?.classList.add('collapsed');
+    sideBtn?.setAttribute('aria-expanded', 'false');
+    sideBtn?.focus();
+  }
+});
+
+/* LOCALISATION
 ═══════════════════════════════════════════════════════ */
 let currentLang = localStorage.getItem('go_lang') || 'tr';
 
@@ -2524,7 +2680,7 @@ const PM = (() => {
     load() { return raw(); },
     save(data) {
       const now = new Date().toISOString();
-      const p = { nickname: data.nickname.slice(0,18), level: data.level, _p: data.persistent,
+      const p = { nickname: String(data.nickname || '').slice(0,18), level: data.level, _p: data.persistent,
                   currentStep:'l1-0', completedSteps:[], createdAt:now, lastVisitedAt:now };
       (data.persistent ? localStorage : sessionStorage).setItem(KEY, JSON.stringify(p));
       return p;
@@ -2548,27 +2704,42 @@ function openProfileModal(onDone) {
   const overlay = document.getElementById('pm-overlay');
   overlay.hidden = false;
   const inp = document.getElementById('pm-nick');
-  const err = document.getElementById('pm-nick-err');
-  inp.addEventListener('input', () => { inp.classList.remove('pm-inp-err'); err.hidden = true; });
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('pm-submit').click(); });
-  overlay.querySelectorAll('.pm-opts').forEach(grp => {
-    grp.querySelectorAll('.pm-opt').forEach(opt => {
-      opt.querySelector('input').addEventListener('change', () => {
-        grp.querySelectorAll('.pm-opt').forEach(o => o.classList.remove('sel'));
-        opt.classList.add('sel');
-      });
-    });
-  });
-  document.getElementById('pm-submit').addEventListener('click', () => {
-    const nick = inp.value.trim();
-    if (!nick) { inp.classList.add('pm-inp-err'); inp.focus(); err.hidden = false; return; }
+  const remember = document.getElementById('pm-remember');
+  const submit = document.getElementById('pm-submit');
+  const skip = document.getElementById('pm-skip');
+  const focusables = () => Array.from(overlay.querySelectorAll('button, input, [href], [tabindex]:not([tabindex="-1"])')).filter(el => !el.disabled && el.offsetParent !== null);
+  const trapFocus = e => {
+    if (e.key !== 'Tab') return;
+    const items = focusables();
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+  const cleanup = () => {
+    document.removeEventListener('keydown', trapFocus, true);
+  };
+  const finish = (nickOverride = null) => {
+    cleanup();
+    const nick = String(nickOverride ?? inp.value ?? '').trim();
     const level = overlay.querySelector('[name=pm-level]:checked')?.value || 'new';
-    const persistent = (overlay.querySelector('[name=pm-persist]:checked')?.value || 'local') === 'local';
+    const persistent = !!remember?.checked;
     const profile = PM.save({ nickname: nick, level, persistent });
     overlay.hidden = true;
-    renderNickname(profile.nickname);
+    renderNickname(profile.nickname || 'Misafir');
     onDone(profile);
-  });
+  };
+  inp.addEventListener('input', () => { inp.classList.remove('pm-inp-err'); });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') finish(); });
+  submit.addEventListener('click', () => finish());
+  skip.addEventListener('click', () => finish(''));
+  document.addEventListener('keydown', trapFocus, true);
   setTimeout(() => inp.focus(), 120);
 }
 
@@ -2586,6 +2757,10 @@ function showWelcomeToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3800);
 }
+
+window.openProfilePicker = function() {
+  openProfileModal(() => {});
+};
 
 window.pmReset = function() {
   if (!confirm('Profili sıfırlamak istiyor musun? Tüm ilerleme kaybolacak.')) return;
@@ -2665,8 +2840,10 @@ function processResult(result) {
   if (!result) return;
   processEffects(result.effects);
   const fb = result.feedback;
+  document.body.dataset.lessonAssessmentState = (lessonEng?.curLesson && lessonEng.isAssessment(lessonEng.curLesson.id) && !lessonEng._degResponses?.has(lessonEng.curLesson.id + ":" + lessonEng.curStepIdx)) ? "locked" : "open";
+  const assessmentLocked = document.body?.dataset.lessonStage === "De?erlendirme" && document.body?.dataset.lessonAssessmentRevealed !== "true";
   if (fb) {
-    setFb(fb.text, fb.type);
+    setFb(fb.text, fb.type, { show: !assessmentLocked });
     if (fb.type === 'correct' || fb.type === 'wrong') flashFeedback(fb.type);
     if (fb.type === 'correct') {
       if (window.mascotReactCorrect) mascotReactCorrect(CUR_STEP_DATA);
@@ -2680,6 +2857,7 @@ function processResult(result) {
     }
   }
 }
+
 
 /* ── Mini soru ─────────────────────────────────────────────────── */
 function renderMiniQuestion(q) {
@@ -2719,11 +2897,19 @@ function handleMiniAnswer(idx, q) {
   fbEl.textContent = chosen.feedback || '';
   fbEl.className = 'mini-q-feedback ' + (chosen.correct ? 'correct' : 'wrong');
   fbEl.style.display = '';
-  // Değerlendirme dersinde skoru kaydet
+  // De?erlendirme dersinde skoru kaydet
   if (lessonEng.isAssessment(lessonEng.curLesson?.id)) {
     lessonEng.recordDegAnswer(chosen.correct);
   }
-  // btn-next tekrar aç
+  const feedbackBox = document.getElementById('feedback');
+  if (feedbackBox) feedbackBox.hidden = false;
+  feedbackBox.style.display = "flex";
+  const lessonBody = document.getElementById('lesson-body');
+  lessonBody.style.display = "";
+  document.body.dataset.lessonAssessmentRevealed = 'true';
+  document.body.dataset.lessonAssessmentState = 'revealed';
+  if (lessonBody) lessonBody.hidden = false;
+  // btn-next tekrar a?
   document.getElementById('btn-next').disabled = false;
 }
 
@@ -2786,6 +2972,156 @@ window.handleCtxAction = function(action) {
   }
 };
 
+function firstSentence(text, fallback = "") {
+  const value = stripMarkup(text || "");
+  if (!value) return fallback;
+  const match = value.match(/^(.{1,180}?)([.!?…](?:\s|$)|$)/);
+  return (match?.[1] || value).trim();
+}
+
+function learningStageLabel(stageMeta, ls) {
+  if (!ls?.lesson || !ls?.step) return "";
+  if (isAssessmentLesson(ls.lesson)) return "Değerlendirme";
+  if (stageMeta?.stage === "guided_practice" || stageMeta?.stage === "variable_practice") return "Uygulama";
+  return "Anlatım";
+}
+
+function learningSummary(ls, stageMeta) {
+  const step = ls?.step || {};
+  if (step.boardSelector) return "Önce tahta boyutunu seç.";
+  if (isAssessmentLesson(ls?.lesson)) return "Tek soruyu tahtadan çöz.";
+  if (stageMeta?.stage === "guided_practice" || stageMeta?.stage === "variable_practice") return "Şimdi tahtada uygula.";
+  if (stageMeta?.stage === "worked_example") return "Örneği izle ve deseni gör.";
+  return firstSentence(step.text || step.fb?.t || "", "Neyi öğreniyorsun?");
+}
+
+function learningTip(ls, stageMeta) {
+  const step = ls?.step || {};
+  if (isAssessmentLesson(ls?.lesson)) return "";
+  if (stageMeta?.stage === "instruction" || stageMeta?.stage === "worked_example") {
+    return stripMarkup(step.assistant?.[0]?.msg || step.hint || step.note || "");
+  }
+  return stripMarkup(step.hint || step.note || step.fb?.t || step.assistant?.[0]?.msg || "");
+}
+
+function assessmentAnswerRevealed(ls) {
+  if (!ls?.lesson || !isAssessmentLesson(ls.lesson)) return true;
+  const itemId = ls.lesson.id + ':' + ls.stepIdx;
+  return !!lessonEng?._degResponses?.has(itemId);
+}
+
+function shouldShowPracticeLink(ls, stageMeta) {
+  if (!ls?.lesson || !ls?.step) return false;
+  if (isAssessmentLesson(ls.lesson)) return false;
+  if (!ls.stepDone) return false;
+  return stageMeta?.stage === "guided_practice" || stageMeta?.stage === "variable_practice" || ls.isLast;
+}
+
+window.toggleMoreMenu = function(force) {
+  const btn = document.getElementById('more-menu-btn');
+  const menu = document.getElementById('more-menu');
+  if (!btn || !menu) return;
+  const open = typeof force === 'boolean' ? force : menu.hidden;
+  menu.hidden = !open;
+  btn.setAttribute('aria-expanded', String(open));
+  if (!open) btn.focus();
+};
+
+function syncPanelChrome() {
+  const panel = document.getElementById('lesson-panel');
+  const btn = document.getElementById('lp-hide-btn');
+  const apTab = document.getElementById('ap-tab');
+  if (!panel || !btn) return;
+  const expanded = panel.classList.contains('expanded');
+  if (isMobile) {
+    btn.textContent = expanded ? 'Tahtaya dön' : 'Dersi genişlet';
+    btn.setAttribute('aria-label', expanded ? 'Tahtaya dön' : 'Dersi genişlet');
+    btn.setAttribute('aria-expanded', String(expanded));
+    apTab && (apTab.hidden = true);
+  } else {
+    btn.textContent = panel.classList.contains('panel-hidden') ? 'Göster' : 'Gizle';
+    btn.setAttribute('aria-label', panel.classList.contains('panel-hidden') ? 'Ders panelini göster' : 'Ders panelini gizle');
+    btn.setAttribute('aria-expanded', String(!panel.classList.contains('panel-hidden')));
+    if (apTab) apTab.hidden = !panel.classList.contains('panel-hidden');
+  }
+}
+
+function updateLearningChrome(ls) {
+  if (!ls || !ls.lesson) return;
+  const { lesson, chapter, stepIdx, step, stepDone: done, totalSteps } = ls;
+  const stageMeta = classifyCurriculumStep({ chapter, lesson, step, stepIndex: stepIdx });
+  const answered = assessmentAnswerRevealed(ls);
+
+  document.body.dataset.lessonStage = stageMeta.stage || "";
+  document.body.dataset.lessonResponse = stageMeta.responseType || "";
+  document.body.dataset.lessonScorable = String(!!stageMeta.scorable);
+  document.body.dataset.lessonHasBoard = String(!!step?.boardSelector);
+  document.body.dataset.lessonHasTip = String(!!learningTip(ls, stageMeta));
+  document.body.dataset.lessonHasPractice = String(shouldShowPracticeLink(ls, stageMeta));
+  document.body.dataset.lessonAssessmentRevealed = String(assessmentAnswerRevealed(ls));
+  document.body.dataset.lessonAssessmentState = isAssessmentLesson(lesson) ? (answered ? "revealed" : "locked") : "open";
+
+  const chapterTag = document.getElementById("chapter-tag");
+  const title = document.getElementById("lesson-title");
+  const stage = document.getElementById("lesson-stage");
+  const summary = document.getElementById("lesson-summary");
+  const progress = document.getElementById("lesson-progress");
+  const progressLabel = document.getElementById("lesson-progress-label");
+  const progressCount = document.getElementById("lesson-progress-count");
+  const progressBar = document.getElementById("lesson-progressbar");
+  const progressFill = document.getElementById("lesson-progress-fill");
+  const tipToggle = document.getElementById("lesson-tip-toggle");
+  const tip = document.getElementById("lesson-tip");
+  const boardPicker = document.getElementById("board-picker");
+  const robotLink = document.querySelector(".robot-practice-link");
+  const body = document.getElementById("lesson-body");
+
+  const chapNum = chapter?.id?.replace(/^c/, "") || "";
+  const chapTitle = (currentLang !== "tr" && TITLE_T[chapter?.id]?.[currentLang]) || chapter?.title || "";
+  const stepLabel = (stepIdx + 1) + " / " + totalSteps;
+  const stageLabel = learningStageLabel(stageMeta, ls);
+  const summaryText = learningSummary(ls, stageMeta);
+  const tipText = learningTip(ls, stageMeta);
+  const pct = totalSteps > 0 ? Math.round(((stepIdx + 1) / totalSteps) * 100) : 0;
+
+  if (chapterTag) chapterTag.textContent = (chapNum ? ("B" + chapNum) : "") + (chapTitle ? (" · " + chapTitle) : "");
+  if (title) title.textContent = (currentLang !== "tr" && TITLE_T[lesson.id]?.[currentLang]) || lesson.title || "";
+  if (stage) stage.textContent = stageLabel;
+  if (summary) { summary.hidden = isAssessmentLesson(lesson); summary.textContent = isAssessmentLesson(lesson) ? '' : summaryText; }
+  if (body) body.hidden = isAssessmentLesson(lesson) && !answered;
+  if (progress) progress.hidden = false;
+  if (progressLabel) progressLabel.textContent = chapNum ? ("B" + chapNum) : "B?";
+  if (progressCount) progressCount.textContent = "Adım " + stepLabel;
+  if (progressBar) {
+    progressBar.setAttribute("aria-valuenow", String(pct));
+    progressBar.setAttribute("aria-valuetext", "Adım " + stepLabel);
+  }
+  if (progressFill) progressFill.style.width = pct + "%";
+
+  currentLessonTipHtml = tipText;
+  if (tipToggle && tip) {
+    const allowTip = !!tipText && stageLabel !== 'Değerlendirme';
+    tip.hidden = true;
+    tipToggle.hidden = !allowTip;
+    tipToggle.setAttribute("aria-expanded", "false");
+    tipToggle.textContent = allowTip ? (stageLabel === 'Anlatım' ? 'Bu neden önemli?' : 'İpucu göster') : "";
+    tip.classList.remove("show");
+  }
+  if (tip) tip.innerHTML = tipText ? ("<p>" + tipText + "</p>") : "";
+
+  const feedback = document.getElementById('feedback');
+  if (feedback) feedback.hidden = isAssessmentLesson(lesson) && !answered;
+
+  if (boardPicker) {
+    boardPicker.classList.toggle("show", !!step?.boardSelector);
+    boardPicker.hidden = !step?.boardSelector;
+    boardPicker.querySelectorAll(".bp-btn").forEach(btn => {
+      btn.setAttribute("aria-pressed", btn.classList.contains("active") ? "true" : "false");
+    });
+  }
+  if (robotLink) robotLink.hidden = !shouldShowPracticeLink(ls, stageMeta);
+  if (body) body.setAttribute("aria-label", (stageLabel || "Ders") + " içeriği");
+}
 /* ── Lesson DOM update ─────────────────────────────────────────── */
 function updateLessonDOM(ls) {
   if (!ls || !ls.lesson) return;
@@ -2815,6 +3151,7 @@ function updateLessonDOM(ls) {
     : '';
   document.getElementById('lesson-body').innerHTML =
     stepT(lesson.id, stepIdx, 'text') || step?.text || _assistantFallback;
+  updateLearningChrome(ls);
   const ctxEl = document.getElementById('ctx-buttons');
   if (ctxEl) { ctxEl.style.display = 'none'; ctxEl.innerHTML = ''; }
   const counterTxt = `${stepIdx+1} / ${totalSteps}`;
@@ -2835,11 +3172,15 @@ function updateLessonDOM(ls) {
     }
   }
   document.getElementById('btn-prev').disabled  = isFirst;
+  document.getElementById('btn-prev').setAttribute('aria-disabled', String(isFirst));
   document.getElementById('cnav-prev').disabled = isFirst;
+  document.getElementById('cnav-prev').setAttribute('aria-disabled', String(isFirst));
   document.getElementById('mprev').disabled     = isFirst;
+  document.getElementById('mprev').setAttribute('aria-disabled', String(isFirst));
   renderDots();
 
   document.getElementById('board-picker').classList.toggle('show', !!step?.boardSelector);
+  document.getElementById('board-picker').hidden = !step?.boardSelector;
 
   if (step?.auto || step?.moves?.length) {
     ghostActive = false;
@@ -2848,24 +3189,17 @@ function updateLessonDOM(ls) {
     document.getElementById('rotate-toggle').style.display = isMobile ? 'none' : 'block';
   }
 
-  setFb(stepT(lesson.id, stepIdx, 'fb') || step?.fb?.t || t('defaultFb'), step?.fb?.c || 'info');
-  document.getElementById('feedback').style.display = '';
+  const assessmentLocked = isAssessmentLesson(lesson) && !lessonEng._degResponses?.has(lesson.id + ':' + stepIdx);
+  setFb(stepT(lesson.id, stepIdx, 'fb') || step?.fb?.t || t('defaultFb'), step?.fb?.c || 'info', { show: !assessmentLocked });
+  const feedbackBox = document.getElementById('feedback');
+  if (feedbackBox) feedbackBox.hidden = assessmentLocked;
+  if (assessmentLocked) hideMobFb();
 
-  // Task card: show step objective hint below the board
-  const tc = document.getElementById('task-card');
-  const tcText = document.getElementById('task-card-text');
-  if (tc && tcText && !isMobile) {
-    const hint = stepT(lesson.id, stepIdx, 'fb') || step?.fb?.t || '';
-    if (hint && !step?.auto) {
-      tcText.textContent = hint;
-      tc.classList.add('show');
-    } else {
-      tc.classList.remove('show');
-    }
-  }
 
   updateNextBtn(step, done, isLast, canAdvance);
+  syncPanelChrome();
 }
+
 
 /* ── Navigation ────────────────────────────────────────────────── */
 function loadLesson(lesson) {
@@ -3046,11 +3380,14 @@ function updateNextBtn(step, done, isLast, canAdvance) {
   const cnext = document.getElementById('cnav-next');
   const mnext = document.getElementById('mnext');
   btn.disabled    = !canAdvance;
+  btn.setAttribute('aria-disabled', String(!canAdvance));
   btn.textContent = isLast ? t('finishLesson') : t('nextBtn');
   cnext.disabled    = !canAdvance;
-  cnext.textContent = isLast ? '✓' : '›';
+  cnext.setAttribute('aria-disabled', String(!canAdvance));
+  cnext.textContent = isLast ? '?' : '?';
   mnext.disabled    = !canAdvance;
-  mnext.textContent = isLast ? '✓' : '›';
+  mnext.setAttribute('aria-disabled', String(!canAdvance));
+  mnext.textContent = isLast ? '?' : '?';
 }
 
 /* Sidebar — Bölüm/Ders Listesi */
@@ -3182,26 +3519,31 @@ function hideMobFb(){
   badge.classList.remove('show');
 }
 
-function setFb(text,type) {
+function setFb(text,type, options = {}) {
+  const { show = true } = options;
   const box=document.getElementById('feedback');
   const icon=box.querySelector('.fb-icon');
   box.className='feedback-box '+type;  // keep id, reset class
   box.id='feedback';
   document.getElementById('fb-text').textContent=text;
-  icon.textContent=type==='correct'?'✓':type==='wrong'?'✗':'💡';
-  showMobFb(text,type);
+  icon.textContent=type==='correct'?'?':type==='wrong'?'?':'??';
+  const currentLesson = lessonEng?.curLesson || null;
+  const assessmentLocked = !!currentLesson && lessonEng.isAssessment(currentLesson.id) && !lessonEng._degResponses?.has(currentLesson.id + ':' + lessonEng.curStepIdx);
+  const shouldShow = show && !assessmentLocked;
+  if (shouldShow) {
+    box.hidden = false;
+    box.style.display = "flex";
+    showMobFb(text,type);
+  } else {
+    box.hidden = true;
+    box.style.display = "none";
+    hideMobFb();
+  }
 }
+
 function renderDots() {
-  [document.getElementById('step-dots'), document.getElementById('tb-dots')].forEach(el=>{
-    if(!el) return;
-    el.innerHTML='';
-    if(!CUR_LESSON) return;
-    CUR_LESSON.steps.forEach((_,i)=>{
-      const d=document.createElement('div');
-      d.className='sdot'+(i===CUR_STEP?' active':i<CUR_STEP?' done':'');
-      d.onclick=()=>{ if(i<CUR_STEP) loadStep(i); };
-      el.appendChild(d);
-    });
+  [document.getElementById('step-dots'), document.getElementById('tb-dots')].forEach(el => {
+    if (el) el.innerHTML = '';
   });
 }
 function flashFeedback(type) {
@@ -3224,6 +3566,10 @@ function loop(now) {
 }
 
 document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===currentLang));
+const sidebarToggle = document.getElementById('sb-toggle');
+if (sidebarToggle) { sidebarToggle.setAttribute('aria-controls', 'sidebar'); sidebarToggle.setAttribute('aria-expanded', String(!document.getElementById('sidebar')?.classList.contains('collapsed'))); }
+const mobileMenuBtn = document.getElementById('mob-menu-btn');
+if (mobileMenuBtn) { mobileMenuBtn.setAttribute('aria-controls', 'sidebar'); mobileMenuBtn.setAttribute('aria-expanded', 'false'); }
 buildSidebar(); buildCurriculumTrack(); updateProgress();
 applyLang();
 requestAnimationFrame(loop);
@@ -3236,9 +3582,8 @@ const _pmProfile = PM.load();
 if (!_pmProfile) {
   openProfileModal(() => _initLesson());
 } else {
-  renderNickname(_pmProfile.nickname);
+  renderNickname(_pmProfile.nickname || 'Misafir');
   _initLesson();
-  setTimeout(() => showWelcomeToast(`Tekrar hoş geldin, ${_pmProfile.nickname}! Kaldığın yerden devam edelim.`), 600);
 }
 </script>
 
@@ -3259,8 +3604,8 @@ if (!_pmProfile) {
     animation: pm-in .22s ease;
   }
   @keyframes pm-in { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
-  .pm-hex { font-size:2.2rem; color:var(--gold); text-align:center; margin-bottom:.35rem; }
-  .pm-ttl { font-family:'Noto Serif',serif; font-size:1.25rem; color:var(--gold); text-align:center; margin:0 0 .2rem; }
+  .pm-hex { font-size:2.2rem; color:var(--primary); text-align:center; margin-bottom:.35rem; }
+  .pm-ttl { font-family:'Noto Serif',serif; font-size:1.25rem; color:var(--heading); text-align:center; margin:0 0 .2rem; }
   .pm-sub { font-size:.78rem; color:var(--muted); text-align:center; margin:0 0 1.4rem; }
   .pm-field { margin-bottom:1.1rem; }
   .pm-lbl { display:block; font-size:.68rem; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:.4rem; }
@@ -3281,35 +3626,45 @@ if (!_pmProfile) {
     display:flex; align-items:center; gap:.5rem; flex:1;
     background:rgba(255,255,255,.04); border:1px solid var(--gborder);
     border-radius:8px; padding:.48rem .7rem; cursor:pointer;
-    font-size:.8rem; color:var(--muted); transition:border-color .15s,color .15s,background .15s;
+    font-size:.8rem; color:var(--muted); transition:border-color .15s,color .15s,background .15s,box-shadow .15s;
     user-select:none;
   }
   .pm-opt input { display:none; }
-  .pm-opt.sel { border-color:var(--gold); color:var(--text); background:rgba(200,168,75,.1); }
-  .pm-opt-ico { font-size:.95rem; color:var(--gold); }
+  .pm-opt.sel { border-color:var(--primary); color:var(--text); background:color-mix(in srgb, var(--primary) 12%, transparent); }
+  .pm-opt-ico { font-size:.95rem; color:var(--primary); }
   .pm-btn {
     width:100%; padding:.68rem; margin-top:.6rem;
-    background:var(--gold); color:#09090f;
+    background:var(--primary); color:var(--primary-text);
     font-weight:700; font-size:.9rem; letter-spacing:.05em;
     border:none; border-radius:9px; cursor:pointer;
-    transition:opacity .15s, transform .1s;
+    transition:background .15s, transform .1s, box-shadow .15s;
   }
-  .pm-btn:hover { opacity:.88; }
-  .pm-btn:active { transform:scale(.98); }
+  .pm-btn:hover { background:var(--primary-hover); }
+  .pm-btn:active { background:var(--primary-active); transform:scale(.98); }
+  .pm-btn:focus-visible {
+    outline:2px solid var(--focus-ring);
+    outline-offset:2px;
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--focus-ring) 24%, transparent);
+  }
+  .pm-actions { display:grid; gap:.55rem; margin-top:.2rem; }
+  .pm-btn-secondary { background:transparent; color:var(--text); border:1px solid var(--gborder); box-shadow:none; }
+  .pm-btn-secondary:hover { opacity:1; background:color-mix(in srgb, var(--primary) 10%, transparent); }
+  .pm-check { display:flex; align-items:center; gap:.5rem; font-size:.86rem; color:var(--text); cursor:pointer; }
+  .pm-check input { width:1rem; height:1rem; accent-color:var(--primary); }
   /* Nickname chip */
   #pm-chip { display:flex; align-items:center; gap:.3rem; margin-right:.4rem; }
   #pm-chip[hidden] { display:none; }
   .pm-chip-nick {
-    font-size:.72rem; color:var(--gold); font-weight:700;
-    background:rgba(200,168,75,.12); border:1px solid rgba(200,168,75,.25);
+    font-size:.72rem; color:var(--primary); font-weight:700;
+    background:color-mix(in srgb, var(--primary) 12%, transparent); border:1px solid color-mix(in srgb, var(--primary) 26%, transparent);
     border-radius:5px; padding:2px 7px; letter-spacing:.03em;
     max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   .pm-chip-reset { background:none; border:none; color:var(--muted); cursor:pointer; font-size:.85rem; padding:0 2px; line-height:1; transition:color .15s; }
-  .pm-chip-reset:hover { color:var(--gold); }
+  .pm-chip-reset:hover { color:var(--primary); }
   /* Toast */
   #pm-toast {
-    position:fixed; bottom:5.5rem; left:50%; transform:translateX(-50%);
+    position:fixed; top:calc(var(--topbar-h) + var(--sat) + .6rem); left:50%; transform:translateX(-50%);
     background:var(--glass); border:1px solid var(--gborder);
     border-radius:9px; padding:.6rem 1.1rem;
     font-size:.8rem; color:var(--text); white-space:nowrap;
@@ -3327,30 +3682,29 @@ if (!_pmProfile) {
 <div id="pm-overlay" role="dialog" aria-modal="true" aria-labelledby="pm-ttl-id" hidden>
   <div class="pm-card">
     <div class="pm-hex">⬡</div>
-    <h2 class="pm-ttl" id="pm-ttl-id">Antalya Go</h2>
-    <p class="pm-sub">Öğrenmeye başlamadan önce kendini tanıt</p>
+    <h2 class="pm-ttl" id="pm-ttl-id">Sana nasıl hitap edelim?</h2>
+    <p class="pm-sub">İlk derse geçmeden önce kısa bir profil seçimi yap.</p>
 
     <div class="pm-field">
       <label class="pm-lbl" for="pm-nick">Rumuz</label>
       <input id="pm-nick" class="pm-inp" maxlength="18"
              placeholder="KaraTaş, Deniz9x9, YeniOyuncu…"
              autocomplete="off" spellcheck="false" />
-      <span id="pm-nick-err" class="pm-err" hidden>Lütfen bir rumuz gir.</span>
-      <span class="pm-hint">Gerçek adın değil — sadece eğlenceli bir takma ad. En fazla 18 karakter.</span>
+      <span class="pm-hint">İstersen boş bırakabilirsin; daha sonra değiştirebilirsin.</span>
     </div>
 
     <div class="pm-field">
-      <label class="pm-lbl">Go deneyimin?</label>
+      <label class="pm-lbl">Deneyim</label>
       <div class="pm-opts">
         <label class="pm-opt sel">
           <input type="radio" name="pm-level" value="new" checked>
           <span class="pm-opt-ico">○</span>
-          <span>Go'yu yeni öğreniyorum</span>
+          <span>İlk kez oynuyorum</span>
         </label>
         <label class="pm-opt">
           <input type="radio" name="pm-level" value="heard">
           <span class="pm-opt-ico">◎</span>
-          <span>Kuralları biraz duydum</span>
+          <span>Kuralları biraz biliyorum</span>
         </label>
         <label class="pm-opt">
           <input type="radio" name="pm-level" value="played">
@@ -3361,20 +3715,16 @@ if (!_pmProfile) {
     </div>
 
     <div class="pm-field">
-      <label class="pm-lbl">İlerlemeyi kaydet</label>
-      <div class="pm-opts pm-opts-row">
-        <label class="pm-opt sel">
-          <input type="radio" name="pm-persist" value="local" checked>
-          <span>Bu bilgisayarda hatırla</span>
-        </label>
-        <label class="pm-opt">
-          <input type="radio" name="pm-persist" value="session">
-          <span>Sadece bu oturumda</span>
-        </label>
-      </div>
+      <label class="pm-check" for="pm-remember">
+        <input type="checkbox" id="pm-remember" checked>
+        <span>Bu cihazda hatırla</span>
+      </label>
     </div>
 
-    <button id="pm-submit" class="pm-btn">Başla →</button>
+    <div class="pm-actions">
+      <button id="pm-submit" class="pm-btn" type="button">Başla</button>
+      <button id="pm-skip" class="pm-btn pm-btn-secondary" type="button">Rumuz vermeden devam et</button>
+    </div>
   </div>
 </div>
 
