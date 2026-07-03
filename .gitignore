@@ -1,4 +1,15 @@
-studio/workspace/*
+﻿studio/workspace/*
 !studio/workspace/.gitkeep
 studio/config.local.json
 tests/studio-*.png
+
+.vscode/
+node_modules/
+.codex-backups/
+pw-audit/
+pw-mobile-audit.js
+package.json.problem-bank-backup
+formations/.claude/
+formations/.vscode/
+tests/*.png
+tests/*-screens/

@@ -47,7 +47,45 @@ function mime(filePath) {
   }[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
 }
 
-const browser = await chromium.launch({ headless: true });
+async function launchBrowser() {
+  const envPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+  if (envPath) {
+    return chromium.launch({ headless: true, executablePath: envPath, args: ['--allow-file-access-from-files'] });
+  }
+
+  try {
+    return await chromium.launch({ headless: true, args: ['--allow-file-access-from-files'] });
+  } catch (error) {
+    if (!String(error?.message ?? error).includes('spawn EPERM')) {
+      throw error;
+    }
+  }
+
+  for (const candidate of await findSystemBrowsers()) {
+    try {
+      return await chromium.launch({ headless: true, executablePath: candidate, args: ['--allow-file-access-from-files'] });
+    } catch {
+      // try the next installed browser
+    }
+  }
+
+  throw new Error('Uygun Chromium/Chrome y?r?t?lebilir dosyas? bulunamad?.');
+}
+
+const browser = await launchBrowser();
+
+async function findSystemBrowsers() {
+  const envCandidates = [
+    process.env.PROGRAMFILES && path.join(process.env.PROGRAMFILES, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    process.env['PROGRAMFILES(X86)'] && path.join(process.env['PROGRAMFILES(X86)'], 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    process.env.PROGRAMFILES && path.join(process.env.PROGRAMFILES, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+    process.env['PROGRAMFILES(X86)'] && path.join(process.env['PROGRAMFILES(X86)'], 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+  ].filter(Boolean);
+
+  return envCandidates.filter(candidate => fs.existsSync(candidate));
+}
 
 async function createContext(options = {}) {
   const context = await browser.newContext({

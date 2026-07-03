@@ -1,0 +1,188 @@
+﻿<!doctype html>
+<html lang="tr" data-theme="dark">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark light">
+    <title>AntalyaGo Studio</title>
+    <link rel="stylesheet" href="../styles/design-system.css">
+    <link rel="stylesheet" href="./renderer/studio.css">
+    <script type="module" src="./renderer/app.mjs"></script>
+  </head>
+  <body>
+    <div class="studio-shell">
+      <header class="studio-topbar" aria-label="Studio üst çubuğu">
+        <div class="studio-brand">
+          <div class="studio-brand__mark" aria-hidden="true">AG</div>
+          <div>
+            <h1>AntalyaGo Studio</h1>
+            <p>Electron tabanlı tahta-merkezli içerik üretimi</p>
+          </div>
+        </div>
+
+        <div class="studio-topbar__center">
+          <strong id="studio-workspace-title">Tahta-merkezli çalışma alanı</strong>
+          <span id="studio-workspace-path">Hazırlanıyor…</span>
+        </div>
+
+        <div class="studio-topbar__actions">
+          <button type="button" class="button secondary" data-workspace-picker>Müfredat / klasör</button>
+          <button type="button" class="theme-toggle" data-theme-toggle aria-label="Temayı değiştir" aria-pressed="false"></button>
+          <button type="button" class="button primary" data-producer-toggle>İçerik Üretici modu</button>
+        </div>
+      </header>
+
+      <main class="studio-main">
+        <aside class="rail" aria-label="Kütüphane">
+          <section class="panel">
+            <div class="panel__header">
+              <h2>Kütüphane</h2>
+            </div>
+            <div class="panel__body">
+              <div class="workspace-banner" data-workspace-banner hidden>
+                İlk açılışta AntalyaGo proje klasörünü seçin. .agstudio belgeleri burada tutulur.
+              </div>
+              <div class="empty-state" data-library-empty hidden>Henüz belge yok. İlk belgeyi oluşturun ya da klasör seçin.</div>
+              <ul class="library-list" data-library-list aria-label="Belge listesi"></ul>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel__header">
+              <h3>Hızlı işlemler</h3>
+            </div>
+            <div class="panel__body">
+              <div class="field-grid">
+                <button type="button" class="button primary" data-action-new>Yeni .agstudio</button>
+                <button type="button" class="button secondary" data-action-open>Aç</button>
+                <button type="button" class="button secondary" data-action-save>Kaydet</button>
+                <button type="button" class="button secondary" data-action-save-as>Farklı kaydet</button>
+              </div>
+            </div>
+          </section>
+        </aside>
+
+        <section class="board-stage" aria-label="Tahta alanı">
+          <div class="board-shell">
+            <div class="board-frame" id="studio-board" aria-label="Go tahtası"></div>
+          </div>
+          <p class="board-caption" id="studio-board-caption">
+            Tahta merkezde kalır; teknik JSON ve doğrulama ayrıntıları sağ panelde gizli tutulur.
+          </p>
+        </section>
+
+        <aside class="inspector" aria-label="Bağlamsal denetçi">
+          <section class="panel">
+            <div class="panel__header">
+              <h2>Belge denetçisi</h2>
+            </div>
+            <div class="panel__body">
+              <div class="field-grid">
+                <label>
+                  Başlık
+                  <input type="text" data-doc-title readonly>
+                </label>
+                <label>
+                  Durum
+                  <input type="text" data-doc-status readonly>
+                </label>
+                <label>
+                  Bölüm
+                  <input type="text" data-doc-section readonly>
+                </label>
+                <label>
+                  Açıklama
+                  <textarea data-doc-summary rows="5" readonly></textarea>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel__header">
+              <h2>İçerik Üretici modu</h2>
+            </div>
+            <div class="panel__body">
+              <p class="board-caption">
+                Teknik JSON ve doğrulama ayrıntıları varsayılan olarak gizlidir. İçerik üretimi yalnızca gerekli bağlamı gösterir.
+              </p>
+              <label class="field-grid">
+                <span>Çalışma modu</span>
+                <select data-content-mode>
+                  <option value="producer">İçerik Üretici</option>
+                  <option value="editor">Düzenleyici</option>
+                </select>
+              </label>
+              <details class="technical-details" data-technical-details>
+                <summary>Teknik JSON ve doğrulama</summary>
+                <pre data-technical-json></pre>
+              </details>
+            </div>
+          </section>
+
+          <section class="panel move-tree-panel" aria-label="Hamle ağacı">
+            <div class="panel__header move-tree-panel__header">
+              <div>
+                <h2>Hamle Ağacı</h2>
+                <p data-move-tree-summary>Kök düğüm hazır.</p>
+              </div>
+              <div class="move-tree-panel__zoom" aria-label="Ağaç yakınlaştırma kontrolleri">
+                <button type="button" class="button secondary" data-move-tree-zoom-out aria-label="Ağacı uzaklaştır">−</button>
+                <button type="button" class="button secondary" data-move-tree-zoom-reset>Uydur</button>
+                <button type="button" class="button secondary" data-move-tree-zoom-in aria-label="Ağacı yakınlaştır">+</button>
+              </div>
+            </div>
+            <div class="panel__body move-tree-panel__body">
+              <div class="move-tree-path" data-move-tree-path aria-label="Ana yol"></div>
+              <div class="move-tree-toolbar" aria-label="Hamle ağacı kontrolleri">
+                <button type="button" class="button secondary" data-move-tree-prev>Önceki</button>
+                <button type="button" class="button secondary" data-move-tree-next>Sonraki</button>
+                <button type="button" class="button secondary" data-move-tree-promote>Ana dal yap</button>
+                <button type="button" class="button secondary danger" data-move-tree-delete>Varyantı sil</button>
+              </div>
+              <div class="move-tree-form" aria-label="Yeni hamle ekleme formu">
+                <label>
+                  Renk
+                  <select data-move-tree-color>
+                    <option value="black">Siyah</option>
+                    <option value="white">Beyaz</option>
+                  </select>
+                </label>
+                <label>
+                  X
+                  <input type="number" min="0" max="18" data-move-tree-x>
+                </label>
+                <label>
+                  Y
+                  <input type="number" min="0" max="18" data-move-tree-y>
+                </label>
+                <button type="button" class="button primary" data-move-tree-add>Hamle ekle</button>
+              </div>
+              <label class="move-tree-field">
+                <span>Not</span>
+                <textarea data-move-tree-comment rows="2" placeholder="Bu düğüm için kısa not"></textarea>
+              </label>
+              <label class="move-tree-field">
+                <span>Etiketler</span>
+                <input type="text" data-move-tree-annotations placeholder="etiket1, etiket2">
+              </label>
+              <div class="move-tree-status" data-move-tree-status aria-live="polite"></div>
+              <div class="move-tree-viewport" data-move-tree-viewport tabindex="0" aria-label="Hamle ağacı görünümü">
+                <div class="move-tree-canvas" data-move-tree-canvas>
+                  <ol class="move-tree-list" data-move-tree-list></ol>
+                </div>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </main>
+
+      <footer class="timeline" aria-label="Zaman çizelgesi">
+        <div class="timeline__surface">
+          <strong>Alt zaman çizelgesi</strong>
+          <span data-timeline-summary>Yeni açılan belgeler ve doğrulama notları burada toplanır.</span>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

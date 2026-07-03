@@ -1,7 +1,9 @@
+﻿import { ensureMoveTreeDocument } from './moveTree.js';
+
 export const STUDIO_VERSION = '1.0.0';
 
 export const VALID_STATUSES = ['draft', 'review', 'approved', 'published', 'archived'];
-export const DRAFT_UI_STATUSES = ['draft', 'review']; // Faz A arayüzünde seçilebilir
+export const DRAFT_UI_STATUSES = ['draft', 'review'];
 export const VALID_BOARD_SIZES = [9, 13, 19];
 export const VALID_PLAYER_COLORS = ['black', 'white'];
 export const VALID_SECTIONS = ['B1', 'B2', 'B3', 'EXTRA'];
@@ -17,13 +19,13 @@ export function slugify(title) {
   return title
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[ğ]/g, 'g')
-    .replace(/[üü]/g, 'u')
-    .replace(/[şş]/g, 's')
-    .replace(/[ıi]/g, 'i')
-    .replace(/[öo]/g, 'o')
-    .replace(/[çc]/g, 'c')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[ğĞ]/g, 'g')
+    .replace(/[üÜ]/g, 'u')
+    .replace(/[şŞ]/g, 's')
+    .replace(/[ıİ]/g, 'i')
+    .replace(/[öÖ]/g, 'o')
+    .replace(/[çÇ]/g, 'c')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/-{2,}/g, '-') || '';
@@ -62,6 +64,9 @@ export function createDocument(overrides = {}, { now = new Date() } = {}) {
       regions: [],
       viewport: null,
     },
+    moveTree: null,
+    activeNodeId: 'root',
+    moves: [],
     solution: {
       sequences: [],
       acceptedFirstMoves: [],
@@ -107,7 +112,7 @@ export function createDocument(overrides = {}, { now = new Date() } = {}) {
     }
   }
 
-  return doc;
+  return ensureMoveTreeDocument(doc);
 }
 
 export function touchUpdatedAt(doc, { now = new Date() } = {}) {
@@ -117,7 +122,9 @@ export function touchUpdatedAt(doc, { now = new Date() } = {}) {
 
 export function migrateDocument(doc) {
   if (!doc || typeof doc !== 'object') return doc;
-  if (doc.studioVersion === STUDIO_VERSION) return doc;
-  // Future: migration steps keyed by version
-  return doc;
+  const migrated = ensureMoveTreeDocument(doc);
+  if (!migrated.studioVersion) {
+    migrated.studioVersion = STUDIO_VERSION;
+  }
+  return migrated;
 }

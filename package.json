@@ -1,11 +1,12 @@
 {
   "type": "module",
+  "main": "desktop/main.cjs",
   "scripts": {
     "serve": "npx serve . -p 3000 --no-clipboard",
     "test-core": "node --experimental-vm-modules tests/run.js",
     "test-problems": "node tests/problemBank.test.js",
     "validate-problems": "node scripts/problem-bank/validate.mjs",
-    "test-all": "npm run test-core && npm run test-problems && npm run test-learning && npm run test-learning-ui && npm run test-b2 && npm run test-ai && npm run test-robot && npm run test-theme && npm run test-go-nedir",
+    "test-all": "npm run test-core && npm run test-problems && npm run test-learning && npm run test-learning-ui && npm run test-b2 && npm run test-ai && npm run test-robot && npm run test-theme && npm run test-go-nedir && npm run test-studio",
     "test-learning": "node tests/learningContext.test.js",
     "test-learning-ui": "node tests/learning-ui.test.js && node tests/verify-learning-ui.mjs",
     "audit-curriculum": "node scripts/curriculum/audit.mjs",
@@ -16,10 +17,13 @@
     "test-go-nedir": "node tests/go-nedir-content.test.js && node tests/verify-go-nedir.mjs",
     "test-home-content": "node tests/home-content.test.js",
     "benchmark-ai": "node scripts/ai/benchmark.mjs",
-    "studio": "node studio/server/server.mjs",
-    "test-studio": "node tests/studio-document.test.js && node tests/studio-server.test.js && node tests/verify-studio.mjs"
+    "studio": "electron .",
+    "test-studio": "node tests/studio-document.test.js && node tests/studio-text-tree.test.js && node tests/studio-server.test.js && npm run test-studio-electron && node tests/verify-studio-desktop.mjs",
+    "test-studio-electron": "node tests/studio-electron.test.js",
+    "test-studio-text-tree": "node tests/studio-text-tree.test.js"
   },
   "devDependencies": {
+    "electron": "43.0.0",
     "playwright-core": "^1.59.1"
   }
 }
