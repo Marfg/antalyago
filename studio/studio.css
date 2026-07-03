@@ -1,0 +1,441 @@
+/* Studio-specific CSS — design-system.css token'larını kullanır */
+
+/* ── Tahta renk değişkenleri ──────────────────────────────────── */
+:root {
+  --board-wood: #d4a96a;
+  --board-wood-inner: #c9994e;
+  --board-line: #7a5c2e;
+  --board-label: #5a3e1e;
+}
+[data-theme='dark'] {
+  --board-wood: #8b6520;
+  --board-wood-inner: #7a5616;
+  --board-line: #c4a256;
+  --board-label: #d4b878;
+}
+
+/* ── Minimal desteklenen genişlik ────────────────────────────── */
+.studio-narrow-warning {
+  display: none;
+  position: fixed; inset: 0;
+  background: var(--page-bg);
+  z-index: 9999;
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: var(--space-4);
+  text-align: center; padding: var(--space-6);
+}
+@media (max-width: 1099px) {
+  .studio-narrow-warning { display: flex; }
+  .studio-app { display: none !important; }
+}
+
+/* ── Uygulama kabuğu ─────────────────────────────────────────── */
+.studio-app {
+  display: grid;
+  grid-template-rows: 48px 1fr 210px;
+  grid-template-columns: 270px 1fr 360px;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--page-bg);
+  color: var(--text-primary);
+}
+
+/* ── Üst komut çubuğu ────────────────────────────────────────── */
+.studio-toolbar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+
+.studio-toolbar__brand {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--heading);
+  white-space: nowrap;
+  margin-right: var(--space-3);
+}
+
+.studio-toolbar__doc-title {
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.studio-toolbar__save-status {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: right;
+}
+.studio-toolbar__save-status.is-dirty { color: var(--warning); }
+.studio-toolbar__save-status.is-error { color: var(--danger); }
+.studio-toolbar__save-status.is-saving { color: var(--text-muted); }
+
+.studio-toolbar__sep {
+  width: 1px; height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 var(--space-1);
+}
+
+/* ── Butonlar ─────────────────────────────────────────────────── */
+.studio-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 0 10px; height: 30px; min-width: 44px;
+  font-size: 12px; font-family: var(--font-body);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer; white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+.studio-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+.studio-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.studio-btn:disabled {
+  opacity: 0.38; cursor: not-allowed;
+}
+.studio-btn--primary {
+  background: var(--primary);
+  color: var(--primary-text);
+  border-color: var(--primary);
+}
+.studio-btn--primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: var(--primary-text);
+}
+.studio-btn--icon {
+  padding: 0 8px;
+}
+
+/* ── Sol panel: Belge kütüphanesi ───────────────────────────── */
+.studio-library {
+  grid-column: 1; grid-row: 2;
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.studio-library__header {
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: var(--space-2);
+}
+
+.studio-library__title {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.studio-library__search {
+  width: 100%; padding: 5px 8px;
+  font-size: 12px; font-family: var(--font-body);
+  background: var(--page-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.studio-library__search:focus {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.studio-library__list {
+  flex: 1; overflow-y: auto;
+  padding: var(--space-2);
+  display: flex; flex-direction: column; gap: var(--space-1);
+}
+
+.studio-library__empty {
+  font-size: 12px; color: var(--text-muted);
+  text-align: center; padding: var(--space-5) var(--space-3);
+  line-height: 1.6;
+}
+
+.studio-doc-card {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--surface-raised);
+  transition: background 0.1s, border-color 0.1s;
+}
+.studio-doc-card:hover { background: var(--surface-hover); }
+.studio-doc-card.is-active {
+  border-color: var(--primary);
+  background: var(--surface-soft);
+}
+.studio-doc-card:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.studio-doc-card__title {
+  font-size: 13px; font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.studio-doc-card__meta {
+  display: flex; align-items: center; gap: var(--space-1); flex-wrap: wrap;
+  margin-top: 2px;
+}
+.studio-doc-card__id {
+  font-size: 10px; color: var(--text-muted); font-family: monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Durum rozetleri ──────────────────────────────────────────── */
+.studio-badge {
+  display: inline-block; padding: 1px 5px;
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  border-radius: 3px; white-space: nowrap; flex-shrink: 0;
+}
+.studio-badge--draft    { background: var(--surface-soft); color: var(--text-muted); }
+.studio-badge--review   { background: rgba(100,136,181,0.2); color: var(--secondary); }
+.studio-badge--approved { background: rgba(40,122,85,0.2); color: var(--success); }
+.studio-badge--published{ background: rgba(103,68,119,0.2); color: var(--primary); }
+.studio-badge--archived { background: rgba(181,69,69,0.15); color: var(--danger); }
+.studio-badge--9  { background: rgba(137,105,162,0.18); color: var(--primary); }
+.studio-badge--13 { background: rgba(102,136,181,0.18); color: var(--secondary); }
+.studio-badge--19 { background: rgba(237,117,111,0.15); color: var(--accent); }
+
+/* ── Orta panel: Tahta alanı ─────────────────────────────────── */
+.studio-board-area {
+  grid-column: 2; grid-row: 2;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  padding: var(--space-4);
+  overflow: auto;
+  background: var(--page-bg-secondary);
+  gap: var(--space-3);
+}
+
+.studio-board-area__controls {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-size: 12px; color: var(--text-secondary);
+}
+
+.studio-board-area__no-doc {
+  display: flex; align-items: center; justify-content: center;
+  flex: 1; flex-direction: column; gap: var(--space-3);
+  color: var(--text-muted); font-size: 14px; text-align: center;
+}
+
+.studio-board-wrap {
+  width: min(460px, calc(100vw - 270px - 360px - 48px));
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+}
+
+/* ── Sağ panel: Belge Inspector ──────────────────────────────── */
+.studio-inspector {
+  grid-column: 3; grid-row: 2;
+  display: flex; flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.studio-inspector__header {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.studio-inspector__body {
+  flex: 1; overflow-y: auto;
+  padding: var(--space-3) var(--space-4);
+  display: flex; flex-direction: column; gap: var(--space-3);
+}
+
+.studio-inspector__no-doc {
+  padding: var(--space-5); text-align: center;
+  color: var(--text-muted); font-size: 13px;
+}
+
+.studio-field {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.studio-field__label {
+  font-size: 11px; font-weight: 500;
+  color: var(--text-secondary);
+  display: flex; align-items: center; gap: 4px;
+}
+.studio-field__label .required { color: var(--danger); }
+.studio-field__hint {
+  font-size: 10px; color: var(--text-muted);
+}
+.studio-field__error {
+  font-size: 11px; color: var(--danger);
+  display: none;
+}
+.studio-field.has-error .studio-field__error { display: block; }
+
+.studio-input, .studio-select, .studio-textarea {
+  width: 100%; padding: 6px 8px;
+  font-size: 12px; font-family: var(--font-body);
+  background: var(--page-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.1s;
+}
+.studio-input:focus, .studio-select:focus, .studio-textarea:focus {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+  border-color: var(--focus-ring);
+}
+.studio-input:disabled, .studio-select:disabled {
+  opacity: 0.6; cursor: not-allowed;
+  background: var(--surface-soft);
+}
+.studio-textarea { resize: vertical; min-height: 64px; }
+.has-error .studio-input,
+.has-error .studio-select { border-color: var(--danger); }
+
+.studio-field-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  display: flex; flex-direction: column; gap: var(--space-2);
+}
+.studio-field-group__title {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted); margin-bottom: 2px;
+}
+
+/* ── Alt panel ───────────────────────────────────────────────── */
+.studio-bottom {
+  grid-column: 1 / -1; grid-row: 3;
+  display: flex; flex-direction: column;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.studio-tabs {
+  display: flex; gap: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 0 var(--space-3);
+  flex-shrink: 0;
+}
+.studio-tab {
+  padding: 6px 12px; font-size: 12px;
+  color: var(--text-muted);
+  background: none; border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer; white-space: nowrap;
+  transition: color 0.1s;
+  margin-bottom: -1px;
+}
+.studio-tab:hover { color: var(--text-primary); }
+.studio-tab.is-active { color: var(--primary); border-bottom-color: var(--primary); }
+.studio-tab:focus-visible { outline: 2px solid var(--focus-ring); }
+.studio-tab__badge {
+  display: inline-block; margin-left: 4px;
+  background: var(--danger); color: #fff;
+  font-size: 9px; font-weight: 700;
+  border-radius: 8px; padding: 0 4px; min-width: 14px; text-align: center;
+  vertical-align: middle;
+}
+
+.studio-tab-panel {
+  flex: 1; overflow-y: auto; padding: var(--space-3) var(--space-4);
+  display: none;
+}
+.studio-tab-panel.is-active { display: block; }
+
+/* Doğrulama */
+.studio-validation__list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.studio-validation__item {
+  display: flex; align-items: flex-start; gap: 6px;
+  font-size: 12px; padding: 4px 6px; border-radius: 4px;
+}
+.studio-validation__item--error { background: rgba(181,69,69,0.1); color: var(--danger); }
+.studio-validation__item--warning { background: rgba(154,100,22,0.1); color: var(--warning); }
+.studio-validation__item--ok { color: var(--success); font-size: 12px; }
+.studio-validation__icon { flex-shrink: 0; font-size: 12px; margin-top: 1px; }
+
+/* JSON önizleme */
+.studio-json-preview {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 11px; line-height: 1.5;
+  background: var(--page-bg); color: var(--text-primary);
+  padding: var(--space-3); border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  white-space: pre; overflow-x: auto;
+  max-height: 140px;
+}
+
+/* Gelecek çıktılar */
+.studio-outputs-list {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.studio-output-item {
+  display: flex; align-items: flex-start; gap: var(--space-2);
+  font-size: 12px; padding: 4px 0;
+}
+.studio-output-item__phase {
+  font-size: 9px; font-weight: 700;
+  background: var(--surface-soft); color: var(--text-muted);
+  padding: 1px 5px; border-radius: 3px; white-space: nowrap;
+  flex-shrink: 0; margin-top: 1px;
+}
+.studio-output-item__desc { color: var(--text-secondary); }
+
+/* ── Modal (yeni belge) ──────────────────────────────────────── */
+.studio-modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+}
+.studio-modal {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  width: min(440px, calc(100vw - 32px));
+  display: flex; flex-direction: column; gap: var(--space-4);
+  box-shadow: var(--shadow-lg);
+}
+.studio-modal__title {
+  font-family: var(--font-heading); font-size: 17px;
+  color: var(--heading); margin: 0;
+}
+.studio-modal__actions {
+  display: flex; gap: var(--space-2); justify-content: flex-end;
+}
+
+/* ── Aria-live bölgesi ───────────────────────────────────────── */
+.studio-live-region {
+  position: absolute; width: 1px; height: 1px;
+  clip: rect(0,0,0,0); overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; }
+}

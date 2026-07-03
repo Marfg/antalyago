@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "studio-document-1.0.0",
+  "title": "AntalyaGo Studio Document",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["studioVersion", "id", "title", "status", "board"],
+  "properties": {
+    "studioVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9]*(?:-[a-z0-9]+)*)?$"
+    },
+    "status": {
+      "enum": ["draft", "review", "approved", "published", "archived"]
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "slug": { "type": "string" },
+    "summary": { "type": "string" },
+    "curriculum": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "section": { "enum": ["B1", "B2", "B3", "EXTRA"] },
+        "lesson": { "type": "string" },
+        "step": { "type": "string" },
+        "objectives": { "type": "array", "items": { "type": "string" } },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "prerequisites": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "problemType": {
+          "enum": ["tsumego", "sequence", "judgment", "count", "construct", "save"]
+        },
+        "subtype": { "type": "string" },
+        "difficulty": { "enum": ["beginner", "intermediate", "advanced"] },
+        "playerToMove": { "enum": ["black", "white"] },
+        "goal": { "enum": ["best-move", "capture", "save", "count", "judge"] }
+      }
+    },
+    "board": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["size", "turn", "stones"],
+      "properties": {
+        "size": { "enum": [9, 13, 19] },
+        "turn": { "enum": ["black", "white"] },
+        "ko": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/point" }
+          ]
+        },
+        "stones": { "type": "array", "items": { "$ref": "#/$defs/stone" } },
+        "markers": { "type": "array", "items": { "$ref": "#/$defs/marker" } },
+        "regions": { "type": "array", "items": { "type": "object" } },
+        "viewport": { "oneOf": [{ "type": "null" }, { "type": "object" }] }
+      }
+    },
+    "solution": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sequences": { "type": "array" },
+        "acceptedFirstMoves": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/point" }
+        },
+        "wrongMoves": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/point" }
+        },
+        "hint": { "type": "string" },
+        "explanation": { "type": "string" }
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "durationMs": { "type": "integer", "minimum": 0 },
+        "events": { "type": "array" }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "documentId": { "type": "string" },
+          "page": { "type": "integer", "minimum": 1 },
+          "usage": { "enum": ["concept_reference", "adapted", "original"] }
+        }
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "problemBank": { "type": "boolean" },
+        "lesson3d": { "type": "boolean" },
+        "sgf": { "type": "boolean" },
+        "motion": { "type": "boolean" },
+        "obsidian": { "type": "boolean" },
+        "image": { "type": "boolean" }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "author": { "type": "string" },
+        "reviewedAt": {
+          "oneOf": [{ "type": "null" }, { "type": "string" }]
+        }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "integer", "minimum": 0, "maximum": 18 },
+        "y": { "type": "integer", "minimum": 0, "maximum": 18 }
+      }
+    },
+    "stone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "color"],
+      "properties": {
+        "x": { "type": "integer", "minimum": 0, "maximum": 18 },
+        "y": { "type": "integer", "minimum": 0, "maximum": 18 },
+        "color": { "enum": ["black", "white"] }
+      }
+    },
+    "marker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "integer", "minimum": 0, "maximum": 18 },
+        "y": { "type": "integer", "minimum": 0, "maximum": 18 },
+        "type": { "enum": ["triangle", "square", "circle", "cross", "label"] },
+        "label": { "type": "string" }
+      }
+    }
+  }
+}
