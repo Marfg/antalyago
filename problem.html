@@ -241,13 +241,14 @@
     <a class="back-btn button button-secondary" href="index.html">← Ana Sayfa</a>
     <span class="page-title">Go Problemleri</span>
   </div>
-  <div style="font-size:.78rem;color:var(--muted);font-weight:600;">
-    <span id="total-count">0</span> problem</div><button class="theme-toggle app-theme-toggle" data-theme-toggle type="button" aria-label="Gece temasına geç" aria-pressed="false">Gece</button><div hidden>
+  <div class="toolbar-row toolbar-row--gap-sm">
+    <div class="problem-count block-muted"><span id="total-count">0</span> problem</div>
+    <button class="theme-toggle app-theme-toggle" data-theme-toggle type="button" aria-label="Gece temas?na ge?" aria-pressed="false">Gece</button>
   </div>
 </div>
 
 <!-- SGF STATUS BAR -->
-<div id="sgf-status" style="display:none;text-align:center;padding:.4rem;background:var(--wood-light);border-bottom:1px solid var(--border);font-size:.78rem;color:var(--wood-dark);font-weight:600;"></div>
+<div id="sgf-status" class="problem-status-strip" hidden></div>
 
 <!-- MAIN -->
 <div class="main" id="main-content">
@@ -294,10 +295,10 @@
     </div>
 
     <!-- Problem listesi -->
-    <div class="panel-title" style="margin-top:.25rem">Problemler</div>
+    <div class="panel-title panel-title--spaced">Problemler</div>
     <div id="problem-list"></div>
 
-    <button class="btn button button-primary" onclick="loadRandom()" style="margin-top:auto">Başla</button>
+    <button class="btn button button-primary spacer-top-auto" onclick="loadRandom()">Başla</button>
   </div>
 
   <!-- ORTA: TAHTA -->
@@ -325,7 +326,7 @@
         <div class="result-icon">✓</div>
         <div class="result-text">Doğru!</div>
         <div class="result-sub" id="correct-sub">Mükemmel hamle.</div>
-        <button class="btn button button-primary" onclick="nextProblem()" style="width:140px;margin-top:.5rem">Sonraki →</button>
+        <button class="btn button button-primary result-action" onclick="nextProblem()">Sonraki →</button>
       </div>
 
       <!-- Yanlış overlay -->
@@ -333,13 +334,13 @@
         <div class="result-icon">✗</div>
         <div class="result-text">Yanlış</div>
         <div class="result-sub">Tekrar dene veya ipucu al.</div>
-        <button class="btn button button-secondary" onclick="resetProblem()" style="width:140px;margin-top:.5rem">↺ Tekrar</button>
+        <button class="btn button button-secondary result-action" onclick="resetProblem()">↺ Tekrar</button>
       </div>
     </div>
 
     <div id="hint-box" class="status-message">💡 <span id="hint-text"></span></div>
 
-    <div class="action-row">
+    <div class="action-row problem-action-row">
       <button class="btn button button-secondary" onclick="showHint()"    id="btn-hint">💡 İpucu</button>
       <button class="btn button button-secondary" onclick="showSolution()" id="btn-sol">👁 Çözüm</button>
       <button class="btn button button-secondary" onclick="resetProblem()" id="btn-reset">↺ Sıfırla</button>
@@ -347,7 +348,7 @@
     </div>
 
     <!-- Çözüm -->
-    <div id="solution-area" class="status-message">
+    <div id="solution-area" class="status-message stack-col stack-col--xs">
       <div class="sol-title">Çözüm:</div>
       <div id="solution-text"></div>
     </div>
@@ -376,15 +377,15 @@
     <div class="progress-wrap">
       <div class="filter-label">Başarı Oranı</div>
       <div class="progress-track">
-        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+        <div class="progress-fill" id="progress-fill"></div>
       </div>
       <div class="progress-label" id="progress-label">—</div>
     </div>
 
     <!-- Tür bazında ilerleme -->
     <div>
-      <div class="filter-label" style="margin-bottom:.4rem">Tür İlerlemesi</div>
-      <div style="display:flex;flex-direction:column;gap:.4rem;">
+      <div class="filter-label">Tür İlerlemesi</div>
+      <div class="stack-col stack-col--sm problem-progress-stack">
         <div class="type-progress" data-type="tsumego"></div>
         <div class="type-progress" data-type="joseki"></div>
         <div class="type-progress" data-type="tesuji"></div>
@@ -394,11 +395,11 @@
 
     <!-- Çözülen problemler -->
     <div>
-      <div class="filter-label" style="margin-bottom:.35rem">Çözülenler</div>
-      <div id="solved-list" style="font-size:.73rem;color:var(--muted);line-height:1.8;">—</div>
+      <div class="filter-label">Çözülenler</div>
+      <div id="solved-list" class="empty-state">?</div>
     </div>
 
-    <button class="btn button button-secondary" onclick="resetStats()" style="margin-top:auto;font-size:.72rem;color:var(--red);border-color:var(--red)">
+    <button class="btn button button-secondary spacer-top-auto" onclick="resetStats()">
       İstatistikleri Sıfırla
     </button>
   </div>
@@ -681,11 +682,11 @@ function renderProblemList() {
       (solved.has(p.id) ? ' solved' : '');
     el.dataset.id = p.id;
     el.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:.2rem;width:100%">
+      <div class="stack-col stack-col--xs full-width">
         <span class="prob-name">${p.title}</span>
-        <div style="display:flex;gap:.3rem;flex-wrap:wrap">
-          <span class="type-badge badge ${p.type}" style="font-size:.58rem">${typeLabel(p.type)}</span>
-          <span class="level-badge badge ${p.level}" style="font-size:.58rem">${levelLabel(p.level)}</span>
+        <div class="toolbar-row toolbar-row--wrap toolbar-row--gap-xs">
+          <span class="type-badge badge ${p.type}" badge--compact>${typeLabel(p.type)}</span>
+          <span class="level-badge badge ${p.level}" badge--compact>${levelLabel(p.level)}</span>
         </div>
       </div>
     `;
@@ -694,7 +695,7 @@ function renderProblemList() {
   });
 
   if (!probs.length) {
-    list.innerHTML = '<div style="color:var(--muted);font-size:.78rem;padding:.5rem">Problem bulunamadı.</div>';
+    list.innerHTML = '<div class="empty-state">Problem bulunamadı.</div>';
   }
 }
 
@@ -765,12 +766,12 @@ function updateStats() {
     const total  = ALL_PROBLEMS.filter(p=>p.type===type).length;
     const done   = ALL_PROBLEMS.filter(p=>p.type===type&&solved.has(p.id)).length;
     el.innerHTML = `
-      <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-bottom:.2rem">
+      <div class="toolbar-row toolbar-row--between meta-mono meta-muted">
         <span>${typeLabel(type)}</span>
         <span>${done}/${total}</span>
       </div>
-      <div style="height:4px;background:var(--paper-dark);border-radius:2px;overflow:hidden">
-        <div style="height:100%;width:${total?Math.round(done/total*100):0}%;background:var(--green);border-radius:2px;transition:width .3s"></div>
+      <div class="type-progress-track">
+        <div class="type-progress-fill" style="width:${total?Math.round(done/total*100):0}%"></div>
       </div>
     `;
   });
@@ -832,7 +833,7 @@ const SGF_COLLECTIONS = [
 async function loadSGFCollections() {
   const statusEl = document.getElementById('sgf-status');
   statusEl.textContent = 'SGF dosyaları yükleniyor…';
-  statusEl.style.display = 'block';
+  statusEl.hidden = false;
 
   try {
     const sgfProblems = await SGFParser.loadCollections(SGF_COLLECTIONS);
@@ -841,14 +842,14 @@ async function loadSGFCollections() {
       ALL_PROBLEMS = [...sgfProblems, ...PROBLEMS];
       sgfLoaded = true;
       statusEl.textContent = `✓ ${sgfProblems.length} SGF problemi yüklendi`;
-      setTimeout(() => statusEl.style.display = 'none', 2500);
+      setTimeout(() => statusEl.hidden = true, 2500);
     } else {
       statusEl.textContent = 'SGF dosyası bulunamadı, hazır problemler kullanılıyor.';
-      setTimeout(() => statusEl.style.display = 'none', 3000);
+      setTimeout(() => statusEl.hidden = true, 3000);
     }
   } catch(e) {
     statusEl.textContent = 'SGF yükleme hatası, hazır problemler kullanılıyor.';
-    setTimeout(() => statusEl.style.display = 'none', 3000);
+      setTimeout(() => statusEl.hidden = true, 3000);
   }
 
   renderProblemList();
@@ -983,10 +984,10 @@ window.addEventListener('DOMContentLoaded', () => {
             stroke="rgba(255,255,255,.50)" stroke-width="2" fill="none" stroke-linecap="round"/>
       <path id="m-neutral"  d="M26,45 L38,45"
             stroke="rgba(255,255,255,.40)" stroke-width="2" fill="none" stroke-linecap="round"
-            style="display:none"/>
+            hidden/>
       <path id="m-thinking" d="M27,44 Q30,48 33,45 Q36,42 39,46"
             stroke="rgba(255,255,255,.45)" stroke-width="2" fill="none" stroke-linecap="round"
-            style="display:none"/>
+            hidden/>
     </svg>
   </div>
   <span class="mascot-badge" aria-hidden="true" hidden>1</span>
@@ -1003,9 +1004,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const n = btn.querySelector('#m-neutral');
     const t = btn.querySelector('#m-thinking');
     if (!s) return;
-    s.style.display = type === 'smile'    ? '' : 'none';
-    n.style.display = type === 'neutral'  ? '' : 'none';
-    t.style.display = type === 'thinking' ? '' : 'none';
+    s.hidden = type !== 'smile';
+    n.hidden = type !== 'neutral';
+    t.hidden = type !== 'thinking';
   }
   window.setMouth = setMouth;
   window.mascotSay = function(text, durationMs) {

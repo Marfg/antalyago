@@ -9,6 +9,20 @@ const files = {
   oyna: fs.readFileSync('oyna.html', 'utf8')
 };
 
+function count(text, pattern) {
+  return (text.match(pattern) || []).length;
+}
+
+const metrics = {
+  problemInline: count(files.problem, /style="/g),
+  robotInline: count(files.robot, /style="/g),
+  oynaInline: count(files.oyna, /style="/g),
+  problemStyleWrites: count(files.problem, /\.style\./g),
+  robotStyleWrites: count(files.robot, /\.style\./g),
+  oynaStyleWrites: count(files.oyna, /\.style\./g),
+  compatOverrides: count(files.compat, /^\s*\.app-shell-theme/gm),
+};
+
 const tokenGroups = [
   ['--surface-border:', 'surface-border token missing'],
   ['--surface-border-strong:', 'surface-border-strong token missing'],
@@ -98,4 +112,19 @@ assert(files.oyna.includes('card modal-surface'), 'oyna.html shared modal/card m
 assert(files.oyna.includes('button button-primary'), 'oyna.html shared primary button missing');
 assert(files.oyna.includes('badge'), 'oyna.html shared badge missing');
 
+
+assert(metrics.problemInline <= 1, `problem.html presentation inline styles too high: ${metrics.problemInline}`);
+assert(metrics.robotInline <= 0, `robot.html presentation inline styles too high: ${metrics.robotInline}`);
+assert(metrics.oynaInline <= 0, `oyna.html presentation inline styles too high: ${metrics.oynaInline}`);
+assert(metrics.problemStyleWrites <= 1, `problem.html direct style writes should stay functional-only: ${metrics.problemStyleWrites}`);
+assert(metrics.robotStyleWrites <= 4, `robot.html direct style writes should stay functional-only: ${metrics.robotStyleWrites}`);
+assert(metrics.oynaStyleWrites <= 0, `oyna.html should not use direct style writes for presentation: ${metrics.oynaStyleWrites}`);
+assert(!files.problem.includes('style.display'), 'problem.html should not use style.display');
+assert(!files.robot.includes('style.display'), 'robot.html should not use style.display');
+assert(!files.robot.includes('style.cursor'), 'robot.html should not use style.cursor');
+assert(!files.oyna.includes('style.display'), 'oyna.html should not use style.display');
+assert(!files.oyna.includes('style.cursor'), 'oyna.html should not use style.cursor');
+console.log(`inline style say?lar?: problem=${metrics.problemInline}, robot=${metrics.robotInline}, oyna=${metrics.oynaInline}`);
+console.log(`direct style yaz?mlar?: problem=${metrics.problemStyleWrites}, robot=${metrics.robotStyleWrites}, oyna=${metrics.oynaStyleWrites}`);
+console.log(`theme-compat override sat?rlar?: ${metrics.compatOverrides}`);
 console.log('  ? tasar?m sistemi tokenlar? ve ortak s?zle?me denetimi ge?ti');

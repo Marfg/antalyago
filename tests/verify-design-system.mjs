@@ -8,6 +8,47 @@ const BASE = 'http://antalyago.test';
 const PAGES = ['problem.html', 'robot.html', 'oyna.html'];
 const BAN = ['rgb(212, 168, 75)', 'rgb(200, 168, 75)', 'rgb(184, 134, 26)', 'rgb(224, 190, 104)'];
 
+
+function pickChromiumExecutable() {
+  const fromEnv = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+  if (fromEnv && fromEnv.trim()) return fromEnv.trim();
+  return null;
+}
+
+
+function pickInstalledBrowser() {
+  const candidates = [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+  ];
+  return candidates.find(candidate => fs.existsSync(candidate)) || null;
+}
+
+async function launchChromium() {
+  const executablePath = pickChromiumExecutable();
+  const launchOptions = { headless: true };
+  if (executablePath) {
+    return chromium.launch({ ...launchOptions, executablePath });
+  }
+  try {
+    return await chromium.launch(launchOptions);
+  } catch (error) {
+    const message = String(error?.message || error);
+    if (/EPERM|EACCES|spawn/i.test(message)) {
+      try {
+        return await chromium.launch({ ...launchOptions, channel: 'chrome' });
+      } catch {}
+      const installed = pickInstalledBrowser();
+      if (installed) {
+        return await chromium.launch({ ...launchOptions, executablePath: installed });
+      }
+    }
+    throw error;
+  }
+}
+
 let pass = 0;
 let fail = 0;
 const test = async (name, fn) => {
@@ -21,10 +62,14 @@ const test = async (name, fn) => {
   }
 };
 
-const browser = await chromium.launch({ headless: true });
-
 async function context(viewport = { width: 1280, height: 720 }) {
+  const browser = await launchChromium();
   const browserContext = await browser.newContext({ viewport });
+  const closeContext = browserContext.close.bind(browserContext);
+  browserContext.close = async () => {
+    await closeContext().catch(() => {});
+    await browser.close().catch(() => {});
+  };
   await browserContext.route(BASE + '/**', async route => {
     const url = new URL(route.request().url());
     const pathname = decodeURIComponent(url.pathname).replace(/^\/+/, '');
@@ -139,7 +184,13 @@ for (const viewport of [
 }
 
 await test('reduced-motion durumda ge?i?ler kapan?r', async () => {
+  const browser = await launchChromium();
   const browserContext = await browser.newContext({ viewport: { width: 1280, height: 720 }, reducedMotion: 'reduce' });
+  const closeContext = browserContext.close.bind(browserContext);
+  browserContext.close = async () => {
+    await closeContext().catch(() => {});
+    await browser.close().catch(() => {});
+  };
   await browserContext.route(BASE + '/**', async route => {
     const url = new URL(route.request().url());
     const pathname = decodeURIComponent(url.pathname).replace(/^\/+/, '');
@@ -182,7 +233,6 @@ for (const name of PAGES) {
   }
 }
 
-await browser.close();
 console.log(`
 Tasar?m sistemi do?rulamas?: ${pass}/${pass + fail}`);
 if (fail) {

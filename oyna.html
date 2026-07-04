@@ -442,7 +442,7 @@
     <a class="back-btn button button-secondary" href="index.html">← Ana Sayfa</a>
     <span class="page-title">Go Odaları</span>
   </div>
-  <button class="theme-toggle app-theme-toggle" data-theme-toggle type="button" aria-label="Gece temasına geç" aria-pressed="false">Gece</button><div class="user-chip" id="user-chip" style="display:none">
+  <button class="theme-toggle app-theme-toggle" data-theme-toggle type="button" aria-label="Gece temasına geç" aria-pressed="false">Gece</button><div class="user-chip" id="user-chip" hidden>
     <div class="user-avatar" id="topbar-avatar"></div>
     <span id="topbar-name"></span>
     <button class="logout-btn button button-ghost" onclick="doLogout()">Çıkış</button>
@@ -451,7 +451,7 @@
 
 <!-- ─── LOGIN SCREEN ─── -->
 <main id="main-content"><div class="screen active" id="screen-login">
-  <div class="login-logo">围棋<br/><span style="font-size:1.1rem;letter-spacing:.2em">GO ODALARI</span></div>
+  <div class="login-logo">围棋<br/><span class="login-logo__subtitle">GO ODALARI</span></div>
   <div class="login-tagline">Arkadaşlarınla oyna</div>
   <div class="login-card card modal-surface">
     <h2>Giriş Yap</h2>
@@ -474,8 +474,8 @@
 <div class="screen" id="screen-lobby">
   <div class="lobby-header">
     <div class="lobby-title">Açık Odalar</div>
-    <div style="display:flex;gap:.6rem;align-items:center">
-      <span id="room-count" style="font-size:.78rem;color:var(--muted)"></span>
+    <div class="toolbar-row toolbar-row--gap-sm">
+      <span id="room-count" class="block-muted"></span>
       <button class="btn button button-primary" onclick="openNewRoomModal()">+ Yeni Oda</button>
     </div>
   </div>
@@ -489,15 +489,15 @@
 <div class="screen" id="screen-game">
 
   <!-- Room header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem">
-    <div style="display:flex;align-items:center;gap:.75rem">
-      <button class="btn button button-ghost" onclick="leaveGame()" style="padding:.3rem .65rem;font-size:.78rem">← Lobi</button>
-      <span id="room-title" style="font-family:'Noto Serif',serif;font-size:1.05rem;font-weight:700">Oda</span>
-      <span id="room-meta-bar" style="font-size:.73rem;color:var(--muted)"></span>
+  <div class="room-header">
+    <div class="room-header__left">
+      <button class="btn button button-ghost" onclick="leaveGame()" class="btn button button-ghost back-btn--compact">← Lobi</button>
+      <span id="room-title" class="room-title">Oda</span>
+      <span id="room-meta-bar" class="room-meta"></span>
     </div>
     <!-- Share link -->
-    <div class="share-box card" style="max-width:320px;flex:1">
-      <span style="color:var(--muted);white-space:nowrap">🔗</span>
+    <div class="share-box card share-box--wide">
+      <span class="room-meta room-meta--nowrap">🔗</span>
       <input type="text" id="share-link-input" readonly />
       <button class="copy-btn button button-secondary" onclick="copyLink()">Kopyala</button>
     </div>
@@ -510,7 +510,7 @@
       <div class="panel-title">Oyuncular</div>
 
       <div>
-        <div class="fl" style="margin-bottom:.4rem">Siyah</div>
+        <div class="fl player-section-label">Siyah</div>
         <div class="player-card card" id="pc-black">
           <div class="pc-stone black"></div>
           <div class="pc-info">
@@ -522,7 +522,7 @@
       </div>
 
       <div>
-        <div class="fl" style="margin-bottom:.4rem">Beyaz</div>
+        <div class="fl player-section-label">Beyaz</div>
         <div class="player-card card" id="pc-white">
           <div class="pc-stone white"></div>
           <div class="pc-info">
@@ -535,29 +535,29 @@
 
       <!-- Oyun bilgisi -->
       <div>
-        <div class="fl" style="margin-bottom:.35rem">Oyun</div>
-        <div id="game-meta" style="font-size:.73rem;font-family:'JetBrains Mono',monospace;color:var(--muted);background:var(--paper);border:1px solid var(--border);border-radius:var(--r);padding:.45rem .6rem;line-height:1.85;">
+        <div class="fl player-section-label--tight">Oyun</div>
+        <div id="game-meta" class="meta-panel meta-panel--mono">
           —
         </div>
       </div>
 
       <!-- Hamleler -->
-      <div style="display:flex;flex-direction:column;gap:.35rem;flex:1;min-height:0">
+      <div class="panel-stack">
         <div class="fl">Hamleler</div>
         <div id="move-list"></div>
       </div>
 
       <!-- Skor -->
-      <div style="display:flex;justify-content:space-around;background:var(--paper);border:1px solid var(--border);border-radius:var(--r);padding:.5rem;font-family:'JetBrains Mono',monospace;">
-        <div style="text-align:center">
-          <div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Tutsak</div>
-          <div style="font-size:.95rem;font-weight:600" id="cap-b">0</div>
-          <div style="font-size:.6rem;color:var(--muted)">● Siyah</div>
+      <div class="scoreboard">
+        <div class="scoreboard__cell">
+          <div class="scoreboard__label">Tutsak</div>
+          <div class="scoreboard__value" id="cap-b">0</div>
+          <div class="scoreboard__note">● Siyah</div>
         </div>
-        <div style="text-align:center">
-          <div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Tutsak</div>
-          <div style="font-size:.95rem;font-weight:600" id="cap-w">0</div>
-          <div style="font-size:.6rem;color:var(--muted)">○ Beyaz</div>
+        <div class="scoreboard__cell">
+          <div class="scoreboard__label">Tutsak</div>
+          <div class="scoreboard__value" id="cap-w">0</div>
+          <div class="scoreboard__note">○ Beyaz</div>
         </div>
       </div>
     </div>
@@ -572,7 +572,7 @@
       </div>
 
       <div class="board-container">
-        <canvas id="goban"></canvas>
+        <canvas id="goban" class="canvas-turn" data-state="idle"></canvas>
         <!-- Waiting overlay -->
         <div class="board-overlay show" id="overlay-wait">
           <div class="ov-title">Rakip Bekleniyor</div>
@@ -582,14 +582,14 @@
         <div class="board-overlay" id="overlay-over">
           <div class="ov-title" id="over-title">Oyun Bitti</div>
           <div class="ov-sub"   id="over-sub"></div>
-          <button class="btn button button-primary" onclick="leaveGame()" style="width:160px">Lobiye Dön</button>
+          <button class="btn button button-primary" onclick="leaveGame()" class="btn button button-primary result-action result-action--wide">Lobiye Dön</button>
         </div>
       </div>
 
       <div class="game-btns" id="game-btns">
         <button class="btn button button-secondary" onclick="sendPass()"   id="btn-pass"   disabled>Pas Geç</button>
         <button class="btn button button-secondary danger" onclick="sendResign()" id="btn-resign" disabled>Teslim Ol</button>
-        <button class="btn button button-secondary danger" onclick="closeRoom()" id="btn-close" style="display:none">🗑 Odayı Kapat</button>
+        <button class="btn button button-secondary danger" onclick="closeRoom()" id="btn-close" >🗑 Odayı Kapat</button>
       </div>
     </div>
 
@@ -607,7 +607,7 @@
 
       <!-- İzleyiciler -->
       <div>
-        <div class="fl" style="margin-bottom:.35rem">İzleyiciler <span id="spec-count"></span></div>
+        <div class="fl" >İzleyiciler <span id="spec-count"></span></div>
         <div id="spectators-list">—</div>
       </div>
     </div>
@@ -751,7 +751,7 @@ function doLogout() {
 }
 
 function showTopbarUser() {
-  document.getElementById('user-chip').style.display='flex';
+  document.getElementById('user-chip').hidden = false;
   document.getElementById('topbar-name').textContent = ME.displayName;
   const av = document.getElementById('topbar-avatar');
   if (ME.photoURL) av.innerHTML=`<img src="${ME.photoURL}" alt="avatar"/>`;
@@ -831,7 +831,7 @@ function renderLobby(rooms) {
     card.innerHTML = `
       <div class="room-card-header">
         <div class="room-name">${esc(r.name||'İsimsiz Oda')}</div>
-        <div style="display:flex;align-items:center;gap:.4rem">
+        <div class="toolbar-row toolbar-row--gap-xs">
           <div class="room-badge badge ${badge}">${badgeText}</div>
           ${isOwner ? `<button class="delete-room-btn" data-id="${r.id}" title="Odayı Sil">🗑</button>` : ''}
         </div>
@@ -970,7 +970,7 @@ function setupGameScreen(room, roomId) {
   document.getElementById('btn-resign').disabled = !canPlay;
   // Odayı Kapat butonu sadece oda sahibine (siyah = kurucu)
   const isOwner = room.black?.uid === ME?.uid;
-  document.getElementById('btn-close').style.display = isOwner ? 'block' : 'none';
+  document.getElementById('btn-close').hidden = !isOwner;
 
   // Saatler
   if (room.timeLimit > 0) {
@@ -1060,7 +1060,7 @@ function onRoomUpdate(room) {
 
   // Tahta click
   const cv = document.getElementById('goban');
-  cv.style.cursor = myTurn ? 'crosshair' : 'default';
+  cv.dataset.state = myTurn ? 'my-turn' : 'idle';
 
   // Captures
   document.getElementById('cap-b').textContent = captures.black;
@@ -1533,10 +1533,10 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
             stroke="rgba(255,255,255,.50)" stroke-width="2" fill="none" stroke-linecap="round"/>
       <path id="m-neutral"  d="M26,45 L38,45"
             stroke="rgba(255,255,255,.40)" stroke-width="2" fill="none" stroke-linecap="round"
-            style="display:none"/>
+            />
       <path id="m-thinking" d="M27,44 Q30,48 33,45 Q36,42 39,46"
             stroke="rgba(255,255,255,.45)" stroke-width="2" fill="none" stroke-linecap="round"
-            style="display:none"/>
+            />
     </svg>
   </div>
   <span class="mascot-badge" aria-hidden="true" hidden>1</span>
@@ -1554,9 +1554,9 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
     const n = btn.querySelector('#m-neutral');
     const t = btn.querySelector('#m-thinking');
     if (!s) return;
-    s.style.display = type === 'smile'    ? '' : 'none';
-    n.style.display = type === 'neutral'  ? '' : 'none';
-    t.style.display = type === 'thinking' ? '' : 'none';
+    s.hidden = type !== 'smile';
+    n.hidden = type !== 'neutral';
+    t.hidden = type !== 'thinking';
   }
   window.setMouth = setMouth;
 

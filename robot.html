@@ -722,10 +722,10 @@
             stroke="rgba(255,255,255,.50)" stroke-width="2" fill="none" stroke-linecap="round"/>
       <path id="m-neutral"  d="M26,45 L38,45"
             stroke="rgba(255,255,255,.40)" stroke-width="2" fill="none" stroke-linecap="round"
-            style="display:none"/>
+            hidden/>
       <path id="m-thinking" d="M27,44 Q30,48 33,45 Q36,42 39,46"
             stroke="rgba(255,255,255,.45)" stroke-width="2" fill="none" stroke-linecap="round"
-            style="display:none"/>
+            hidden/>
     </svg>
   </div>
   <span class="mascot-badge" aria-hidden="true" hidden>1</span>
@@ -743,9 +743,9 @@
     const n = btn.querySelector('#m-neutral');
     const t = btn.querySelector('#m-thinking');
     if (!s) return;
-    s.style.display = type === 'smile'    ? '' : 'none';
-    n.style.display = type === 'neutral'  ? '' : 'none';
-    t.style.display = type === 'thinking' ? '' : 'none';
+    s.hidden = type !== 'smile';
+    n.hidden = type !== 'neutral';
+    t.hidden = type !== 'thinking';
   }
   window.setMouth = setMouth;
 
@@ -1800,18 +1800,16 @@ function buildReviewUI(rd) {
 function buildWorstList(worst) {
   const el = document.getElementById('rv-worst-list');
   el.innerHTML = '';
-  if (!worst.length) { el.innerHTML = '<div style="font-size:.68rem;color:var(--muted)">Büyük hata yok!</div>'; return; }
+  if (!worst.length) { el.innerHTML = '<div class="worst-empty">B?y?k hata yok!</div>'; return; }
   worst.forEach(m => {
     const btn = document.createElement('button');
     btn.className = 'rv-worst-btn';
     btn.onclick = () => rvGoto(m.moveNumber);
-    const qColors = { best:'#3ecf80',good:'#3ecf80',inaccuracy:'#f5c542',mistake:'#e05050',blunder:'#e05050' };
+    const quality = (m.quality === 'best' || m.quality === 'good') ? 'good' : m.quality;
     btn.innerHTML = `
-      <div class="rv-worst-dot" style="background:${qColors[m.quality]}"></div>
-      <span class="rv-worst-text">${m.color==='B'?'Siyah':'Beyaz'} #${m.moveNumber} — ${m.move}</span>
-      <span class="rv-worst-badge" style="background:${qColors[m.quality]}20;color:${qColors[m.quality]}">
-        ${m.quality === 'blunder' ? 'Büyük Hata' : 'Hata'}
-      </span>`;
+      <div class="worst-dot worst-dot--${quality}"></div>
+      <span class="rv-worst-text">${m.color==='B'?'Siyah':'Beyaz'} #${m.moveNumber} ? ${m.move}</span>
+      <span class="worst-badge worst-badge--${quality}">${m.quality === 'blunder' ? 'B?y?k Hata' : 'Hata'}</span>`;
     el.appendChild(btn);
   });
 }
