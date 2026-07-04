@@ -38,6 +38,11 @@ export function isScorableStep(step) {
   return ['choice', 'board_move'].includes(responseTypeOf(step));
 }
 
+export function hasCoordinateReference(prompt = '') {
+  const text = stripMarkup(prompt);
+  return /\b[A-T][1-9]\b/.test(text) || /\(\s*\d+\s*,\s*\d+\s*\)/.test(text) || /noktas[?i]na t[?i]kla/i.test(text);
+}
+
 export function difficultyOf(step) {
   if (Number.isInteger(step?.difficulty)) return Math.min(4, Math.max(1, step.difficulty));
   const stars = (stripMarkup(step?.text).match(/★+/) || [''])[0].length;
@@ -72,6 +77,7 @@ export function classifyCurriculumStep({ chapter, lesson, step, stepIndex }) {
     difficulty: difficultyOf(step),
     concepts: conceptsOf(step),
     prompt,
+    guidanceLevel: step?.guidanceLevel || null,
     scorable: isScorableStep(step),
   };
 }
@@ -129,8 +135,16 @@ export function auditCurriculum(curriculum) {
       const item = classifyCurriculumStep({ chapter, lesson, step, stepIndex });
       items.push(item);
       const prompt = item.prompt;
-      if (!isAssessmentLesson(lesson) && item.scorable && (/\b[A-T][1-9]\b/.test(prompt) || /noktasına tıkla/i.test(prompt))) {
-        issues.push({ type: 'answer_leak', severity: 'warning', itemId: item.id });
+      const coordinateReference = hasCoordinateReference(prompt);
+      if (item.scorable && coordinateReference) {
+        if (!isAssessmentLesson(lesson) && item.stage === 'guided_practice' &&
+            (step?.guidanceLevel === 'direct' || step?.guidanceLevel === 'constrained')) {
+          issues.push({ type: 'intentional_scaffold', severity: 'info', itemId: item.id });
+        } else if (item.responseType === 'choice') {
+          issues.push({ type: 'coordinate_reference', severity: 'info', itemId: item.id });
+        } else {
+          issues.push({ type: 'answer_leak', severity: 'warning', itemId: item.id });
+        }
       }
       if (item.scorable) {
         const correctOptions = step.miniQuestion?.options?.filter(option => option.correct) || [];
@@ -143,6 +157,7 @@ export function auditCurriculum(curriculum) {
     }
   }
   const count = stage => items.filter(item => item.stage === stage).length;
+  const countIssue = type => issues.filter(item => item.type === type).length;
   return {
     summary: {
       chapters: (curriculum || []).length,
@@ -154,6 +169,9 @@ export function auditCurriculum(curriculum) {
       variablePractice: count('variable_practice'),
       assessment: count('assessment'),
       assessmentExplanations: count('assessment_explanation'),
+      answerLeaks: countIssue('answer_leak'),
+      intentionalScaffolds: countIssue('intentional_scaffold'),
+      coordinateReferences: countIssue('coordinate_reference'),
     },
     items,
     issues,

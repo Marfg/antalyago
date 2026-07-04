@@ -35,47 +35,52 @@ export const CURRICULUM = [
         board:[], auto:true, boardSelector:true, size:9, camera:CAM.overview,
         fb:{t:'Tahta boyutunu seçerek farkı inceleyin.',c:'info'} },
 
-      // 1 — İlk taş: herhangi bir kesişim noktasına tıkla
-      { text:`<p>Taşlar karelerin içine değil, <strong>çizgilerin kesişim noktalarına</strong> yerleştirilir.</p><p>Tahtada herhangi bir noktaya siyah taş koy.</p>`,
+      // 1 ? ?lk ta?: herhangi bir kesi?im noktas?na t?kla
+      { text:`<p>Ta?lar karelerin i?ine de?il, <strong>?izgilerin kesi?im noktalar?na</strong> yerle?tirilir.</p><p>Tahtada herhangi bir noktaya siyah ta? koy.</p>`,
         board:[], answers:'any', turn:'black', size:9,
         camera:CAM.high,
-        fb:{t:'Herhangi bir kesişim noktasına tıkla!',c:'info'},
-        fb_ok:'Harika! Go\'da taşlar sırayla konur — şimdi beyazın sırası.' },
+        fb:{t:'Herhangi bir kesi?im noktas?na t?kla!',c:'info'},
+        fb_ok:"Harika! Go'da ta?lar s?rayla konur ? ?imdi beyaz?n s?ras?.",
+        fb_err:'Hen?z sadece bo? bir kesi?ime t?kla.' },
 
-      // 2 — Nefes noktası keşfi: herhangi yere taş koy (pedagogy)
-      { text:`<p>Her taşın komşu boş noktalarına <strong><span class="term">nefes noktası</span></strong> denir.</p><p>Tahtanın farklı bölgelerine taş koy ve nefes sayısının nasıl değiştiğini gör.</p>`,
+      // 2 ? Nefes noktas? ke?fi: herhangi yere ta? koy (pedagogy)
+      { text:`<p>Her ta??n kom?u bo? noktalar?na <strong><span class="term">nefes noktas?</span></strong> denir.</p><p>Tahtan?n farkl? b?lgelerine ta? koy ve nefes say?s?n?n nas?l de?i?ti?ini g?r.</p>`,
         board:[], answers:'any', turn:'black', size:9, pedagogy:true,
         miniQuestion:'liberty',
         camera:CAM.high,
-        fb:{t:'Herhangi bir kesişim noktasına tıkla!',c:'info'} },
+        fb:{t:'Herhangi bir kesi?im noktas?na t?kla!',c:'info'},
+        fb_ok:'Do?ru! Ortadaki siyah ta??n 4 nefes noktas? var.',
+        fb_err:'Ba?ka bir kesi?im se?ebilirsin.' },
 
-      // 3 — Köşeye taş koy (pedagogy: corner liberties)
-      { text:`<p>Tahtanın dört <strong>köşesindeki</strong> taşların yalnızca <strong>2 nefes noktası</strong> vardır — en savunmasız konum budur.</p><p>Köşelerden birine tıkla ve nefes sayısını gör.</p>`,
+      // 3 ? K??eye ta? koy (pedagogy: corner liberties)
+      { text:`<p>Tahtan?n d?rt <strong>k??esindeki</strong> ta?lar?n yaln?zca <strong>2 nefes noktas?</strong> vard?r ? en savunmas?z konum budur.</p><p>K??elerden birine t?kla ve nefes say?s?n? g?r.</p>`,
         board:[],
         answers:[{x:0,y:0},{x:8,y:0},{x:0,y:8},{x:8,y:8}],
         goalZone:'corner',
         turn:'black', size:9, pedagogy:true,
         miniQuestion:'liberty',
         camera:CAM.corner_tl,
-        fb:{t:'Tahtanın dört köşesinden birine tıkla!',c:'info'},
-        fb_err:'Bu köşe değil. Tahtanın dört köşesinden birine tıkla.' },
+        fb:{t:'Tahtan?n d?rt k??esinden birine t?kla!',c:'info'},
+        fb_ok:'Do?ru! K??ede yaln?zca 2 nefes noktas? vard?r.',
+        fb_err:'Bu k??e de?il. Tahtan?n d?rt k??esinden birine t?kla.' },
 
-      // 4 — Beyaza bitişik taş koy (pedagogy: orthogonal contact)
-      { text:`<p>Go'da taşlar <strong>yatay veya dikey</strong> komşu olduklarında birbirine bağlanır.</p><p>Beyaz taşa yatay veya dikey olarak bitişik bir noktaya siyah taş koy.</p>`,
+      // 4 ? Beyaza biti?ik ta? koy (pedagogy: orthogonal contact)
+      { text:`<p>Go'da ta?lar <strong>yatay veya dikey</strong> kom?u olduklar?nda birbirine ba?lan?r.</p><p>Beyaz ta?a yatay veya dikey olarak biti?ik bir noktaya siyah ta? koy.</p>`,
         board:[{color:'W',x:4,y:4}],
         answers:[{x:4,y:3},{x:4,y:5},{x:3,y:4},{x:5,y:4}],
         goalAdjacent:{x:4,y:4},
         turn:'black', size:9, pedagogy:true,
         miniQuestion:{
-          text:"Çapraz komşu (45°) Go'da temas sayılır mı?",
+          text:"?apraz kom?u (45?) Go'da temas say?l?r m??",
           options:[
-            {text:'Sayılmaz', correct:true,  feedback:"Doğru! Go'da yalnızca yatay/dikey bağlantı geçerlidir."},
-            {text:'Sayılır',  correct:false, feedback:"Hayır. Go sadece 4 yönü tanır, çapraz değil."},
+            {text:'Say?lmaz', correct:true,  feedback:"Do?ru! Go'da yaln?zca yatay/dikey ba?lant? ge?erlidir."},
+            {text:'Say?l?r',  correct:false, feedback:"Hay?r. Go sadece 4 y?n? tan?r, ?apraz de?il."},
           ]
         },
         camera:CAM.center,
-        fb:{t:'Beyaz taşa bitişik bir noktaya tıkla!',c:'info'},
-        fb_err:'Hedef taşa yatay veya dikey olarak bitişik bir noktayı seç.' },
+        fb:{t:'Beyaz ta?a biti?ik bir noktaya t?kla!',c:'info'},
+        fb_ok:'Do?ru! Yaln?zca yatay ve dikey kom?uluk say?l?r.',
+        fb_err:'Hedef ta?a yatay veya dikey olarak biti?ik bir noktay? se?.' },
 
       // 5 — Taşlar hareket etmez (auto)
       { text:`<p>Taşlar bir kez konulduktan sonra <strong>hareket ettirilemez</strong> — sadece yakalanarak kaldırılabilir.</p><div class="highlight-box">Go'da taşlar hareket etmez, sadece eklenir veya kaldırılır.</div>`,
@@ -98,7 +103,7 @@ export const CURRICULUM = [
     ]},
 
     { id:'l3', title:'Taş Alma', steps:[
-      { text:`<p>Bir taşın <strong>tüm nefes noktaları doldurulursa</strong>, o taş yakalanır ve tahtadan kalkar.</p><p>Beyaz taşın tek boş noktası var — oraya siyah taş koyarak beyazı yakala! <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}], answer:{x:4,y:5}, turn:'black', size:9, fb:{t:'Beyaz taşın son nefes noktasına tıkla!',c:'info'}, fb_ok:'Yakaladın! Beyaz taş tahtadan kalkar.', fb_err:'Beyaz taşın çevresindeki boş noktayı bul.',
+      { text:`<p>Bir taşın <strong>tüm nefes noktaları doldurulursa</strong>, o taş yakalanır ve tahtadan kalkar.</p><p>Beyaz taşın tek boş noktası var — oraya siyah taş koyarak beyazı yakala! <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}], answer:{x:4,y:5}, turn:'black', size:9, guidanceLevel:'direct', fb:{t:'Beyaz taşın son nefes noktasına tıkla!',c:'info'}, fb_ok:'Yakaladın! Beyaz taş tahtadan kalkar.', fb_err:'Beyaz taşın çevresindeki boş noktayı bul.',
         mascot: {
           sequence: [
             { text: 'Bak, beyaz taş siyahlarla çevrilmiş!', delay: 1400 },
@@ -109,8 +114,8 @@ export const CURRICULUM = [
           onCorrect: { text: 'Yakaladın! Beyaz taş tahtadan kalktı.' },
           onIncorrect: { text: 'Neredeyse! Beyaz taşa dokunan boş noktayı bul.' },
         } },
-      { text:`<p>Bir <strong>grubu</strong> yakalamak için grubun tüm nefes noktalarını doldurman gerekir.</p><p>İki beyaz taşın son nefes noktasını doldur — <strong>D5 noktasına tıkla.</strong></p>`, board:[{color:'W',x:3,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:3},{color:'B',x:4,y:4}], answer:{x:3,y:4}, turn:'black', size:9, fb:{t:'İki beyaz taşın son boş noktasını bul.',c:'info'}, fb_ok:'Grubu yakaladın!', fb_err:'Beyaz grubun son nefes noktasını bul.' },
-      { text:`<p>Bir örnek daha! <strong>3 taşlı beyaz grup</strong> siyahlarla çevrilmiş.</p><p>Beyaz grubun tek nefes noktasını bul ve grubu yakala — <strong>E6 noktasına tıkla.</strong></p>`, board:[{color:'B',x:4,y:1},{color:'B',x:5,y:1},{color:'B',x:3,y:2},{color:'B',x:6,y:2},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'W',x:4,y:2},{color:'W',x:5,y:2},{color:'W',x:5,y:3}], answer:{x:4,y:3}, turn:'black', size:9, fb:{t:'3 taşlı beyaz grubun tek boş noktasını bul.',c:'info'}, fb_ok:'Mükemmel! Üç beyaz taş birden yakalandı.', fb_err:'E6 noktasına tıkla — beyazın tek boş komşusu.' },
+      { text:`<p>Bir <strong>grubu</strong> yakalamak için grubun tüm nefes noktalarını doldurman gerekir.</p><p>İki beyaz taşın son nefes noktasını doldur — <strong>D5 noktasına tıkla.</strong></p>`, board:[{color:'W',x:3,y:3},{color:'W',x:4,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:5,y:3},{color:'B',x:4,y:4}], answer:{x:3,y:4}, turn:'black', size:9, guidanceLevel:'direct', fb:{t:'İki beyaz taşın son boş noktasını bul.',c:'info'}, fb_ok:'Grubu yakaladın!', fb_err:'Beyaz grubun son nefes noktasını bul.' },
+      { text:`<p>Bir örnek daha! <strong>3 taşlı beyaz grup</strong> siyahlarla çevrilmiş.</p><p>Beyaz grubun tek nefes noktasını bul ve grubu yakala — <strong>E6 noktasına tıkla.</strong></p>`, board:[{color:'B',x:4,y:1},{color:'B',x:5,y:1},{color:'B',x:3,y:2},{color:'B',x:6,y:2},{color:'B',x:6,y:3},{color:'B',x:5,y:4},{color:'W',x:4,y:2},{color:'W',x:5,y:2},{color:'W',x:5,y:3}], answer:{x:4,y:3}, turn:'black', size:9, guidanceLevel:'direct', fb:{t:'3 taşlı beyaz grubun tek boş noktasını bul.',c:'info'}, fb_ok:'Mükemmel! Üç beyaz taş birden yakalandı.', fb_err:'E6 noktasına tıkla — beyazın tek boş komşusu.' },
 
       // ── Alıştırma ──
       { text:`<p>★ <strong>Alıştırma:</strong> Köşedeki beyaz taşı yakala.</p>`, board:[{color:'W',x:0,y:0},{color:'B',x:1,y:0}], answer:{x:0,y:1}, turn:'black', size:9, camera:CAM.corner_tl, fb:{t:'Köşe taşının son nefesini kapat!',c:'info'}, fb_ok:'Yakaladın! Köşe taşı kolay hedeftir.', fb_err:'Beyaz taşa dokunan tek boş noktayı bul.' },
@@ -369,8 +374,8 @@ export const CURRICULUM = [
     ]},
 
     { id:'l8', title:'Kesme ve Bağlama', steps:[
-      { text:`<p><span class="term">Kesme</span> — rakibin iki taşı arasına girerek bağlantısını koparmak.</p><p>Siyahın iki taşı arasına gir — <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}], answer:{x:4,y:3}, turn:'white', size:9, fb:{t:'Siyahın iki taşı arasına gir!',c:'info'}, fb_ok:'Kestik! Siyah artık iki ayrı grup.', fb_err:'Siyahın iki taşını birbirine bağlayan boşluğu bul.' },
-      { text:`<p><span class="term">Bağlama</span> — kendi taşlarının arasını kapatarak grubu güçlendirmek.</p><p>Siyah taşları birleştir — <strong>D4 noktasına tıkla.</strong></p>`, board:[{color:'B',x:3,y:3},{color:'B',x:3,y:5},{color:'W',x:2,y:4},{color:'W',x:4,y:4}], answer:{x:3,y:4}, turn:'black', size:9, fb:{t:'Siyah taşlarını birleştir!',c:'info'}, fb_ok:'Güçlü bağlantı! Artık tek grup.', fb_err:'Siyah taşlar arasındaki boşluğu doldur.' },
+      { text:`<p><span class="term">Kesme</span> — rakibin iki taşı arasına girerek bağlantısını koparmak.</p><p>Siyahın iki taşı arasına gir — <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}], answer:{x:4,y:3}, turn:'white', size:9, guidanceLevel:'direct', fb:{t:'Siyahın iki taşı arasına gir!',c:'info'}, fb_ok:'Kestik! Siyah artık iki ayrı grup.', fb_err:'Siyahın iki taşını birbirine bağlayan boşluğu bul.' },
+      { text:`<p><span class="term">Bağlama</span> — kendi taşlarının arasını kapatarak grubu güçlendirmek.</p><p>Siyah taşları birleştir — <strong>D4 noktasına tıkla.</strong></p>`, board:[{color:'B',x:3,y:3},{color:'B',x:3,y:5},{color:'W',x:2,y:4},{color:'W',x:4,y:4}], answer:{x:3,y:4}, turn:'black', size:9, guidanceLevel:'direct', fb:{t:'Siyah taşlarını birleştir!',c:'info'}, fb_ok:'Güçlü bağlantı! Artık tek grup.', fb_err:'Siyah taşlar arasındaki boşluğu doldur.' },
 
       // ── Alıştırma ──
       { text:`<p>★★ <strong>Alıştırma:</strong> Beyaz nereye keser?</p>`, board:[{color:'B',x:2,y:4},{color:'B',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:5}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Beyaz hangi noktaya girerek siyahı keser?',options:[{text:'D5 (3,4)',correct:true,feedback:'Doğru! Orta nokta siyahın bağlantısını koparır.'},{text:'C4 (2,3)',correct:false,feedback:'Hayır — bu nokta bağlantıyı kesmez.'},{text:'E5 (4,3)',correct:false,feedback:'Hayır — kesme noktası iki taş arasında olmalı.'}]}, fb:{t:'Siyahın hangi noktası bağlantı boşluğu?',c:'info'} },
@@ -466,7 +471,7 @@ export const CURRICULUM = [
     ]},
 
     { id:'l11', title:'Ağ (Geta)', steps:[
-      { text:`<p><span class="term">Ağ</span> (Japonca: <em>geta</em>) — bir taşı atari yapmadan, kaçış yollarını keserek tuzağa düşürmek.</p><p>Beyazın kaçış yolunu kesen noktayı bul — <strong>F6 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:4,y:5},{color:'B',x:5,y:5}], answer:{x:5,y:3}, turn:'black', size:9,
+      { text:`<p><span class="term">Ağ</span> (Japonca: <em>geta</em>) — bir taşı atari yapmadan, kaçış yollarını keserek tuzağa düşürmek.</p><p>Beyazın kaçış yolunu kesen noktayı bul — <strong>F6 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:4,y:5},{color:'B',x:5,y:5}], answer:{x:5,y:3}, turn:'black', size:9, guidanceLevel:'direct',
         movesAfterAnswer:[
           {color:'W',x:4,y:3,capture:[]},
           {color:'B',x:4,y:2,capture:[]},
@@ -487,7 +492,7 @@ export const CURRICULUM = [
           {color:'W',x:3,y:3},{color:'W',x:2,y:4},{color:'W',x:4,y:4},{color:'W',x:4,y:5},
           {color:'B',x:4,y:3},{color:'B',x:5,y:3},{color:'B',x:5,y:4},{color:'B',x:2,y:5},{color:'B',x:5,y:5},{color:'B',x:3,y:6},{color:'B',x:4,y:6},
         ],
-        answer:{x:3,y:4}, turn:'black', size:9,
+        answer:{x:3,y:4}, turn:'black', size:9, guidanceLevel:'direct',
         movesAfterAnswer:[
           {color:'W',x:3,y:5,capture:[{x:3,y:4}]},
           {color:'B',x:3,y:4,capture:[{x:3,y:5},{x:4,y:4},{x:4,y:5}]},
@@ -498,7 +503,7 @@ export const CURRICULUM = [
           {color:'W',x:0,y:2},{color:'W',x:1,y:2},{color:'W',x:2,y:2},{color:'W',x:3,y:2},{color:'W',x:0,y:3},{color:'W',x:1,y:4},{color:'W',x:1,y:5},
           {color:'B',x:1,y:3},{color:'B',x:2,y:3},{color:'B',x:2,y:4},{color:'B',x:2,y:5},{color:'B',x:0,y:6},{color:'B',x:1,y:6},
         ],
-        answer:{x:0,y:4}, turn:'black', size:9,
+        answer:{x:0,y:4}, turn:'black', size:9, guidanceLevel:'direct',
         movesAfterAnswer:[
           {color:'W',x:0,y:5,capture:[{x:0,y:4}]},
           {color:'B',x:0,y:4,capture:[{x:0,y:5},{x:1,y:4},{x:1,y:5}]},
@@ -647,7 +652,7 @@ export const CURRICULUM = [
         {color:'B',x:1,y:16},{color:'B',x:3,y:16},{color:'B',x:13,y:16},{color:'B',x:3,y:17}
       ], auto:true, size:19, camera:CAM.board19, fb:{t:'Açılış tamamlandı — her iki taraf da köşe ve kenarlara yerleşti.',c:'info'} },
       { text:`<p><span class="term">Fuseki</span> — Go'nun açılış aşaması. İlk 10-20 hamle tahtanın genel yapısını belirler.</p><p>Temel strateji: <strong>köşe → kenar → merkez</strong> sırasıyla bölge kurmak.</p>`, board:[], auto:true, size:9, camera:CAM.high, fb:{t:'Köşeler en değerli bölgelerdir.',c:'info'} },
-      { text:`<p>Standart açılış noktaları:<ul><li><strong>Hoshi (4-4)</strong> — dengeli, esnek</li><li><strong>Komoku (3-4)</strong> — bölge odaklı</li><li><strong>San-san (3-3)</strong> — köşe kesin, az etki</li></ul>Bir köşe noktasına tıkla.</p>`, board:[], answers:[{x:2,y:2},{x:3,y:3},{x:2,y:3},{x:3,y:2}], turn:'black', size:9, fb:{t:'Köşe noktalarından birini seç.',c:'info'}, fb_ok:'İyi seçim! Köşeden açıldın.' },
+      { text:`<p>Standart a??l?? noktalar?:<ul><li><strong>Hoshi (4-4)</strong> ? dengeli, esnek</li><li><strong>Komoku (3-4)</strong> ? b?lge odakl?</li><li><strong>San-san (3-3)</strong> ? k??e kesin, az etki</li></ul>Bir k??e noktas?na t?kla.</p>`, board:[], answers:[{x:2,y:2},{x:3,y:3},{x:2,y:3},{x:3,y:2}], turn:'black', size:9, guidanceLevel:'constrained', fb:{t:'K??e noktalar?ndan birini se?.',c:'info'}, fb_ok:'?yi se?im! K??eden a??ld?n.', fb_err:'K??e noktalar?ndan birini se?.' },
       { text:`<p><strong>Yüksek (4. çizgi)</strong> hamleler etki alanı, <strong>alçak (3. çizgi)</strong> hamleler bölge kontrolü sağlar.</p><div class="highlight-box">Açılışta ne kadar çok köşe alırsan başlangıç avantajın artar.</div>`, board:[{color:'B',x:2,y:2},{color:'W',x:6,y:2},{color:'B',x:6,y:6},{color:'W',x:2,y:6}], auto:true, size:9, fb:{t:'Dört köşe de alındı — denge.',c:'info'} },
     ]},
 

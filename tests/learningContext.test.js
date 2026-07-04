@@ -117,11 +117,117 @@ test('değerlendirme yeniden açılınca oturum sıfırlanır', () => {
   equal(result.correct, 0);
 });
 
-test('kalite denetimi cevap sızıntılarını raporlar', () => {
-  const leaks = audit.issues.filter(issue => issue.type === 'answer_leak');
-  ok(leaks.length > 0);
-  ok(leaks.every(issue => issue.severity === 'warning'));
+test('kalite denetimi s?n?flar? ayr??t?r?r', () => {
+  const types = new Set(audit.issues.map(issue => issue.type));
+  ok(types.has('intentional_scaffold'));
+  ok(types.has('coordinate_reference'));
+  equal(audit.summary.answerLeaks, 0);
+  equal(audit.summary.intentionalScaffolds, 9);
+  equal(audit.summary.coordinateReferences, 3);
 });
 
-console.log('\nToplam: ' + (passed + failed) + '  ✓ ' + passed + '  ✗ ' + failed);
+function synthCurriculum(lesson) {
+  return [{ id: 'c1', title: 'Sentetik', lessons: [lesson] }];
+}
+
+test('i?aretsiz guided-practice s?z?nt?s? yakalan?r', () => {
+  const audit = auditCurriculum(synthCurriculum({
+    id: 'l1',
+    title: 'Guided Leak',
+    steps: [
+      {
+        text: '<p>Tahtada E4 noktas?na t?kla.</p>',
+        answer: { x: 4, y: 4 },
+        turn: 'black',
+        fb: { t: 'x', c: 'info' },
+        fb_ok: 'ok',
+        fb_err: 'err',
+      },
+    ],
+  }));
+  ok(audit.issues.some(issue => issue.type === 'answer_leak'));
+  ok(!audit.issues.some(issue => issue.type === 'intentional_scaffold'));
+});
+
+test('i?aretli direct guidance scaffold olarak raporlan?r', () => {
+  const audit = auditCurriculum(synthCurriculum({
+    id: 'l2',
+    title: 'Guided Scaffold',
+    steps: [
+      {
+        text: '<p>Tahtada E4 noktas?na t?kla.</p>',
+        answer: { x: 4, y: 4 },
+        turn: 'black',
+        guidanceLevel: 'direct',
+        fb: { t: 'x', c: 'info' },
+        fb_ok: 'ok',
+        fb_err: 'err',
+      },
+    ],
+  }));
+  ok(audit.issues.some(issue => issue.type === 'intentional_scaffold'));
+  ok(!audit.issues.some(issue => issue.type === 'answer_leak'));
+});
+
+test('i?aretli constrained guidance scaffold olarak raporlan?r', () => {
+  const audit = auditCurriculum(synthCurriculum({
+    id: 'l5',
+    title: 'Constrained Scaffold',
+    steps: [
+      {
+        text: '<p>Tahtada E4 noktas?na t?kla.</p>',
+        answer: { x: 4, y: 4 },
+        turn: 'black',
+        guidanceLevel: 'constrained',
+        fb: { t: 'x', c: 'info' },
+        fb_ok: 'ok',
+        fb_err: 'err',
+      },
+    ],
+  }));
+  ok(audit.issues.some(issue => issue.type === 'intentional_scaffold'));
+  ok(!audit.issues.some(issue => issue.type === 'answer_leak'));
+});
+
+test('de?erlendirme koordinat s?z?nt?s? yakalan?r', () => {
+  const audit = auditCurriculum(synthCurriculum({
+    id: 'l3_deg',
+    title: 'Assessment Leak',
+    steps: [
+      {
+        text: '<p>De?erlendirme sorusu: D5 noktas?na t?kla.</p>',
+        answer: { x: 3, y: 4 },
+        turn: 'black',
+        fb: { t: 'x', c: 'info' },
+        fb_ok: 'ok',
+        fb_err: 'err',
+      },
+    ],
+  }));
+  ok(audit.issues.some(issue => issue.type === 'answer_leak'));
+});
+
+test('boolean/choice soruda koordinat referans? answer leak say?lmaz', () => {
+  const audit = auditCurriculum(synthCurriculum({
+    id: 'l4',
+    title: 'Choice Reference',
+    steps: [
+      {
+        text: "<p>D5'e (3,4) oynamak snapback midir?</p>",
+        miniQuestion: {
+          text: "D5'e (3,4) oynamak snapback midir?",
+          options: [
+            { text: 'Evet', correct: true, feedback: 'Do?ru.' },
+            { text: 'Hay?r', correct: false, feedback: 'Yanl??.' },
+          ],
+        },
+        fb: { t: 'x', c: 'info' },
+      },
+    ],
+  }));
+  ok(audit.issues.some(issue => issue.type === 'coordinate_reference'));
+  ok(!audit.issues.some(issue => issue.type === 'answer_leak'));
+});
+
+console.log('\nToplam: ' + (passed + failed) + '  ? ' + passed + '  ? ' + failed);
 if (failed) process.exit(1);
