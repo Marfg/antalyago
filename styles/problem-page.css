@@ -1,0 +1,92 @@
+﻿/* AG-DS Faz 3: Go problemleri için sayfa katmanı */
+body.problem-page {
+  background: var(--page-bg);
+  color: var(--text-primary);
+}
+
+body.problem-page .topbar {
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+body.problem-page .problem-count,
+body.problem-page .prob-desc,
+body.problem-page .stat-lbl,
+body.problem-page #sgf-status {
+  color: var(--text-muted);
+}
+
+body.problem-page .problem-header,
+body.problem-page .panel,
+body.problem-page .prob-item,
+body.problem-page #hint-box,
+body.problem-page #solution-area,
+body.problem-page #feedback,
+body.problem-page .result-overlay,
+body.problem-page .scoreboard,
+body.problem-page .room-tag,
+body.problem-page .room-badge,
+body.problem-page .type-badge,
+body.problem-page .level-badge,
+body.problem-page .problem-status-strip {
+  border-color: var(--border);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+body.problem-page .problem-header,
+body.problem-page .panel,
+body.problem-page .prob-item,
+body.problem-page #hint-box,
+body.problem-page #solution-area,
+body.problem-page #feedback,
+body.problem-page .result-overlay {
+  box-shadow: var(--shadow-sm);
+}
+
+body.problem-page .prob-item.active {
+  background: var(--surface-soft);
+  border-color: var(--border-strong);
+}
+
+body.problem-page .prob-item.solved {
+  opacity: .72;
+}
+
+body.problem-page .board-container {
+  background: var(--board-surround);
+  border-color: var(--border-strong);
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--shadow-color) 70%, transparent);
+}
+
+body.problem-page .problem-progress-stack {
+  gap: var(--space-2);
+}
+
+body.problem-page .problem-action-row,
+body.problem-page .result-actions {
+  gap: var(--space-3);
+}
+
+body.problem-page .result-action--wide,
+body.problem-page .button.button-primary,
+body.problem-page .button.button-secondary {
+  min-height: 44px;
+}
+
+body.problem-page .problem-status-strip {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 540px) {
+  body.problem-page .topbar {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  body.problem-page .main {
+    padding: var(--space-4) var(--space-3);
+  }
+}

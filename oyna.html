@@ -433,8 +433,10 @@
       #screen-lobby, #screen-game { padding:1rem .75rem; }
     }
   </style>
-<link rel="stylesheet" href="styles/design-system.css" /><link rel="stylesheet" href="styles/theme-compat.css" /></head>
-<body class="page-shell app-shell-theme"><a class="skip-link" href="#main-content">İçeriğe geç</a>
+<link rel="stylesheet" href="styles/design-system.css" />
+  <link rel="stylesheet" href="styles/theme-compat.css" />
+  <link rel="stylesheet" href="styles/play-page.css" /></head>
+<body class="page-shell app-shell-theme play-page"><a class="skip-link" href="#main-content">İçeriğe geç</a>
 
 <!-- ─── TOPBAR ─── -->
 <div class="topbar site-header">
@@ -491,7 +493,7 @@
   <!-- Room header -->
   <div class="room-header">
     <div class="room-header__left">
-      <button class="btn button button-ghost" onclick="leaveGame()" class="btn button button-ghost back-btn--compact">← Lobi</button>
+      <button class="btn button button-ghost back-btn--compact" onclick="leaveGame()">← Lobi</button>
       <span id="room-title" class="room-title">Oda</span>
       <span id="room-meta-bar" class="room-meta"></span>
     </div>
@@ -582,7 +584,7 @@
         <div class="board-overlay" id="overlay-over">
           <div class="ov-title" id="over-title">Oyun Bitti</div>
           <div class="ov-sub"   id="over-sub"></div>
-          <button class="btn button button-primary" onclick="leaveGame()" class="btn button button-primary result-action result-action--wide">Lobiye Dön</button>
+          <button class="btn button button-primary result-action result-action--wide" onclick="leaveGame()">Lobiye Dön</button>
         </div>
       </div>
 

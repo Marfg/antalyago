@@ -1,4 +1,4 @@
-/* AG-DS compatibility layer: bind legacy shell pages to the shared semantic palette. */
+/* AG-DS compatibility layer: legacy shell pages keep a thin semantic bridge. */
 .app-shell-theme {
   --bg: var(--page-bg);
   --bg-surface: var(--surface);
@@ -34,16 +34,6 @@
     radial-gradient(ellipse at 90% 95%, color-mix(in srgb, var(--secondary) 7%, transparent) 0%, transparent 50%);
 }
 
-.app-shell-theme .back-btn {
-  color: var(--primary) !important;
-  border-color: var(--border-strong) !important;
-}
-
-.app-shell-theme .back-btn:hover {
-  background: var(--primary) !important;
-  color: var(--primary-text) !important;
-}
-
 .app-shell-theme input,
 .app-shell-theme select,
 .app-shell-theme textarea {
@@ -64,64 +54,12 @@
 .app-shell-theme .room-card,
 .app-shell-theme .player-card,
 .app-shell-theme .modal-box,
-.app-shell-theme .share-box,
-.app-shell-theme .problem-header,
-.app-shell-theme .prob-item,
-.app-shell-theme .stat-box,
-.app-shell-theme .club-card,
-.app-shell-theme .engine-badge,
-.app-shell-theme #hint-box,
-.app-shell-theme #solution-area,
-.app-shell-theme #feedback,
-.app-shell-theme #model-loader,
-.app-shell-theme #gameover,
-.app-shell-theme #chat-log,
-.app-shell-theme #move-list,
-.app-shell-theme .room-tag,
-.app-shell-theme .room-badge,
-.app-shell-theme .type-badge,
-.app-shell-theme .level-badge {
+.app-shell-theme .share-box {
   border-color: var(--border);
   box-shadow: var(--shadow-sm);
-}
-
-.app-shell-theme .panel,
-.app-shell-theme .login-card,
-.app-shell-theme .modal-box,
-.app-shell-theme .room-card,
-.app-shell-theme .player-card,
-.app-shell-theme .problem-header,
-.app-shell-theme .prob-item,
-.app-shell-theme .stat-box,
-.app-shell-theme .club-card,
-.app-shell-theme #hint-box,
-.app-shell-theme #solution-area,
-.app-shell-theme #feedback,
-.app-shell-theme #model-loader,
-.app-shell-theme #gameover,
-.app-shell-theme #chat-log,
-.app-shell-theme #move-list {
   background: var(--surface-raised);
   color: var(--text-primary);
   border-radius: var(--radius-lg);
-}
-
-.app-shell-theme .room-card,
-.app-shell-theme .prob-item,
-.app-shell-theme .player-card,
-.app-shell-theme .stat-box,
-.app-shell-theme .club-card,
-.app-shell-theme .panel,
-.app-shell-theme .login-card,
-.app-shell-theme .modal-box,
-.app-shell-theme #gameover,
-.app-shell-theme #solution-area,
-.app-shell-theme #hint-box,
-.app-shell-theme #feedback,
-.app-shell-theme #model-loader,
-.app-shell-theme #chat-log,
-.app-shell-theme #move-list {
-  border: 1px solid var(--border);
 }
 
 .app-shell-theme .panel-title,
@@ -129,15 +67,7 @@
 .app-shell-theme .lobby-title,
 .app-shell-theme .room-name,
 .app-shell-theme .page-title,
-.app-shell-theme .tb-title,
-.app-shell-theme .prob-title,
-.app-shell-theme .go-title,
-.app-shell-theme .ov-title,
-.app-shell-theme .panel-title,
-.app-shell-theme .turn-bar,
-.app-shell-theme .stat-val,
-.app-shell-theme .cm .cu,
-.app-shell-theme .room-name {
+.app-shell-theme .tb-title {
   color: var(--heading);
 }
 
@@ -231,50 +161,6 @@
   color: inherit;
 }
 
-.app-shell-theme .room-badge.waiting,
-.app-shell-theme .room-tag,
-.app-shell-theme .type-badge,
-.app-shell-theme .level-badge,
-.app-shell-theme .engine-badge,
-.app-shell-theme .stat-lbl,
-.app-shell-theme .room-spectators,
-.app-shell-theme .cm .cs {
-  color: var(--text-secondary);
-}
-
-.app-shell-theme .room-badge.playing,
-.app-shell-theme .room-badge.watching,
-.app-shell-theme .type-badge.tsumego,
-.app-shell-theme .type-badge.joseki,
-.app-shell-theme .type-badge.tesuji,
-.app-shell-theme .type-badge.endgame,
-.app-shell-theme .level-badge.beginner,
-.app-shell-theme .level-badge.intermediate,
-.app-shell-theme .level-badge.advanced {
-  border-color: var(--border);
-}
-
-.app-shell-theme .room-badge.playing,
-.app-shell-theme .room-badge.watching,
-.app-shell-theme .engine-badge.ready,
-.app-shell-theme .prob-item.active,
-.app-shell-theme .player-card.active-turn,
-.app-shell-theme .btn.primary,
-.app-shell-theme .action-btn,
-.app-shell-theme .nav-btn.primary,
-.app-shell-theme .pm-btn,
-.app-shell-theme .cp-btn.active-b,
-.app-shell-theme .cp-btn.active-w {
-  box-shadow: var(--shadow-sm);
-}
-
-.app-shell-theme .board-overlay,
-.app-shell-theme .result-overlay,
-.app-shell-theme #feedback,
-.app-shell-theme #gameover {
-  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
-}
-
 .app-shell-theme .toast {
   background: var(--text-primary);
   color: var(--page-bg);
@@ -310,19 +196,8 @@
 .app-shell-theme .player-card,
 .app-shell-theme .modal-box,
 .app-shell-theme .share-box,
-.app-shell-theme .prob-item,
-.app-shell-theme .problem-header,
-.app-shell-theme .stat-box,
-.app-shell-theme #chat-log,
-.app-shell-theme #move-list,
 .app-shell-theme .board-overlay,
 .app-shell-theme .result-overlay,
-.app-shell-theme #solution-area,
-.app-shell-theme #hint-box,
-.app-shell-theme #feedback,
-.app-shell-theme #gameover,
-.app-shell-theme .club-card,
-.app-shell-theme .engine-badge,
 .app-shell-theme .theme-toggle,
 .app-shell-theme .btn,
 .app-shell-theme .action-btn,

@@ -1,0 +1,114 @@
+﻿/* AG-DS Faz 3: Go odaları sayfa katmanı */
+body.play-page {
+  background: var(--page-bg);
+  color: var(--text-primary);
+}
+
+body.play-page .topbar,
+body.play-page .login-card,
+body.play-page .room-card,
+body.play-page .player-card,
+body.play-page .panel,
+body.play-page .share-box,
+body.play-page .modal-box,
+body.play-page .toast,
+body.play-page .empty-lobby,
+body.play-page .game-btns,
+body.play-page .chat-log,
+body.play-page .chat-input-row,
+body.play-page .room-tag,
+body.play-page .room-badge,
+body.play-page .room-spectators,
+body.play-page .engine-badge,
+body.play-page .modal-surface {
+  border-color: var(--border);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+body.play-page .topbar {
+  box-shadow: var(--shadow-sm);
+}
+
+body.play-page .room-card:hover,
+body.play-page .player-card.active-turn,
+body.play-page .room-badge.playing,
+body.play-page .room-badge.watching {
+  box-shadow: var(--shadow-sm);
+}
+
+body.play-page .room-badge.waiting,
+body.play-page .room-tag,
+body.play-page .room-spectators,
+body.play-page .login-tagline,
+body.play-page .pc-sub,
+body.play-page .chat-meta {
+  color: var(--text-secondary);
+}
+
+body.play-page .room-card,
+body.play-page .player-card,
+body.play-page .modal-box,
+body.play-page .login-card,
+body.play-page .panel,
+body.play-page .share-box {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+body.play-page .room-card,
+body.play-page .player-card,
+body.play-page .room-tag,
+body.play-page .room-badge,
+body.play-page .player-slot {
+  border: 1px solid var(--border);
+}
+
+body.play-page .room-badge.waiting {
+  background: var(--surface-soft);
+}
+
+body.play-page .room-badge.playing {
+  background: color-mix(in srgb, var(--success) 14%, var(--surface-raised));
+}
+
+body.play-page .room-badge.watching {
+  background: color-mix(in srgb, var(--secondary) 14%, var(--surface-raised));
+}
+
+body.play-page .game-btns,
+body.play-page .modal-btns,
+body.play-page .toolbar-row--gap-sm {
+  gap: var(--space-3);
+}
+
+body.play-page .room-header,
+body.play-page .lobby-header,
+body.play-page .room-card-header,
+body.play-page .room-players,
+body.play-page .room-meta-row {
+  gap: var(--space-3);
+}
+
+body.play-page .empty-lobby {
+  min-height: 160px;
+}
+
+body.play-page .room-header {
+  align-items: center;
+}
+
+body.play-page .share-box--wide,
+body.play-page .result-action--wide {
+  min-width: 0;
+}
+
+body.play-page .toast {
+  box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 860px) {
+  body.play-page .rooms-grid {
+    grid-template-columns: 1fr;
+  }
+}

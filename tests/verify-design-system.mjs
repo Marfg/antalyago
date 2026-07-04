@@ -8,45 +8,16 @@ const BASE = 'http://antalyago.test';
 const PAGES = ['problem.html', 'robot.html', 'oyna.html'];
 const BAN = ['rgb(212, 168, 75)', 'rgb(200, 168, 75)', 'rgb(184, 134, 26)', 'rgb(224, 190, 104)'];
 
-
 function pickChromiumExecutable() {
   const fromEnv = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
-  if (fromEnv && fromEnv.trim()) return fromEnv.trim();
-  return null;
-}
-
-
-function pickInstalledBrowser() {
-  const candidates = [
-    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-    'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
-  ];
-  return candidates.find(candidate => fs.existsSync(candidate)) || null;
+  return fromEnv && fromEnv.trim() ? fromEnv.trim() : null;
 }
 
 async function launchChromium() {
   const executablePath = pickChromiumExecutable();
-  const launchOptions = { headless: true };
-  if (executablePath) {
-    return chromium.launch({ ...launchOptions, executablePath });
-  }
-  try {
-    return await chromium.launch(launchOptions);
-  } catch (error) {
-    const message = String(error?.message || error);
-    if (/EPERM|EACCES|spawn/i.test(message)) {
-      try {
-        return await chromium.launch({ ...launchOptions, channel: 'chrome' });
-      } catch {}
-      const installed = pickInstalledBrowser();
-      if (installed) {
-        return await chromium.launch({ ...launchOptions, executablePath: installed });
-      }
-    }
-    throw error;
-  }
+  return executablePath
+    ? chromium.launch({ headless: true, executablePath })
+    : chromium.launch({ headless: true });
 }
 
 let pass = 0;
@@ -55,10 +26,10 @@ const test = async (name, fn) => {
   try {
     await fn();
     pass += 1;
-    console.log('  ?', name);
+    console.log('  ✓', name);
   } catch (error) {
     fail += 1;
-    console.error('  ?', name, '-', error.message);
+    console.error('  ✗', name, '-', error.message);
   }
 };
 
@@ -133,7 +104,7 @@ await test('legacy shell pages adopt semantic theme variables', async () => {
 });
 
 for (const theme of ['light', 'dark']) {
-  await test(`tema d??mesi ${theme} g?r?n?m?nde ?al???r`, async () => {
+  await test(`tema düğmesi ${theme} görünümünde çalışır`, async () => {
     const browserContext = await context({ width: 1280, height: 720 });
     const page = await browserContext.newPage();
     await page.addInitScript(value => localStorage.setItem('antalyago-theme', value), theme);
@@ -167,7 +138,7 @@ for (const viewport of [
   { width: 768, height: 1024 },
   { width: 1280, height: 720 }
 ]) {
-  await test(`${viewport.width}?${viewport.height} yatay ta?ma yok`, async () => {
+  await test(`${viewport.width}×${viewport.height} yatay taşma yok`, async () => {
     const browserContext = await context(viewport);
     const page = await browserContext.newPage();
     await page.addInitScript(() => localStorage.setItem('antalyago-theme', 'dark'));
@@ -176,14 +147,14 @@ for (const viewport of [
       await page.goto(BASE + '/' + name, { waitUntil: 'domcontentloaded' });
       await waitForPage(page);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
-      assert(overflow, `${name} yatay ta?ma ?retiyor`);
+      assert(overflow, `${name} yatay taşma üretiyor`);
     }
 
     await browserContext.close();
   });
 }
 
-await test('reduced-motion durumda ge?i?ler kapan?r', async () => {
+await test('reduced-motion durumda geçişler kapanır', async () => {
   const browser = await launchChromium();
   const browserContext = await browser.newContext({ viewport: { width: 1280, height: 720 }, reducedMotion: 'reduce' });
   const closeContext = browserContext.close.bind(browserContext);
@@ -221,7 +192,7 @@ await test('reduced-motion durumda ge?i?ler kapan?r', async () => {
 
 for (const name of PAGES) {
   for (const theme of ['light', 'dark']) {
-    await test(`${name} ${theme} ekran g?r?nt?s?`, async () => {
+    await test(`${name} ${theme} ekran görüntüsü`, async () => {
       const browserContext = await context({ width: 1280, height: 720 });
       const page = await browserContext.newPage();
       await page.addInitScript(value => localStorage.setItem('antalyago-theme', value), theme);
@@ -233,8 +204,7 @@ for (const name of PAGES) {
   }
 }
 
-console.log(`
-Tasar?m sistemi do?rulamas?: ${pass}/${pass + fail}`);
+console.log(`Tasarım sistemi doğrulaması: ${pass}/${pass + fail}`);
 if (fail) {
   process.exit(1);
 }

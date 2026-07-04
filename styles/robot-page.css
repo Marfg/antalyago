@@ -1,0 +1,94 @@
+﻿/* AG-DS Faz 3: Robotla oyna sayfa katmanı */
+body.robot-page {
+  background: var(--page-bg);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+body.robot-page #topbar,
+body.robot-page #panel,
+body.robot-page #think-bar,
+body.robot-page #feedback,
+body.robot-page #gameover,
+body.robot-page .club-card,
+body.robot-page .engine-badge,
+body.robot-page .stat-box,
+body.robot-page .action-btn,
+body.robot-page .cp-btn {
+  border-color: var(--border);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+body.robot-page #topbar {
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+
+body.robot-page #panel {
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  box-shadow: var(--shadow-md);
+}
+
+body.robot-page .sec-label,
+body.robot-page .stat-val,
+body.robot-page .go-title,
+body.robot-page .go-winner,
+body.robot-page .rv-worst-title {
+  color: var(--heading);
+}
+
+body.robot-page .cp-btn.active-b,
+body.robot-page .cp-btn.active-w,
+body.robot-page .action-btn:hover,
+body.robot-page .action-btn.confirming {
+  border-color: var(--primary);
+}
+
+body.robot-page .cp-btn.active-b,
+body.robot-page .action-btn:hover {
+  background: var(--surface-hover);
+}
+
+body.robot-page .cp-btn.active-w {
+  background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+}
+
+body.robot-page .action-btn.danger:hover,
+body.robot-page .action-btn.confirming {
+  color: var(--danger);
+}
+
+body.robot-page .engine-badge.ready {
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border));
+}
+
+body.robot-page .stat-box {
+  background: var(--surface-soft);
+}
+
+body.robot-page .think-bar,
+body.robot-page #feedback {
+  box-shadow: var(--shadow-sm);
+}
+
+body.robot-page #gameover {
+  box-shadow: var(--shadow-lg);
+}
+
+body.robot-page .board-overlay {
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+}
+
+body.robot-page .rv-nav-btn,
+body.robot-page .rv-close,
+body.robot-page .action-btn,
+body.robot-page .cp-btn {
+  min-height: 44px;
+}
+
+@media (max-width: 860px) {
+  body.robot-page #panel {
+    backdrop-filter: none;
+  }
+}
