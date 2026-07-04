@@ -139,7 +139,10 @@ async function decodeAllImages(page) {
 async function waitForStablePaint(page) {
   await waitForAssets(page);
   await decodeAllImages(page);
-  await page.waitForFunction(() => document.documentElement.classList.contains('theme-ready'));
+  const reducedMotion = await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
+  if (!reducedMotion) {
+    await page.waitForFunction(() => document.documentElement.classList.contains('theme-ready'));
+  }
   await page.waitForTimeout(250);
 }
 

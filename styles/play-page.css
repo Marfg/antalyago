@@ -1,4 +1,4 @@
-﻿/* AG-DS Faz 3: Go odaları sayfa katmanı */
+/* AG-DS Faz 3: Go odaları sayfa katmanı */
 body.play-page {
   background: var(--page-bg);
   color: var(--text-primary);
@@ -112,3 +112,382 @@ body.play-page .toast {
     grid-template-columns: 1fr;
   }
 }
+
+/* moved from play.html inline <style> */
+/* ─── TOKENS ─── */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+    body {
+      min-height:100vh;
+      background:var(--paper);
+      background-image:
+        radial-gradient(ellipse at 10% 5%,  color-mix(in srgb, var(--primary) 8%, transparent) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 95%, color-mix(in srgb, var(--secondary) 7%, transparent) 0%, transparent 50%);
+      font-family:'Noto Sans',sans-serif;
+      color:var(--ink);
+      display:flex; flex-direction:column;
+    }
+
+    /* ─── TOPBAR ─── */
+    .topbar {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.7rem 1.5rem;
+      background:var(--paper-dark);
+      border-bottom:2px solid var(--border);
+      box-shadow:0 2px 8px var(--shadow);
+      flex-shrink:0;
+      animation: fadeDown .5s ease both;
+    }
+    .topbar-left { display:flex; align-items:center; gap:.75rem; }
+    .back-btn {
+      display:flex; align-items:center; gap:.3rem;
+      text-decoration:none; color:var(--muted);
+      font-size:.8rem; font-weight:600; letter-spacing:.05em;
+      padding:.28rem .65rem; border:1px solid var(--border); border-radius:var(--r);
+      transition:all .15s;
+    }
+    .back-btn:hover { background:var(--wood); color:var(--ink); }
+    .page-title { font-family:'Noto Serif',serif; font-size:1.12rem; font-weight:700; letter-spacing:.06em; }
+
+    /* user chip */
+    .user-chip {
+      display:flex; align-items:center; gap:.5rem;
+      font-size:.8rem; font-weight:600;
+    }
+    .user-avatar {
+      width:28px; height:28px; border-radius:50%;
+      border:2px solid var(--border);
+      object-fit:cover; background:var(--wood-light);
+      display:flex; align-items:center; justify-content:center;
+      font-size:.75rem; font-weight:700; color:var(--wood-dark);
+      overflow:hidden; flex-shrink:0;
+    }
+    .user-avatar img { width:100%; height:100%; object-fit:cover; }
+    .logout-btn {
+      font-size:.72rem; color:var(--muted); border:1px solid var(--border);
+      border-radius:var(--r); padding:.22rem .55rem; cursor:pointer;
+      background:transparent; transition:all .15s;
+    }
+    .logout-btn:hover { background:var(--danger); color:var(--primary-text); border-color:var(--danger); }
+
+    /* ─── SCREENS ─── */
+    .screen { display:none; flex:1; }
+    .screen.active { display:flex; }
+
+    /* ─── LOGIN SCREEN ─── */
+    #screen-login {
+      align-items:center; justify-content:center; flex-direction:column;
+      gap:2rem; padding:2rem;
+      animation:fadeUp .5s ease both;
+    }
+    .login-logo { font-family:'Noto Serif',serif; font-size:2.4rem; font-weight:700; letter-spacing:.08em; text-align:center; line-height:1.2; }
+    .login-tagline { font-size:.9rem; color:var(--muted); text-align:center; letter-spacing:.04em; }
+    .login-card {
+      background:var(--panel); border:2px solid var(--border);
+      border-radius:var(--r); box-shadow:5px 5px 0 var(--wood-dark);
+      padding:2rem 2.25rem; width:100%; max-width:380px;
+      display:flex; flex-direction:column; gap:1.25rem;
+    }
+    .login-card h2 { font-family:'Noto Serif',serif; font-size:1.2rem; font-weight:700; }
+    .login-card p  { font-size:.82rem; color:var(--muted); line-height:1.65; }
+    .google-btn {
+      display:flex; align-items:center; justify-content:center; gap:.75rem;
+      padding:.75rem 1.25rem; border:2px solid var(--border); border-radius:var(--r);
+      background:var(--paper); cursor:pointer; font-family:'Noto Sans',sans-serif;
+      font-size:.9rem; font-weight:600; color:var(--ink); transition:all .18s;
+      width:100%;
+    }
+    .google-btn:hover { background:var(--wood-light); border-color:var(--wood-dark); box-shadow: var(--shadow-sm); }
+    .google-btn svg { width:20px; height:20px; flex-shrink:0; }
+
+    /* ─── LOBBY SCREEN ─── */
+    #screen-lobby {
+      flex-direction:column; max-width:1100px; width:100%;
+      margin:0 auto; padding:1.5rem; gap:1.25rem;
+      animation: fadeUp .4s ease both;
+    }
+
+    .lobby-header {
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem;
+    }
+    .lobby-title { font-family:'Noto Serif',serif; font-size:1.3rem; font-weight:700; }
+
+    /* ─── ROOMS GRID ─── */
+    .rooms-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+      gap:1rem;
+    }
+
+    .room-card {
+      background:var(--panel); border:1.5px solid var(--border); border-radius:var(--r);
+      box-shadow: var(--shadow-sm);
+      padding:1rem 1.1rem;
+      display:flex; flex-direction:column; gap:.7rem;
+      cursor:pointer; transition:all .15s;
+      position:relative;
+    }
+    .room-card:hover { transform:translate(-2px,-2px); box-shadow:5px 5px 0 var(--wood-dark); }
+    .room-card:active { transform:translate(1px,1px); box-shadow:1px 1px 0 var(--wood-dark); }
+    .delete-room-btn {
+      background:transparent; border:none; cursor:pointer;
+      font-size:.85rem; padding:.1rem .25rem; border-radius:3px;
+      transition:background .15s; line-height:1;
+    }
+    .delete-room-btn:hover { background:rgba(192,57,43,.15); }
+
+    .room-card-header { display:flex; align-items:center; justify-content:space-between; }
+    .room-name  { font-family:'Noto Serif',serif; font-size:1rem; font-weight:700; }
+    .room-badge {
+      font-size:.65rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+      padding:.18rem .55rem; border-radius:20px;
+    }
+    .room-badge.waiting  { background:var(--wood-light); color:var(--wood-dark); border:1px solid var(--wood); }
+    .room-badge.playing  { background:#e8f8f0; color:var(--green); border:1px solid var(--green); }
+    .room-badge.watching { background:#eaf2fb; color:var(--blue); border:1px solid var(--blue); }
+
+    .room-players {
+      display:flex; align-items:center; gap:.5rem;
+      font-size:.8rem; color:var(--muted);
+    }
+    .player-slot {
+      display:flex; align-items:center; gap:.35rem;
+      background:var(--paper); border:1px solid var(--border);
+      border-radius:var(--r); padding:.3rem .55rem;
+      flex:1;
+    }
+    .player-slot .ps-stone { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .ps-stone.b { background:radial-gradient(circle at 35% 30%,color-mix(in srgb, var(--text-primary) 35%, var(--page-bg)),color-mix(in srgb, var(--text-primary) 8%, var(--page-bg))); }
+    .ps-stone.w { background:radial-gradient(circle at 35% 30%,var(--primary-text),color-mix(in srgb, var(--primary-text) 80%, var(--text-muted))); border:1px solid var(--border); }
+    .player-slot .ps-name { font-size:.75rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .vs-sep { font-size:.7rem; color:var(--muted); flex-shrink:0; }
+
+    .room-meta { display:flex; gap:.5rem; flex-wrap:wrap; }
+    .room-tag {
+      font-size:.68rem; color:var(--muted);
+      background:var(--paper-dark); border-radius:2px;
+      padding:.1rem .4rem;
+    }
+
+    .room-spectators { font-size:.7rem; color:var(--muted); }
+
+    .empty-lobby {
+      grid-column:1/-1; text-align:center;
+      padding:3rem; color:var(--muted);
+      font-family:'Noto Serif',serif; font-size:1rem;
+    }
+
+    /* ─── YENI ODA MODAL ─── */
+    #modal-newroom {
+      display:none; position:fixed; inset:0;
+      background:rgba(26,16,8,.55);
+      align-items:center; justify-content:center;
+      z-index:500; padding:1rem;
+    }
+    #modal-newroom.show { display:flex; }
+    .modal-box {
+      background:var(--paper); border:2px solid var(--border);
+      border-radius:var(--r); box-shadow:6px 6px 0 var(--wood-dark);
+      padding:1.75rem 2rem; width:100%; max-width:360px;
+      display:flex; flex-direction:column; gap:1rem;
+    }
+    .modal-title { font-family:'Noto Serif',serif; font-size:1.2rem; font-weight:700; }
+    .modal-btns  { display:flex; gap:.6rem; margin-top:.25rem; }
+
+    /* ─── FORM ─── */
+    .fg { display:flex; flex-direction:column; gap:.32rem; }
+    .fl { font-size:.73rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+    .fw { position:relative; }
+    .fw::after { content:'▾'; position:absolute; right:.6rem; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; font-size:.72rem; }
+    select, input[type=text] {
+      width:100%; background:var(--paper); border:1.5px solid var(--border);
+      border-radius:var(--r); color:var(--ink); font-family:'Noto Sans',sans-serif;
+      font-size:.84rem; padding:.4rem .65rem; outline:none;
+      appearance:none; transition:border-color .15s;
+    }
+    select:focus, input[type=text]:focus { border-color:var(--wood-dark); }
+
+    /* ─── BUTTONS ─── */
+    .btn {
+      padding:.52rem 1.1rem; border:1.5px solid var(--border); border-radius:var(--r);
+      background:var(--paper); font-family:'Noto Sans',sans-serif;
+      font-size:.82rem; font-weight:600; letter-spacing:.05em;
+      cursor:pointer; transition:all .15s; color:var(--ink); white-space:nowrap;
+    }
+    .btn.primary { background:var(--wood); border-color:var(--wood-dark); }
+    .btn.primary:hover { background:var(--wood-dark); color:var(--primary-text); }
+    .btn.danger  { border-color:var(--red); color:var(--red); }
+    .btn.danger:hover  { background:var(--red); color:var(--primary-text); }
+    .btn.ghost   { border-color:transparent; color:var(--muted); }
+    .btn.ghost:hover { background:var(--paper-dark); border-color:var(--border); }
+    .btn:disabled { opacity:.4; cursor:not-allowed; }
+    .btn.full { width:100%; }
+
+    /* ─── GAME SCREEN ─── */
+    #screen-game {
+      flex-direction:column; max-width:1200px; width:100%;
+      margin:0 auto; padding:1.25rem; gap:1.1rem;
+      animation: fadeUp .4s ease both;
+    }
+
+    .game-layout {
+      display:grid; grid-template-columns:200px 1fr 200px;
+      gap:1.1rem; flex:1;
+    }
+
+    /* ─── PANEL ─── */
+    .panel {
+      background:var(--panel); border:1.5px solid var(--border);
+      border-radius:var(--r); box-shadow: var(--shadow-sm);
+      padding:.9rem; display:flex; flex-direction:column; gap:.85rem;
+    }
+    .panel-title {
+      font-family:'Noto Serif',serif; font-size:.8rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:.12em; color:var(--wood-dark);
+      padding-bottom:.45rem; border-bottom:1px solid var(--border);
+    }
+
+    /* ─── PLAYER CARDS ─── */
+    .player-card {
+      background:var(--paper); border:1.5px solid var(--border); border-radius:var(--r);
+      padding:.6rem .75rem; display:flex; align-items:center; gap:.6rem;
+    }
+    .player-card.active-turn { border-color:var(--wood-dark); background:var(--wood-light); }
+    .pc-stone { width:16px; height:16px; border-radius:50%; flex-shrink:0; }
+    .pc-stone.black { background:radial-gradient(circle at 35% 30%,color-mix(in srgb, var(--text-primary) 35%, var(--page-bg)),color-mix(in srgb, var(--text-primary) 8%, var(--page-bg))); box-shadow:0 1px 3px var(--shadow-color); }
+    .pc-stone.white { background:radial-gradient(circle at 35% 30%,var(--primary-text),color-mix(in srgb, var(--primary-text) 80%, var(--text-muted))); border:1px solid var(--border); }
+    .pc-info { display:flex; flex-direction:column; min-width:0; }
+    .pc-name { font-size:.82rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pc-sub  { font-size:.68rem; color:var(--muted); }
+    .pc-clock { margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:.88rem; font-weight:600; flex-shrink:0; }
+    .pc-clock.danger { color:var(--red); animation:blink 1s infinite; }
+
+    /* ─── BOARD ─── */
+    .board-col { display:flex; flex-direction:column; align-items:center; gap:.75rem; }
+    .board-container {
+      position:relative; width:100%; max-width:560px; aspect-ratio:1;
+      background:var(--wood-board); border:3px solid var(--wood-dark); border-radius:var(--r);
+      box-shadow: 0 8px 28px var(--shadow-color); overflow:hidden;
+    }
+    #goban { width:100%; height:100%; display:block; }
+
+    /* overlay */
+    .board-overlay {
+      display:none; position:absolute; inset:0;
+      background:rgba(253,246,227,.93);
+      flex-direction:column; align-items:center; justify-content:center;
+      gap:1rem; z-index:20; padding:2rem; text-align:center;
+    }
+    .board-overlay.show { display:flex; }
+    .ov-title { font-family:'Noto Serif',serif; font-size:1.7rem; font-weight:700; }
+    .ov-sub   { font-size:.88rem; color:var(--muted); max-width:260px; line-height:1.65; }
+
+    /* your-turn badge */
+    .turn-bar {
+      display:flex; align-items:center; gap:.65rem;
+      font-size:.84rem; font-weight:600; color:var(--muted);
+    }
+    .turn-stone { width:18px; height:18px; border-radius:50%; }
+    .turn-stone.black { background:radial-gradient(circle at 35% 30%,color-mix(in srgb, var(--text-primary) 35%, var(--page-bg)),color-mix(in srgb, var(--text-primary) 8%, var(--page-bg))); box-shadow:0 1px 3px var(--shadow-color); }
+    .turn-stone.white { background:radial-gradient(circle at 35% 30%,var(--primary-text),color-mix(in srgb, var(--primary-text) 80%, var(--text-muted))); border:1px solid var(--border); }
+    .your-turn-pill {
+      display:none; padding:.2rem .65rem; border-radius:20px;
+      background:var(--success); color:var(--primary-text);
+      font-size:.7rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+      animation:pulse-pill 1.6s infinite;
+    }
+    .your-turn-pill.show { display:inline-block; }
+    .spectator-pill {
+      padding:.2rem .65rem; border-radius:20px;
+      background:var(--secondary); color:var(--primary-text);
+      font-size:.7rem; font-weight:700; letter-spacing:.07em;
+      display:none;
+    }
+    .spectator-pill.show { display:inline-block; }
+
+    .game-btns { display:flex; gap:.5rem; width:100%; max-width:560px; }
+    .game-btns .btn { flex:1; font-size:.75rem; padding:.45rem .5rem; }
+
+    /* ─── SHARE LINK ─── */
+    .share-box {
+      display:flex; gap:.4rem; align-items:center;
+      background:var(--paper); border:1px solid var(--border); border-radius:var(--r);
+      padding:.35rem .5rem; font-size:.72rem;
+    }
+    .share-box input {
+      flex:1; border:none; background:transparent; font-family:'JetBrains Mono',monospace;
+      font-size:.7rem; color:var(--muted); outline:none;
+    }
+    .copy-btn {
+      font-size:.68rem; padding:.2rem .5rem; font-weight:700;
+      background:var(--wood-light); border:1px solid var(--wood); border-radius:2px;
+      cursor:pointer; transition:all .15s; white-space:nowrap;
+    }
+    .copy-btn:hover { background:var(--wood); }
+
+    /* ─── CHAT ─── */
+    #chat-log {
+      flex:1; overflow-y:auto; max-height:200px;
+      background:var(--paper); border:1px solid var(--border); border-radius:var(--r);
+      padding:.5rem; display:flex; flex-direction:column; gap:.2rem;
+      font-size:.73rem;
+    }
+    .cm { line-height:1.55; }
+    .cm .cu { font-weight:700; color:var(--wood-dark); }
+    .cm .cs { color:var(--muted); font-style:italic; }
+
+    .chat-input-row { display:flex; gap:.4rem; }
+    .chat-input-row input {
+      flex:1; font-family:'Noto Sans',sans-serif;
+      font-size:.78rem; padding:.35rem .55rem;
+    }
+    .chat-input-row button {
+      padding:.3rem .65rem; font-size:.72rem; font-weight:600;
+      background:var(--wood); border:1.5px solid var(--wood-dark);
+      border-radius:var(--r); cursor:pointer; transition:all .15s;
+    }
+    .chat-input-row button:hover { background:var(--wood-dark); color:var(--primary-text); }
+
+    /* ─── MOVE LIST ─── */
+    #move-list {
+      overflow-y:auto; max-height:180px;
+      background:var(--paper); border:1px solid var(--border); border-radius:var(--r);
+      padding:.45rem; font-family:'JetBrains Mono',monospace; font-size:.7rem;
+    }
+    .mv { display:flex; align-items:center; gap:.35rem; padding:.15rem .3rem; border-radius:2px; }
+    .mv.last { background:var(--wood-light); font-weight:600; }
+    .mvn { color:var(--muted); min-width:22px; }
+    .mvs { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .mvs.b { background:color-mix(in srgb, var(--text-primary) 10%, var(--page-bg)); }
+    .mvs.w { background:color-mix(in srgb, var(--primary-text) 82%, var(--text-muted)); border:1px solid var(--border-strong); }
+
+    /* spectators */
+    #spectators-list { font-size:.73rem; color:var(--muted); line-height:1.8; }
+
+    /* ─── TOAST ─── */
+    .toast {
+      position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(80px);
+      background:var(--text-primary); color:var(--page-bg); padding:.6rem 1.25rem;
+      border-radius:var(--r); font-size:.82rem; font-weight:600;
+      box-shadow:0 4px 16px var(--shadow-color); z-index:9999;
+      transition:transform .3s ease;
+    }
+    .toast.show { transform:translateX(-50%) translateY(0); }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeDown { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeUp   { from{opacity:0;transform:translateY(16px)}  to{opacity:1;transform:translateY(0)} }
+    @keyframes blink    { 0%,100%{opacity:1} 50%{opacity:.3} }
+    @keyframes pulse-pill { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.8;transform:scale(1.04)} }
+
+    #chat-log::-webkit-scrollbar, #move-list::-webkit-scrollbar { width:4px; }
+    #chat-log::-webkit-scrollbar-thumb, #move-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+
+    @media(max-width:900px) {
+      .game-layout { grid-template-columns:1fr; }
+      .board-container { max-width:480px; }
+    }
+    @media(max-width:540px) {
+      .topbar { padding:.6rem 1rem; }
+      #screen-lobby, #screen-game { padding:1rem .75rem; }
+    }

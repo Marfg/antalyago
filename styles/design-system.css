@@ -1246,7 +1246,86 @@ textarea {
   .theme-ready *,
   .theme-ready *::before,
   .theme-ready *::after {
-    transition: none !important;
-    animation: none !important;
+    transition: none;
+    animation: none;
   }
 }
+
+/* shared mascot widget moved from legacy inline styles */
+.mascot-btn {
+    position: fixed;
+    bottom: max(24px, env(safe-area-inset-bottom, 24px));
+    right:  max(20px, env(safe-area-inset-right,  20px));
+    width: 64px; height: 64px;
+    cursor: pointer; z-index: 9000;
+    background: none; border: none; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  .mascot-wrap { width: 64px; height: 64px; position: relative; }
+  .mascot-svg  {
+    width: 64px; height: 64px; overflow: visible;
+    filter: drop-shadow(0 4px 14px var(--shadow-color));
+  }
+  .mascot-btn:hover .mascot-wrap { transform: scale(1.06); transition: transform .18s ease; }
+  .m-body {
+    transform-box: fill-box; transform-origin: center;
+    animation: m-breathe 3s ease-in-out infinite;
+  }
+  @keyframes m-breathe { 0%,100%{transform:scaleY(1)} 50%{transform:scaleY(1.04)} }
+  .m-glow { animation: m-glow-idle 3s ease-in-out infinite; }
+  @keyframes m-glow-idle { 0%,100%{opacity:.20} 50%{opacity:.50} }
+  .m-eye {
+    transform-box: fill-box; transform-origin: center;
+    animation: m-blink 5s ease-in-out infinite;
+  }
+  .m-eye-r { animation-delay: .22s; }
+  @keyframes m-blink {
+    0%,86%,100%{transform:scaleY(1)}
+    90%{transform:scaleY(.08)}
+    93%{transform:scaleY(1)}
+  }
+  .mascot-btn.is-clicking .mascot-svg { animation: m-click .35s cubic-bezier(.36,.07,.19,.97) 1; }
+  @keyframes m-click {
+    0%{transform:scale(1,1)} 20%{transform:scale(1.15,.82)}
+    55%{transform:scale(.92,1.10)} 80%{transform:scale(1.04,.97)} 100%{transform:scale(1,1)}
+  }
+  .mascot-btn.is-celebrating .mascot-svg { animation: m-jump .6s cubic-bezier(.36,.07,.19,.97) 1; }
+  @keyframes m-jump {
+    0%{transform:translateY(0) scale(1,1)} 30%{transform:translateY(-14px) scale(.95,1.08)}
+    60%{transform:translateY(0) scale(1.08,.92)} 80%{transform:translateY(-4px) scale(.98,1.04)}
+    100%{transform:translateY(0) scale(1,1)}
+  }
+  .mascot-btn.is-thinking .m-body { animation: m-think-breathe 2s ease-in-out infinite; }
+  .mascot-btn.is-thinking .m-glow { animation: m-glow-idle 1.5s ease-in-out infinite; }
+  @keyframes m-think-breathe { 0%,100%{transform:scaleY(1)} 50%{transform:scaleY(1.02)} }
+  .mascot-btn.is-speaking .m-glow { animation: m-glow-idle 1.2s ease-in-out infinite; }
+  @keyframes badge-pulse {
+    0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--danger) 40%, transparent)}
+    50%    {box-shadow:0 0 0 6px color-mix(in srgb, var(--danger) 0%, transparent)}
+  }
+  .mascot-badge {
+    position: absolute; top: -4px; right: -4px;
+    width: 18px; height: 18px;
+    background: var(--danger); border-radius: 50%;
+    font-size: 11px; color: var(--primary-text);
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--bg, var(--page-bg));
+    animation: badge-pulse 2s ease-in-out infinite;
+  }
+  .mascot-bubble {
+    position: absolute; bottom: 72px; right: 0;
+    min-width: 180px; max-width: 240px;
+    background: var(--surface-raised); border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+    border-radius: 12px 12px 2px 12px;
+    padding: 10px 14px; font-size: 13px; line-height: 1.5;
+    color: var(--text-primary); font-family: 'Noto Sans', sans-serif;
+    opacity: 0; transform: translateY(8px) scale(.95);
+    transform-origin: bottom right;
+    transition: opacity .2s ease, transform .2s ease;
+    pointer-events: none;
+  }
+  .mascot-bubble.is-visible { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+  @media (prefers-reduced-motion: reduce) {
+    .m-body, .m-glow, .m-eye, .mascot-badge,
+    .mascot-btn.is-clicking .mascot-svg,
+    .mascot-btn.is-celebrating .mascot-svg { animation: none; }
+  }

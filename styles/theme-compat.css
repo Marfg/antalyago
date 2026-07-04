@@ -21,6 +21,7 @@
   --wood: var(--primary);
   --wood-dark: var(--primary-hover);
   --wood-light: var(--surface-soft);
+  --wood-board: var(--board-surround);
   --shadow: var(--shadow-color);
   --green: var(--success);
   --red: var(--danger);
@@ -209,6 +210,12 @@
 .app-shell-theme .nav-btn,
 .app-shell-theme .cc-btn {
   transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease, box-shadow 220ms ease, fill 220ms ease, stroke 220ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell-theme :is(.result-overlay, .theme-toggle, .btn, .action-btn, .cp-btn, .back-btn, .logout-btn, .copy-btn, .google-btn, .nav-btn, .cc-btn) {
+    transition: none;
+  }
 }
 
 @media (max-width: 860px) {

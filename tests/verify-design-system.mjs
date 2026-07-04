@@ -5,7 +5,11 @@ import { chromium } from 'playwright-core';
 
 const ROOT = path.resolve('.');
 const BASE = 'http://antalyago.test';
-const PAGES = ['problem.html', 'robot.html', 'oyna.html'];
+const PAGES = [
+  { name: 'problem.html', css: 'styles/problem-page.css' },
+  { name: 'robot.html', css: 'styles/robot-page.css' },
+  { name: 'oyna.html', css: 'styles/play-page.css' }
+];
 const BAN = ['rgb(212, 168, 75)', 'rgb(200, 168, 75)', 'rgb(184, 134, 26)', 'rgb(224, 190, 104)'];
 
 function pickChromiumExecutable() {
@@ -45,7 +49,6 @@ async function context(viewport = { width: 1280, height: 720 }) {
     const url = new URL(route.request().url());
     const pathname = decodeURIComponent(url.pathname).replace(/^\/+/, '');
     const filePath = path.join(ROOT, pathname);
-
     try {
       const body = fs.readFileSync(filePath);
       const contentType = filePath.endsWith('.css')
@@ -74,6 +77,23 @@ async function waitForPage(page) {
   await page.waitForTimeout(250);
 }
 
+async function assertCssOrder(page, cssName) {
+  const order = await page.evaluate(() => Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(link => link.getAttribute('href') || ''));
+  const designIndex = order.indexOf('styles/design-system.css');
+  const compatIndex = order.indexOf('styles/theme-compat.css');
+  const pageIndex = order.indexOf(cssName);
+  assert(designIndex !== -1, `missing design-system.css for ${cssName}`);
+  assert(compatIndex !== -1, `missing theme-compat.css for ${cssName}`);
+  assert(pageIndex !== -1, `missing ${cssName}`);
+  assert(designIndex < compatIndex, `wrong stylesheet order for ${cssName}: design-system should load before theme-compat`);
+  assert(compatIndex < pageIndex, `wrong stylesheet order for ${cssName}: page CSS should load last`);
+}
+
+async function assertNoStyleTags(page) {
+  const count = await page.evaluate(() => document.querySelectorAll('style').length);
+  assert.equal(count, 0, 'embedded style tags should be removed');
+}
+
 await test('legacy shell pages adopt semantic theme variables', async () => {
   const browserContext = await context();
   const page = await browserContext.newPage();
@@ -91,7 +111,8 @@ await test('legacy shell pages adopt semantic theme variables', async () => {
       surfaceBorder: styles.getPropertyValue('--surface-border').trim(),
       panel: styles.getPropertyValue('--panel').trim(),
       surfaceRaised: styles.getPropertyValue('--surface-raised').trim(),
-      wood: styles.getPropertyValue('--wood').trim()
+      wood: styles.getPropertyValue('--wood').trim(),
+      woodBoard: styles.getPropertyValue('--wood-board').trim()
     };
   });
 
@@ -99,19 +120,22 @@ await test('legacy shell pages adopt semantic theme variables', async () => {
   assert.equal(vars.border, vars.surfaceBorder);
   assert.equal(vars.panel, vars.surfaceRaised);
   assert.equal(vars.wood, vars.primary);
+  assert.equal(vars.woodBoard, await page.evaluate(() => getComputedStyle(document.body).getPropertyValue('--board-surround').trim()));
 
   await browserContext.close();
 });
 
 for (const theme of ['light', 'dark']) {
-  await test(`tema düğmesi ${theme} görünümünde çalışır`, async () => {
+  await test(`theme toggle works in ${theme} mode`, async () => {
     const browserContext = await context({ width: 1280, height: 720 });
     const page = await browserContext.newPage();
     await page.addInitScript(value => localStorage.setItem('antalyago-theme', value), theme);
 
-    for (const name of PAGES) {
+    for (const { name, css } of PAGES) {
       await page.goto(BASE + '/' + name, { waitUntil: 'domcontentloaded' });
       await waitForPage(page);
+      await assertNoStyleTags(page);
+      await assertCssOrder(page, css);
 
       assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), theme);
       const toggle = page.locator('[data-theme-toggle]');
@@ -138,14 +162,16 @@ for (const viewport of [
   { width: 768, height: 1024 },
   { width: 1280, height: 720 }
 ]) {
-  await test(`${viewport.width}×${viewport.height} yatay taşma yok`, async () => {
+  await test(`${viewport.width}x${viewport.height} horizontal overflow check`, async () => {
     const browserContext = await context(viewport);
     const page = await browserContext.newPage();
     await page.addInitScript(() => localStorage.setItem('antalyago-theme', 'dark'));
 
-    for (const name of PAGES) {
+    for (const { name, css } of PAGES) {
       await page.goto(BASE + '/' + name, { waitUntil: 'domcontentloaded' });
       await waitForPage(page);
+      await assertNoStyleTags(page);
+      await assertCssOrder(page, css);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
       assert(overflow, `${name} yatay taşma üretiyor`);
     }
@@ -154,7 +180,7 @@ for (const viewport of [
   });
 }
 
-await test('reduced-motion durumda geçişler kapanır', async () => {
+await test('reduced-motion disables transitions', async () => {
   const browser = await launchChromium();
   const browserContext = await browser.newContext({ viewport: { width: 1280, height: 720 }, reducedMotion: 'reduce' });
   const closeContext = browserContext.close.bind(browserContext);
@@ -190,9 +216,77 @@ await test('reduced-motion durumda geçişler kapanır', async () => {
   await browserContext.close();
 });
 
-for (const name of PAGES) {
+await test('problem help/result states render', async () => {
+  const browserContext = await context({ width: 1280, height: 720 });
+  const page = await browserContext.newPage();
+  await page.addInitScript(() => localStorage.setItem('antalyago-theme', 'dark'));
+  await page.goto(BASE + '/problem.html', { waitUntil: 'domcontentloaded' });
+  await waitForPage(page);
+
+  await page.evaluate(() => {
+    showHint();
+    document.getElementById('overlay-correct').classList.add('show');
+  });
+
+  await page.locator('#hint-box').waitFor({ state: 'visible' });
+  await page.locator('#overlay-correct').waitFor({ state: 'visible' });
+  assert(await page.locator('#hint-box').isVisible());
+  assert(await page.locator('#overlay-correct').isVisible());
+
+  await browserContext.close();
+});
+
+await test('robot thinking/gameover states render', async () => {
+  const browserContext = await context({ width: 1280, height: 720 });
+  const page = await browserContext.newPage();
+  await page.addInitScript(() => localStorage.setItem('antalyago-theme', 'dark'));
+  await page.goto(BASE + '/robot.html', { waitUntil: 'domcontentloaded' });
+  await waitForPage(page);
+
+  await page.evaluate(() => {
+    document.getElementById('think-bar').classList.add('show');
+    const modal = document.getElementById('gameover');
+    modal.classList.add('show');
+    document.getElementById('go-winner').textContent = 'Oyun Bitti';
+    document.getElementById('go-score').textContent = 'Siyah kazandı';
+    document.getElementById('go-komi').textContent = 'Komi: 6.5';
+    document.getElementById('go-territory').textContent = 'Diyalog ve sonuç alanı görünür';
+  });
+
+  await page.locator('#think-bar').waitFor({ state: 'visible' });
+  await page.locator('#gameover').waitFor({ state: 'visible' });
+  assert(await page.locator('#think-bar').isVisible());
+  assert(await page.locator('#gameover').isVisible());
+
+  await browserContext.close();
+});
+
+await test('play lobby/modal states render', async () => {
+  const browserContext = await context({ width: 1280, height: 720 });
+  const page = await browserContext.newPage();
+  await page.addInitScript(() => localStorage.setItem('antalyago-theme', 'dark'));
+  await page.goto(BASE + '/oyna.html', { waitUntil: 'domcontentloaded' });
+  await waitForPage(page);
+
+  await page.evaluate(() => {
+    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+    document.getElementById('screen-lobby').classList.add('active');
+    const modal = document.getElementById('modal-newroom');
+    modal.classList.add('show');
+    document.getElementById('room-name-input').value = 'Test Odası';
+  });
+
+  await page.locator('#screen-lobby').waitFor({ state: 'visible' });
+  await page.locator('#modal-newroom.show').waitFor({ state: 'visible' });
+  assert(await page.locator('#screen-lobby').isVisible());
+  assert(await page.locator('#modal-newroom.show').isVisible());
+
+  await browserContext.close();
+});
+
+for (const { name } of PAGES) {
   for (const theme of ['light', 'dark']) {
-    await test(`${name} ${theme} ekran görüntüsü`, async () => {
+    await test(`${name} ${theme} screenshot`, async () => {
       const browserContext = await context({ width: 1280, height: 720 });
       const page = await browserContext.newPage();
       await page.addInitScript(value => localStorage.setItem('antalyago-theme', value), theme);

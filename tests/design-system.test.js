@@ -16,6 +16,15 @@ function count(text, pattern) {
   return (text.match(pattern) || []).length;
 }
 
+function countStyleBlocks(text) {
+  return count(text, /<style\b/gi);
+}
+
+function countStyleLines(text) {
+  return [...text.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)]
+    .reduce((sum, match) => sum + match[1].split(/\r?\n/).length, 0);
+}
+
 const metrics = {
   problemInline: count(files.problem, /style="/g),
   robotInline: count(files.robot, /style="/g),
@@ -25,36 +34,51 @@ const metrics = {
   oynaStyleWrites: count(files.oyna, /\.style\./g),
   compatSelectors: count(files.compat, /^\s*\.app-shell-theme/gm),
   compatImportant: count(files.compat, /!important/g),
+  htmlStyleBlocks: {
+    problem: countStyleBlocks(files.problem),
+    robot: countStyleBlocks(files.robot),
+    oyna: countStyleBlocks(files.oyna)
+  },
+  htmlStyleLines: {
+    problem: countStyleLines(files.problem),
+    robot: countStyleLines(files.robot),
+    oyna: countStyleLines(files.oyna)
+  }
 };
 
-const tokenGroups = [
-  ['--surface-border:', 'surface-border token missing'],
-  ['--surface-border-strong:', 'surface-border-strong token missing'],
-  ['--surface-soft:', 'surface-soft token missing'],
-  ['--surface-hover:', 'surface-hover token missing'],
-  ['--text-primary:', 'text-primary token missing'],
-  ['--text-secondary:', 'text-secondary token missing'],
-  ['--text-muted:', 'text-muted token missing'],
-  ['--heading:', 'heading token missing'],
-  ['--border:', 'border token missing'],
-  ['--border-strong:', 'border-strong token missing'],
-  ['--primary:', 'primary token missing'],
-  ['--primary-hover:', 'primary-hover token missing'],
-  ['--primary-active:', 'primary-active token missing'],
-  ['--secondary:', 'secondary token missing'],
-  ['--accent:', 'accent token missing'],
-  ['--success:', 'success token missing'],
-  ['--warning:', 'warning token missing'],
-  ['--danger:', 'danger token missing'],
-  ['--focus-ring:', 'focus ring token missing'],
-  ['--shadow-sm:', 'shadow-sm token missing'],
-  ['--shadow-md:', 'shadow-md token missing'],
-  ['--shadow-lg:', 'shadow-lg token missing'],
-  ['--board-surround:', 'board surround token missing'],
-];
+for (const [name, value] of Object.entries(metrics.htmlStyleBlocks)) {
+  assert.equal(value, 0, `${name} still contains embedded <style>`);
+}
+for (const [name, value] of Object.entries(metrics.htmlStyleLines)) {
+  assert.equal(value, 0, `${name} still contains embedded style lines`);
+}
 
-for (const [needle, message] of tokenGroups) {
-  assert(files.design.includes(needle), message);
+for (const [htmlName, html, pageCss] of [
+  ['problem', files.problem, 'styles/problem-page.css'],
+  ['robot', files.robot, 'styles/robot-page.css'],
+  ['oyna', files.oyna, 'styles/play-page.css']
+]) {
+  assert(html.includes('styles/design-system.css'), `${htmlName} missing design-system.css`);
+  assert(html.includes('styles/theme-compat.css'), `${htmlName} missing theme-compat.css`);
+  assert(html.includes(pageCss), `${htmlName} missing ${pageCss}`);
+  assert(html.includes('core/theme.js'), `${htmlName} missing core/theme.js`);
+  assert(html.includes('data-theme-toggle'), `${htmlName} missing theme toggle`);
+  assert(html.indexOf('styles/design-system.css') < html.indexOf('styles/theme-compat.css'), `${htmlName} CSS order wrong`);
+  assert(html.indexOf('styles/theme-compat.css') < html.indexOf(pageCss), `${htmlName} page CSS order wrong`);
+  assert(html.includes('page-shell app-shell-theme'), `${htmlName} page shell missing`);
+  for (const bad of ['\u00c3', '\u00c4', '\u00c5', '\u00c2']) {
+    assert(!html.includes(bad), `${htmlName} contains mojibake marker ${bad}`);
+  }
+}
+
+for (const needle of [
+  '--surface-border:', '--surface-border-strong:', '--surface-soft:', '--surface-hover:',
+  '--text-primary:', '--text-secondary:', '--text-muted:', '--heading:', '--border:',
+  '--border-strong:', '--primary:', '--primary-hover:', '--primary-active:', '--secondary:',
+  '--accent:', '--success:', '--warning:', '--danger:', '--focus-ring:', '--shadow-sm:',
+  '--shadow-md:', '--shadow-lg:', '--board-surround:'
+]) {
+  assert(files.design.includes(needle), `design-system token missing: ${needle}`);
 }
 
 for (const selector of [
@@ -79,29 +103,15 @@ for (const fragment of [
 for (const frag of [
   '--gold: var(--primary);',
   '--wood: var(--primary);',
+  '--wood-board: var(--board-surround);',
   '--border: var(--surface-border);',
   '--border-strong: var(--surface-border-strong);'
 ]) {
   assert(files.compat.includes(frag), `compat mapping missing: ${frag}`);
 }
 
-for (const [name, html] of Object.entries({ problem: files.problem, robot: files.robot, oyna: files.oyna })) {
-  assert(html.includes('styles/design-system.css'), `${name} missing design-system.css`);
-  assert(html.includes('styles/theme-compat.css'), `${name} missing theme-compat.css`);
-  assert(html.includes('core/theme.js'), `${name} missing core/theme.js`);
-  assert(html.includes('data-theme-toggle'), `${name} missing theme toggle`);
-  assert(html.includes('page-shell app-shell-theme'), `${name} page shell missing`);
-  for (const bad of ['\u00c3', '\u00c4', '\u00c5', '\u00c2']) {
-    assert(!html.includes(bad), `${name} contains mojibake marker ${bad}`);
-  }
-}
-
-assert(files.problem.includes('styles/problem-page.css'), 'problem.html missing problem-page.css');
-assert(files.robot.includes('styles/robot-page.css'), 'robot.html missing robot-page.css');
-assert(files.oyna.includes('styles/play-page.css'), 'oyna.html missing play-page.css');
-
 for (const [name, css] of Object.entries({ problemPage: files.problemPage, robotPage: files.robotPage, playPage: files.playPage })) {
-  for (const banned of ['#d4a84b', '#b8861a', '#e0be68', '#c8a84b', 'rgba(200,168,75']) {
+  for (const banned of ['#d4a84b', '#b8861a', '#e0be68', '#c8a84b', 'rgba(200,168,75', 'rgba(212,168,75', 'rgba(184,134,26']) {
     assert(!css.includes(banned), `${name} contains banned literal ${banned}`);
   }
   assert(css.includes('var(--page-bg)') || css.includes('var(--surface-raised)'), `${name} should use semantic tokens`);
@@ -124,12 +134,12 @@ assert(files.oyna.includes('card modal-surface'), 'oyna.html shared modal/card m
 assert(files.oyna.includes('button button-primary'), 'oyna.html shared primary button missing');
 assert(files.oyna.includes('badge'), 'oyna.html shared badge missing');
 
-assert(metrics.problemInline <= 1, `problem.html presentation inline styles too high: ${metrics.problemInline}`);
-assert(metrics.robotInline <= 0, `robot.html presentation inline styles too high: ${metrics.robotInline}`);
-assert(metrics.oynaInline <= 0, `oyna.html presentation inline styles too high: ${metrics.oynaInline}`);
-assert(metrics.problemStyleWrites <= 1, `problem.html direct style writes should stay functional-only: ${metrics.problemStyleWrites}`);
-assert(metrics.robotStyleWrites <= 4, `robot.html direct style writes should stay functional-only: ${metrics.robotStyleWrites}`);
-assert(metrics.oynaStyleWrites <= 0, `oyna.html should not use direct style writes for presentation: ${metrics.oynaStyleWrites}`);
+assert(metrics.problemInline <= 1, `problem.html inline style budget exceeded: ${metrics.problemInline}`);
+assert(metrics.robotInline <= 0, `robot.html inline style budget exceeded: ${metrics.robotInline}`);
+assert(metrics.oynaInline <= 0, `oyna.html inline style budget exceeded: ${metrics.oynaInline}`);
+assert(metrics.problemStyleWrites <= 1, `problem.html direct style writes too high: ${metrics.problemStyleWrites}`);
+assert(metrics.robotStyleWrites <= 4, `robot.html direct style writes too high: ${metrics.robotStyleWrites}`);
+assert(metrics.oynaStyleWrites <= 0, `oyna.html direct style writes too high: ${metrics.oynaStyleWrites}`);
 assert(metrics.compatImportant <= 2, `theme-compat !important budget exceeded: ${metrics.compatImportant}`);
 assert(metrics.compatSelectors <= 120, `theme-compat selector budget exceeded: ${metrics.compatSelectors}`);
 assert(!files.problem.includes('style.display'), 'problem.html should not use style.display');
@@ -138,8 +148,8 @@ assert(!files.robot.includes('style.cursor'), 'robot.html should not use style.c
 assert(!files.oyna.includes('style.display'), 'oyna.html should not use style.display');
 assert(!files.oyna.includes('style.cursor'), 'oyna.html should not use style.cursor');
 
-console.log(`inline style sayıları: problem=${metrics.problemInline}, robot=${metrics.robotInline}, oyna=${metrics.oynaInline}`);
-console.log(`direct style yazımları: problem=${metrics.problemStyleWrites}, robot=${metrics.robotStyleWrites}, oyna=${metrics.oynaStyleWrites}`);
-console.log(`theme-compat selector satırları: ${metrics.compatSelectors}`);
-console.log(`theme-compat !important sayısı: ${metrics.compatImportant}`);
-console.log('tasarım sistemi token ve ortak bileşen denetimi geçti');
+console.log(`inline style counts: problem=${metrics.problemInline}, robot=${metrics.robotInline}, oyna=${metrics.oynaInline}`);
+console.log(`direct style writes: problem=${metrics.problemStyleWrites}, robot=${metrics.robotStyleWrites}, oyna=${metrics.oynaStyleWrites}`);
+console.log(`theme-compat selector lines: ${metrics.compatSelectors}`);
+console.log(`theme-compat !important count: ${metrics.compatImportant}`);
+console.log('design-system token and shared component contract passed');

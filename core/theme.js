@@ -77,9 +77,13 @@ export function initTheme({ root = document, storage = globalThis.localStorage }
     });
   });
 
-  requestAnimationFrame(() => {
-    root.documentElement.classList.add('theme-ready');
-  });
+  const prefersReducedMotion = root.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
+
+  if (!prefersReducedMotion) {
+    requestAnimationFrame(() => {
+      root.documentElement.classList.add('theme-ready');
+    });
+  }
 
   return theme;
 }
