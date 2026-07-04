@@ -352,7 +352,9 @@ function renderTreeBranch(node, mainlineIds, depth) {
   if (node.annotations?.length) {
     const note = document.createElement('p');
     note.className = 'move-tree-item__note';
-    note.textContent = node.annotations.join(' · ');
+    note.textContent = node.annotations
+      .map(a => typeof a === 'object' ? (a.type ?? 'annotation') : String(a))
+      .join(' · ');
     item.appendChild(note);
   }
 
@@ -373,7 +375,9 @@ function renderSelectedNodeMetadata() {
   if (!doc?.moveTree?.root) return;
   const node = findMoveNode(doc.moveTree.root, state.selectedNodeId) ?? doc.moveTree.root;
   elements.treeComment.value = node.comment ?? '';
-  elements.treeAnnotations.value = Array.isArray(node.annotations) ? node.annotations.join(', ') : '';
+  elements.treeAnnotations.value = Array.isArray(node.annotations) && node.annotations.length > 0
+    ? node.annotations.map(a => typeof a === 'object' ? (a.type ?? 'annotation') : String(a)).join(', ')
+    : '';
   const boardState = rebuildBoardState(doc.moveTree.root, state.selectedNodeId);
   elements.treeColor.value = boardState.turn;
   elements.treeX.value = node.move?.x ?? '';
@@ -403,7 +407,8 @@ function updateSelectedNodeMetadata() {
   const node = findMoveNode(doc.moveTree.root, state.selectedNodeId);
   if (!node) return;
   setMoveNodeComment(doc.moveTree.root, node.id, elements.treeComment.value);
-  setMoveNodeAnnotations(doc.moveTree.root, node.id, parseAnnotations(elements.treeAnnotations.value));
+  // Annotations alanı görüntüleme amaçlıdır; typed annotation'lar
+  // ayrılmış editörden eklenir. String yazımı kabul edilmez.
   syncDocumentFromSelection();
   renderActiveDocument();
 }
@@ -637,10 +642,11 @@ function formatNodeLabel(node, depth) {
 
 function humanizeMove(move) {
   if (!move) return 'hamle yok';
+  const color = move.color === 'white' ? 'Beyaz' : 'Siyah';
+  if (move.pass) return `${color} Pas`;
   const letters = 'ABCDEFGHJKLMNOPQRST';
   const column = letters[move.x] ?? String(move.x);
   const row = Number.isInteger(move.y) ? `${move.y + 1}` : '?';
-  const color = move.color === 'white' ? 'Beyaz' : 'Siyah';
   return `${color} ${column}${row}`;
 }
 
@@ -658,19 +664,23 @@ function getMainlineIdSet(root) {
 
 function countTreeNodes(root) {
   let count = 0;
-  (function walk(node) {
-    count += 1;
-    for (const child of node.children ?? []) walk(child);
-  })(root);
+  const stack = [root];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    count++;
+    for (const child of node.children ?? []) stack.push(child);
+  }
   return count;
 }
 
 function countTreeBranches(root) {
   let branches = 0;
-  (function walk(node) {
+  const stack = [root];
+  while (stack.length > 0) {
+    const node = stack.pop();
     if ((node.children?.length ?? 0) > 1) branches += node.children.length - 1;
-    for (const child of node.children ?? []) walk(child);
-  })(root);
+    for (const child of node.children ?? []) stack.push(child);
+  }
   return branches;
 }
 

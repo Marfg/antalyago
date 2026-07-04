@@ -1,8 +1,26 @@
 ﻿# AG-STUDIO — Masaüstü Mimari Karar Belgesi
 
-**Faz:** A.5 — Masaüstü Mimari Yön Düzeltme
-**Tarih:** 2026-07-03
-**Durum:** Onay bekliyor
+**Faz:** A.5 → D0 — Masaüstü Mimari + Veri Modeli Sertleştirmesi
+**Tarih:** 2026-07-03 (A.5) / 2026-07-04 (D0 kapanış)
+**Durum:** D0 tamamlandı
+
+### D0 Annotation Sözleşmesi (2026-07-04)
+
+`studio/model/moveTree.js` sürüm 1.1.0 ile şu garantiler geçerlidir:
+
+- **Annotation tipi:** `triangle|square|circle|cross|selected|label|arrow|line|region` — discriminated union
+- **Zorunlu id:** Her annotation'ın `id: string` alanı zorunlu; `setMoveNodeAnnotations` eksikse otomatik atar
+- **Benzersiz id:** Aynı düğümde tekrar eden id reddedilir
+- **Strict alan kontrolü:** Her tip yalnızca kendi alanlarına izin verir; fazla alan `UNEXPECTED_FIELD` hatası verir
+- **Label limiti:** `ANNOTATION_LABEL_MAX_LENGTH = 64`; aşılırsa `LABEL_TOO_LONG`
+- **Düğüm limiti:** `MAX_ANNOTATIONS_PER_NODE = 100`
+- **Canonical pass:** `{color: 'black'|'white', pass: true}` — x/y koordinat yok
+- **rawProperties:** SGF property round-trip; `RAW_PROP_KEY_RE = /^[A-Z][A-Z0-9]{0,7}$/` veya `_` önekli dahili anahtarlar
+- **Prototype koruması:** `__proto__`, `constructor`, `prototype` → `DANGEROUS_PROPERTY_KEY` hatası
+- **Ağaç limitleri:** `MAX_TREE_NODES = 2000`, `MAX_TREE_DEPTH = 500`
+- **İteratif gezinme:** Tüm ağaç fonksiyonları iteratif (recursion yok)
+- **Legacy migrasyon:** String annotation → `rawProperties._LEGACY_ANNOTATIONS` (veri kaybı yok)
+- **Schema:** `studioVersion: '1.1.0'`, `migrateDocument()` 1.0.0→1.1.0 zinciri idempotent
 
 ---
 

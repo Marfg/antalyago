@@ -8,6 +8,12 @@ import {
   VALID_OUTPUTS,
 } from './studioDocument.js';
 
+import {
+  validateAnnotation,
+  validateRawProperties,
+  MAX_ANNOTATIONS_PER_NODE,
+} from './moveTree.js';
+
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
 
 function isInt(v) { return Number.isInteger(v); }
@@ -130,6 +136,13 @@ export function validateDocument(doc) {
     errors.push(`curriculum.section geçersiz: "${doc.curriculum.section}".`);
   }
 
+  // moveTree annotation ve rawProperties doğrulaması
+  if (doc.moveTree?.root) {
+    const boardSize = VALID_BOARD_SIZES.includes(board?.size) ? board.size : 19;
+    const treeErrors = _validateMoveTreeAnnotations(doc.moveTree.root, boardSize);
+    for (const err of treeErrors) errors.push(err);
+  }
+
   if (['draft', 'review'].includes(doc.status)) {
     if (!doc.curriculum?.section) warnings.push('curriculum.section belirtilmedi.');
     if (!doc.curriculum?.lesson) warnings.push('curriculum.lesson belirtilmedi.');
@@ -148,4 +161,49 @@ export function validateDocument(doc) {
 
 export function canSaveDraft(result) {
   return result.errors.length === 0;
+}
+
+/**
+ * Tüm moveTree düğümlerinin annotation ve rawProperties alanlarını doğrular.
+ * Iteratif — kontrolsüz recursion içermez.
+ */
+function _validateMoveTreeAnnotations(root, boardSize) {
+  const errors = [];
+  const stack = [{ node: root, path: 'root' }];
+
+  while (stack.length > 0) {
+    const { node, path } = stack.pop();
+
+    if (Array.isArray(node.annotations)) {
+      if (node.annotations.length > MAX_ANNOTATIONS_PER_NODE) {
+        errors.push(`${path}.annotations: ${node.annotations.length} annotation MAX_ANNOTATIONS_PER_NODE=${MAX_ANNOTATIONS_PER_NODE} sınırını aşıyor.`);
+      }
+      const ids = new Set();
+      node.annotations.forEach((ann, i) => {
+        const result = validateAnnotation(ann, boardSize);
+        if (!result.valid) {
+          errors.push(`${path}.annotations[${i}]: ${result.reason}`);
+        } else if (ids.has(ann.id)) {
+          errors.push(`${path}.annotations: id "${ann.id}" tekrar ediyor.`);
+        } else {
+          ids.add(ann.id);
+        }
+      });
+    }
+
+    if (node.rawProperties !== undefined) {
+      const result = validateRawProperties(node.rawProperties);
+      if (!result.valid) {
+        errors.push(`${path}.rawProperties: ${result.reason}`);
+      }
+    }
+
+    if (Array.isArray(node.children)) {
+      for (let i = 0; i < node.children.length; i++) {
+        stack.push({ node: node.children[i], path: `${path}.children[${i}]` });
+      }
+    }
+  }
+
+  return errors;
 }

@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "studio-document-1.0.0",
+  "$id": "studio-document-1.1.0",
   "title": "AntalyaGo Studio Document",
   "type": "object",
   "additionalProperties": false,
   "required": ["studioVersion", "id", "title", "status", "board"],
   "properties": {
-    "studioVersion": { "const": "1.0.0" },
+    "studioVersion": { "const": "1.1.0" },
     "id": {
       "type": "string",
       "pattern": "^[a-z0-9](?:[a-z0-9]*(?:-[a-z0-9]+)*)?$"
@@ -122,10 +122,27 @@
         }
       }
     },
+    "moveTree": {
+      "type": "object",
+      "description": "Hamle ağacı; kök düğüm ve aktif düğüm bilgisini içerir.",
+      "additionalProperties": true
+    },
+    "activeNodeId": {
+      "type": "string",
+      "description": "Seçili ağaç düğümünün id'si."
+    },
+    "moves": {
+      "type": "array",
+      "description": "Ana hat hamleleri; moveTree kök→tercihli-çocuk zincirinden türetilir."
+    },
     "extensions": {
       "type": "object",
       "additionalProperties": true
     }
+  },
+  "$defs_annotation_types": {
+    "description": "D0 typed annotation: triangle|square|circle|cross|selected|label|arrow|line|region. Her tipte id zorunlu, ekstra alan yasak.",
+    "rawProperties": "Harici format (SGF vb.) property'leri. Anahtarlar: [A-Z][A-Z0-9]{0,7} veya _ önekli. Değerler: string[]."
   },
   "$defs": {
     "point": {

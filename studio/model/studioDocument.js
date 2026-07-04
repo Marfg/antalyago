@@ -1,6 +1,6 @@
 ﻿import { ensureMoveTreeDocument } from './moveTree.js';
 
-export const STUDIO_VERSION = '1.0.0';
+export const STUDIO_VERSION = '1.1.0';
 
 export const VALID_STATUSES = ['draft', 'review', 'approved', 'published', 'archived'];
 export const DRAFT_UI_STATUSES = ['draft', 'review'];
@@ -122,8 +122,12 @@ export function touchUpdatedAt(doc, { now = new Date() } = {}) {
 
 export function migrateDocument(doc) {
   if (!doc || typeof doc !== 'object') return doc;
+
+  // Göç zinciri: 1.0.0 → 1.1.0
+  // ensureMoveTreeDocument tüm düğümleri iteratif normalize eder;
+  // string annotation'ları rawProperties._LEGACY_ANNOTATIONS'a taşır.
   const migrated = ensureMoveTreeDocument(doc);
-  if (!migrated.studioVersion) {
+  if (!migrated.studioVersion || migrated.studioVersion === '1.0.0') {
     migrated.studioVersion = STUDIO_VERSION;
   }
   return migrated;

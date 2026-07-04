@@ -16,7 +16,7 @@ console.log('\n─── studio-document.test.js ───\n');
 
 // ── Schema enums ile doğrulayıcı uyumu ──────────────────────────────
 test('STUDIO_VERSION doğrulayıcıyla uyumlu', () => {
-  eq(STUDIO_VERSION, '1.0.0');
+  eq(STUDIO_VERSION, '1.1.0');
   const doc = createDocument({ id: 'test-1', title: 'T' }, opts);
   const r = validateDocument(doc);
   ok(r.valid, r.errors.join('; '));
@@ -55,9 +55,9 @@ test('varsayılan belge geçerlidir', () => {
   const r = validateDocument(doc);
   ok(r.valid, r.errors.join('; '));
 });
-test('studioVersion 1.0.0 olarak ayarlanır', () => {
+test('studioVersion 1.1.0 olarak ayarlanır', () => {
   const doc = createDocument({}, opts);
-  eq(doc.studioVersion, '1.0.0');
+  eq(doc.studioVersion, '1.1.0');
 });
 test('audit.createdAt sabit saat ile deterministiktir', () => {
   const d1 = createDocument({ id: 'a', title: 'T' }, opts);

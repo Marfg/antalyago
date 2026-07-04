@@ -27,17 +27,34 @@
 | Renderer stili | `desktop/renderer/studio.css` | ✅ Mevcut |
 | Electron HTML | `desktop/index.html` | ✅ Mevcut |
 | Veri modeli | `studio/model/studioDocument.js` | ✅ Tam |
-| Variant ağacı | `studio/model/moveTree.js` | ✅ Tam (annotation tipi eksik — bkz. Faz B.1) |
-| Doğrulayıcı | `studio/model/validation.js` | ✅ Tam |
+| Variant ağacı | `studio/model/moveTree.js` | ✅ Tam — D0 sözleşmesi tamamlandı |
+| Doğrulayıcı | `studio/model/validation.js` | ✅ Tam — moveTree annotation doğrulama eklendi |
 | Board renderer | `studio/boardRenderer.js` | ✅ SVG modu mevcut |
-| Test altyapısı | `tests/studio-*.test.js` | ✅ 86+ test |
+| Test altyapısı | `tests/studio-*.test.js` | ✅ 151 test (36 doc + 75 tree + 40 server) |
+
+### D0 — Veri Modeli Sertleştirmesi [TAMAMLANDI — 2026-07-04]
+
+| Özellik | Durum |
+|---|---|
+| Typed annotation discriminated union (9 tip) | ✅ |
+| Zorunlu + benzersiz annotation id | ✅ |
+| Tip bazlı strict alan doğrulama | ✅ |
+| Label uzunluk limiti (`ANNOTATION_LABEL_MAX_LENGTH=64`) | ✅ |
+| `MAX_ANNOTATIONS_PER_NODE=100` | ✅ |
+| Canonical pass `{color, pass:true}` | ✅ |
+| `rawProperties` — SGF round-trip, prototype pollution koruması | ✅ |
+| `MAX_TREE_NODES=2000`, `MAX_TREE_DEPTH=500` | ✅ |
+| İteratif ağaç gezinme (yığın taşması yok) | ✅ |
+| Legacy string annotation → `rawProperties._LEGACY_ANNOTATIONS` | ✅ |
+| Schema sürümü 1.0.0 → 1.1.0, migration zinciri | ✅ |
+| Migration idempotency testleri | ✅ |
+| Legacy fixture dosyaları | ✅ |
+| Pass hamle smoke testi (masaüstü "Pas" görünümü) | ✅ |
 
 ### Bilinen Eksikler
 
 | Eksik | Etki | Faz |
 |---|---|---|
-| `moveTree.annotations[]` typed değil (`string[]`) | SGF markup import/export bloke | B.1 |
-| Pass hamlesi canonical temsili tanımsız | SGF round-trip belirsizliği | B.2 |
 | SGF I/O yok | Formation import, SGF export yok | E.1 |
 | Sıkıştırılmış point list desteği yok | Bazı SGF dosyaları yanlış parse edilebilir | E.1 |
 | Problem Bank import/export yok | Adaptör adaptörü yok | D |
@@ -51,9 +68,9 @@
 
 ```
 Tamamlandı:     [Faz A] Temel altyapı (web server, studioDocument, testler)
+Tamamlandı:     [D0] Veri modeli sertleştirmesi (annotation, pass, rawProps, limitler)
 Büyük ölçüde:   [Faz B] Electron kabuğu (desktop/ klasörü mevcut)
-Sonraki:        [Faz B.1] Annotation tipi + pass fix
-                [Faz C] Etkileşimli tahta düzenleme
+Sonraki:        [Faz C] Etkileşimli tahta düzenleme
                 [Faz D] Problem Bank entegrasyonu
                 [Faz E] SGF I/O + formations içe aktarma
                 [Faz F] Çıktı adaptörleri
@@ -64,9 +81,9 @@ Sonraki:        [Faz B.1] Annotation tipi + pass fix
 
 ## Faz B — Electron Kabuğu (Büyük ölçüde tamamlandı)
 
-### B.1 — Annotation Tipi Düzeltmesi [Acil]
+### B.1 — Annotation Tipi [TAMAMLANDI — D0'da kapatıldı]
 
-**Problem:** `moveTree.js`'deki `annotations[]` şu an `string[]`. SGF işaretleri (TR/SQ/CR/MA/LB/AR/LN) için koordinat ve tip bilgisi gerekiyor.
+Typed discriminated union, zorunlu id, strict alan doğrulama, label limiti — tümü `studio/model/moveTree.js`'de uygulandı.
 
 **Çözüm:**
 ```js

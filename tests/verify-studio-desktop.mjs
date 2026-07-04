@@ -8,7 +8,7 @@ import { chromium } from 'playwright-core';
 import { BoardState } from '../core/boardState.js';
 import { createStudioBoardAdapter } from '../desktop/ipc/studioBoardAdapter.js';
 import { createDocument } from '../studio/model/studioDocument.js';
-import { addChildMove, rebuildBoardState } from '../studio/model/moveTree.js';
+import { addChildMove, addPassMove, rebuildBoardState } from '../studio/model/moveTree.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const htmlPath = path.join(root, 'desktop', 'index.html');
@@ -36,8 +36,9 @@ const rootNode = sampleDocument.moveTree.root;
 const first = addChildMove(rootNode, 'root', { color: 'black', x: 4, y: 4 }, { comment: 'Ana dal' });
 const variant = addChildMove(rootNode, 'root', { color: 'black', x: 3, y: 3 }, { comment: 'Varyant' });
 const reply = addChildMove(rootNode, first.node.id, { color: 'white', x: 4, y: 5 }, { comment: 'Devam' });
+const passMove = addPassMove(rootNode, 'root', 'black');
 
-assert.ok(first.ok && variant.ok && reply.ok, 'Örnek hamle ağacı kurulamadı');
+assert.ok(first.ok && variant.ok && reply.ok && passMove.ok, 'Örnek hamle ağacı kurulamadı');
 sampleDocument.moveTree.activeNodeId = reply.node.id;
 sampleDocument.activeNodeId = reply.node.id;
 sampleDocument.board = boardAdapter.toDocumentBoard(rebuildBoardState(rootNode, reply.node.id));
@@ -231,6 +232,13 @@ async function main() {
     assert.ok(shellInfo.treeSummary.includes('Hamle ağacı'), 'tree summary missing');
     assert.ok(shellInfo.treePathCount >= 3, 'path trail should show current route');
     assert.ok(shellInfo.treeStatus.includes('seçili'), 'tree status should mention selection');
+
+    // Pass smoke test: ağaçta "Pas" düğümü görünmeli
+    const treeViewportText = await page.locator('[data-move-tree-viewport]').textContent();
+    assert.ok(
+      treeViewportText.includes('Pas'),
+      `Pass düğümü "Pas" olarak gösterilmedi. Ağaç metni: ${treeViewportText?.slice(0, 200)}`
+    );
 
     await page.click('[data-node-id="root"]');
     await waitForStablePaint(page);

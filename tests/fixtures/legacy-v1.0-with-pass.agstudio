@@ -1,0 +1,22 @@
+{
+  "studioVersion": "1.0.0",
+  "id": "legacy-pass",
+  "status": "draft",
+  "title": "Legacy Pass Move Fixture",
+  "slug": "legacy-pass",
+  "summary": "",
+  "curriculum": { "section": "B1", "lesson": "l1", "step": "", "objectives": [], "skills": [], "prerequisites": [] },
+  "classification": { "problemType": "tsumego", "subtype": "", "difficulty": "beginner", "playerToMove": "black", "goal": "best-move" },
+  "board": { "size": 9, "turn": "black", "ko": null, "stones": [], "markers": [], "regions": [], "viewport": null },
+  "moves": [
+    { "color": "black", "x": 4, "y": 4 },
+    { "color": "white", "pass": true },
+    { "color": "black", "x": 3, "y": 3 }
+  ],
+  "solution": { "sequences": [], "acceptedFirstMoves": [], "wrongMoves": [], "hint": "", "explanation": "" },
+  "timeline": { "durationMs": 0, "events": [] },
+  "sources": [],
+  "outputs": { "problemBank": true, "lesson3d": false, "sgf": false, "motion": false, "obsidian": false, "image": false },
+  "audit": { "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z", "author": "", "reviewedAt": null },
+  "extensions": {}
+}

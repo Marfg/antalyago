@@ -1,0 +1,44 @@
+{
+  "studioVersion": "1.0.0",
+  "id": "legacy-string-ann",
+  "status": "draft",
+  "title": "Legacy String Annotation Fixture",
+  "slug": "legacy-string-ann",
+  "summary": "",
+  "curriculum": { "section": "B1", "lesson": "l1", "step": "", "objectives": [], "skills": [], "prerequisites": [] },
+  "classification": { "problemType": "tsumego", "subtype": "", "difficulty": "beginner", "playerToMove": "black", "goal": "best-move" },
+  "board": { "size": 9, "turn": "black", "ko": null, "stones": [], "markers": [], "regions": [], "viewport": null },
+  "moveTree": {
+    "root": {
+      "id": "root",
+      "parentId": null,
+      "move": null,
+      "children": [
+        {
+          "id": "child-1",
+          "parentId": "root",
+          "move": { "color": "black", "x": 4, "y": 4 },
+          "children": [],
+          "comment": "",
+          "annotations": ["eski-string-annotation", "bir-daha-string"],
+          "preferredChildId": null,
+          "formation": null
+        }
+      ],
+      "comment": "Kök yorumu",
+      "annotations": ["root-level-string"],
+      "preferredChildId": "child-1",
+      "formation": { "size": 9, "turn": "black", "ko": null, "stones": [], "markers": [], "regions": [], "viewport": null }
+    },
+    "activeNodeId": "child-1",
+    "preferredChildId": "child-1"
+  },
+  "activeNodeId": "child-1",
+  "moves": [{ "color": "black", "x": 4, "y": 4 }],
+  "solution": { "sequences": [], "acceptedFirstMoves": [], "wrongMoves": [], "hint": "", "explanation": "" },
+  "timeline": { "durationMs": 0, "events": [] },
+  "sources": [],
+  "outputs": { "problemBank": true, "lesson3d": false, "sgf": false, "motion": false, "obsidian": false, "image": false },
+  "audit": { "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z", "author": "", "reviewedAt": null },
+  "extensions": {}
+}
