@@ -1,19 +1,37 @@
-/* Faz 1 compatibility layer: bind existing app shell tokens to the shared semantic palette. */
+/* AG-DS compatibility layer: bind legacy shell pages to the shared semantic palette. */
 .app-shell-theme {
   --bg: var(--page-bg);
   --bg-surface: var(--surface);
   --fg: var(--text-primary);
   --fg-muted: var(--text-muted);
-  --paper: var(--page-bg);
-  --paper-dark: var(--page-bg-secondary);
-  --panel: var(--surface);
+  --paper: var(--surface);
+  --paper-dark: var(--surface-soft);
+  --panel: var(--surface-raised);
   --ink: var(--text-primary);
   --muted: var(--text-muted);
-  --glass: var(--surface);
-  --gb: var(--border);
-  --gborder: var(--border);
+  --glass: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  --gb: var(--surface-border);
+  --gborder: var(--surface-border);
+  --border: var(--surface-border);
+  --border-strong: var(--surface-border-strong);
   --dark: var(--page-bg);
   --text: var(--text-primary);
+  --gold: var(--primary);
+  --gold2: var(--primary-hover);
+  --wood: var(--primary);
+  --wood-dark: var(--primary-hover);
+  --wood-light: var(--surface-soft);
+  --shadow: var(--shadow-color);
+  --green: var(--success);
+  --red: var(--danger);
+  --blue: var(--secondary);
+  --orange: var(--warning);
+  --r: var(--radius-sm);
+  color: var(--text-primary);
+  background: var(--page-bg);
+  background-image:
+    radial-gradient(ellipse at 10% 5%, color-mix(in srgb, var(--primary) 8%, transparent) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 95%, color-mix(in srgb, var(--secondary) 7%, transparent) 0%, transparent 50%);
 }
 
 .app-shell-theme .back-btn {
@@ -34,12 +52,314 @@
   border-color: var(--border);
 }
 
-[data-theme='dark'] .app-shell-theme {
-  background-image: none;
+.app-shell-theme .topbar,
+.app-shell-theme #topbar {
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.app-shell-theme .panel,
+.app-shell-theme .login-card,
+.app-shell-theme .room-card,
+.app-shell-theme .player-card,
+.app-shell-theme .modal-box,
+.app-shell-theme .share-box,
+.app-shell-theme .problem-header,
+.app-shell-theme .prob-item,
+.app-shell-theme .stat-box,
+.app-shell-theme .club-card,
+.app-shell-theme .engine-badge,
+.app-shell-theme #hint-box,
+.app-shell-theme #solution-area,
+.app-shell-theme #feedback,
+.app-shell-theme #model-loader,
+.app-shell-theme #gameover,
+.app-shell-theme #chat-log,
+.app-shell-theme #move-list,
+.app-shell-theme .room-tag,
+.app-shell-theme .room-badge,
+.app-shell-theme .type-badge,
+.app-shell-theme .level-badge {
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.app-shell-theme .panel,
+.app-shell-theme .login-card,
+.app-shell-theme .modal-box,
+.app-shell-theme .room-card,
+.app-shell-theme .player-card,
+.app-shell-theme .problem-header,
+.app-shell-theme .prob-item,
+.app-shell-theme .stat-box,
+.app-shell-theme .club-card,
+.app-shell-theme #hint-box,
+.app-shell-theme #solution-area,
+.app-shell-theme #feedback,
+.app-shell-theme #model-loader,
+.app-shell-theme #gameover,
+.app-shell-theme #chat-log,
+.app-shell-theme #move-list {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border-radius: var(--radius-lg);
+}
+
+.app-shell-theme .room-card,
+.app-shell-theme .prob-item,
+.app-shell-theme .player-card,
+.app-shell-theme .stat-box,
+.app-shell-theme .club-card,
+.app-shell-theme .panel,
+.app-shell-theme .login-card,
+.app-shell-theme .modal-box,
+.app-shell-theme #gameover,
+.app-shell-theme #solution-area,
+.app-shell-theme #hint-box,
+.app-shell-theme #feedback,
+.app-shell-theme #model-loader,
+.app-shell-theme #chat-log,
+.app-shell-theme #move-list {
+  border: 1px solid var(--border);
+}
+
+.app-shell-theme .panel-title,
+.app-shell-theme .modal-title,
+.app-shell-theme .lobby-title,
+.app-shell-theme .room-name,
+.app-shell-theme .page-title,
+.app-shell-theme .tb-title,
+.app-shell-theme .prob-title,
+.app-shell-theme .go-title,
+.app-shell-theme .ov-title,
+.app-shell-theme .panel-title,
+.app-shell-theme .turn-bar,
+.app-shell-theme .stat-val,
+.app-shell-theme .cm .cu,
+.app-shell-theme .room-name {
+  color: var(--heading);
+}
+
+.app-shell-theme .btn,
+.app-shell-theme .action-btn,
+.app-shell-theme .cp-btn,
+.app-shell-theme .logout-btn,
+.app-shell-theme .copy-btn,
+.app-shell-theme .theme-toggle,
+.app-shell-theme .nav-btn,
+.app-shell-theme .cc-btn,
+.app-shell-theme .google-btn {
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.app-shell-theme .btn.primary,
+.app-shell-theme .action-btn,
+.app-shell-theme .nav-btn.primary,
+.app-shell-theme .pm-btn,
+.app-shell-theme .btn.primary:hover,
+.app-shell-theme .action-btn:hover,
+.app-shell-theme .nav-btn.primary:hover,
+.app-shell-theme .pm-btn:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-text);
+}
+
+.app-shell-theme .btn.primary:hover,
+.app-shell-theme .action-btn:hover,
+.app-shell-theme .nav-btn.primary:hover,
+.app-shell-theme .pm-btn:hover {
+  background: var(--primary-hover);
+}
+
+.app-shell-theme .btn.danger,
+.app-shell-theme .action-btn.danger,
+.app-shell-theme .btn.danger:hover,
+.app-shell-theme .action-btn.danger:hover,
+.app-shell-theme .action-btn.confirming {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.app-shell-theme .btn.ghost,
+.app-shell-theme .logout-btn,
+.app-shell-theme .back-btn,
+.app-shell-theme .copy-btn,
+.app-shell-theme .theme-toggle,
+.app-shell-theme .cp-btn,
+.app-shell-theme .cc-btn,
+.app-shell-theme .nav-btn:not(.primary) {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.app-shell-theme .btn.ghost:hover,
+.app-shell-theme .logout-btn:hover,
+.app-shell-theme .copy-btn:hover,
+.app-shell-theme .theme-toggle:hover,
+.app-shell-theme .cp-btn:hover,
+.app-shell-theme .cc-btn:hover,
+.app-shell-theme .nav-btn:not(.primary):hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+  color: var(--heading);
+}
+
+.app-shell-theme .google-btn {
+  border-color: var(--border);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.app-shell-theme .google-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
 }
 
 .app-shell-theme .theme-toggle {
-  color: var(--text-primary) !important;
   background: var(--surface-raised) !important;
-  border: 1px solid var(--border-strong) !important;
+  color: var(--text-primary) !important;
+}
+
+.app-shell-theme .theme-toggle__text {
+  color: inherit;
+}
+
+.app-shell-theme .room-badge.waiting,
+.app-shell-theme .room-tag,
+.app-shell-theme .type-badge,
+.app-shell-theme .level-badge,
+.app-shell-theme .engine-badge,
+.app-shell-theme .stat-lbl,
+.app-shell-theme .room-spectators,
+.app-shell-theme .cm .cs {
+  color: var(--text-secondary);
+}
+
+.app-shell-theme .room-badge.playing,
+.app-shell-theme .room-badge.watching,
+.app-shell-theme .type-badge.tsumego,
+.app-shell-theme .type-badge.joseki,
+.app-shell-theme .type-badge.tesuji,
+.app-shell-theme .type-badge.endgame,
+.app-shell-theme .level-badge.beginner,
+.app-shell-theme .level-badge.intermediate,
+.app-shell-theme .level-badge.advanced {
+  border-color: var(--border);
+}
+
+.app-shell-theme .room-badge.playing,
+.app-shell-theme .room-badge.watching,
+.app-shell-theme .engine-badge.ready,
+.app-shell-theme .prob-item.active,
+.app-shell-theme .player-card.active-turn,
+.app-shell-theme .btn.primary,
+.app-shell-theme .action-btn,
+.app-shell-theme .nav-btn.primary,
+.app-shell-theme .pm-btn,
+.app-shell-theme .cp-btn.active-b,
+.app-shell-theme .cp-btn.active-w {
+  box-shadow: var(--shadow-sm);
+}
+
+.app-shell-theme .board-overlay,
+.app-shell-theme .result-overlay,
+.app-shell-theme #feedback,
+.app-shell-theme #gameover {
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+}
+
+.app-shell-theme .toast {
+  background: var(--text-primary);
+  color: var(--page-bg);
+  box-shadow: var(--shadow-md);
+}
+
+.app-shell-theme .share-box input,
+.app-shell-theme .chat-input-row input,
+.app-shell-theme #room-name-input,
+.app-shell-theme #room-size,
+.app-shell-theme #room-komi,
+.app-shell-theme #room-color,
+.app-shell-theme #room-time {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.app-shell-theme .share-box input:focus-visible,
+.app-shell-theme .chat-input-row input:focus-visible,
+.app-shell-theme #room-name-input:focus-visible,
+.app-shell-theme #room-size:focus-visible,
+.app-shell-theme #room-komi:focus-visible,
+.app-shell-theme #room-color:focus-visible,
+.app-shell-theme #room-time:focus-visible {
+  border-color: var(--primary);
+}
+
+.app-shell-theme .topbar,
+.app-shell-theme .panel,
+.app-shell-theme .login-card,
+.app-shell-theme .room-card,
+.app-shell-theme .player-card,
+.app-shell-theme .modal-box,
+.app-shell-theme .share-box,
+.app-shell-theme .prob-item,
+.app-shell-theme .problem-header,
+.app-shell-theme .stat-box,
+.app-shell-theme #chat-log,
+.app-shell-theme #move-list,
+.app-shell-theme .board-overlay,
+.app-shell-theme .result-overlay,
+.app-shell-theme #solution-area,
+.app-shell-theme #hint-box,
+.app-shell-theme #feedback,
+.app-shell-theme #gameover,
+.app-shell-theme .club-card,
+.app-shell-theme .engine-badge,
+.app-shell-theme .theme-toggle,
+.app-shell-theme .btn,
+.app-shell-theme .action-btn,
+.app-shell-theme .cp-btn,
+.app-shell-theme .back-btn,
+.app-shell-theme .logout-btn,
+.app-shell-theme .copy-btn,
+.app-shell-theme .google-btn,
+.app-shell-theme .nav-btn,
+.app-shell-theme .cc-btn {
+  transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease, box-shadow 220ms ease, fill 220ms ease, stroke 220ms ease;
+}
+
+@media (max-width: 860px) {
+  .app-shell-theme .topbar,
+  .app-shell-theme .panel,
+  .app-shell-theme .login-card,
+  .app-shell-theme .modal-box,
+  .app-shell-theme .room-card,
+  .app-shell-theme .player-card {
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+@media (max-width: 540px) {
+  .app-shell-theme .topbar {
+    padding: .6rem 1rem;
+  }
+
+  .app-shell-theme .btn,
+  .app-shell-theme .action-btn,
+  .app-shell-theme .cp-btn,
+  .app-shell-theme .logout-btn,
+  .app-shell-theme .copy-btn,
+  .app-shell-theme .theme-toggle,
+  .app-shell-theme .back-btn,
+  .app-shell-theme .google-btn {
+    min-height: 44px;
+  }
 }

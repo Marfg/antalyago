@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -52,6 +52,24 @@ function pickChromiumExecutable() {
   if (fromEnv && fromEnv.trim()) return fromEnv.trim();
   return null;
 }
+async function launchChromium() {
+  const executablePath = pickChromiumExecutable();
+  const launchOptions = { headless: true };
+  if (executablePath) {
+    return chromium.launch({ ...launchOptions, executablePath });
+  }
+  try {
+    return await chromium.launch(launchOptions);
+  } catch (error) {
+    const message = String(error?.message || error);
+    if (/EPERM|EACCES|spawn/i.test(message)) {
+      try {
+        return await chromium.launch({ ...launchOptions, channel: 'chrome' });
+      } catch {}
+    }
+    throw error;
+  }
+}
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
@@ -66,13 +84,7 @@ function countStaticAssertions() {
   return (text.match(/assert\s*\(/g) || []).length;
 }
 async function withBrowserPage({ viewport = VIEWPORTS.desktop, theme = 'dark', profile = null, boardTheme = 'dark', reducedMotion = 'no-preference' } = {}) {
-  const executablePath = pickChromiumExecutable();
-  let browser;
-  if (executablePath) {
-    browser = await chromium.launch({ headless: true, executablePath });
-  } else {
-    browser = await chromium.launch({ headless: true });
-  }
+  const browser = await launchChromium();
   const context = await browser.newContext({ viewport, reducedMotion });
   await context.route(`${BASE}/**`, async route => {
     const url = new URL(route.request().url());

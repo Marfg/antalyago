@@ -456,13 +456,13 @@
     }
   </style>
 <link rel="stylesheet" href="styles/design-system.css" /><link rel="stylesheet" href="styles/theme-compat.css" /></head>
-<body class="app-shell-theme"><a class="skip-link" href="#main-content">İçeriğe geç</a>
+<body class="page-shell app-shell-theme"><a class="skip-link" href="#main-content">İçeriğe geç</a>
 
 <main id="main-content"><canvas id="c"></canvas></main>
 
 <!-- Topbar -->
 <div id="topbar">
-  <a class="back-btn" href="index.html">← Ana</a>
+  <a class="back-btn button button-secondary" href="index.html">← Ana</a>
   <button class="theme-toggle app-theme-toggle" data-theme-toggle type="button" aria-label="Gece temasına geç" aria-pressed="false">Gece</button><div id="tb-status">
     <div class="s-stone black active" id="stone-b"></div>
     <span id="s-label">Siyah'ın sırası</span>
@@ -471,7 +471,7 @@
 </div>
 
 <!-- Sağ Panel -->
-<div id="panel">
+<div id="panel" class="card">
 
   <div>
     <div class="sec-label">Rengin</div>
@@ -479,36 +479,36 @@
       <button class="cp-btn active-b" id="cp-b" onclick="pickColor('black')" aria-label="Siyah taşlarla oyna" aria-pressed="true">
         <div class="sp b"></div>Siyah
       </button>
-      <button class="cp-btn" id="cp-w" onclick="pickColor('white')" aria-label="Beyaz taşlarla oyna" aria-pressed="false">
+      <button class="cp-btn button button-secondary" id="cp-w" onclick="pickColor('white')" aria-label="Beyaz taşlarla oyna" aria-pressed="false">
         <div class="sp w"></div>Beyaz
       </button>
     </div>
   </div>
 
   <div class="game-controls">
-    <button class="action-btn" id="btn-reset-board" onclick="resetBoard()" aria-label="Yeni oyun başlat">Yeni Oyun</button>
-    <button class="action-btn" id="btn-pass" onclick="playerPass()" aria-label="Bu tur hamle yapmadan pas geç">Pas</button>
+    <button class="action-btn button button-secondary" id="btn-reset-board" onclick="resetBoard()" aria-label="Yeni oyun başlat">Yeni Oyun</button>
+    <button class="action-btn button button-secondary" id="btn-pass" onclick="playerPass()" aria-label="Bu tur hamle yapmadan pas geç">Pas</button>
     <button class="action-btn danger" id="btn-resign" onclick="playerResign()" aria-label="Teslim olmak için iki kez bas">Teslim Ol</button>
   </div>
 </div>
 
-  <div id="think-bar" role="status" aria-live="polite">
+  <div id="think-bar" class="status-message" role="status" aria-live="polite">
     <span class="td"></span><span class="td"></span><span class="td"></span>
     <span>Robot düşünüyor…</span>
   </div>
 
   <!-- Geri bildirim -->
-  <div id="feedback"></div>
+  <div id="feedback" class="status-message"></div>
 
   <!-- Oyun sonu ekranı -->
-  <div id="gameover">
+  <div id="gameover" class="modal-surface">
     <div class="go-winner" id="go-winner">Oyun Bitti</div>
     <div class="go-score" id="go-score"></div>
     <div class="go-komi" id="go-komi"></div>
     <div class="go-territory" id="go-territory"></div>
     <div class="go-actions">
-      <button class="action-btn" onclick="resetBoard()" aria-label="Yeni oyun başlat">Yeni Oyun</button>
-      <button class="action-btn" onclick="openLearnFeedback()" aria-label="Bu oyundan ne öğrendiğini gör">Ne öğrendim?</button>
+      <button class="action-btn button button-secondary" onclick="resetBoard()" aria-label="Yeni oyun başlat">Yeni Oyun</button>
+      <button class="action-btn button button-secondary" onclick="openLearnFeedback()" aria-label="Bu oyundan ne öğrendiğini gör">Ne öğrendim?</button>
     </div>
   </div>
 

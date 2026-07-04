@@ -233,12 +233,12 @@
     @media(max-width:540px) { .topbar{padding:.6rem 1rem} .main{padding:1rem .75rem} }
   </style>
 <link rel="stylesheet" href="styles/design-system.css" /><link rel="stylesheet" href="styles/theme-compat.css" /></head>
-<body class="app-shell-theme"><a class="skip-link" href="#main-content">İçeriğe geç</a>
+<body class="page-shell app-shell-theme"><a class="skip-link" href="#main-content">İçeriğe geç</a>
 
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-left">
-    <a class="back-btn" href="index.html">← Ana Sayfa</a>
+    <a class="back-btn button button-secondary" href="index.html">← Ana Sayfa</a>
     <span class="page-title">Go Problemleri</span>
   </div>
   <div style="font-size:.78rem;color:var(--muted);font-weight:600;">
@@ -253,7 +253,7 @@
 <div class="main" id="main-content">
 
   <!-- SOL: FİLTRE + LİSTE -->
-  <div class="panel">
+  <div class="panel card">
     <div class="panel-title">Filtrele</div>
 
     <!-- Tür -->
@@ -262,16 +262,16 @@
       <div class="filter-btns">
         <button class="fbtn active" onclick="setFilter('type','all')"   id="ft-all">Tümü</button>
         <button class="fbtn"        onclick="setFilter('type','tsumego')" id="ft-tsumego">
-          Tsumego <span class="type-badge tsumego">Yakalama</span>
+          Tsumego <span class="type-badge badge tsumego">Yakalama</span>
         </button>
         <button class="fbtn"        onclick="setFilter('type','joseki')"  id="ft-joseki">
-          Joseki <span class="type-badge joseki">Açılış</span>
+          Joseki <span class="type-badge badge joseki">Açılış</span>
         </button>
         <button class="fbtn"        onclick="setFilter('type','tesuji')"  id="ft-tesuji">
-          Tesuji <span class="type-badge tesuji">Taktik</span>
+          Tesuji <span class="type-badge badge tesuji">Taktik</span>
         </button>
         <button class="fbtn"        onclick="setFilter('type','endgame')" id="ft-endgame">
-          Endgame <span class="type-badge endgame">Bitirme</span>
+          Endgame <span class="type-badge badge endgame">Bitirme</span>
         </button>
       </div>
     </div>
@@ -282,13 +282,13 @@
       <div class="filter-btns">
         <button class="fbtn active" onclick="setFilter('level','all')"          id="fl-all">Tümü</button>
         <button class="fbtn"        onclick="setFilter('level','beginner')"      id="fl-beginner">
-          <span class="level-badge beginner">Başlangıç</span>
+          <span class="level-badge badge beginner">Başlangıç</span>
         </button>
         <button class="fbtn"        onclick="setFilter('level','intermediate')"  id="fl-inter">
-          <span class="level-badge intermediate">Orta</span>
+          <span class="level-badge badge intermediate">Orta</span>
         </button>
         <button class="fbtn"        onclick="setFilter('level','advanced')"      id="fl-advanced">
-          <span class="level-badge advanced">İleri</span>
+          <span class="level-badge badge advanced">İleri</span>
         </button>
       </div>
     </div>
@@ -297,7 +297,7 @@
     <div class="panel-title" style="margin-top:.25rem">Problemler</div>
     <div id="problem-list"></div>
 
-    <button class="btn primary" onclick="loadRandom()" style="margin-top:auto">Başla</button>
+    <button class="btn button button-primary" onclick="loadRandom()" style="margin-top:auto">Başla</button>
   </div>
 
   <!-- ORTA: TAHTA -->
@@ -306,8 +306,8 @@
     <div class="problem-header" id="prob-header">
       <div class="prob-title-row">
         <span class="prob-title" id="prob-title">Problem Seç</span>
-        <span class="type-badge" id="prob-type-badge"></span>
-        <span class="level-badge" id="prob-level-badge"></span>
+        <span class="type-badge badge" id="prob-type-badge"></span>
+        <span class="level-badge badge" id="prob-level-badge"></span>
       </div>
       <div class="prob-desc" id="prob-desc">Soldan bir problem seçin veya rastgele yükleyin.</div>
     </div>
@@ -325,7 +325,7 @@
         <div class="result-icon">✓</div>
         <div class="result-text">Doğru!</div>
         <div class="result-sub" id="correct-sub">Mükemmel hamle.</div>
-        <button class="btn primary" onclick="nextProblem()" style="width:140px;margin-top:.5rem">Sonraki →</button>
+        <button class="btn button button-primary" onclick="nextProblem()" style="width:140px;margin-top:.5rem">Sonraki →</button>
       </div>
 
       <!-- Yanlış overlay -->
@@ -333,28 +333,28 @@
         <div class="result-icon">✗</div>
         <div class="result-text">Yanlış</div>
         <div class="result-sub">Tekrar dene veya ipucu al.</div>
-        <button class="btn" onclick="resetProblem()" style="width:140px;margin-top:.5rem">↺ Tekrar</button>
+        <button class="btn button button-secondary" onclick="resetProblem()" style="width:140px;margin-top:.5rem">↺ Tekrar</button>
       </div>
     </div>
 
-    <div id="hint-box">💡 <span id="hint-text"></span></div>
+    <div id="hint-box" class="status-message">💡 <span id="hint-text"></span></div>
 
     <div class="action-row">
-      <button class="btn" onclick="showHint()"    id="btn-hint">💡 İpucu</button>
-      <button class="btn" onclick="showSolution()" id="btn-sol">👁 Çözüm</button>
-      <button class="btn" onclick="resetProblem()" id="btn-reset">↺ Sıfırla</button>
-      <button class="btn primary" onclick="nextProblem()" id="btn-next">→ Sonraki</button>
+      <button class="btn button button-secondary" onclick="showHint()"    id="btn-hint">💡 İpucu</button>
+      <button class="btn button button-secondary" onclick="showSolution()" id="btn-sol">👁 Çözüm</button>
+      <button class="btn button button-secondary" onclick="resetProblem()" id="btn-reset">↺ Sıfırla</button>
+      <button class="btn button button-primary" onclick="nextProblem()" id="btn-next">→ Sonraki</button>
     </div>
 
     <!-- Çözüm -->
-    <div id="solution-area">
+    <div id="solution-area" class="status-message">
       <div class="sol-title">Çözüm:</div>
       <div id="solution-text"></div>
     </div>
   </div>
 
   <!-- SAĞ: İSTATİSTİK -->
-  <div class="panel">
+  <div class="panel card">
     <div class="panel-title">İstatistik</div>
 
     <div class="stat-row">
@@ -398,7 +398,7 @@
       <div id="solved-list" style="font-size:.73rem;color:var(--muted);line-height:1.8;">—</div>
     </div>
 
-    <button class="btn" onclick="resetStats()" style="margin-top:auto;font-size:.72rem;color:var(--red);border-color:var(--red)">
+    <button class="btn button button-secondary" onclick="resetStats()" style="margin-top:auto;font-size:.72rem;color:var(--red);border-color:var(--red)">
       İstatistikleri Sıfırla
     </button>
   </div>
@@ -440,11 +440,11 @@ function loadProblem(p) {
 
   const tb = document.getElementById('prob-type-badge');
   tb.textContent  = typeLabel(p.type);
-  tb.className    = `type-badge ${p.type}`;
+  tb.className    = `type-badge badge ${p.type}`;
 
   const lb = document.getElementById('prob-level-badge');
   lb.textContent  = levelLabel(p.level);
-  lb.className    = `level-badge ${p.level}`;
+  lb.className    = `level-badge badge ${p.level}`;
 
   // Sıra
   const ts = document.getElementById('turn-stone');
@@ -684,8 +684,8 @@ function renderProblemList() {
       <div style="display:flex;flex-direction:column;gap:.2rem;width:100%">
         <span class="prob-name">${p.title}</span>
         <div style="display:flex;gap:.3rem;flex-wrap:wrap">
-          <span class="type-badge ${p.type}" style="font-size:.58rem">${typeLabel(p.type)}</span>
-          <span class="level-badge ${p.level}" style="font-size:.58rem">${levelLabel(p.level)}</span>
+          <span class="type-badge badge ${p.type}" style="font-size:.58rem">${typeLabel(p.type)}</span>
+          <span class="level-badge badge ${p.level}" style="font-size:.58rem">${levelLabel(p.level)}</span>
         </div>
       </div>
     `;

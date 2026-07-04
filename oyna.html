@@ -434,18 +434,18 @@
     }
   </style>
 <link rel="stylesheet" href="styles/design-system.css" /><link rel="stylesheet" href="styles/theme-compat.css" /></head>
-<body class="app-shell-theme"><a class="skip-link" href="#main-content">İçeriğe geç</a>
+<body class="page-shell app-shell-theme"><a class="skip-link" href="#main-content">İçeriğe geç</a>
 
 <!-- ─── TOPBAR ─── -->
-<div class="topbar">
+<div class="topbar site-header">
   <div class="topbar-left">
-    <a class="back-btn" href="index.html">← Ana Sayfa</a>
+    <a class="back-btn button button-secondary" href="index.html">← Ana Sayfa</a>
     <span class="page-title">Go Odaları</span>
   </div>
   <button class="theme-toggle app-theme-toggle" data-theme-toggle type="button" aria-label="Gece temasına geç" aria-pressed="false">Gece</button><div class="user-chip" id="user-chip" style="display:none">
     <div class="user-avatar" id="topbar-avatar"></div>
     <span id="topbar-name"></span>
-    <button class="logout-btn" onclick="doLogout()">Çıkış</button>
+    <button class="logout-btn button button-ghost" onclick="doLogout()">Çıkış</button>
   </div>
 </div>
 
@@ -453,10 +453,10 @@
 <main id="main-content"><div class="screen active" id="screen-login">
   <div class="login-logo">围棋<br/><span style="font-size:1.1rem;letter-spacing:.2em">GO ODALARI</span></div>
   <div class="login-tagline">Arkadaşlarınla oyna</div>
-  <div class="login-card">
+  <div class="login-card card modal-surface">
     <h2>Giriş Yap</h2>
     <p>Oda oluşturmak veya oynamak için Google hesabınla giriş yapman yeterli. Hesap gerekmez, saniyeler içinde hazırsın.</p>
-    <button class="google-btn" onclick="signInWithGoogle()">
+    <button class="google-btn button button-secondary" onclick="signInWithGoogle()">
       <!-- Google logosu -->
       <svg viewBox="0 0 48 48">
         <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -476,7 +476,7 @@
     <div class="lobby-title">Açık Odalar</div>
     <div style="display:flex;gap:.6rem;align-items:center">
       <span id="room-count" style="font-size:.78rem;color:var(--muted)"></span>
-      <button class="btn primary" onclick="openNewRoomModal()">+ Yeni Oda</button>
+      <button class="btn button button-primary" onclick="openNewRoomModal()">+ Yeni Oda</button>
     </div>
   </div>
 
@@ -491,27 +491,27 @@
   <!-- Room header -->
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem">
     <div style="display:flex;align-items:center;gap:.75rem">
-      <button class="btn ghost" onclick="leaveGame()" style="padding:.3rem .65rem;font-size:.78rem">← Lobi</button>
+      <button class="btn button button-ghost" onclick="leaveGame()" style="padding:.3rem .65rem;font-size:.78rem">← Lobi</button>
       <span id="room-title" style="font-family:'Noto Serif',serif;font-size:1.05rem;font-weight:700">Oda</span>
       <span id="room-meta-bar" style="font-size:.73rem;color:var(--muted)"></span>
     </div>
     <!-- Share link -->
-    <div class="share-box" style="max-width:320px;flex:1">
+    <div class="share-box card" style="max-width:320px;flex:1">
       <span style="color:var(--muted);white-space:nowrap">🔗</span>
       <input type="text" id="share-link-input" readonly />
-      <button class="copy-btn" onclick="copyLink()">Kopyala</button>
+      <button class="copy-btn button button-secondary" onclick="copyLink()">Kopyala</button>
     </div>
   </div>
 
   <div class="game-layout">
 
     <!-- SOL PANEL -->
-    <div class="panel">
+    <div class="panel card">
       <div class="panel-title">Oyuncular</div>
 
       <div>
         <div class="fl" style="margin-bottom:.4rem">Siyah</div>
-        <div class="player-card" id="pc-black">
+        <div class="player-card card" id="pc-black">
           <div class="pc-stone black"></div>
           <div class="pc-info">
             <div class="pc-name" id="pc-black-name">Bekleniyor…</div>
@@ -523,7 +523,7 @@
 
       <div>
         <div class="fl" style="margin-bottom:.4rem">Beyaz</div>
-        <div class="player-card" id="pc-white">
+        <div class="player-card card" id="pc-white">
           <div class="pc-stone white"></div>
           <div class="pc-info">
             <div class="pc-name" id="pc-white-name">Bekleniyor…</div>
@@ -582,19 +582,19 @@
         <div class="board-overlay" id="overlay-over">
           <div class="ov-title" id="over-title">Oyun Bitti</div>
           <div class="ov-sub"   id="over-sub"></div>
-          <button class="btn primary" onclick="leaveGame()" style="width:160px">Lobiye Dön</button>
+          <button class="btn button button-primary" onclick="leaveGame()" style="width:160px">Lobiye Dön</button>
         </div>
       </div>
 
       <div class="game-btns" id="game-btns">
-        <button class="btn" onclick="sendPass()"   id="btn-pass"   disabled>Pas Geç</button>
-        <button class="btn danger" onclick="sendResign()" id="btn-resign" disabled>Teslim Ol</button>
-        <button class="btn danger" onclick="closeRoom()" id="btn-close" style="display:none">🗑 Odayı Kapat</button>
+        <button class="btn button button-secondary" onclick="sendPass()"   id="btn-pass"   disabled>Pas Geç</button>
+        <button class="btn button button-secondary danger" onclick="sendResign()" id="btn-resign" disabled>Teslim Ol</button>
+        <button class="btn button button-secondary danger" onclick="closeRoom()" id="btn-close" style="display:none">🗑 Odayı Kapat</button>
       </div>
     </div>
 
     <!-- SAĞ PANEL -->
-    <div class="panel">
+    <div class="panel card">
       <div class="panel-title">Sohbet</div>
 
       <div id="chat-log"></div>
@@ -617,7 +617,7 @@
 
 <!-- ─── YENİ ODA MODAL ─── -->
 <div id="modal-newroom">
-  <div class="modal-box">
+  <div class="modal-box modal-surface">
     <div class="modal-title">Yeni Oda Oluştur</div>
 
     <div class="fg">
@@ -671,8 +671,8 @@
     </div>
 
     <div class="modal-btns">
-      <button class="btn ghost" onclick="closeNewRoomModal()">İptal</button>
-      <button class="btn primary" onclick="createRoom()">Oluştur</button>
+      <button class="btn button button-ghost" onclick="closeNewRoomModal()">İptal</button>
+      <button class="btn button button-primary" onclick="createRoom()">Oluştur</button>
     </div>
   </div>
 </div>
@@ -832,7 +832,7 @@ function renderLobby(rooms) {
       <div class="room-card-header">
         <div class="room-name">${esc(r.name||'İsimsiz Oda')}</div>
         <div style="display:flex;align-items:center;gap:.4rem">
-          <div class="room-badge ${badge}">${badgeText}</div>
+          <div class="room-badge badge ${badge}">${badgeText}</div>
           ${isOwner ? `<button class="delete-room-btn" data-id="${r.id}" title="Odayı Sil">🗑</button>` : ''}
         </div>
       </div>
@@ -848,10 +848,10 @@ function renderLobby(rooms) {
         </div>
       </div>
       <div class="room-meta">
-        <span class="room-tag">${r.size||19}×${r.size||19}</span>
-        <span class="room-tag">Komi ${r.komi||6.5}</span>
-        <span class="room-tag">${r.timeLimit>0?r.timeLimit+'dk':'Süresiz'}</span>
-        <span class="room-tag">${moveCount} hamle</span>
+        <span class="room-tag badge">${r.size||19}×${r.size||19}</span>
+        <span class="room-tag badge">Komi ${r.komi||6.5}</span>
+        <span class="room-tag badge">${r.timeLimit>0?r.timeLimit+'dk':'Süresiz'}</span>
+        <span class="room-tag badge">${moveCount} hamle</span>
       </div>
       ${specCount ? `<div class="room-spectators">👁 ${specCount} izleyici</div>` : ''}
     `;
