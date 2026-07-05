@@ -1,29 +1,30 @@
-﻿# AntalyaGo Problem Havuzu
+# AntalyaGo Problem Havuzu
 
-Bu klasör, yayınlanan problem kayıtlarının çalışma karşılığıdır. Kaynak notları Obsidian'da, yayın verisi ise JSON problem bankasında tutulur.
+Bu klas?r, yay?nlanan problem kay?tlar?n?n ?al??ma kar??l???d?r. Kaynak notlar? Obsidian'da, yay?n verisi ise JSON problem bankas?nda tutulur.
 
 ## Mevcut durum
 
-- Problem sayısı küçük bir başlangıç kümesidir; fazların amacı bu yapıyı sözleşmeye bağlamaktır.
-- Mevcut kayıtlar `index.json` ile dosya düzeyinde ayrışır.
-- `content/problem-bank/schema/problem.schema.json` legacy `1.0.0` kayıtlarını ve canonical `1.1.0` adaylarını kabul eden köprü şemadır.
+- Problem say?s? k???k bir ba?lang?? k?mesidir; fazlar?n amac? bu yap?y? s?zle?meye ba?lamakt?r.
+- Mevcut kay?tlar `index.json` ile dosya d?zeyinde ayr???r.
+- `content/problem-bank/schema/problem.schema.json` legacy `1.0.0` kay?tlar?n? ve canonical `1.1.0` adaylar?n? kabul eden k?pr? ?emad?r.
 
-## Kullanım
+## Kullan?m
 
-- Doğrulama: `npm run validate-problems`
+- Do?rulama: `npm run validate-problems`
 - Envanter ve kalite denetimi: `npm run audit-problem-bank`
-- Güvenli migration dry-run: `npm run migrate-problem-bank`
-- Güvenli apply: `npm run migrate-problem-bank -- --apply`
-- Bir problem kaydını 3B derse çevirme: `problemToLessonStep(problem)`
+- G?venli migration dry-run: `npm run migrate-problem-bank`
+- G?venli apply: `npm run migrate-problem-bank -- --apply`
+- Bir problem kayd?n? 3B derse ?evirme: `problemToLessonStep(problem)`
 
-## Dokümanlar
+## Dok?manlar
 
 - [Taksonomi](docs/taxonomy.md)
 - [Kaynak/provenance](docs/source-provenance.md)
 - [Schema versioning ve migration](docs/schema-versioning.md)
-- [Studio adaptör sözleşmesi](docs/studio-adapter-contract.md)
+- [Studio adapt?r s?zle?mesi](docs/studio-adapter-contract.md)
 - [PDF ingestion workflow](docs/pdf-ingestion-workflow.md)
+- [Kaynak katalogu](sources/README.md)
 
-## Sözleşme notu
+## S?zle?me notu
 
-Kanonik modelde JSON çalışma/yayın verisinin tek kaynağıdır. Obsidian notları, araştırma ve editoryal takip katmanı olarak kalır.
+Kanonik modelde JSON ?al??ma/yay?n verisinin tek kayna??d?r. Obsidian notlar?, ara?t?rma ve editoryal takip katman? olarak kal?r. Kaynak katalo?unda rights modeli lisans ve da??t?m kapsam?n? boolean d???nda a??k?a ta??r.

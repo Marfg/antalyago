@@ -1,4 +1,4 @@
-﻿# Kaynak / Provenance Sözleşmesi
+# Kaynak / Provenance Sözleşmesi
 
 Problem bankasında iki otorite katmanı vardır:
 
@@ -24,6 +24,33 @@ Problem bankasında iki otorite katmanı vardır:
 - `source.editorialNote`: editoryal not
 - `source.derivedFrom`: türetilmiş / uyarlanmış ilişkisi
 
+### Stata göre zorunluluk
+
+#### draft
+
+- zorunlu: `source.type`
+- zorunlu: `source.name` veya `source.documentId`
+- isteğe bağlı: `source.page`, `source.usage`, `source.hash`, `source.importedAt`, `source.license`, `source.author`, `source.publication`, `source.fileRef`, `source.editorialNote`, `source.derivedFrom`
+- eksik `importedAt` draft migration'ı bloke etmez; `INCOMPLETE_PROVENANCE` uyarısı üretilir
+
+#### review
+
+- zorunlu: `source.type`
+- zorunlu: `source.name` veya `source.documentId`
+- `source.page` ve `source.usage` beklenir
+- `importedAt` hâlâ isteğe bağlıdır; eksikse uyarı üretilir
+
+#### approved / published / retired
+
+- zorunlu: `source.type`
+- zorunlu: `source.name` veya `source.documentId`
+- zorunlu: `source.page`
+- zorunlu: `source.usage`
+- zorunlu: `source.hash`
+- zorunlu: `source.importedAt`
+- zorunlu: `source.license`
+- `source.pageLocator` ve `verificationLevel` pratikte beklenir
+
 ### Mevcut kayıtlarla uyumluluk
 
 Şimdiki problem bankası kayıtlarında asgari iz şu alanlarda tutuluyor:
@@ -33,39 +60,6 @@ Problem bankasında iki otorite katmanı vardır:
 - `source.usage`
 
 Bu alanlar yeterli bir ilk iz sağlar; ancak canonical provenance için eksik kabul edilir.
-
-## Önerilen zorunluluk seviyesi
-
-### Draft / review
-
-Zorunlu:
-
-- `source.type` veya legacy eşdeğeri
-- `source.documentId` / `source.name`
-- `source.page`
-- `source.usage`
-- `rights.status`
-
-İsteğe bağlı:
-
-- `source.author`
-- `source.publication`
-- `source.problemNumber`
-- `source.fileRef`
-- `source.importedAt`
-- `source.hash`
-- `source.editorialNote`
-- `source.derivedFrom`
-
-### Approved / published
-
-Zorunlu:
-
-- yukarıdaki draft alanları
-- `revision`
-- tam provenance izi
-- editoryal not
-- lisans/telif durumu
 
 ## Hash kullanımı
 

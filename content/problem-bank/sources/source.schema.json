@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://antalyago.net/problem-bank/source-catalog-1.0.0.json",
+  "title": "AntalyaGo Problem Bank Source Catalog",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "updatedAt",
+    "sources"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "updatedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/sourceRecord"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "pageLocator": {
+      "type": "object",
+      "required": [
+        "type",
+        "value",
+        "relation",
+        "confidence"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "pdf-page",
+            "printed-page",
+            "section",
+            "unresolved"
+          ]
+        },
+        "value": {
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "relation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confidence": {
+          "enum": [
+            "confirmed",
+            "probable",
+            "mismatch",
+            "unresolved"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "rights": {
+      "type": "object",
+      "required": [
+        "licenseStatus",
+        "rightsReviewRequired",
+        "distributionAllowed",
+        "allowedUse",
+        "distributionScope",
+        "verificationLevel"
+      ],
+      "properties": {
+        "licenseStatus": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rightsReviewRequired": {
+          "type": "boolean"
+        },
+        "distributionAllowed": {
+          "type": "boolean"
+        },
+        "allowedUse": {
+          "type": "string",
+          "minLength": 1
+        },
+        "distributionScope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verificationLevel": {
+          "enum": [
+            "page-reference-only",
+            "page-note-only",
+            "confirmed",
+            "probable",
+            "unresolved"
+          ]
+        },
+        "rightsNote": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "sourceRecord": {
+      "type": "object",
+      "required": [
+        "sourceId",
+        "sourceType",
+        "title",
+        "localPathKey",
+        "fileName",
+        "pageCount",
+        "fileIdentity",
+        "rights"
+      ],
+      "properties": {
+        "sourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceType": {
+          "enum": [
+            "pdf",
+            "sgf",
+            "studio",
+            "manual",
+            "web"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "alternateTitle": {
+          "type": "string"
+        },
+        "localPathKey": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]+$"
+        },
+        "fileName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pageCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fileIdentity": {
+          "type": "object",
+          "required": [
+            "sha256"
+          ],
+          "properties": {
+            "sha256": {
+              "type": "string",
+              "pattern": "^[A-Fa-f0-9]{64}$"
+            },
+            "pageCount": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "sizeBytes": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": true
+        },
+        "rights": {
+          "$ref": "#/$defs/rights"
+        },
+        "documentMetadata": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "language": {
+          "type": "string",
+          "minLength": 1
+        },
+        "textLayer": {
+          "enum": [
+            "present",
+            "absent",
+            "partial"
+          ]
+        },
+        "visibleTitle": {
+          "type": "string"
+        },
+        "visibleAuthor": {
+          "type": "string"
+        },
+        "pageLocator": {
+          "$ref": "#/$defs/pageLocator"
+        },
+        "pageRelation": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

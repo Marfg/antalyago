@@ -1,4 +1,4 @@
-﻿# PDF Ingestion Workflow
+# PDF Ingestion Workflow
 
 Bu akış, gelecekte PDF ve SGF kaynaklarından güvenli problem üretimi için hazırlanmıştır.
 

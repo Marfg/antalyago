@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "1.0.0",
+  "updatedAt": "2026-07-05",
+  "sources": [
+    {
+      "sourceId": "falling-in-love-with-baduk",
+      "sourceType": "pdf",
+      "title": "Falling in Love with Baduk",
+      "alternateTitle": "001-007_\uc601\ubb38.pdf",
+      "localPathKey": "falling-in-love-with-baduk-pdf",
+      "fileName": "Falling-in-love-with-Baduk Copy.pdf",
+      "pageCount": 240,
+      "fileIdentity": {
+        "sha256": "9FD3989AF7C34C8FF1ADDEC279E3E890B72857B89D559DDF5A9E9BAE9A85E76E",
+        "pageCount": 240
+      },
+      "rights": {
+        "licenseStatus": "permission-required",
+        "rightsReviewRequired": true,
+        "distributionAllowed": false,
+        "allowedUse": "reference-only",
+        "distributionScope": "none",
+        "verificationLevel": "page-reference-only",
+        "rightsNote": "No redistributable license was established in this phase."
+      },
+      "documentMetadata": {
+        "title": "001-007_\uc601\ubb38.pdf",
+        "author": "",
+        "creator": "Fastserver (Esko-Graphics)",
+        "producer": "PDFOut v2.4 - build 1571 - Apr 21 2007",
+        "creationDate": "2011-10-08T01:48:58+09:00",
+        "modDate": "2013-04-23T01:14:22+09:00"
+      },
+      "language": "und",
+      "textLayer": "absent",
+      "visibleTitle": "scan cover title not machine-extracted; page text layer absent",
+      "visibleAuthor": "not machine-extracted",
+      "pageLocator": {
+        "type": "pdf-page",
+        "value": 17,
+        "relation": "printed-page",
+        "confidence": "probable"
+      },
+      "pageRelation": "pdf-page 17 corresponds to printed page 17",
+      "notes": "Image-based scan; text extraction is sparse and page-level OCR may be needed later."
+    },
+    {
+      "sourceId": "igotext",
+      "sourceType": "pdf",
+      "title": "\u95a2\u897f\u68cb\u9662 \u56f2\u7881\u5165\u9580\u30c6\u30ad\u30b9\u30c8",
+      "alternateTitle": "Kansai Kiin Igo Intro Text",
+      "localPathKey": "igotext-pdf",
+      "fileName": "igotext Copy.pdf",
+      "pageCount": 65,
+      "fileIdentity": {
+        "sha256": "C75EA776F5EB38A28ECF4F5C623C22D4B0B85B7F39B99720E0349B0F571536D0",
+        "pageCount": 65
+      },
+      "rights": {
+        "licenseStatus": "permission-granted-noncommercial",
+        "rightsReviewRequired": true,
+        "distributionAllowed": false,
+        "allowedUse": "noncommercial-only",
+        "distributionScope": "noncommercial-only",
+        "verificationLevel": "page-note-only",
+        "rightsNote": "Page 2 states the PDF/HTML editions may be copied and distributed for noncommercial use with copyright notice."
+      },
+      "documentMetadata": {
+        "title": "\u95a2\u897f\u68cb\u9662 \u56f2\u7881\u5165\u9580\u30c6\u30ad\u30b9\u30c8",
+        "author": "Junji MASAMITSU",
+        "creator": "Microsoft Word ",
+        "producer": "Acrobat PDFWriter 4.0 Windows",
+        "creationDate": "2000-01-06T22:07:49",
+        "modDate": "2000-01-10T22:07:25+09:00"
+      },
+      "language": "ja",
+      "textLayer": "present",
+      "visibleTitle": "????????",
+      "visibleAuthor": "Junji MASAMITSU",
+      "pageLocator": {
+        "type": "printed-page",
+        "value": 2,
+        "relation": "printed-page",
+        "confidence": "confirmed"
+      },
+      "pageRelation": "printed-page 2 contains copying notice; PDF page 2",
+      "notes": "Text extraction is available; source is suitable for future ingestion and provenance mapping."
+    }
+  ]
+}

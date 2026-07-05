@@ -13,3 +13,5 @@ formations/.claude/
 formations/.vscode/
 tests/*.png
 tests/*-screens/
+
+content/problem-bank/sources/local-paths.json
