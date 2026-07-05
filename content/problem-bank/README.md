@@ -1,32 +1,26 @@
-# AntalyaGo Problem Havuzu
+﻿# AntalyaGo Problem Havuzu
 
-Bu klasör, Obsidian'daki editoryal problem kayıtlarının site tarafından yüklenen yayın karşılığıdır.
+Bu klasör, yayınlanan problem kayıtlarının çalışma karşılığıdır. Kaynak notları Obsidian'da, yayın verisi ise JSON problem bankasında tutulur.
 
-## Akış
+## Mevcut durum
 
-1. PDF kaynağı Obsidian'da Kaynak şablonuyla kaydedilir.
-2. Her aday soru ayrı Problem notuna dönüştürülür.
-3. Tahta pozisyonu görselden kopyalanmaz; SGF/koordinat olarak yeniden kurulur.
-4. Kaynak sayfa, müfredat düğümü, soru türü, çözüm, ipuçları ve hak durumu doldurulur.
-5. JSON dosyası schema/problem.schema.json sözleşmesine göre hazırlanır.
-6. scripts/problem-bank/validate.mjs çalıştırılır.
-7. Doğrulanan kayıt index.json'a eklenir ve 3D motor problemToLessonStep ile yükler.
+- Problem sayısı çok küçük bir başlangıç kümesidir; fazın amacı bu yapıyı sözleşmeye bağlamaktır.
+- Mevcut kayıtlar `index.json` ile dosya düzeyinde ayrışır.
+- `content/problem-bank/schema/problem.schema.json` legacy kabul sözleşmesidir; yeni canonical model bunun üzerine kurulacaktır.
 
-## Motor kullanımı
+## Kullanım
 
-```js
-import { loadProblemBank, selectProblemEntries, problemToLessonStep } from './core/problemBank.js';
+- Doğrulama: `npm run validate-problems`
+- Envanter ve kalite denetimi: `npm run audit-problem-bank`
+- Bir problem kaydını 3B derse çevirme: `problemToLessonStep(problem)`
 
-const { index, problems } = await loadProblemBank('./content/problem-bank/index.json');
-const entries = selectProblemEntries(index, { lesson: 'l3', stage: 'assessment' });
-const selected = problems.find(problem => problem.id === entries[0].id);
-const step = problemToLessonStep(selected, { transform: { rotate: 90 } });
-```
+## Dokümanlar
 
-Üretilen step mevcut LessonEngine alanlarını kullanır: board, answer/answers, miniQuestion, turn, size, markers, fb, fb_ok ve fb_err. Sequence soruları ilk hamleyi answer, devam yolunu movesAfterAnswer ve problemMeta.solutionTree alanlarında taşır.
+- [Taksonomi](docs/taxonomy.md)
+- [Kaynak/provenance](docs/source-provenance.md)
+- [Studio adaptör sözleşmesi](docs/studio-adapter-contract.md)
+- [PDF ingestion workflow](docs/pdf-ingestion-workflow.md)
 
-## Durum kapıları
+## Sözleşme notu
 
-raw -> analyzed -> mapped -> sgf_ready -> verified -> published
-
-published için: kaynak sayfası, hak durumu, müfredat eşlemesi, geçerli koordinatlar, çözüm kontrolü ve en az bir insan incelemesi zorunludur.
+Kanonik modelde JSON çalışma/yayın verisinin tek kaynağıdır. Obsidian notları, araştırma ve editoryal takip katmanı olarak kalır.
