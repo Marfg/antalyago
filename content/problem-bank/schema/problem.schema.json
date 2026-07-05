@@ -1,365 +1,240 @@
-{
+﻿{
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://antalyago.net/schema/problem-1.0.0.json",
+  "$id": "https://antalyago.net/schema/problem-1.1.0.json",
   "title": "AntalyaGo Problem",
-  "type": "object",
-  "required": [
-    "schemaVersion",
-    "id",
-    "title",
-    "curriculum",
-    "stage",
-    "interactionType",
-    "concepts",
-    "board",
-    "question",
-    "solution",
-    "difficulty",
-    "rights",
-    "status"
+  "description": "Legacy 1.0.0 kayıtlarını ve yeni 1.1.0 canonical sözleşmesini birlikte kabul eden problem şeması.",
+  "oneOf": [
+    { "$ref": "#/$defs/legacyProblem" },
+    { "$ref": "#/$defs/currentProblem" }
   ],
-  "properties": {
-    "schemaVersion": {
-      "const": "1.0.0"
-    },
-    "id": {
-      "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9-]+$"
-    },
-    "title": {
-      "type": "string",
-      "minLength": 1
-    },
-    "status": {
-      "enum": [
-        "raw",
-        "analyzed",
-        "mapped",
-        "sgf_ready",
-        "verified",
-        "published",
-        "rejected"
-      ]
-    },
-    "curriculum": {
-      "type": "object",
-      "required": [
-        "chapter",
-        "lesson"
-      ],
-      "properties": {
-        "chapter": {
-          "enum": [
-            "B1",
-            "B2",
-            "B3",
-            "EXTRA"
-          ]
-        },
-        "lesson": {
-          "type": "string"
-        },
-        "node": {
-          "type": "string"
-        }
-      }
-    },
-    "stage": {
-      "enum": [
-        "guided_practice",
-        "variable_practice",
-        "assessment",
-        "diagnostic"
-      ]
-    },
-    "interactionType": {
-      "enum": [
-        "point_select",
-        "multi_point_select",
-        "stone_select",
-        "binary_judgement",
-        "choice_on_board",
-        "numeric_count",
-        "sequence",
-        "construct_shape",
-        "capture_goal",
-        "save_goal"
-      ]
-    },
-    "concepts": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "minItems": 1,
-      "uniqueItems": true
-    },
-    "source": {
-      "type": "object",
-      "properties": {
-        "documentId": {
-          "type": "string"
-        },
-        "page": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "usage": {
-          "enum": [
-            "concept_reference",
-            "adapted",
-            "original"
-          ]
-        }
-      }
-    },
-    "board": {
-      "type": "object",
-      "required": [
-        "size",
-        "toPlay",
-        "stones"
-      ],
-      "properties": {
-        "size": {
-          "enum": [
-            9,
-            13,
-            19
-          ]
-        },
-        "toPlay": {
-          "enum": [
-            "B",
-            "W"
-          ]
-        },
-        "stones": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/stone"
-          }
-        },
-        "markers": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/point"
-          }
-        },
-        "sgf": {
-          "type": "string"
-        }
-      }
-    },
-    "question": {
-      "type": "object",
-      "required": [
-        "prompt"
-      ],
-      "properties": {
-        "prompt": {
-          "type": "string"
-        },
-        "options": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": [
-              "text",
-              "correct"
-            ],
-            "properties": {
-              "text": {
-                "type": "string"
-              },
-              "correct": {
-                "type": "boolean"
-              },
-              "feedback": {
-                "type": "string"
-              }
-            }
-          }
-        }
-      }
-    },
-    "goal": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string"
-        },
-        "targetPoints": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/point"
-          }
-        },
-        "targetGroup": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/point"
-          }
-        },
-        "maxMoves": {
-          "type": "integer",
-          "minimum": 1
-        }
-      }
-    },
-    "solution": {
-      "type": "object",
-      "properties": {
-        "acceptedMoves": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/point"
-          }
-        },
-        "sequence": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": [
-              "color",
-              "move"
-            ],
-            "properties": {
-              "color": {
-                "enum": [
-                  "B",
-                  "W"
-                ]
-              },
-              "move": {
-                "$ref": "#/$defs/point"
-              }
-            }
-          }
-        },
-        "tree": {
-          "type": [
-            "object",
-            "null"
-          ]
-        },
-        "terminalChecks": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "difficulty": {
-      "type": "object",
-      "properties": {
-        "authorLevel": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 5
-        },
-        "estimated": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        },
-        "calibrated": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "minimum": 0,
-          "maximum": 1
-        }
-      }
-    },
-    "hints": {
-      "type": "array",
-      "items": {
-        "type": "object"
-      }
-    },
-    "feedback": {
-      "type": "object"
-    },
-    "variantPolicy": {
-      "type": "object",
-      "properties": {
-        "rotate": {
-          "type": "boolean"
-        },
-        "mirror": {
-          "type": "boolean"
-        },
-        "swapColors": {
-          "type": "boolean"
-        },
-        "translate": {
-          "type": "boolean"
-        }
-      }
-    },
-    "rights": {
-      "type": "object",
-      "required": [
-        "status"
-      ],
-      "properties": {
-        "status": {
-          "enum": [
-            "original",
-            "licensed",
-            "public_domain",
-            "review_required",
-            "restricted"
-          ]
-        },
-        "notes": {
-          "type": "string"
-        }
-      }
-    }
-  },
   "$defs": {
     "point": {
       "type": "object",
-      "required": [
-        "x",
-        "y"
-      ],
+      "required": ["x", "y"],
       "properties": {
-        "x": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 18
-        },
-        "y": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 18
-        },
-        "type": {
-          "type": "string"
-        }
+        "x": { "type": "integer", "minimum": 0, "maximum": 18 },
+        "y": { "type": "integer", "minimum": 0, "maximum": 18 },
+        "type": { "type": "string" }
       }
     },
     "stone": {
       "allOf": [
-        {
-          "$ref": "#/$defs/point"
-        },
+        { "$ref": "#/$defs/point" },
         {
           "type": "object",
-          "required": [
-            "color"
-          ],
+          "required": ["color"],
           "properties": {
-            "color": {
-              "enum": [
-                "B",
-                "W"
-              ]
+            "color": { "enum": ["B", "W"] }
+          }
+        }
+      ]
+    },
+    "commonProblem": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "id",
+        "title",
+        "curriculum",
+        "stage",
+        "interactionType",
+        "concepts",
+        "board",
+        "question",
+        "solution",
+        "difficulty",
+        "rights",
+        "status"
+      ],
+      "properties": {
+        "schemaVersion": { "type": "string" },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]+$"
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "type": "string" },
+        "curriculum": {
+          "type": "object",
+          "required": ["chapter", "lesson"],
+          "properties": {
+            "chapter": { "enum": ["B1", "B2", "B3", "EXTRA"] },
+            "lesson": { "type": "string" },
+            "node": { "type": "string" }
+          }
+        },
+        "stage": { "enum": ["guided_practice", "variable_practice", "assessment", "diagnostic"] },
+        "interactionType": {
+          "enum": [
+            "point_select",
+            "multi_point_select",
+            "stone_select",
+            "binary_judgement",
+            "choice_on_board",
+            "numeric_count",
+            "sequence",
+            "construct_shape",
+            "capture_goal",
+            "save_goal"
+          ]
+        },
+        "concepts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "source": {
+          "type": "object",
+          "properties": {
+            "documentId": { "type": "string" },
+            "page": { "type": "integer", "minimum": 1 },
+            "usage": { "enum": ["concept_reference", "adapted", "original"] }
+          },
+          "additionalProperties": true
+        },
+        "board": {
+          "type": "object",
+          "required": ["size", "toPlay", "stones"],
+          "properties": {
+            "size": { "enum": [9, 13, 19] },
+            "toPlay": { "enum": ["B", "W"] },
+            "stones": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/stone" }
+            },
+            "markers": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/point" }
+            },
+            "sgf": { "type": "string" }
+          }
+        },
+        "question": {
+          "type": "object",
+          "required": ["prompt"],
+          "properties": {
+            "prompt": { "type": "string" },
+            "options": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["text", "correct"],
+                "properties": {
+                  "text": { "type": "string" },
+                  "correct": { "type": "boolean" },
+                  "feedback": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "goal": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string" },
+            "targetPoints": { "type": "array", "items": { "$ref": "#/$defs/point" } },
+            "targetGroup": { "type": "array", "items": { "$ref": "#/$defs/point" } },
+            "maxMoves": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "solution": {
+          "type": "object",
+          "properties": {
+            "acceptedMoves": { "type": "array", "items": { "$ref": "#/$defs/point" } },
+            "sequence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["color", "move"],
+                "properties": {
+                  "color": { "enum": ["B", "W"] },
+                  "move": { "$ref": "#/$defs/point" }
+                }
+              }
+            },
+            "tree": { "type": ["object", "null"] },
+            "terminalChecks": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "difficulty": {
+          "type": "object",
+          "properties": {
+            "authorLevel": { "type": "integer", "minimum": 1, "maximum": 5 },
+            "estimated": { "type": "number", "minimum": 0, "maximum": 1 },
+            "calibrated": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+          }
+        },
+        "hints": { "type": "array", "items": { "type": "object" } },
+        "feedback": { "type": "object" },
+        "variantPolicy": {
+          "type": "object",
+          "properties": {
+            "rotate": { "type": "boolean" },
+            "mirror": { "type": "boolean" },
+            "swapColors": { "type": "boolean" },
+            "translate": { "type": "boolean" }
+          }
+        },
+        "rights": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": {
+              "enum": ["original", "licensed", "public_domain", "review_required", "restricted"]
+            },
+            "notes": { "type": "string" }
+          }
+        },
+        "revision": { "type": "integer", "minimum": 1 },
+        "editorial": { "type": "object" },
+        "publication": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "legacyProblem": {
+      "allOf": [
+        { "$ref": "#/$defs/commonProblem" },
+        {
+          "properties": {
+            "schemaVersion": { "const": "1.0.0" },
+            "status": {
+              "enum": ["raw", "analyzed", "mapped", "sgf_ready", "verified", "published", "rejected"]
+            }
+          }
+        }
+      ]
+    },
+    "currentProblem": {
+      "allOf": [
+        { "$ref": "#/$defs/commonProblem" },
+        {
+          "required": ["revision"],
+          "properties": {
+            "schemaVersion": { "const": "1.1.0" },
+            "status": {
+              "enum": ["draft", "review", "approved", "published", "retired"]
+            },
+            "source": {
+              "type": "object",
+              "required": ["type", "name", "page", "usage", "hash", "importedAt"],
+              "properties": {
+                "type": { "enum": ["pdf", "sgf", "studio", "manual", "web"] },
+                "name": { "type": "string", "minLength": 1 },
+                "author": { "type": "string" },
+                "publication": { "type": "string" },
+                "page": { "type": "integer", "minimum": 1 },
+                "problemNumber": { "type": ["integer", "string"] },
+                "fileRef": { "type": "string" },
+                "importedAt": { "type": "string", "minLength": 1 },
+                "license": { "type": "string" },
+                "hash": { "type": "string", "minLength": 1 },
+                "editorialNote": { "type": "string" },
+                "derivedFrom": { "type": ["string", "object", "array", "null"] },
+                "documentId": { "type": "string" },
+                "usage": { "enum": ["concept_reference", "adapted", "original"] }
+              },
+              "additionalProperties": true
             }
           }
         }

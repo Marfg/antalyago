@@ -1,7 +1,7 @@
-import fs from 'node:fs/promises';
+﻿import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { validateProblem, problemToLessonStep } from '../../core/problemBank.js';
+import { validateProblem, problemToLessonStep, canonicalProblemStatus } from '../../core/problemBank.js';
 import { BoardState } from '../../core/boardState.js';
 import { applyMove, isValidMove } from '../../core/ruleEngine.js';
 import { CURRICULUM } from '../../core/curriculum.js';
@@ -10,15 +10,6 @@ import { auditCurriculum } from '../../core/learningContext.js';
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const DEFAULT_INDEX = 'content/problem-bank/index.json';
 const DEFAULT_PROBLEM_DIR = 'content/problem-bank/problems';
-const LEGACY_STATUS_MAP = {
-  raw: 'draft',
-  analyzed: 'review',
-  mapped: 'review',
-  sgf_ready: 'approved',
-  verified: 'approved',
-  published: 'published',
-  rejected: 'retired',
-};
 const CHOICE_TYPES = new Set(['binary_judgement', 'choice_on_board', 'numeric_count']);
 const COORD_RE = /\b([A-T](?:1[0-9]|[1-9]))\b|\(\s*\d+\s*,\s*\d+\s*\)/i;
 
@@ -41,7 +32,7 @@ function normalizeText(value) {
 }
 
 function canonicalStatusOf(value) {
-  return LEGACY_STATUS_MAP[value] || null;
+  return canonicalProblemStatus(value);
 }
 
 function issue(severity, code, problem, message, details = {}) {
@@ -108,17 +99,17 @@ function validateQuestionContent(problem, issues) {
       leak.type,
       problem,
       leak.type === 'answer_leak'
-        ? 'Pre-answer metinde cevap koordinatÃƒâ€Ã‚Â± veya doÃƒâ€Ã…Â¸rudan yÃƒÆ’Ã‚Â¶nlendirme var.'
+        ? 'Pre-answer metinde cevap koordinatÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± veya doÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸rudan yÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶nlendirme var.'
         : leak.type === 'intentional_scaffold'
-          ? 'Pre-answer koordinat referansÃƒâ€Ã‚Â± aÃƒÆ’Ã‚Â§Ãƒâ€Ã‚Â±k scaffolding olarak iÃƒâ€¦Ã…Â¸aretlendi.'
-          : 'Pre-answer koordinat referansÃƒâ€Ã‚Â± var; soru tipi bunu answer leak yerine referans olarak sÃƒâ€Ã‚Â±nÃƒâ€Ã‚Â±flandÃƒâ€Ã‚Â±rÃƒâ€Ã‚Â±yor.',
+          ? 'Pre-answer koordinat referansÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± aÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±k scaffolding olarak iÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸aretlendi.'
+          : 'Pre-answer koordinat referansÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± var; soru tipi bunu answer leak yerine referans olarak sÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±nÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±flandÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±rÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±yor.',
       { field: 'question.prompt', hits: leak.hits, prompt },
     ));
   }
 
   const options = Array.isArray(problem?.question?.options) ? problem.question.options : [];
   if (problem?.interactionType === 'numeric_count' && options.length && !options.some(option => option.correct)) {
-    issues.push(issue('error', 'QUESTION_OPTION_MISSING_CORRECT', problem, 'Numeric count sorusunda doÃƒâ€Ã…Â¸ru seÃƒÆ’Ã‚Â§enek yok.', { field: 'question.options' }));
+    issues.push(issue('error', 'QUESTION_OPTION_MISSING_CORRECT', problem, 'Numeric count sorusunda doÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸ru seÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§enek yok.', { field: 'question.options' }));
   }
 }
 
@@ -127,7 +118,7 @@ function validateBoard(problem, issues) {
   for (const stone of problem.board?.stones || []) {
     const key = pointKey(stone);
     if (seen.has(key)) {
-      issues.push(issue('error', 'STONE_OVERLAP', problem, `AynÃƒâ€Ã‚Â± konuma birden fazla taÃƒâ€¦Ã…Â¸ yerleÃƒâ€¦Ã…Â¸tirilmiÃƒâ€¦Ã…Â¸: ${key}.`, { field: 'board.stones', coordinate: key }));
+      issues.push(issue('error', 'STONE_OVERLAP', problem, `AynÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± konuma birden fazla taÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸ yerleÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸tirilmiÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸: ${key}.`, { field: 'board.stones', coordinate: key }));
     }
     seen.add(key);
   }
@@ -145,12 +136,12 @@ function validateSolution(problem, issues) {
     for (const [index, move] of acceptedMoves.entries()) {
       const color = state.turn;
       if (move?.pass) {
-        issues.push(issue('warning', 'PASS_NOT_SUPPORTED', problem, 'pass biÃƒÆ’Ã‚Â§imi kabul edildi ama bu kayÃƒâ€Ã‚Â±t iÃƒÆ’Ã‚Â§in kullanÃƒâ€Ã‚Â±lmÃƒâ€Ã‚Â±yor.', { field: `solution.acceptedMoves[${index}]` }));
+        issues.push(issue('warning', 'PASS_NOT_SUPPORTED', problem, 'pass biÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§imi kabul edildi ama bu kayÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±t iÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§in kullanÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±lmÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±yor.', { field: `solution.acceptedMoves[${index}]` }));
         continue;
       }
       const validity = isValidMove(state, move.x, move.y, color);
       if (!validity.valid) {
-        issues.push(issue('error', 'ILLEGAL_SOLUTION_MOVE', problem, `ÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã‚Â¶zÃƒÆ’Ã‚Â¼m hamlesi yasadÃƒâ€Ã‚Â±Ãƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â±: ${move.x},${move.y} (${validity.reason || 'UNKNOWN'}).`, { field: `solution.acceptedMoves[${index}]`, reason: validity.reason }));
+        issues.push(issue('error', 'ILLEGAL_SOLUTION_MOVE', problem, `ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶zÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼m hamlesi yasadÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸ÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±: ${move.x},${move.y} (${validity.reason || 'UNKNOWN'}).`, { field: `solution.acceptedMoves[${index}]`, reason: validity.reason }));
         return;
       }
       const result = applyMove(state, move.x, move.y, color);
@@ -164,10 +155,10 @@ function validateSolution(problem, issues) {
         return state.colorAt(x, y) !== null;
       });
       if (remaining.length) {
-        issues.push(issue('error', 'CAPTURE_GOAL_NOT_SATISFIED', problem, 'ÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã‚Â¶zÃƒÆ’Ã‚Â¼m hedef grubu tahtadan kaldÃƒâ€Ã‚Â±rmÃƒâ€Ã‚Â±yor.', { field: 'solution.acceptedMoves', remaining }));
+        issues.push(issue('error', 'CAPTURE_GOAL_NOT_SATISFIED', problem, 'ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶zÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼m hedef grubu tahtadan kaldÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±rmÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±yor.', { field: 'solution.acceptedMoves', remaining }));
       }
       if (!captured.length) {
-        issues.push(issue('error', 'CAPTURE_NOT_PRODUCED', problem, 'ÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã‚Â¶zÃƒÆ’Ã‚Â¼m hamlesi hiÃƒÆ’Ã‚Â§ taÃƒâ€¦Ã…Â¸ yakalamÃƒâ€Ã‚Â±yor.', { field: 'solution.acceptedMoves' }));
+        issues.push(issue('error', 'CAPTURE_NOT_PRODUCED', problem, 'ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶zÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼m hamlesi hiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ taÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸ yakalamÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±yor.', { field: 'solution.acceptedMoves' }));
       }
     }
   }
@@ -179,21 +170,21 @@ function validateSolution(problem, issues) {
       const move = node?.move || null;
       const color = node?.color === 'W' ? 'white' : 'black';
       if (!move) {
-        issues.push(issue('error', 'SEQUENCE_MOVE_MISSING', problem, 'ÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã‚Â¶zÃƒÆ’Ã‚Â¼m dizisinde hamle dÃƒÆ’Ã‚Â¼Ãƒâ€Ã…Â¸ÃƒÆ’Ã‚Â¼mÃƒÆ’Ã‚Â¼ eksik.', { field: `solution.sequence[${index}]` }));
+        issues.push(issue('error', 'SEQUENCE_MOVE_MISSING', problem, 'ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶zÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼m dizisinde hamle dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼ÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼ eksik.', { field: `solution.sequence[${index}]` }));
         continue;
       }
       const key = pointKey(move);
       if (seenCoords.has(key)) {
-        issues.push(issue('warning', 'DUPLICATE_SOLUTION_COORDINATE', problem, `ÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã‚Â¶zÃƒÆ’Ã‚Â¼m dizisinde aynÃƒâ€Ã‚Â± koordinat tekrar ediyor: ${key}.`, { field: `solution.sequence[${index}]`, coordinate: key }));
+        issues.push(issue('warning', 'DUPLICATE_SOLUTION_COORDINATE', problem, `ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶zÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼m dizisinde aynÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± koordinat tekrar ediyor: ${key}.`, { field: `solution.sequence[${index}]`, coordinate: key }));
       }
       seenCoords.add(key);
       if (move.pass) {
-        issues.push(issue('warning', 'PASS_NOT_SUPPORTED', problem, 'Sequence iÃƒÆ’Ã‚Â§indeki pass bu fazda beklenmiyor.', { field: `solution.sequence[${index}]` }));
+        issues.push(issue('warning', 'PASS_NOT_SUPPORTED', problem, 'Sequence iÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§indeki pass bu fazda beklenmiyor.', { field: `solution.sequence[${index}]` }));
         continue;
       }
       const validity = isValidMove(state, move.x, move.y, color);
       if (!validity.valid) {
-        issues.push(issue('error', 'ILLEGAL_SOLUTION_MOVE', problem, `Sequence hamlesi yasadÃƒâ€Ã‚Â±Ãƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â±: ${move.x},${move.y} (${validity.reason || 'UNKNOWN'}).`, { field: `solution.sequence[${index}].move`, reason: validity.reason }));
+        issues.push(issue('error', 'ILLEGAL_SOLUTION_MOVE', problem, `Sequence hamlesi yasadÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸ÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±: ${move.x},${move.y} (${validity.reason || 'UNKNOWN'}).`, { field: `solution.sequence[${index}].move`, reason: validity.reason }));
         return;
       }
       const result = applyMove(state, move.x, move.y, color);
@@ -205,10 +196,10 @@ function validateSolution(problem, issues) {
 function validateCanonicalMetadata(problem, entry, issues) {
   const canonicalStatus = canonicalStatusOf(entry?.status || problem?.status || null);
   if (!problem?.status) {
-    issues.push(issue('info', 'FILE_STATUS_MISSING', problem, 'Problem dosyasÃƒâ€Ã‚Â±nda kanonik status alanÃƒâ€Ã‚Â± yok; durum index.json ÃƒÆ’Ã‚Â¼zerinden geliyor.', { field: 'status', legacyStatus: entry?.status || null, canonicalStatus }));
+    issues.push(issue('info', 'FILE_STATUS_MISSING', problem, 'Problem dosyasÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±nda kanonik status alanÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± yok; durum index.json ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼zerinden geliyor.', { field: 'status', legacyStatus: entry?.status || null, canonicalStatus }));
   }
   if (!problem?.revision) {
-    issues.push(issue('info', 'REVISION_MISSING', problem, 'revision alanÃƒâ€Ã‚Â± henÃƒÆ’Ã‚Â¼z yok; migration sonrasÃƒâ€Ã‚Â±nda eklenecek.', { field: 'revision', canonicalStatus }));
+    issues.push(issue('info', 'REVISION_MISSING', problem, 'revision alanÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± henÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼z yok; migration sonrasÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±nda eklenecek.', { field: 'revision', canonicalStatus }));
   }
 
   const source = problem?.source || {};
@@ -218,15 +209,15 @@ function validateCanonicalMetadata(problem, entry, issues) {
   }
 
   if (!source.documentId || !source.page || !source.usage) {
-    issues.push(issue('warning', 'SOURCE_TRACE_INCOMPLETE', problem, 'Kaynak izi var ama asgari provenance alanlarÃƒâ€Ã‚Â± eksik.', { field: 'source', missing: ['documentId', 'page', 'usage'].filter(key => source[key] == null || source[key] === '') }));
+    issues.push(issue('warning', 'SOURCE_TRACE_INCOMPLETE', problem, 'Kaynak izi var ama asgari provenance alanlarÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± eksik.', { field: 'source', missing: ['documentId', 'page', 'usage'].filter(key => source[key] == null || source[key] === '') }));
   } else {
-    issues.push(issue('info', 'SOURCE_PROVENANCE_PARTIAL', problem, 'Kaynak izi mevcut; canonical provenance alanlarÃƒâ€Ã‚Â± henÃƒÆ’Ã‚Â¼z doldurulmamÃƒâ€Ã‚Â±Ãƒâ€¦Ã…Â¸.', { field: 'source', missing: missingSourceFields, canonicalStatus }));
+    issues.push(issue('info', 'SOURCE_PROVENANCE_PARTIAL', problem, 'Kaynak izi mevcut; canonical provenance alanlarÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± henÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼z doldurulmamÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸.', { field: 'source', missing: missingSourceFields, canonicalStatus }));
   }
 
   if (canonicalStatus === 'published') {
     const publishedMissing = ['revision', 'status', 'source.hash', 'source.author', 'source.publication', 'source.fileRef', 'source.importedAt'];
     if (!problem?.revision || !problem?.status || missingSourceFields.length) {
-      issues.push(issue('warning', 'PUBLISHED_METADATA_INCOMPLETE', problem, 'Published kayÃƒâ€Ã‚Â±t iÃƒÆ’Ã‚Â§in beklenen alanlarÃƒâ€Ã‚Â±n tamamÃƒâ€Ã‚Â± yok.', { field: 'canonical', missing: publishedMissing.filter(item => {
+      issues.push(issue('warning', 'PUBLISHED_METADATA_INCOMPLETE', problem, 'Published kayÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±t iÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§in beklenen alanlarÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±n tamamÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± yok.', { field: 'canonical', missing: publishedMissing.filter(item => {
         if (item === 'revision') return !problem?.revision;
         if (item === 'status') return !problem?.status;
         const key = item.split('.')[1];
@@ -244,25 +235,25 @@ function analyzeProblem(problem, entry) {
   }
 
   if (problem.id !== entry.id) {
-    issues.push(issue('error', 'INDEX_ID_MISMATCH', problem, `Index id (${entry.id}) ile dosya id (${problem.id}) farklÃƒâ€Ã‚Â±.`, { field: 'id', indexId: entry.id, fileId: problem.id }));
+    issues.push(issue('error', 'INDEX_ID_MISMATCH', problem, `Index id (${entry.id}) ile dosya id (${problem.id}) farklÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±.`, { field: 'id', indexId: entry.id, fileId: problem.id }));
   }
   if ((problem.curriculum?.chapter || null) !== (entry.curriculum?.chapter || null) || (problem.curriculum?.lesson || null) !== (entry.curriculum?.lesson || null)) {
-    issues.push(issue('warning', 'CURRICULUM_MISMATCH', problem, 'Index ve dosya mÃƒÆ’Ã‚Â¼fredat eÃƒâ€¦Ã…Â¸leÃƒâ€¦Ã…Â¸mesi farklÃƒâ€Ã‚Â±.', { field: 'curriculum', index: entry.curriculum, file: problem.curriculum }));
+    issues.push(issue('warning', 'CURRICULUM_MISMATCH', problem, 'Index ve dosya mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼fredat eÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸leÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸mesi farklÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±.', { field: 'curriculum', index: entry.curriculum, file: problem.curriculum }));
   }
   if ((problem.stage || null) !== (entry.stage || null)) {
-    issues.push(issue('warning', 'STAGE_MISMATCH', problem, 'Index ve dosya stage deÃƒâ€Ã…Â¸eri farklÃƒâ€Ã‚Â±.', { field: 'stage', index: entry.stage, file: problem.stage }));
+    issues.push(issue('warning', 'STAGE_MISMATCH', problem, 'Index ve dosya stage deÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸eri farklÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±.', { field: 'stage', index: entry.stage, file: problem.stage }));
   }
   if ((problem.interactionType || null) !== (entry.interactionType || null)) {
-    issues.push(issue('warning', 'INTERACTION_MISMATCH', problem, 'Index ve dosya interactionType deÃƒâ€Ã…Â¸eri farklÃƒâ€Ã‚Â±.', { field: 'interactionType', index: entry.interactionType, file: problem.interactionType }));
+    issues.push(issue('warning', 'INTERACTION_MISMATCH', problem, 'Index ve dosya interactionType deÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸eri farklÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±.', { field: 'interactionType', index: entry.interactionType, file: problem.interactionType }));
   }
   if (JSON.stringify(problem.concepts || []) !== JSON.stringify(entry.concepts || [])) {
-    issues.push(issue('warning', 'CONCEPT_MISMATCH', problem, 'Index ve dosya concept dizisi bire bir aynÃƒâ€Ã‚Â± deÃƒâ€Ã…Â¸il.', { field: 'concepts', index: entry.concepts || [], file: problem.concepts || [] }));
+    issues.push(issue('warning', 'CONCEPT_MISMATCH', problem, 'Index ve dosya concept dizisi bire bir aynÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± deÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸il.', { field: 'concepts', index: entry.concepts || [], file: problem.concepts || [] }));
   }
   if (problem.difficulty?.authorLevel != null && entry.difficulty != null) {
     const authorLevel = problem.difficulty.authorLevel;
     const normalized = Math.max(1, Math.min(4, authorLevel));
     if (normalized !== authorLevel) {
-      issues.push(issue('warning', 'DIFFICULTY_NORMALIZED', problem, 'Yazar zorluk seviyesi 1-4 aralÃƒâ€Ã‚Â±Ãƒâ€Ã…Â¸Ãƒâ€Ã‚Â±na indirgeniyor.', { field: 'difficulty.authorLevel', value: authorLevel }));
+      issues.push(issue('warning', 'DIFFICULTY_NORMALIZED', problem, 'Yazar zorluk seviyesi 1-4 aralÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±ÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸ÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±na indirgeniyor.', { field: 'difficulty.authorLevel', value: authorLevel }));
     }
   }
 
@@ -408,17 +399,17 @@ export async function auditProblemBank({ rootDir = ROOT, indexPath = DEFAULT_IND
     try {
       parsed = JSON.parse(await fs.readFile(file, 'utf8'));
     } catch (error) {
-      issues.push(issue('error', 'PROBLEM_FILE_READ_FAILED', { id: entry.id, file: relPath }, `Problem dosyasÃƒâ€Ã‚Â± okunamadÃƒâ€Ã‚Â±: ${relPath}.`, { field: 'file', path: relPath, cause: String(error.message || error) }));
+      issues.push(issue('error', 'PROBLEM_FILE_READ_FAILED', { id: entry.id, file: relPath }, `Problem dosyasÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± okunamadÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±: ${relPath}.`, { field: 'file', path: relPath, cause: String(error.message || error) }));
       continue;
     }
     const problem = { ...parsed, file: relPath };
 
     if (seenIds.has(entry.id)) {
-      issues.push(issue('error', 'DUPLICATE_INDEX_ID', problem, `Index iÃƒÆ’Ã‚Â§inde yinelenen problem id: ${entry.id}.`, { field: 'index.problems', indexPosition }));
+      issues.push(issue('error', 'DUPLICATE_INDEX_ID', problem, `Index iÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§inde yinelenen problem id: ${entry.id}.`, { field: 'index.problems', indexPosition }));
     }
     seenIds.set(entry.id, relPath);
     if (seenPaths.has(relPath)) {
-      issues.push(issue('error', 'DUPLICATE_INDEX_PATH', problem, `Index iÃƒÆ’Ã‚Â§inde yinelenen problem path: ${relPath}.`, { field: 'index.problems', indexPosition }));
+      issues.push(issue('error', 'DUPLICATE_INDEX_PATH', problem, `Index iÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§inde yinelenen problem path: ${relPath}.`, { field: 'index.problems', indexPosition }));
     }
     seenPaths.add(relPath);
 
@@ -466,10 +457,10 @@ export async function auditProblemBank({ rootDir = ROOT, indexPath = DEFAULT_IND
       compatibility: 'backward-compatible additive migration',
       steps: [
         'legacy index.json ve problem JSON birlikte okunur',
-        'canonical status iÃƒÆ’Ã‚Â§in legacy index status alanÃƒâ€Ã‚Â± kÃƒÆ’Ã‚Â¶prÃƒÆ’Ã‚Â¼lÃƒÆ’Ã‚Â¼r',
-        'revision ve provenance alanlarÃƒâ€Ã‚Â± eklenmeden eski kayÃƒâ€Ã‚Â±tlar kabul edilir',
-        'Problem Bank ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ .agstudio ve .agstudio ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Problem Bank adaptÃƒÆ’Ã‚Â¶rleri yalnÃƒâ€Ã‚Â±z sÃƒÆ’Ã‚Â¶zleÃƒâ€¦Ã…Â¸me olarak tanÃƒâ€Ã‚Â±mlanÃƒâ€Ã‚Â±r',
-        'dry-run denetimi yeni alanlarÃƒâ€Ã‚Â± raporlar ama dosyalarÃƒâ€Ã‚Â± yazmaz',
+        'canonical status iÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§in legacy index status alanÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± kÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼r',
+        'revision ve provenance alanlarÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± eklenmeden eski kayÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±tlar kabul edilir',
+        'Problem Bank ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€Â¢ .agstudio ve .agstudio ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€Â¢ Problem Bank adaptÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶rleri yalnÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±z sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶zleÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸me olarak tanÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±mlanÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±r',
+        'dry-run denetimi yeni alanlarÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± raporlar ama dosyalarÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± yazmaz',
       ],
       reversible: true,
       idempotent: true,
@@ -529,7 +520,7 @@ function renderTextReport(report) {
     push('  (none)');
   } else {
     for (const item of report.issues) {
-      push('  [', item.severity.toUpperCase(), '] ', item.code, ' ', item.problemId || '(index)', ' ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ', item.message);
+      push('  [', item.severity.toUpperCase(), '] ', item.code, ' ', item.problemId || '(index)', ' ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ', item.message);
     }
   }
   push('');

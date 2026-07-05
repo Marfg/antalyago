@@ -4,20 +4,23 @@ Bu klasör, yayınlanan problem kayıtlarının çalışma karşılığıdır. K
 
 ## Mevcut durum
 
-- Problem sayısı çok küçük bir başlangıç kümesidir; fazın amacı bu yapıyı sözleşmeye bağlamaktır.
+- Problem sayısı küçük bir başlangıç kümesidir; fazların amacı bu yapıyı sözleşmeye bağlamaktır.
 - Mevcut kayıtlar `index.json` ile dosya düzeyinde ayrışır.
-- `content/problem-bank/schema/problem.schema.json` legacy kabul sözleşmesidir; yeni canonical model bunun üzerine kurulacaktır.
+- `content/problem-bank/schema/problem.schema.json` legacy `1.0.0` kayıtlarını ve canonical `1.1.0` adaylarını kabul eden köprü şemadır.
 
 ## Kullanım
 
 - Doğrulama: `npm run validate-problems`
 - Envanter ve kalite denetimi: `npm run audit-problem-bank`
+- Güvenli migration dry-run: `npm run migrate-problem-bank`
+- Güvenli apply: `npm run migrate-problem-bank -- --apply`
 - Bir problem kaydını 3B derse çevirme: `problemToLessonStep(problem)`
 
 ## Dokümanlar
 
 - [Taksonomi](docs/taxonomy.md)
 - [Kaynak/provenance](docs/source-provenance.md)
+- [Schema versioning ve migration](docs/schema-versioning.md)
 - [Studio adaptör sözleşmesi](docs/studio-adapter-contract.md)
 - [PDF ingestion workflow](docs/pdf-ingestion-workflow.md)
 

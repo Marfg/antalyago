@@ -4,7 +4,7 @@
   "scripts": {
     "serve": "npx serve . -p 3000 --no-clipboard",
     "test-core": "node --experimental-vm-modules tests/run.js",
-    "test-problems": "node tests/problemBank.test.js && node tests/problemBank-audit.test.js",
+    "test-problems": "node tests/problemBank.test.js && node tests/problemBank-audit.test.js && node tests/problemBank-migration.test.js",
     "validate-problems": "node scripts/problem-bank/validate.mjs",
     "test-all": "npm run test-core && npm run test-problems && npm run test-learning && npm run test-learning-ui && npm run test-b2 && npm run test-ai && npm run test-robot && npm run test-theme && npm run test-go-nedir && npm run test-studio",
     "test-learning": "node tests/learningContext.test.js",
@@ -22,7 +22,8 @@
     "test-studio": "node tests/studio-document.test.js && node tests/studio-text-tree.test.js && node tests/studio-server.test.js && npm run test-studio-electron && node tests/verify-studio-desktop.mjs",
     "test-studio-electron": "node tests/studio-electron.test.js",
     "test-studio-text-tree": "node tests/studio-text-tree.test.js",
-    "audit-problem-bank": "node scripts/problem-bank/audit.mjs"
+    "audit-problem-bank": "node scripts/problem-bank/audit.mjs",
+    "migrate-problem-bank": "node scripts/problem-bank/migrate.mjs"
   },
   "devDependencies": {
     "electron": "43.0.0",
