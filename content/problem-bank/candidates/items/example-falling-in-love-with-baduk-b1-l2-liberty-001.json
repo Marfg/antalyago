@@ -1,0 +1,66 @@
+{
+  "candidateId": "falling-in-love-with-baduk-b1-l2-liberty-001",
+  "candidateVersion": "1.0.0",
+  "status": "needs-review",
+  "source": {
+    "sourceId": "falling-in-love-with-baduk",
+    "locator": {
+      "type": "pdf-page",
+      "value": 17
+    },
+    "usage": "concept_reference"
+  },
+  "extraction": {
+    "method": "vision",
+    "extractedAt": "2026-07-08T00:00:00Z",
+    "extractor": "codex-candidate-fixture",
+    "confidence": 0.84,
+    "notes": "Example candidate only; not canonical and not promoted."
+  },
+  "curriculum": {
+    "section": "B1",
+    "lesson": "l2",
+    "skill": "liberty",
+    "tags": ["fixture", "example", "candidate"]
+  },
+  "board": {
+    "size": 9,
+    "initialStones": [{ "color": "white", "x": 0, "y": 0 }],
+    "markers": [{ "x": 1, "y": 1, "label": "focus" }]
+  },
+  "task": {
+    "type": "numeric_count",
+    "prompt": "Köşedeki taşın kaç nefesi var?",
+    "expectedAnswer": "2",
+    "answerPolicy": "single_numerical_answer"
+  },
+  "review": {
+    "required": true,
+    "reviewer": null,
+    "reviewedAt": null,
+    "checklist": [
+      "source id resolves in catalog",
+      "locator resolves to a valid page",
+      "board and answer reconstruction are consistent",
+      "rights snapshot is attached"
+    ]
+  },
+  "studio": {
+    "compatible": true,
+    "documentRef": null,
+    "proposedStudioDocument": { "title": "Candidate preview only", "kind": "problem-candidate" }
+  },
+  "rights": {
+    "sourceRightsSnapshot": {
+      "licenseStatus": "permission-required",
+      "rightsReviewRequired": true,
+      "distributionAllowed": false,
+      "allowedUse": "reference-only",
+      "distributionScope": "none",
+      "verificationLevel": "page-reference-only",
+      "rightsNote": "No redistributable license was established in this phase."
+    },
+    "canPublish": false,
+    "needsRightsReview": true
+  }
+}

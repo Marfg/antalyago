@@ -1,35 +1,46 @@
-# AntalyaGo Problem Havuzu
+﻿# AntalyaGo Problem Havuzu
 
-Bu klas?r, problem bankas?n?n ?al??ma alan?d?r. JSON problem verisi yay?n ve ?al??ma kayd?d?r; kaynak ayr?nt?lar? ayr? kaynak katalo?unda tutulur.
+Bu dizin, problem bankasının kanonik veri katmanıdır.
 
-## Mevcut s?zle?me
+## Kanonik problem modeli
 
-- Problem kay?tlar? `index.json` ile dosya d?zeyinde izlenir.
-- `content/problem-bank/schema/problem.schema.json` legacy `1.0.0` kay?tlar?n? ve canonical `1.1.0` kay?tlar?n? birlikte kabul eden k?pr? ?emad?r.
-- Canonical problem source modeli ?? alanla s?n?rl?d?r:
-  - `source.sourceId`
-  - `source.locator.type` / `source.locator.value`
-  - `source.usage`
-- `source.documentId`, `source.page` ve di?er ayr?nt?l? provenance alanlar? yaln?zca legacy giri? veya migration ad?mlar?nda g?r?l?r.
-- Hak, lisans, import tarihi, visible title/author ve dosya hash'i gibi ayr?nt?lar kaynak katalo?unda tutulur.
+Canonical problem JSON'u yalnızca gerekli alanları taşır:
 
-## Kullan?m
+- `source.sourceId`
+- `source.locator.type`
+- `source.locator.value`
+- `source.usage`
 
-- Do?rulama: `npm run validate-problems`
-- Envanter ve kalite denetimi: `npm run audit-problem-bank`
-- G?venli migration dry-run: `npm run migrate-problem-bank`
-- G?venli apply: `npm run migrate-problem-bank -- --apply`
-- Bir problem kayd?n? 3B derse ?evirme: `problemToLessonStep(problem)`
+Kaynak kopyaları, PDF dosyaları, mutlak yerel yollar ve lisans kanıtları ayrı kaynak katalogunda tutulur. Problem kaydında redundant provenance alanları saklanmaz.
 
-## Dok?manlar
+## Aday hattı
+
+PDF/SGF/insan yardımlı çıkarımlar önce `content/problem-bank/candidates/` altında aday olarak tutulur. Bu hat, canonical problem bankasından ayrıdır ve insan onayı olmadan `content/problem-bank/problems/` altına yazmaz.
+
+Aday statüleri:
+
+- `extracted`
+- `needs-review`
+- `rejected`
+- `promoted`
+
+## Kullanım
+
+- Problem denetimi: `npm run audit-problem-bank`
+- Kaynak denetimi: `npm run audit-problem-sources`
+- Aday denetimi: `npm run audit-problem-candidates`
+- Güvenli migration dry-run: `npm run migrate-problem-bank`
+
+## Dokümanlar
 
 - [Taksonomi](docs/taxonomy.md)
 - [Kaynak/provenance](docs/source-provenance.md)
 - [Schema versioning ve migration](docs/schema-versioning.md)
-- [Studio adapt?r s?zle?mesi](docs/studio-adapter-contract.md)
+- [Studio adaptör sözleşmesi](docs/studio-adapter-contract.md)
 - [PDF ingestion workflow](docs/pdf-ingestion-workflow.md)
-- [Kaynak katalo?u](sources/README.md)
+- [Kaynak kataloğu](sources/README.md)
+- [Aday hattı](candidates/README.md)
 
-## S?zle?me notu
+## Not
 
-Kanonik modelde JSON ?al??ma/yay?n verisinin tek kayna??d?r. Obsidian notlar? ara?t?rma ve editoryal takip katman?d?r. Kaynak katalo?u rights modelini, lisans? ve da??t?m kapsam?n? a??k?a ta??r.
+JSON problem bankası, yayın ve çalışma verisinin tek kanonik kaynağıdır. Obsidian notları ve aday hattı, araştırma ve editoryal taslak katmanıdır.
