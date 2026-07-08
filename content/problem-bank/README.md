@@ -1,12 +1,17 @@
 # AntalyaGo Problem Havuzu
 
-Bu klas?r, yay?nlanan problem kay?tlar?n?n ?al??ma kar??l???d?r. Kaynak notlar? Obsidian'da, yay?n verisi ise JSON problem bankas?nda tutulur.
+Bu klas?r, problem bankas?n?n ?al??ma alan?d?r. JSON problem verisi yay?n ve ?al??ma kayd?d?r; kaynak ayr?nt?lar? ayr? kaynak katalo?unda tutulur.
 
-## Mevcut durum
+## Mevcut s?zle?me
 
-- Problem say?s? k???k bir ba?lang?? k?mesidir; fazlar?n amac? bu yap?y? s?zle?meye ba?lamakt?r.
-- Mevcut kay?tlar `index.json` ile dosya d?zeyinde ayr???r.
-- `content/problem-bank/schema/problem.schema.json` legacy `1.0.0` kay?tlar?n? ve canonical `1.1.0` adaylar?n? kabul eden k?pr? ?emad?r.
+- Problem kay?tlar? `index.json` ile dosya d?zeyinde izlenir.
+- `content/problem-bank/schema/problem.schema.json` legacy `1.0.0` kay?tlar?n? ve canonical `1.1.0` kay?tlar?n? birlikte kabul eden k?pr? ?emad?r.
+- Canonical problem source modeli ?? alanla s?n?rl?d?r:
+  - `source.sourceId`
+  - `source.locator.type` / `source.locator.value`
+  - `source.usage`
+- `source.documentId`, `source.page` ve di?er ayr?nt?l? provenance alanlar? yaln?zca legacy giri? veya migration ad?mlar?nda g?r?l?r.
+- Hak, lisans, import tarihi, visible title/author ve dosya hash'i gibi ayr?nt?lar kaynak katalo?unda tutulur.
 
 ## Kullan?m
 
@@ -23,8 +28,8 @@ Bu klas?r, yay?nlanan problem kay?tlar?n?n ?al??ma kar??l???d?r. Kaynak notlar? 
 - [Schema versioning ve migration](docs/schema-versioning.md)
 - [Studio adapt?r s?zle?mesi](docs/studio-adapter-contract.md)
 - [PDF ingestion workflow](docs/pdf-ingestion-workflow.md)
-- [Kaynak katalogu](sources/README.md)
+- [Kaynak katalo?u](sources/README.md)
 
 ## S?zle?me notu
 
-Kanonik modelde JSON ?al??ma/yay?n verisinin tek kayna??d?r. Obsidian notlar?, ara?t?rma ve editoryal takip katman? olarak kal?r. Kaynak katalo?unda rights modeli lisans ve da??t?m kapsam?n? boolean d???nda a??k?a ta??r.
+Kanonik modelde JSON ?al??ma/yay?n verisinin tek kayna??d?r. Obsidian notlar? ara?t?rma ve editoryal takip katman?d?r. Kaynak katalo?u rights modelini, lisans? ve da??t?m kapsam?n? a??k?a ta??r.

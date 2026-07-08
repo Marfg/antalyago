@@ -204,26 +204,18 @@ function validateCanonicalMetadata(problem, entry, issues) {
 
   const source = problem?.source || {};
   const missingSourceFields = [];
-  for (const key of ['type', 'name', 'author', 'publication', 'problemNumber', 'fileRef', 'importedAt', 'license', 'hash', 'editorialNote']) {
-    if (source[key] == null || source[key] === '') missingSourceFields.push(key);
+  for (const key of ['sourceId', 'usage']) {
+    if (source[key] == null || source[key] === '') missingSourceFields.push(`source.${key}`);
   }
-
-  if (!source.documentId || !source.page || !source.usage) {
-    issues.push(issue('warning', 'SOURCE_TRACE_INCOMPLETE', problem, 'Kaynak izi var ama asgari provenance alanlarÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± eksik.', { field: 'source', missing: ['documentId', 'page', 'usage'].filter(key => source[key] == null || source[key] === '') }));
+  if (!source.locator || typeof source.locator !== 'object') {
+    missingSourceFields.push('source.locator');
   } else {
-    issues.push(issue('info', 'SOURCE_PROVENANCE_PARTIAL', problem, 'Kaynak izi mevcut; canonical provenance alanlarÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± henÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼z doldurulmamÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸.', { field: 'source', missing: missingSourceFields, canonicalStatus }));
+    if (source.locator.type == null || source.locator.type === '') missingSourceFields.push('source.locator.type');
+    if (source.locator.value == null || source.locator.value === '') missingSourceFields.push('source.locator.value');
   }
 
-  if (canonicalStatus === 'published') {
-    const publishedMissing = ['revision', 'status', 'source.hash', 'source.author', 'source.publication', 'source.fileRef', 'source.importedAt'];
-    if (!problem?.revision || !problem?.status || missingSourceFields.length) {
-      issues.push(issue('warning', 'PUBLISHED_METADATA_INCOMPLETE', problem, 'Published kayÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±t iÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§in beklenen alanlarÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±n tamamÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± yok.', { field: 'canonical', missing: publishedMissing.filter(item => {
-        if (item === 'revision') return !problem?.revision;
-        if (item === 'status') return !problem?.status;
-        const key = item.split('.')[1];
-        return source[key] == null || source[key] === '';
-      }) }));
-    }
+  if (missingSourceFields.length) {
+    issues.push(issue('warning', 'SOURCE_TRACE_INCOMPLETE', problem, 'Kaynak izi i?in gerekli canonical alanlar eksik.', { field: 'source', missing: missingSourceFields, canonicalStatus }));
   }
 }
 
@@ -285,8 +277,8 @@ function analyzeProblem(problem, entry) {
       interactionType: problem.interactionType || null,
       boardSize: problem.board?.size || null,
       sourcePresent: !!problem.source,
-      sourceTypePresent: !!problem.source?.type,
-      sourceTracePresent: !!(problem.source?.documentId && problem.source?.page && problem.source?.usage),
+      sourceIdPresent: !!problem.source?.sourceId,
+      sourceTracePresent: !!(problem.source?.sourceId && problem.source?.locator?.type && problem.source?.locator?.value != null && problem.source?.usage),
       canonicalStatus: canonicalStatusOf(entry?.status || problem?.status || null),
       rendererCompatible,
       solutionShape: solutionShape(problem),

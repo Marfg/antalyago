@@ -31,7 +31,7 @@ function hasValue(value) {
 
 function sourceIdentifier(problem) {
   const source = problem?.source || {};
-  return hasValue(source.name) || hasValue(source.documentId);
+  return hasValue(source.sourceId) || hasValue(source.documentId) || hasValue(source.name);
 }
 
 function clone(value) {
@@ -39,14 +39,8 @@ function clone(value) {
 }
 
 function collectProvenanceIssues(problem, migrated, plan) {
-  const source = migrated.source || {};
-  const policy = provenancePolicyForStatus(migrated.status);
   const issues = [];
   const missing = new Set(plan.missingSourceFields || []);
-  const advisory = new Set(plan.advisorySourceFields || []);
-  const typeMissing = !hasValue(source.type);
-  const identifierMissing = !sourceIdentifier(migrated);
-  const licenseMissing = !hasValue(source.license);
 
   if (missing.size) {
     issues.push({
@@ -55,34 +49,6 @@ function collectProvenanceIssues(problem, migrated, plan) {
       message: `${[...missing].join(', ')} zorunlu`,
       missing: [...missing],
     });
-  }
-
-  if ((policy.status === 'draft' || policy.status === 'review') && advisory.size) {
-    issues.push({
-      severity: policy.status === 'draft' ? 'info' : 'warning',
-      code: 'INCOMPLETE_PROVENANCE',
-      message: `${[...advisory].join(', ')} eksik`,
-      missing: [...advisory],
-    });
-  }
-
-  if (policy.status === 'approved' || policy.status === 'published' || policy.status === 'retired') {
-    const strictMissing = [];
-    if (typeMissing) strictMissing.push('source.type');
-    if (identifierMissing) strictMissing.push('source.identifier');
-    if (!Number.isInteger(source.page) || source.page < 1) strictMissing.push('source.page');
-    if (!hasValue(source.usage)) strictMissing.push('source.usage');
-    if (!hasValue(source.hash)) strictMissing.push('source.hash');
-    if (!hasValue(source.importedAt)) strictMissing.push('source.importedAt');
-    if (licenseMissing) strictMissing.push('source.license');
-    if (strictMissing.length) {
-      issues.push({
-        severity: 'error',
-        code: 'PROVENANCE_INCOMPLETE',
-        message: `${strictMissing.join(', ')} zorunlu`,
-        missing: strictMissing,
-      });
-    }
   }
 
   return issues;
@@ -181,6 +147,7 @@ function renderReport(report) {
   push('  Blocked: ', report.summary.blockedEntries);
   push('  Current schema versions:');
   for (const [version, count] of report.summary.currentSchemaVersions) push('    ', version, ': ', count);
+  push('  Change count: ', report.summary.changeCount);
   push('  Canonical status preview:');
   for (const [status, count] of report.summary.canonicalStatuses) push('    ', status, ': ', count);
   push('');
@@ -213,14 +180,15 @@ async function loadBank(rootDir, indexUrl) {
     const raw = await fs.readFile(filePath, 'utf8');
     const currentHash = sha256(raw);
     const problem = JSON.parse(raw);
+    const migratedFromHash = problem?.schemaVersion === PROBLEM_SCHEMA_VERSION ? undefined : currentHash;
     const plan = buildProblemMigrationPlan(problem, {
       targetSchemaVersion: PROBLEM_SCHEMA_VERSION,
-      recordHash: currentHash,
+      recordHash: migratedFromHash,
       fileRef: entry.path,
     });
     const candidate = migrateProblemRecord(problem, {
       targetSchemaVersion: PROBLEM_SCHEMA_VERSION,
-      recordHash: currentHash,
+      recordHash: migratedFromHash,
       fileRef: entry.path,
     });
     const currentText = normalizeJsonText(problem);
@@ -236,7 +204,7 @@ async function loadBank(rootDir, indexUrl) {
       canonicalStatus: canonicalProblemStatus(problem.status),
       policyStatus: candidate.status,
       legacyStatus: plan.legacyStatus,
-      recordHash: plan.recordHash,
+      migratedFromHash: plan.migratedFromHash,
       currentHash,
       candidateHash,
       currentRawText: raw,
@@ -347,6 +315,7 @@ export async function buildProblemBankMigrationReport({ rootDir = ROOT, indexUrl
     totalEntries: bank.entries.length,
     readyEntries: bank.entries.filter(entry => entry.decision === 'ready').length,
     blockedEntries: bank.entries.filter(entry => entry.decision !== 'ready').length,
+    changeCount: bank.entries.filter(entry => entry.currentText !== entry.candidateText).length,
     currentSchemaVersions: countMap(bank.entries, entry => entry.currentVersion || 'unknown'),
     canonicalStatuses: countMap(bank.entries, entry => entry.canonicalStatus || 'unknown'),
   };
@@ -359,6 +328,7 @@ export async function buildProblemBankMigrationReport({ rootDir = ROOT, indexUrl
     dryRun: !apply,
     generatedAt: new Date().toISOString(),
     summary,
+    writeResult: null,
     items: bank.entries.map(entry => ({
       problemId: entry.id,
       path: entry.path,
@@ -367,7 +337,7 @@ export async function buildProblemBankMigrationReport({ rootDir = ROOT, indexUrl
       canonicalStatus: entry.canonicalStatus,
       policyStatus: entry.policyStatus,
       legacyStatus: entry.plan.legacyStatus,
-      recordHash: entry.plan.recordHash,
+      migratedFromHash: entry.plan.migratedFromHash,
       currentHash: entry.currentHash,
       candidateHash: entry.candidateHash,
       decision: entry.decision,

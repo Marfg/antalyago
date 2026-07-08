@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "id": "b1-l2-liberty-count-0001",
   "title": "Köşe taşının nefesleri",
-  "status": "verified",
+  "status": "review",
   "curriculum": {
     "chapter": "B1",
     "lesson": "l2",
@@ -15,8 +15,11 @@
     "corner"
   ],
   "source": {
-    "documentId": "falling-in-love-with-baduk",
-    "page": 17,
+    "sourceId": "falling-in-love-with-baduk",
+    "locator": {
+      "type": "pdf-page",
+      "value": 17
+    },
     "usage": "concept_reference"
   },
   "board": {
@@ -80,5 +83,10 @@
   "rights": {
     "status": "original",
     "notes": "Pozisyon AntalyaGo için yeniden kuruldu."
+  },
+  "revision": 1,
+  "migration": {
+    "legacyStatus": "verified",
+    "migratedFromHash": "13915DB5C77F5BA704E542EC29DDFB8506C4BD1736F99BFAC3572A78BE5B31EA"
   }
 }

@@ -1,68 +1,46 @@
-# Kaynak / Provenance Sözleşmesi
+# Kaynak / Provenance S?zle?mesi
 
-Problem bankasında iki otorite katmanı vardır:
+Problem bankas?nda iki ayr? otorite katman? vard?r:
 
-1. JSON problem verisi: çalışma ve yayın verisinin tek kaynağı
-2. Obsidian notları: araştırma, tasnif ve editoryal takip katmanı
+1. JSON problem verisi: ?al??ma ve yay?n verisinin tek kayna??
+2. Obsidian notlar?: ara?t?rma, tasnif ve editoryal takip katman?
 
-Çift yönlü kontrolsüz senkronizasyon yoktur.
+?ift y?nl? kontrols?z senkronizasyon yoktur.
 
-## Canonical provenance alanları
+## Canonical problem source modeli
 
-### Temel izleme
+Problem kay?tlar?nda canonical source ?u ?? alanla s?n?rl?d?r:
 
-- `source.type`: `pdf` / `sgf` / `studio` / `manual` / `web`
-- `source.name`: kaynak başlığı
-- `source.author`: yazar / editör
-- `source.publication`: yayın / kitap / makale adı
-- `source.page`: sayfa numarası
-- `source.problemNumber`: kaynak içi problem numarası
-- `source.fileRef`: dosya yolu veya Obsidian referansı
-- `source.importedAt`: içeri aktarma zamanı
-- `source.license`: telif veya kullanım durumu
-- `source.hash`: kaynak hash'i
-- `source.editorialNote`: editoryal not
-- `source.derivedFrom`: türetilmiş / uyarlanmış ilişkisi
-
-### Stata göre zorunluluk
-
-#### draft
-
-- zorunlu: `source.type`
-- zorunlu: `source.name` veya `source.documentId`
-- isteğe bağlı: `source.page`, `source.usage`, `source.hash`, `source.importedAt`, `source.license`, `source.author`, `source.publication`, `source.fileRef`, `source.editorialNote`, `source.derivedFrom`
-- eksik `importedAt` draft migration'ı bloke etmez; `INCOMPLETE_PROVENANCE` uyarısı üretilir
-
-#### review
-
-- zorunlu: `source.type`
-- zorunlu: `source.name` veya `source.documentId`
-- `source.page` ve `source.usage` beklenir
-- `importedAt` hâlâ isteğe bağlıdır; eksikse uyarı üretilir
-
-#### approved / published / retired
-
-- zorunlu: `source.type`
-- zorunlu: `source.name` veya `source.documentId`
-- zorunlu: `source.page`
-- zorunlu: `source.usage`
-- zorunlu: `source.hash`
-- zorunlu: `source.importedAt`
-- zorunlu: `source.license`
-- `source.pageLocator` ve `verificationLevel` pratikte beklenir
-
-### Mevcut kayıtlarla uyumluluk
-
-Şimdiki problem bankası kayıtlarında asgari iz şu alanlarda tutuluyor:
-
-- `source.documentId`
-- `source.page`
+- `source.sourceId`
+- `source.locator.type`
+- `source.locator.value`
 - `source.usage`
 
-Bu alanlar yeterli bir ilk iz sağlar; ancak canonical provenance için eksik kabul edilir.
+Legacy provenance ayr?nt?lar? (`documentId`, `page`, `name`, `type`, `hash`, `importedAt`, `license` vb.) kaynak katalo?unda veya migration ge?mi?inde tutulur; problem kayd?nda zorunlu de?ildir.
 
-## Hash kullanımı
+## S?n?fland?rma ve migration notu
 
-- Hash, kaynak içerikte sessiz değişiklikleri yakalamak için kullanılır.
-- Aynı problem birden fazla kaynaktan türetildiyse her kaynak ayrı hash ile izlenir.
-- Hash çakışması olduğunda kayıt otomatik yayınlanmaz.
+- `source.locator.type`: `pdf-page` / `printed-page` / `section` / `unresolved`
+- `source.usage`: `concept_reference` / `adapted` / `original`
+- `source.locator.value`: sayfa, b?l?m ya da belirsiz locator de?eri
+- canonical migration, kaynak ayr?nt?lar?n? problem kayd?ndan sadele?tirir; katalog referans? korunur
+
+## Katalog ile ayr?m
+
+Kaynak katalo?u ?u ayr?nt?lar? tutar:
+
+- kaynak ad? ve alternatif adlar
+- belge metadata's?
+- dil ve text layer durumu
+- visible title / visible author
+- rights / lisans / distribution scope
+- file hash ve page count
+- page locator ve confidence
+
+Problem kayd? bunlar? tekrar etmez; yaln?zca katalog referans?n? ta??r.
+
+## G?venli varsay?mlar
+
+- Bilinmeyen importedAt uydurulmaz.
+- Problem JSON hash'i source.hash olarak kullan?lmaz.
+- Hak ve lisans kararlar? katalogda do?rulan?r; problem kayd? kopya hak verisi ta??maz.

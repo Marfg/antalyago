@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "id": "b2-l10-ladder-sequence-0001",
   "title": "Merdiveni başlat",
-  "status": "verified",
+  "status": "review",
   "curriculum": {
     "chapter": "B2",
     "lesson": "l10",
@@ -16,8 +16,11 @@
     "forced_sequence"
   ],
   "source": {
-    "documentId": "falling-in-love-with-baduk",
-    "page": 99,
+    "sourceId": "falling-in-love-with-baduk",
+    "locator": {
+      "type": "pdf-page",
+      "value": 99
+    },
     "usage": "concept_reference"
   },
   "board": {
@@ -110,5 +113,10 @@
   "rights": {
     "status": "original",
     "notes": "Pozisyon AntalyaGo için yeniden kuruldu."
+  },
+  "revision": 1,
+  "migration": {
+    "legacyStatus": "verified",
+    "migratedFromHash": "F725A8DC039434D4787FC88ACFFBF69D4A45A37786B7210267B5E9B35FFABF1F"
   }
 }

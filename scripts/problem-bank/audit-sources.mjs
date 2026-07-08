@@ -6,6 +6,7 @@ const ROOT = path.resolve(import.meta.dirname, '../..');
 const CATALOG_PATH = 'content/problem-bank/sources/catalog.json';
 const LOCAL_PATHS_PATH = 'content/problem-bank/sources/local-paths.json';
 const SOURCE_DIR = path.join(ROOT, 'content/problem-bank/problems');
+const CANONICAL_STATUS_VALUES = ['draft', 'review', 'approved', 'published', 'retired'];
 
 function stripBom(value) {
   return String(value ?? '').replace(/^\uFEFF/, '');
@@ -38,18 +39,22 @@ function pageLocatorConfidence(locator) {
 }
 
 function classifyPageReference(problem, source) {
-  const locator = source?.pageLocator || null;
-  const confidence = pageLocatorConfidence(locator);
-  const page = problem?.source?.page;
-  if (!Number.isInteger(page)) return { classification: 'unresolved', locatorType: locator?.type || 'unresolved', reason: 'problem source.page missing.' };
-  if (!source) return { classification: 'unresolved', locatorType: 'unresolved', reason: 'no matching sourceId in catalog.' };
-  if (Number.isInteger(source.pageCount) && (page < 1 || page > source.pageCount)) {
-    return { classification: 'mismatch', locatorType: locator?.type || 'unresolved', reason: 'problem source.page is outside source page bounds.' };
+  const locator = problem?.source?.locator || null;
+  const catalogLocator = source?.pageLocator || null;
+  const confidence = pageLocatorConfidence(catalogLocator);
+  const page = locator?.value;
+  if (!source) return { classification: 'unresolved', locatorType: locator?.type || 'unresolved', reason: 'no matching sourceId in catalog.' };
+  if (!locator || typeof locator !== 'object' || !locator.type) {
+    return { classification: 'unresolved', locatorType: 'unresolved', reason: 'problem source.locator missing.' };
   }
-  if (locator?.confidence === 'mismatch') return { classification: 'mismatch', locatorType: locator.type || 'unresolved', reason: 'catalog locator marked mismatch.' };
-  if (locator?.type === 'unresolved') return { classification: 'unresolved', locatorType: 'unresolved', reason: 'locator unresolved.' };
-  if (confidence === 'probable') return { classification: 'probable', locatorType: locator?.type || 'pdf-page', reason: 'locator marked probable.' };
-  return { classification: 'confirmed', locatorType: locator?.type || 'pdf-page', reason: 'problem source.page is within the source page range.' };
+  if (!Number.isInteger(page)) return { classification: 'unresolved', locatorType: locator.type || 'unresolved', reason: 'problem source.locator.value missing.' };
+  if (Number.isInteger(source.pageCount) && (page < 1 || page > source.pageCount)) {
+    return { classification: 'mismatch', locatorType: locator.type || 'unresolved', reason: 'problem source.locator.value is outside source page bounds.' };
+  }
+  if (catalogLocator?.confidence === 'mismatch') return { classification: 'mismatch', locatorType: locator.type || 'unresolved', reason: 'catalog locator marked mismatch.' };
+  if (catalogLocator?.type === 'unresolved') return { classification: 'unresolved', locatorType: 'unresolved', reason: 'locator unresolved.' };
+  if (confidence === 'probable') return { classification: 'probable', locatorType: locator.type || 'pdf-page', reason: 'locator marked probable.' };
+  return { classification: 'confirmed', locatorType: locator.type || 'pdf-page', reason: 'problem source.locator.value is within the source page range.' };
 }
 
 function validateCatalog(catalog, issues) {
@@ -85,6 +90,7 @@ function validateCatalog(catalog, issues) {
 }
 
 function canonicalTargetStatus(problem) {
+  if (CANONICAL_STATUS_VALUES.includes(problem?.status)) return problem.status;
   if (problem?.status === 'verified') return 'review';
   if (problem?.status === 'published') return 'published';
   if (['raw', 'analyzed', 'mapped'].includes(problem?.status)) return 'draft';
@@ -95,18 +101,19 @@ function canonicalTargetStatus(problem) {
 function classifyProblems(catalog, problems, issues) {
   const sourceById = new Map((catalog.sources || []).map(source => [source.sourceId, source]));
   return problems.map(problem => {
-    const source = sourceById.get(problem?.source?.documentId);
+    const sourceId = problem?.source?.sourceId || null;
+    const source = sourceById.get(sourceId);
     if (!source) {
-      issues.push({ severity: 'warning', code: 'UNKNOWN_SOURCE_ID', problemId: problem.id, sourceId: problem?.source?.documentId || null });
+      issues.push({ severity: 'warning', code: 'UNKNOWN_SOURCE_ID', problemId: problem.id, sourceId });
     }
     const page = classifyPageReference(problem, source);
     if (page.classification === 'mismatch') {
-      issues.push({ severity: 'warning', code: 'PAGE_LOCATOR_MISMATCH', problemId: problem.id, sourceId: problem?.source?.documentId || null, page: problem?.source?.page ?? null });
+      issues.push({ severity: 'warning', code: 'PAGE_LOCATOR_MISMATCH', problemId: problem.id, sourceId, locator: problem?.source?.locator || null });
     }
     return {
       problemId: problem.id,
-      sourceId: problem?.source?.documentId || null,
-      page: problem?.source?.page ?? null,
+      sourceId,
+      locator: problem?.source?.locator || null,
       pageLocator: source?.pageLocator || null,
       pageClassification: page.classification,
       locatorType: page.locatorType,

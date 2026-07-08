@@ -217,21 +217,25 @@
             },
             "source": {
               "type": "object",
-              "required": ["type", "name", "page", "usage", "hash", "importedAt"],
+              "required": ["sourceId", "locator", "usage"],
               "properties": {
-                "type": { "enum": ["pdf", "sgf", "studio", "manual", "web"] },
-                "name": { "type": "string", "minLength": 1 },
-                "author": { "type": "string" },
-                "publication": { "type": "string" },
-                "page": { "type": "integer", "minimum": 1 },
-                "problemNumber": { "type": ["integer", "string"] },
-                "fileRef": { "type": "string" },
-                "importedAt": { "type": "string", "minLength": 1 },
-                "license": { "type": "string" },
-                "hash": { "type": "string", "minLength": 1 },
-                "editorialNote": { "type": "string" },
-                "derivedFrom": { "type": ["string", "object", "array", "null"] },
-                "documentId": { "type": "string" },
+                "sourceId": { "type": "string", "minLength": 1 },
+                "locator": {
+                  "type": "object",
+                  "required": ["type", "value"],
+                  "properties": {
+                    "type": {
+                      "enum": ["pdf-page", "printed-page", "section", "unresolved"]
+                    },
+                    "value": {
+                      "oneOf": [
+                        { "type": "integer" },
+                        { "type": "string" }
+                      ]
+                    }
+                  },
+                  "additionalProperties": true
+                },
                 "usage": { "enum": ["concept_reference", "adapted", "original"] }
               },
               "additionalProperties": true

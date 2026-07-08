@@ -17,8 +17,10 @@ Gerekli taşıma alanları:
 - `problem.id`
 - `schemaVersion`
 - `revision`
-- `source.documentId` / `source.fileRef`
-- `source.hash`
+- `source.sourceId`
+- `source.locator.type` / `source.locator.value`
+- `source.usage`
+- `migration.migratedFromHash`
 - `status`
 - `curriculum`
 - `board`
@@ -36,7 +38,7 @@ Amaç:
 
 Gerekli davranışlar:
 
-- source id / revision / hash korunur
+- sourceId / locator / usage / revision korunur
 - çakışma algılama dosya yazmadan önce yapılır
 - draft export yayın öncesi ayrı tutulur
 - atomik yazma: önce geçici dosya, sonra güvenli replace

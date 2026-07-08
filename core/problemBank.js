@@ -51,6 +51,7 @@ const SIZES = new Set([9, 13, 19]);
 const STAGES = new Set(['guided_practice', 'variable_practice', 'assessment', 'diagnostic']);
 const COLORS = new Set(['B', 'W']);
 const CANONICAL_SOURCE_TYPES = new Set(['pdf', 'sgf', 'studio', 'manual', 'web']);
+const CANONICAL_LOCATOR_TYPES = new Set(['pdf-page', 'printed-page', 'section', 'unresolved']);
 
 const copy = value => (typeof structuredClone === 'function' ? structuredClone(value) : JSON.parse(JSON.stringify(value)));
 const isPoint = (point, size) => Boolean(point) && Number.isInteger(point.x) && Number.isInteger(point.y) && point.x >= 0 && point.y >= 0 && point.x < size && point.y < size;
@@ -58,7 +59,32 @@ const hasValue = value => value !== undefined && value !== null && String(value)
 
 function sourceIdentifier(problem) {
   const source = problem?.source || {};
-  return hasValue(source.name) || hasValue(source.documentId);
+  return hasValue(source.sourceId) || hasValue(source.documentId) || hasValue(source.name);
+}
+
+function sourceLocator(problem) {
+  const source = problem?.source || {};
+  if (source.locator && typeof source.locator === 'object') return source.locator;
+  if (Number.isInteger(source.page)) return { type: 'pdf-page', value: source.page };
+  return null;
+}
+
+function canonicalSourceRecord(source, context = {}, problem = {}) {
+  const input = source && typeof source === 'object' ? source : {};
+  const locator = input.locator && typeof input.locator === 'object'
+    ? {
+        type: input.locator.type || 'pdf-page',
+        value: input.locator.value ?? null,
+      }
+    : {
+        type: 'pdf-page',
+        value: Number.isInteger(input.page) ? input.page : (Number.isInteger(context.page) ? context.page : null),
+      };
+  return {
+    sourceId: input.sourceId || input.documentId || input.name || problem.id || context.sourceId || null,
+    locator,
+    usage: input.usage || context.usage || 'concept_reference',
+  };
 }
 
 export function canonicalProblemStatus(status) {
@@ -71,33 +97,21 @@ export function provenancePolicyForStatus(status) {
   const canonical = canonicalProblemStatus(status) || status || 'draft';
   switch (canonical) {
     case 'draft':
-      return {
-        status: 'draft',
-        require: ['source.type', 'source.identifier'],
-        soft: ['source.page', 'source.usage', 'source.importedAt', 'source.hash', 'source.license', 'source.author', 'source.publication', 'source.fileRef', 'source.editorialNote', 'source.derivedFrom'],
-        importedAtRequired: false,
-      };
     case 'review':
-      return {
-        status: 'review',
-        require: ['source.identifier', 'source.page'],
-        soft: ['source.type', 'source.usage', 'source.importedAt', 'source.hash', 'source.license', 'source.author', 'source.publication', 'source.fileRef', 'source.editorialNote', 'source.derivedFrom'],
-        importedAtRequired: false,
-      };
     case 'approved':
     case 'published':
     case 'retired':
       return {
         status: canonical,
-        require: ['source.type', 'source.identifier', 'source.page', 'source.usage', 'source.hash', 'source.importedAt', 'source.license'],
-        soft: ['source.author', 'source.publication', 'source.fileRef', 'source.editorialNote', 'source.derivedFrom'],
-        importedAtRequired: true,
+        require: ['source.sourceId', 'source.locator.type', 'source.locator.value', 'source.usage'],
+        soft: [],
+        importedAtRequired: false,
       };
     default:
       return {
         status: canonical,
-        require: ['source.type', 'source.identifier'],
-        soft: ['source.page', 'source.usage', 'source.importedAt', 'source.hash', 'source.license', 'source.author', 'source.publication', 'source.fileRef', 'source.editorialNote', 'source.derivedFrom'],
+        require: ['source.sourceId', 'source.locator.type', 'source.locator.value', 'source.usage'],
+        soft: [],
         importedAtRequired: false,
       };
   }
@@ -202,43 +216,34 @@ function validateLegacyProblem(problem, errors) {
 
 function validateCurrentProblem(problem, errors) {
   if (!Number.isInteger(problem.revision) || problem.revision < 1) {
-    errors.push('revision 1.1.0 kayıtlarında zorunlu ve pozitif tam sayı olmalı.');
+    errors.push('revision 1.1.0 kay?tlar?nda zorunlu ve pozitif tam say? olmal?.');
   }
 
   if (!CANONICAL_STATUS_VALUES.includes(problem.status)) {
-    errors.push('status 1.1.0 kayıtlarında draft/review/approved/published/retired olmalı.');
+    errors.push('status 1.1.0 kay?tlar?nda draft/review/approved/published/retired olmal?.');
   }
 
   const source = problem.source;
   if (!source || typeof source !== 'object') {
-    errors.push('source 1.1.0 kayıtlarında zorunlu.');
+    errors.push('source 1.1.0 kay?tlar?nda zorunlu.');
     return;
   }
 
-  const policy = provenancePolicyForStatus(problem.status);
-  if (policy.require.includes('source.type') && !CANONICAL_SOURCE_TYPES.has(source.type)) {
-    errors.push('source.type 1.1.0 kayıtlarında pdf/sgf/studio/manual/web olmalı.');
+  if (!hasValue(source.sourceId)) {
+    errors.push('source.sourceId 1.1.0 kay?tlar?nda zorunlu.');
   }
-  if (!sourceIdentifier(problem)) {
-    errors.push('source.name veya source.documentId zorunlu.');
+  if (!source.locator || typeof source.locator !== 'object') {
+    errors.push('source.locator 1.1.0 kay?tlar?nda zorunlu.');
+  } else {
+    if (!CANONICAL_LOCATOR_TYPES.has(source.locator.type)) {
+      errors.push('source.locator.type 1.1.0 kay?tlar?nda pdf-page/printed-page/section/unresolved olmal?.');
+    }
+    if (!(Number.isInteger(source.locator.value) || hasValue(source.locator.value))) {
+      errors.push('source.locator.value 1.1.0 kay?tlar?nda zorunlu.');
+    }
   }
-  if (policy.require.includes('source.page') && !Number.isInteger(source.page) && !Number.isInteger(source.page)) {
-    errors.push('source.page 1.1.0 kayıtlarında pozitif tam sayı olmalı.');
-  }
-  if (policy.require.includes('source.page') && (!Number.isInteger(source.page) || source.page < 1)) {
-    errors.push('source.page 1.1.0 kayıtlarında pozitif tam sayı olmalı.');
-  }
-  if (policy.require.includes('source.usage') && !source.usage) {
-    errors.push('source.usage 1.1.0 kayıtlarında zorunlu.');
-  }
-  if (policy.require.includes('source.hash') && !hasValue(source.hash)) {
-    errors.push('source.hash 1.1.0 kayıtlarında zorunlu.');
-  }
-  if (policy.require.includes('source.importedAt') && !hasValue(source.importedAt)) {
-    errors.push('source.importedAt 1.1.0 kayıtlarında zorunlu.');
-  }
-  if (policy.require.includes('source.license') && !hasValue(source.license)) {
-    errors.push('source.license 1.1.0 kayıtlarında zorunlu.');
+  if (!hasValue(source.usage)) {
+    errors.push('source.usage 1.1.0 kay?tlar?nda zorunlu.');
   }
 }
 
@@ -307,17 +312,7 @@ function miniQuestion(problem) {
 }
 
 function sourceFromLegacy(problem, context = {}) {
-  const source = copy(problem.source || {});
-  const importedAt = hasValue(context.importedAt) ? context.importedAt : source.importedAt || null;
-  return {
-    ...source,
-    type: source.type || null,
-    name: source.name || source.documentId || problem.title || problem.id,
-    page: Number.isInteger(source.page) ? source.page : context.page ?? null,
-    importedAt,
-    hash: source.hash || context.sourceHash || null,
-    license: source.license || context.license || null,
-  };
+  return canonicalSourceRecord(problem.source || {}, context, problem);
 }
 
 export function migrateProblemRecord(problem, context = {}) {
@@ -327,16 +322,19 @@ export function migrateProblemRecord(problem, context = {}) {
   if (targetSchemaVersion !== PROBLEM_SCHEMA_VERSION) {
     throw new Error(`Desteklenmeyen schemaVersion hedefi: ${targetSchemaVersion}`);
   }
-  if (migrated.schemaVersion === PROBLEM_SCHEMA_VERSION) return migrated;
   migrated.schemaVersion = PROBLEM_SCHEMA_VERSION;
   migrated.revision = Number.isInteger(migrated.revision) && migrated.revision > 0 ? migrated.revision : 1;
   migrated.status = canonicalProblemStatus(migrated.status) || 'draft';
   migrated.source = sourceFromLegacy(problem, context);
+  const previousMigration = migrated.migration && typeof migrated.migration === 'object' ? migrated.migration : {};
   migrated.migration = {
-    ...(migrated.migration && typeof migrated.migration === 'object' ? migrated.migration : {}),
-    legacyStatus: problem?.status || null,
-    recordHash: hasValue(context.recordHash) ? context.recordHash : null,
+    ...previousMigration,
+    legacyStatus: (previousMigration.legacyStatus ?? problem?.status) || null,
+    migratedFromHash: hasValue(previousMigration.migratedFromHash)
+      ? previousMigration.migratedFromHash
+      : (hasValue(context.recordHash) ? context.recordHash : null),
   };
+  delete migrated.migration.recordHash;
   return migrated;
 }
 
@@ -348,33 +346,20 @@ export function buildProblemMigrationPlan(problem, context = {}) {
   const policy = provenancePolicyForStatus(migrated.status);
   const source = migrated.source || {};
   const missingSourceFields = [];
-  const advisorySourceFields = [];
 
-  if (policy.require.includes('source.type') && !hasValue(source.type)) missingSourceFields.push('source.type');
-  if (policy.require.includes('source.identifier') && !sourceIdentifier(migrated)) missingSourceFields.push('source.identifier');
-  if (policy.require.includes('source.page') && (!Number.isInteger(source.page) || source.page < 1)) missingSourceFields.push('source.page');
+  if (policy.require.includes('source.sourceId') && !hasValue(source.sourceId)) missingSourceFields.push('source.sourceId');
+  if (policy.require.includes('source.locator.type') && (!source.locator || !hasValue(source.locator.type))) missingSourceFields.push('source.locator.type');
+  if (policy.require.includes('source.locator.value') && (!source.locator || (!Number.isInteger(source.locator.value) && !hasValue(source.locator.value)))) missingSourceFields.push('source.locator.value');
   if (policy.require.includes('source.usage') && !hasValue(source.usage)) missingSourceFields.push('source.usage');
-  if (policy.require.includes('source.hash') && !hasValue(source.hash)) missingSourceFields.push('source.hash');
-  if (policy.require.includes('source.importedAt') && !hasValue(source.importedAt)) missingSourceFields.push('source.importedAt');
-  if (policy.require.includes('source.license') && !hasValue(source.license)) missingSourceFields.push('source.license');
-
-  if (policy.status === 'review') {
-    if (!hasValue(source.type)) advisorySourceFields.push('source.type');
-    if (!hasValue(source.importedAt)) advisorySourceFields.push('source.importedAt');
-    if (!hasValue(source.license)) advisorySourceFields.push('source.license');
-  } else if (policy.status === 'draft') {
-    if (!hasValue(source.importedAt)) advisorySourceFields.push('source.importedAt');
-    if (!hasValue(source.license)) advisorySourceFields.push('source.license');
-  }
 
   const incompleteProvenance = !validation.valid && missingSourceFields.length > 0;
   const changes = [];
-  if (currentVersion !== targetSchemaVersion) changes.push(`schemaVersion: ${currentVersion || 'none'} → ${targetSchemaVersion}`);
+  if (currentVersion !== targetSchemaVersion) changes.push(`schemaVersion: ${currentVersion || 'none'} ? ${targetSchemaVersion}`);
   if (!problem?.revision) changes.push('revision: eklenecek');
   const canonicalStatus = canonicalProblemStatus(problem?.status) || migrated.status;
-  if (canonicalStatus && canonicalStatus !== problem?.status) changes.push(`status: ${problem.status} → ${canonicalStatus}`);
+  if (canonicalStatus && canonicalStatus !== problem?.status) changes.push(`status: ${problem.status} ? ${canonicalStatus}`);
+  if (JSON.stringify(problem?.source || null) !== JSON.stringify(migrated.source || null)) changes.push('source: canonicalize');
   if (missingSourceFields.length) changes.push(`source: ${missingSourceFields.join(', ')}`);
-  if (advisorySourceFields.length) changes.push(`provenance-note: ${advisorySourceFields.join(', ')}`);
 
   return {
     problemId: problem?.id || null,
@@ -383,10 +368,9 @@ export function buildProblemMigrationPlan(problem, context = {}) {
     canonicalStatus,
     policyStatus: migrated.status,
     legacyStatus: problem?.status || null,
-    recordHash: hasValue(context.recordHash) ? context.recordHash : null,
+    migratedFromHash: migrated.migration?.migratedFromHash ?? null,
     changes,
     missingSourceFields,
-    advisorySourceFields,
     incompleteProvenance,
     migratedValid: validation.valid,
     migratedErrors: validation.errors,

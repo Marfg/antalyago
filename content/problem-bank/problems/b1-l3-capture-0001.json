@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "id": "b1-l3-capture-0001",
   "title": "Son nefesi kapat",
-  "status": "verified",
+  "status": "review",
   "curriculum": {
     "chapter": "B1",
     "lesson": "l3",
@@ -16,8 +16,11 @@
     "liberty"
   ],
   "source": {
-    "documentId": "falling-in-love-with-baduk",
-    "page": 21,
+    "sourceId": "falling-in-love-with-baduk",
+    "locator": {
+      "type": "pdf-page",
+      "value": 21
+    },
     "usage": "concept_reference"
   },
   "board": {
@@ -107,5 +110,10 @@
   "rights": {
     "status": "original",
     "notes": "Pozisyon AntalyaGo için yeniden kuruldu."
+  },
+  "revision": 1,
+  "migration": {
+    "legacyStatus": "verified",
+    "migratedFromHash": "538F9566E1C500815DD9F6BA5B2A3593D203CF1440B9AFDE47B32797D82F8ED8"
   }
 }
