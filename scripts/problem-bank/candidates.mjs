@@ -1,4 +1,4 @@
-﻿import fs from 'node:fs/promises';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -69,6 +69,21 @@ async function loadCatalog(rootDir = ROOT) {
   return (await readJson(path.join(rootDir, CATALOG_PATH))).data;
 }
 
+function candidatePathForId(candidateId, rootDir = ROOT) {
+  if (typeof candidateId !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(candidateId)) {
+    return null;
+  }
+  return path.join(rootDir, CANDIDATES_DIR, 'items', `${candidateId}.json`);
+}
+
+async function loadCandidateById(candidateId, rootDir = ROOT) {
+  const filePath = candidatePathForId(candidateId, rootDir);
+  if (!filePath) return null;
+  const exists = await fs.access(filePath).then(() => true).catch(() => false);
+  if (!exists) return null;
+  const { data } = await readJson(filePath);
+  return data;
+}
 function findCatalogSource(catalog, sourceId) {
   return (catalog?.sources || []).find(source => source.sourceId === sourceId) || null;
 }
@@ -325,4 +340,6 @@ export {
   candidateToProblemPreview,
   auditCandidateCatalog,
   buildCandidatePromotionReport,
+  candidatePathForId,
+  loadCandidateById,
 };

@@ -4,7 +4,7 @@
     "scripts":  {
                     "serve":  "npx serve . -p 3000 --no-clipboard",
                     "test-core":  "node --experimental-vm-modules tests/run.js",
-                    "test-problems":  "node tests/problemBank.test.js \u0026\u0026 node tests/problemBank-audit.test.js \u0026\u0026 node tests/problemBank-sources.test.js \u0026\u0026 node tests/problemBank-candidates.test.js \u0026\u0026 node tests/problemBank-migration.test.js",
+                    "test-problems":  "node tests/problemBank.test.js \u0026\u0026 node tests/problemBank-audit.test.js \u0026\u0026 node tests/problemBank-sources.test.js \u0026\u0026 node tests/problemBank-candidates.test.js \u0026\u0026 node tests/problemBank-candidate-studio.test.js \u0026\u0026 node tests/problemBank-migration.test.js",
                     "validate-problems":  "node scripts/problem-bank/validate.mjs",
                     "test-all":  "npm run test-core \u0026\u0026 npm run test-problems \u0026\u0026 npm run test-learning \u0026\u0026 npm run test-learning-ui \u0026\u0026 npm run test-b2 \u0026\u0026 npm run test-ai \u0026\u0026 npm run test-robot \u0026\u0026 npm run test-theme \u0026\u0026 npm run test-go-nedir \u0026\u0026 npm run test-studio",
                     "test-learning":  "node tests/learningContext.test.js",
@@ -29,7 +29,9 @@
                     "verify-local-sources":  "node scripts/problem-bank/verify-local-sources.mjs",
                     "audit-problem-candidates":  "node scripts/problem-bank/audit-candidates.mjs",
                     "promote-problem-candidate":  "node scripts/problem-bank/promote-candidate.mjs",
-                    "test-problem-candidates":  "node tests/problemBank-candidates.test.js"
+                    "test-problem-candidates":  "node tests/problemBank-candidates.test.js",
+                    "export-candidate-studio":  "node scripts/problem-bank/candidate-to-studio.mjs",
+                    "test-candidate-studio":  "node tests/problemBank-candidate-studio.test.js"
                 },
     "devDependencies":  {
                             "electron":  "43.0.0",
