@@ -8,6 +8,7 @@ Bu akış, PDF kaynaklarından güvenli problem adayı üretmek ve bunları insa
 - Mutlak yerel yol canonical JSON içine yazılmaz.
 - Lisans / izin bilgisi doğrulanmadan yayın yapılmaz.
 - İnsan onayı olmadan aday doğrudan canonical problem JSON'una dönüşmez.
+- Aday → review report → promotion preview → (gerekirse) apply sırası izlenir.
 
 ## Adımlar
 
@@ -23,13 +24,17 @@ Bu akış, PDF kaynaklarından güvenli problem adayı üretmek ve bunları insa
    - Rights snapshot kaynaktan kopyalanır; `canPublish` varsayılan olarak `false` kalır.
 6. Müfredat eşlemesi
    - Bölüm, ders ve beceri kontrollü sözlüklerle eşleştirilir.
-7. Studio'da açma
+7. Review report
+   - Aday için kalite, hak, board, task ve Studio preview denetimleri raporlanır.
+8. Studio'da açma
    - Aday, AG-STUDIO için güvenli preview formatıyla açılabilir.
-8. İnsan onayı
+9. İnsan onayı
    - Aday gözden geçirilir, gerekirse reddedilir.
-9. Canonical promotion
-   - Yalnızca `promoted` ve onaylı adaylar canonical problem bankasına aktarılır.
-10. Audit ve raporlama
+10. Promotion preview
+   - İnceleme raporu ile promotion readiness değerlendirilir; blocked / review / draft kararı verilir.
+11. Canonical promotion
+   - Yalnızca açık `--apply` ile ve bloklayıcı issue yoksa canonical problem bankasına aktarım yapılır.
+12. Audit ve raporlama
    - Aday hattı, kaynak kataloğu ve canonical problem bankası ayrı denetlenir.
 
 ## Otorite modeli
@@ -45,7 +50,8 @@ Bu akış, PDF kaynaklarından güvenli problem adayı üretmek ve bunları insa
 - `rejected` adaylar promotion için uygun değildir.
 - `promoted` adaylar bile insan onayı ve doğrulama geçmeden yazılmaz.
 - Dry-run, yazma planı üretir; dosya değiştirmez.
+- `--apply` yalnızca açık onaydır; bloklayan issue, target collision veya path güvenliği ihlali varsa yazma yapılmaz.
 
 ## Kapanış
 
-Bu fazda PDF toplu ayrıştırma yapılmaz; yalnızca aday hattı ve güvenli promotion sözleşmesi tanımlanır.
+Bu fazda PDF toplu ayrıştırma yapılmaz; yalnızca aday hattı, review report ve güvenli promotion sözleşmesi tanımlanır.

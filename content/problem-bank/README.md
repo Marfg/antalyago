@@ -17,6 +17,13 @@ Kaynak kopyaları, PDF dosyaları, mutlak yerel yollar ve lisans kanıtları ayr
 
 PDF/SGF/insan yardımlı çıkarımlar önce `content/problem-bank/candidates/` altında aday olarak tutulur. Bu hat, canonical problem bankasından ayrıdır ve insan onayı olmadan `content/problem-bank/problems/` altına yazmaz.
 
+Aday akışı:
+
+1. Aday üretimi
+2. Review report
+3. Promotion preview
+4. Açık `--apply` ile kontrollü terfi
+
 Aday statüleri:
 
 - `extracted`
@@ -29,6 +36,8 @@ Aday statüleri:
 - Problem denetimi: `npm run audit-problem-bank`
 - Kaynak denetimi: `npm run audit-problem-sources`
 - Aday denetimi: `npm run audit-problem-candidates`
+- Aday review: `npm run review-problem-candidates`
+- Aday promotion: `npm run promote-problem-candidate`
 - Güvenli migration dry-run: `npm run migrate-problem-bank`
 
 ## Dokümanlar
