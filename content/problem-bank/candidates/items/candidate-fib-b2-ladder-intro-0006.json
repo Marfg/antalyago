@@ -1,0 +1,121 @@
+{
+  "candidateId": "candidate-fib-b2-ladder-intro-0006",
+  "candidateVersion": "1.0.0",
+  "status": "needs-review",
+  "source": {
+    "sourceId": "falling-in-love-with-baduk",
+    "locator": {
+      "type": "pdf-page",
+      "value": 22
+    },
+    "usage": "concept_reference"
+  },
+  "extraction": {
+    "method": "manual",
+    "extractedAt": "2026-07-09T00:00:00Z",
+    "extractor": "codex-reference-author",
+    "confidence": 0.77,
+    "notes": "?zg?n aday; temel merdiven okumas? i?in k?sa giri? sorusu olarak uyarlanan referans."
+  },
+  "curriculum": {
+    "section": "B2",
+    "lesson": "l3",
+    "skill": "ladder-intro",
+    "tags": [
+      "falling-in-love-with-baduk",
+      "b2",
+      "ladder",
+      "reading"
+    ]
+  },
+  "board": {
+    "size": 9,
+    "initialStones": [
+      {
+        "color": "white",
+        "x": 5,
+        "y": 5
+      },
+      {
+        "color": "black",
+        "x": 5,
+        "y": 4
+      },
+      {
+        "color": "black",
+        "x": 4,
+        "y": 5
+      }
+    ],
+    "markers": [
+      {
+        "x": 6,
+        "y": 5,
+        "label": "takip"
+      },
+      {
+        "x": 6,
+        "y": 6,
+        "label": "uzatma"
+      }
+    ]
+  },
+  "task": {
+    "type": "sequence",
+    "prompt": "Ka???? zorla?t?ran do?ru devam dizisi hangisidir?",
+    "expectedAnswer": [
+      {
+        "x": 6,
+        "y": 5
+      },
+      {
+        "x": 6,
+        "y": 6
+      }
+    ],
+    "answer": [
+      {
+        "x": 6,
+        "y": 5
+      },
+      {
+        "x": 6,
+        "y": 6
+      }
+    ],
+    "answerPolicy": "ordered_move_sequence",
+    "solution": "Ka??? hatt? ayn? y?n? izleyerek geni?letilir; tek hamlede k?r?lmaz."
+  },
+  "review": {
+    "required": true,
+    "reviewer": null,
+    "reviewedAt": null,
+    "checklist": [
+      "source id resolves in catalog",
+      "locator resolves to a valid page",
+      "board and answer reconstruction are consistent",
+      "rights snapshot is attached"
+    ]
+  },
+  "studio": {
+    "compatible": true,
+    "documentRef": null,
+    "proposedStudioDocument": {
+      "title": "Merdiven ?nc?l? aday ?nizlemesi",
+      "kind": "problem-candidate"
+    }
+  },
+  "rights": {
+    "sourceRightsSnapshot": {
+      "licenseStatus": "permission-required",
+      "rightsReviewRequired": true,
+      "distributionAllowed": false,
+      "allowedUse": "reference-only",
+      "distributionScope": "none",
+      "verificationLevel": "page-reference-only",
+      "rightsNote": "No redistributable license was established in this phase."
+    },
+    "canPublish": false,
+    "needsRightsReview": true
+  }
+}

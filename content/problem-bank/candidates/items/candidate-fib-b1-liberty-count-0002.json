@@ -1,0 +1,88 @@
+{
+  "candidateId": "candidate-fib-b1-liberty-count-0002",
+  "candidateVersion": "1.0.0",
+  "status": "needs-review",
+  "source": {
+    "sourceId": "falling-in-love-with-baduk",
+    "locator": {
+      "type": "pdf-page",
+      "value": 18
+    },
+    "usage": "concept_reference"
+  },
+  "extraction": {
+    "method": "manual",
+    "extractedAt": "2026-07-09T00:00:00Z",
+    "extractor": "codex-reference-author",
+    "confidence": 0.82,
+    "notes": "?zg?n aday; kaynak sayfa referans?ndan pedagojik uyarlama yap?ld?, telifli metin kopyalanmad?."
+  },
+  "curriculum": {
+    "section": "B1",
+    "lesson": "l1",
+    "skill": "liberty-count",
+    "tags": [
+      "falling-in-love-with-baduk",
+      "b1",
+      "liberty-count",
+      "count"
+    ]
+  },
+  "board": {
+    "size": 9,
+    "initialStones": [
+      {
+        "color": "white",
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "markers": [
+      {
+        "x": 0,
+        "y": 0,
+        "label": "odak"
+      }
+    ]
+  },
+  "task": {
+    "type": "numeric_count",
+    "prompt": "K??e ta??n?n ka? nefesi var?",
+    "expectedAnswer": 2,
+    "answer": 2,
+    "answerPolicy": "single_numerical_answer",
+    "solution": "K??e ta?? yaln?zca iki bo? kom?uya sahiptir."
+  },
+  "review": {
+    "required": true,
+    "reviewer": null,
+    "reviewedAt": null,
+    "checklist": [
+      "source id resolves in catalog",
+      "locator resolves to a valid page",
+      "board and answer reconstruction are consistent",
+      "rights snapshot is attached"
+    ]
+  },
+  "studio": {
+    "compatible": true,
+    "documentRef": null,
+    "proposedStudioDocument": {
+      "title": "Nefes sayma aday ?nizlemesi",
+      "kind": "problem-candidate"
+    }
+  },
+  "rights": {
+    "sourceRightsSnapshot": {
+      "licenseStatus": "permission-required",
+      "rightsReviewRequired": true,
+      "distributionAllowed": false,
+      "allowedUse": "reference-only",
+      "distributionScope": "none",
+      "verificationLevel": "page-reference-only",
+      "rightsNote": "No redistributable license was established in this phase."
+    },
+    "canPublish": false,
+    "needsRightsReview": true
+  }
+}

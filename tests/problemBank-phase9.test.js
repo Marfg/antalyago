@@ -1,0 +1,171 @@
+﻿import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+
+import { auditCandidateCatalog, validateCandidate } from '../scripts/problem-bank/candidates.mjs';
+import { buildCandidateReviewCatalog, buildCandidatePromotionReport } from '../scripts/problem-bank/candidate-review-gate.mjs';
+import { buildStudioDocument, exportCandidateStudioPreview } from '../scripts/problem-bank/candidate-studio-adapter.mjs';
+import { validateDocument } from '../studio/model/validation.js';
+
+const ROOT = path.resolve(import.meta.dirname, '..');
+const EXAMPLE_FILE = 'content/problem-bank/candidates/items/example-falling-in-love-with-baduk-b1-l2-liberty-001.json';
+const PHASE9_FILES = [
+  'content/problem-bank/candidates/items/candidate-fib-b1-liberty-count-0002.json',
+  'content/problem-bank/candidates/items/candidate-fib-b1-capture-0003.json',
+  'content/problem-bank/candidates/items/candidate-fib-b2-atari-0004.json',
+  'content/problem-bank/candidates/items/candidate-fib-b2-connect-cut-0005.json',
+  'content/problem-bank/candidates/items/candidate-fib-b2-ladder-intro-0006.json',
+];
+const PHASE9_IDS = PHASE9_FILES.map(file => path.basename(file, '.json'));
+const CATALOG_PATH = 'content/problem-bank/sources/catalog.json';
+let passed = 0;
+let failed = 0;
+
+function test(name, fn) {
+  return Promise.resolve()
+    .then(fn)
+    .then(() => {
+      console.log('  ✓', name);
+      passed += 1;
+    })
+    .catch(error => {
+      console.error('  ✗', name, '-', error.message);
+      failed += 1;
+    });
+}
+
+function ok(value, message = 'assertion failed') {
+  assert.ok(value, message);
+}
+
+function equal(actual, expected, message) {
+  assert.equal(actual, expected, message);
+}
+
+function deepEqual(actual, expected, message) {
+  assert.deepEqual(actual, expected, message);
+}
+
+function sha256(text) {
+  return crypto.createHash('sha256').update(text, 'utf8').digest('hex');
+}
+
+async function readJson(relativePath) {
+  const raw = await fs.readFile(path.join(ROOT, relativePath), 'utf8');
+  return JSON.parse(raw.replace(/^\uFEFF/, ''));
+}
+
+async function copyCandidateTree(rootDir) {
+  await fs.cp(path.join(ROOT, 'content/problem-bank/candidates'), path.join(rootDir, 'content/problem-bank/candidates'), { recursive: true });
+  await fs.mkdir(path.join(rootDir, 'content/problem-bank/sources'), { recursive: true });
+  await fs.copyFile(path.join(ROOT, CATALOG_PATH), path.join(rootDir, CATALOG_PATH));
+}
+
+await test('5 yeni aday schema/validation ve katalog sözleşmesini geçer', async () => {
+  const catalog = await readJson(CATALOG_PATH);
+  const audit = await auditCandidateCatalog({ rootDir: ROOT });
+  equal(audit.items.length, 6);
+  equal(audit.summary.issueCount, 0);
+  PHASE9_IDS.forEach(id => ok(audit.items.some(item => item.candidateId === id), `missing audit item ${id}`));
+
+  for (const file of PHASE9_FILES) {
+    const candidate = await readJson(file);
+    const result = validateCandidate(candidate, catalog);
+    ok(result.valid, result.issues.map(issue => issue.code).join(', '));
+    equal(candidate.status, 'needs-review');
+    equal(candidate.source.sourceId, 'falling-in-love-with-baduk');
+    equal(candidate.source.locator.type, 'pdf-page');
+    equal(candidate.board.size, 9);
+    equal(candidate.rights.canPublish, false);
+    equal(candidate.rights.needsRightsReview, true);
+    ok(candidate.task.prompt.trim().length > 0);
+    ok(candidate.task.solution.trim().length > 0);
+    ok(candidate.task.answer !== undefined);
+    ok(Array.isArray(candidate.review.checklist));
+  }
+});
+
+await test('review-problem-candidates ve promotion preview tüm yeni adayları raporlar', async () => {
+  const reviewCatalog = await buildCandidateReviewCatalog({ rootDir: ROOT });
+  equal(reviewCatalog.reports.length, 6);
+  for (const id of PHASE9_IDS) {
+    const item = reviewCatalog.reports.find(entry => entry.candidateId === id);
+    ok(item, `missing review report ${id}`);
+    equal(item.status, 'needs-review');
+    equal(item.rights.canPublish, false);
+    equal(item.rights.needsRightsReview, true);
+    equal(item.board.size, 9);
+    equal(item.board.initialStonesValid, true);
+    equal(item.board.markersValid, true);
+    equal(item.task.hasPrompt, true);
+    equal(item.task.hasAnswer, true);
+    equal(item.task.hasSolution, true);
+    equal(item.task.answerTypeValid, true);
+    equal(item.studioPreviewValidation.valid, true);
+    ok(item.promotionReadiness.readyForPromotion);
+    equal(item.promotionReadiness.blockingIssues.length, 0);
+    equal(item.promotionReadiness.warnings.includes('rights.canPublish-false'), true);
+    equal(item.promotionReadiness.warnings.includes('rights.needsRightsReview-true'), true);
+  }
+
+  const promotion = await buildCandidatePromotionReport({ rootDir: ROOT });
+  equal(promotion.summary.candidateCount, 6);
+  equal(promotion.summary.blocked, 0);
+  equal(promotion.summary.changeCount, 0);
+  for (const id of PHASE9_IDS) {
+    const item = promotion.reports.find(entry => entry.report?.candidateId === id || entry.candidateId === id);
+    ok(item, `missing promotion report ${id}`);
+    equal(item.targetStatus, 'review');
+    equal(item.blocked, false);
+    equal(item.preview.schemaVersion, '1.1.0');
+    equal(item.preview.status, 'review');
+    deepEqual(Object.keys(item.preview.source).sort(), ['locator', 'sourceId', 'usage']);
+  }
+});
+
+await test('5 yeni aday için Studio preview güvenli kalır ve default çalıştırma dosya yazmaz', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ag-bank-phase9-studio-'));
+  await copyCandidateTree(tempRoot);
+
+  for (const id of PHASE9_IDS) {
+    const candidate = await readJson(`content/problem-bank/candidates/items/${id}.json`);
+    const doc = buildStudioDocument(candidate);
+    equal(doc.studioVersion, '1.1.0');
+    equal(doc.status, 'review');
+    equal(doc.board.size, 9);
+    equal(doc.sources.length, 1);
+    deepEqual(Object.keys(doc.sources[0]).sort(), ['locator', 'sourceId', 'usage']);
+    const report = await exportCandidateStudioPreview({ candidateId: id, rootDir: tempRoot });
+    ok(report.valid, id);
+    equal(report.outputPath, null);
+    equal(report.document.extensions.problemBankCandidate.rights.canPublish, false);
+    equal(report.document.extensions.problemBankCandidate.rights.needsRightsReview, true);
+    const previewPath = path.join(tempRoot, `${id}.agstudio`);
+    const exists = await fs.access(previewPath).then(() => true).catch(() => false);
+    equal(exists, false);
+    ok(validateDocument(doc).valid, `studio document invalid for ${id}`);
+  }
+});
+
+await test('aday dosyaları, canonical problem JSON ve index şeması değişmez', async () => {
+  const before = new Map();
+  for (const rel of [...PHASE9_FILES, EXAMPLE_FILE, 'content/problem-bank/problems/b1-l2-liberty-count-0001.json', 'content/problem-bank/index.json']) {
+    before.set(rel, sha256(await fs.readFile(path.join(ROOT, rel), 'utf8')));
+  }
+
+  await buildCandidateReviewCatalog({ rootDir: ROOT });
+  await buildCandidatePromotionReport({ rootDir: ROOT });
+  for (const id of PHASE9_IDS) {
+    await exportCandidateStudioPreview({ candidateId: id, rootDir: ROOT });
+  }
+
+  for (const rel of [...PHASE9_FILES, EXAMPLE_FILE, 'content/problem-bank/problems/b1-l2-liberty-count-0001.json', 'content/problem-bank/index.json']) {
+    const after = sha256(await fs.readFile(path.join(ROOT, rel), 'utf8'));
+    equal(after, before.get(rel), rel);
+  }
+});
+
+console.log(`\nToplam: ${passed + failed}  ✓ ${passed}  ✗ ${failed}`);
+if (failed) process.exit(1);

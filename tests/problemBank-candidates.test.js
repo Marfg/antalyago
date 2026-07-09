@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -6,6 +6,8 @@ import crypto from 'node:crypto';
 import { auditCandidateCatalog, buildCandidatePromotionReport, candidateToProblemPreview, canTransitionCandidateStatus, normalizeCandidate, validateCandidate } from '../scripts/problem-bank/candidates.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
+const EXAMPLE_ID = 'falling-in-love-with-baduk-b1-l2-liberty-001';
+const EXAMPLE_FILE = 'example-falling-in-love-with-baduk-b1-l2-liberty-001';
 let passed = 0;
 let failed = 0;
 
@@ -13,11 +15,11 @@ function test(name, fn) {
   return Promise.resolve()
     .then(fn)
     .then(() => {
-      console.log('  ✓', name);
+      console.log('  âœ“', name);
       passed += 1;
     })
     .catch(error => {
-      console.error('  ✗', name, '-', error.message);
+      console.error('  âœ—', name, '-', error.message);
       failed += 1;
     });
 }
@@ -55,7 +57,7 @@ async function copyProblemFixture(rootDir) {
   await fs.copyFile(path.join(ROOT, 'content/problem-bank/problems/b1-l2-liberty-count-0001.json'), path.join(target, 'b1-l2-liberty-count-0001.json'));
 }
 
-await test('candidate schema geçerli', async () => {
+await test('candidate schema geÃ§erli', async () => {
   const candidate = await readJson('content/problem-bank/candidates/items/example-falling-in-love-with-baduk-b1-l2-liberty-001.json');
   const catalog = await readJson('content/problem-bank/sources/catalog.json');
   const result = validateCandidate(candidate, catalog);
@@ -72,15 +74,16 @@ await test('sourceId katalogda var', async () => {
   ok(report.items.every(item => item.catalogSourceFound));
 });
 
-await test('locator geçerli', async () => {
+await test('locator geÃ§erli', async () => {
   const report = await auditCandidateCatalog();
-  const item = report.items[0];
+  const item = report.items.find(entry => entry.candidateId === EXAMPLE_ID);
+  ok(item);
   equal(item.locatorType, 'pdf-page');
   equal(item.locatorValue, 17);
   equal(item.issueCount, 0);
 });
 
-await test('status lifecycle doğru', async () => {
+await test('status lifecycle doÄŸru', async () => {
   ok(canTransitionCandidateStatus('extracted', 'needs-review'));
   ok(canTransitionCandidateStatus('needs-review', 'promoted'));
   ok(canTransitionCandidateStatus('needs-review', 'rejected'));
@@ -88,7 +91,7 @@ await test('status lifecycle doğru', async () => {
   ok(!canTransitionCandidateStatus('promoted', 'needs-review'));
 });
 
-await test('review.required varsayılan true', async () => {
+await test('review.required varsayÄ±lan true', async () => {
   const candidate = normalizeCandidate({
     candidateId: 'sample',
     status: 'extracted',
@@ -103,7 +106,7 @@ await test('review.required varsayılan true', async () => {
   equal(candidate.review.required, true);
 });
 
-await test('rights.canPublish varsayılan false', async () => {
+await test('rights.canPublish varsayÄ±lan false', async () => {
   const candidate = normalizeCandidate({
     candidateId: 'sample',
     status: 'extracted',
@@ -118,7 +121,7 @@ await test('rights.canPublish varsayılan false', async () => {
   equal(candidate.rights.canPublish, false);
 });
 
-await test('needsRightsReview varsayılan true', async () => {
+await test('needsRightsReview varsayÄ±lan true', async () => {
   const candidate = normalizeCandidate({
     candidateId: 'sample',
     status: 'extracted',
@@ -133,7 +136,7 @@ await test('needsRightsReview varsayılan true', async () => {
   equal(candidate.rights.needsRightsReview, true);
 });
 
-await test('promoted olmayan aday canonical klasöre yazılamaz', async () => {
+await test('promoted olmayan aday canonical klasÃ¶re yazÄ±lamaz', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ag-bank-candidate-'));
   await copyFixtureTree(tempRoot);
   const report = await buildCandidatePromotionReport({ rootDir: tempRoot, apply: true });
@@ -144,7 +147,7 @@ await test('promoted olmayan aday canonical klasöre yazılamaz', async () => {
   equal(exists, false);
 });
 
-await test('promote dry-run problem JSON’u değiştirmez', async () => {
+await test('promote dry-run problem JSONâ€™u deÄŸiÅŸtirmez', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ag-bank-candidate-apply-'));
   await copyFixtureTree(tempRoot);
   await copyProblemFixture(tempRoot);
@@ -155,7 +158,7 @@ await test('promote dry-run problem JSON’u değiştirmez', async () => {
   equal(after, before);
 });
 
-await test('candidate -> problem dönüşümünde source modeli canonical 1.1 sözleşmesine uyar', async () => {
+await test('candidate -> problem dÃ¶nÃ¼ÅŸÃ¼mÃ¼nde source modeli canonical 1.1 sÃ¶zleÅŸmesine uyar', async () => {
   const candidate = await readJson('content/problem-bank/candidates/items/example-falling-in-love-with-baduk-b1-l2-liberty-001.json');
   const preview = candidateToProblemPreview(candidate);
   deepEqual(preview.source, {
@@ -165,12 +168,12 @@ await test('candidate -> problem dönüşümünde source modeli canonical 1.1 s�
   });
 });
 
-await test('Studio adapter alanı varsa güvenli ve opsiyonel kalır', async () => {
+await test('Studio adapter alanÄ± varsa gÃ¼venli ve opsiyonel kalÄ±r', async () => {
   const candidate = await readJson('content/problem-bank/candidates/items/example-falling-in-love-with-baduk-b1-l2-liberty-001.json');
   ok(candidate.studio);
   equal(candidate.studio.compatible, true);
   ok('proposedStudioDocument' in candidate.studio);
 });
 
-console.log(`\nToplam: ${passed + failed}  ✓ ${passed}  ✗ ${failed}`);
+console.log(`\nToplam: ${passed + failed}  âœ“ ${passed}  âœ— ${failed}`);
 if (failed) process.exit(1);

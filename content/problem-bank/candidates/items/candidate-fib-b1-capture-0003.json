@@ -1,0 +1,109 @@
+{
+  "candidateId": "candidate-fib-b1-capture-0003",
+  "candidateVersion": "1.0.0",
+  "status": "needs-review",
+  "source": {
+    "sourceId": "falling-in-love-with-baduk",
+    "locator": {
+      "type": "pdf-page",
+      "value": 19
+    },
+    "usage": "concept_reference"
+  },
+  "extraction": {
+    "method": "manual",
+    "extractedAt": "2026-07-09T00:00:00Z",
+    "extractor": "codex-reference-author",
+    "confidence": 0.81,
+    "notes": "?zg?n aday; son nefes fikrini ?l?en k?sa uygulama sorusu olarak uyarlanan referans."
+  },
+  "curriculum": {
+    "section": "B1",
+    "lesson": "l2",
+    "skill": "capture",
+    "tags": [
+      "falling-in-love-with-baduk",
+      "b1",
+      "capture",
+      "tactical"
+    ]
+  },
+  "board": {
+    "size": 9,
+    "initialStones": [
+      {
+        "color": "white",
+        "x": 1,
+        "y": 1
+      },
+      {
+        "color": "black",
+        "x": 0,
+        "y": 1
+      },
+      {
+        "color": "black",
+        "x": 1,
+        "y": 0
+      },
+      {
+        "color": "black",
+        "x": 2,
+        "y": 1
+      }
+    ],
+    "markers": [
+      {
+        "x": 1,
+        "y": 2,
+        "label": "yakala"
+      }
+    ]
+  },
+  "task": {
+    "type": "construct",
+    "prompt": "Beyaz ta??n son nefesini kapatan hamle hangisidir?",
+    "expectedAnswer": {
+      "x": 1,
+      "y": 2
+    },
+    "answer": {
+      "x": 1,
+      "y": 2
+    },
+    "answerPolicy": "single_point_selection",
+    "solution": "Alt kesi?imde oynanan hamle beyaz grubu yakalar."
+  },
+  "review": {
+    "required": true,
+    "reviewer": null,
+    "reviewedAt": null,
+    "checklist": [
+      "source id resolves in catalog",
+      "locator resolves to a valid page",
+      "board and answer reconstruction are consistent",
+      "rights snapshot is attached"
+    ]
+  },
+  "studio": {
+    "compatible": true,
+    "documentRef": null,
+    "proposedStudioDocument": {
+      "title": "Ta? alma aday ?nizlemesi",
+      "kind": "problem-candidate"
+    }
+  },
+  "rights": {
+    "sourceRightsSnapshot": {
+      "licenseStatus": "permission-required",
+      "rightsReviewRequired": true,
+      "distributionAllowed": false,
+      "allowedUse": "reference-only",
+      "distributionScope": "none",
+      "verificationLevel": "page-reference-only",
+      "rightsNote": "No redistributable license was established in this phase."
+    },
+    "canPublish": false,
+    "needsRightsReview": true
+  }
+}

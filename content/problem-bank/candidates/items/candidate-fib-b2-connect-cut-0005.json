@@ -1,0 +1,109 @@
+{
+  "candidateId": "candidate-fib-b2-connect-cut-0005",
+  "candidateVersion": "1.0.0",
+  "status": "needs-review",
+  "source": {
+    "sourceId": "falling-in-love-with-baduk",
+    "locator": {
+      "type": "pdf-page",
+      "value": 21
+    },
+    "usage": "concept_reference"
+  },
+  "extraction": {
+    "method": "manual",
+    "extractedAt": "2026-07-09T00:00:00Z",
+    "extractor": "codex-reference-author",
+    "confidence": 0.79,
+    "notes": "?zg?n aday; ba?lant?/kesme fark?n? k?sa bir karar noktas? olarak uyarlayan referans."
+  },
+  "curriculum": {
+    "section": "B2",
+    "lesson": "l2",
+    "skill": "connect-cut",
+    "tags": [
+      "falling-in-love-with-baduk",
+      "b2",
+      "connect-cut",
+      "tactical"
+    ]
+  },
+  "board": {
+    "size": 9,
+    "initialStones": [
+      {
+        "color": "black",
+        "x": 2,
+        "y": 2
+      },
+      {
+        "color": "black",
+        "x": 4,
+        "y": 2
+      },
+      {
+        "color": "white",
+        "x": 3,
+        "y": 1
+      },
+      {
+        "color": "white",
+        "x": 3,
+        "y": 3
+      }
+    ],
+    "markers": [
+      {
+        "x": 3,
+        "y": 2,
+        "label": "ba?la"
+      }
+    ]
+  },
+  "task": {
+    "type": "construct",
+    "prompt": "Siyah?n iki grubunu g?venli bi?imde birle?tiren hamle hangisidir?",
+    "expectedAnswer": {
+      "x": 3,
+      "y": 2
+    },
+    "answer": {
+      "x": 3,
+      "y": 2
+    },
+    "answerPolicy": "single_point_selection",
+    "solution": "Ortadaki kesi?im iki siyah ta?? tek ba?lant?da toplar."
+  },
+  "review": {
+    "required": true,
+    "reviewer": null,
+    "reviewedAt": null,
+    "checklist": [
+      "source id resolves in catalog",
+      "locator resolves to a valid page",
+      "board and answer reconstruction are consistent",
+      "rights snapshot is attached"
+    ]
+  },
+  "studio": {
+    "compatible": true,
+    "documentRef": null,
+    "proposedStudioDocument": {
+      "title": "Ba?lama/kesmeye giri? aday ?nizlemesi",
+      "kind": "problem-candidate"
+    }
+  },
+  "rights": {
+    "sourceRightsSnapshot": {
+      "licenseStatus": "permission-required",
+      "rightsReviewRequired": true,
+      "distributionAllowed": false,
+      "allowedUse": "reference-only",
+      "distributionScope": "none",
+      "verificationLevel": "page-reference-only",
+      "rightsNote": "No redistributable license was established in this phase."
+    },
+    "canPublish": false,
+    "needsRightsReview": true
+  }
+}
