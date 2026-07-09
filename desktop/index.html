@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="tr" data-theme="dark">
   <head>
     <meta charset="UTF-8">
@@ -47,6 +47,19 @@
             </div>
           </section>
 
+          <section class="panel candidate-panel" aria-label="Problem adayları">
+            <div class="panel__header">
+              <h2>Problem Adayları</h2>
+            </div>
+            <div class="panel__body">
+              <p class="board-caption candidate-panel__intro" data-candidate-summary-note>
+                Adaylar salt-okunur önizleme olarak listelenir.
+              </p>
+              <div class="empty-state" data-candidate-empty hidden>Aday bulunamadı. Kaynak kataloğu boş ya da aday dosyaları okunamadı.</div>
+              <ul class="candidate-list" data-candidate-list aria-label="Problem adayları listesi"></ul>
+            </div>
+          </section>
+
           <section class="panel">
             <div class="panel__header">
               <h3>Hızlı işlemler</h3>
@@ -66,6 +79,9 @@
           <div class="board-shell">
             <div class="board-frame" id="studio-board" aria-label="Go tahtası"></div>
           </div>
+          <p class="board-caption candidate-readonly-banner" data-candidate-readonly-banner hidden>
+            Bu görünüm salt okunur bir aday önizlemesidir.
+          </p>
           <p class="board-caption" id="studio-board-caption">
             Tahta merkezde kalır; teknik JSON ve doğrulama ayrıntıları sağ panelde gizli tutulur.
           </p>
@@ -95,6 +111,43 @@
                   <textarea data-doc-summary rows="5" readonly></textarea>
                 </label>
               </div>
+            </div>
+          </section>
+
+          <section class="panel candidate-preview-panel" aria-label="Aday önizlemesi" hidden data-candidate-preview-panel>
+            <div class="panel__header">
+              <h2>Aday önizlemesi</h2>
+            </div>
+            <div class="panel__body">
+              <div class="candidate-preview__status" data-candidate-status>Henüz aday seçilmedi.</div>
+              <div class="candidate-preview__notice" data-candidate-readonly-message hidden></div>
+              <dl class="candidate-preview__meta">
+                <div>
+                  <dt>Başlık</dt>
+                  <dd data-candidate-title>—</dd>
+                </div>
+                <div>
+                  <dt>Candidate ID</dt>
+                  <dd data-candidate-id>—</dd>
+                </div>
+                <div>
+                  <dt>Durum</dt>
+                  <dd data-candidate-status-label>—</dd>
+                </div>
+                <div>
+                  <dt>Müfredat</dt>
+                  <dd data-candidate-curriculum>—</dd>
+                </div>
+                <div>
+                  <dt>Kaynak</dt>
+                  <dd data-candidate-source>—</dd>
+                </div>
+                <div>
+                  <dt>İnceleme / hak</dt>
+                  <dd data-candidate-rights>—</dd>
+                </div>
+              </dl>
+              <button type="button" class="button primary" data-candidate-work>Studio belgesi olarak çalış</button>
             </div>
           </section>
 

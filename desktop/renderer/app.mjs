@@ -1,4 +1,4 @@
-﻿import { createBoardRenderer } from '../../studio/boardRenderer.js';
+import { createBoardRenderer } from '../../studio/boardRenderer.js';
 import { createDocument } from '../../studio/model/studioDocument.js';
 import { validateDocument } from '../../studio/model/validation.js';
 import {
@@ -28,6 +28,20 @@ const elements = {
   workspaceBanner: document.querySelector('[data-workspace-banner]'),
   libraryList: document.querySelector('[data-library-list]'),
   libraryEmpty: document.querySelector('[data-library-empty]'),
+  candidateList: document.querySelector('[data-candidate-list]'),
+  candidateEmpty: document.querySelector('[data-candidate-empty]'),
+  candidateSummaryNote: document.querySelector('[data-candidate-summary-note]'),
+  candidatePreviewPanel: document.querySelector('[data-candidate-preview-panel]'),
+  candidateStatus: document.querySelector('[data-candidate-status]'),
+  candidateReadonlyMessage: document.querySelector('[data-candidate-readonly-message]'),
+  candidateTitle: document.querySelector('[data-candidate-title]'),
+  candidateId: document.querySelector('[data-candidate-id]'),
+  candidateStatusLabel: document.querySelector('[data-candidate-status-label]'),
+  candidateCurriculum: document.querySelector('[data-candidate-curriculum]'),
+  candidateSource: document.querySelector('[data-candidate-source]'),
+  candidateRights: document.querySelector('[data-candidate-rights]'),
+  candidateWork: document.querySelector('[data-candidate-work]'),
+  candidateReadonlyBanner: document.querySelector('[data-candidate-readonly-banner]'),
   board: document.getElementById('studio-board'),
   boardCaption: document.getElementById('studio-board-caption'),
   docTitle: document.querySelector('[data-doc-title]'),
@@ -68,6 +82,12 @@ const elements = {
 const state = {
   settings: null,
   documents: [],
+  candidates: [],
+  candidateMap: new Map(),
+  activeCandidateId: null,
+  activeCandidate: null,
+  candidateMode: null,
+  activeDocumentPath: null,
   activeDocument: null,
   contentProducerMode: true,
   workspaceFolder: null,
@@ -86,6 +106,7 @@ async function bootstrap() {
   const boot = typeof api.boot === 'function' ? await api.boot() : createOfflineBootState();
   applyBootState(boot);
   wireActions();
+  await loadCandidateLibrary();
   renderWorkspace();
   renderActiveDocument();
 }
@@ -94,10 +115,192 @@ function applyBootState(boot) {
   state.settings = boot?.settings ?? null;
   state.documents = Array.isArray(boot?.documents) ? boot.documents : createOfflineDocuments();
   state.activeDocument = ensureMoveTreeDocument(boot?.activeDocument ?? state.documents[0] ?? createEmptyDocument());
+  state.activeDocumentPath = boot?.activeDocumentPath ?? null;
   state.contentProducerMode = boot?.settings?.contentProducerMode ?? true;
   state.needsWorkspaceSelection = boot?.needsWorkspaceSelection ?? false;
   state.workspaceFolder = boot?.settings?.workspaceFolder ?? null;
   state.selectedNodeId = state.activeDocument.activeNodeId ?? 'root';
+  state.activeCandidateId = null;
+  state.activeCandidate = null;
+  state.candidateMode = null;
+}
+
+async function loadCandidateLibrary() {
+  if (typeof api.listCandidates !== 'function') {
+    state.candidates = [];
+    state.candidateMap = new Map();
+    return;
+  }
+
+  const result = await api.listCandidates();
+  if (!result || result.ok === false) {
+    state.candidates = [];
+    state.candidateMap = new Map();
+    renderCandidatePanel(result?.error ?? 'Problem adayları yüklenemedi.');
+    return;
+  }
+
+  const items = Array.isArray(result.items) ? result.items : [];
+  state.candidates = items;
+  state.candidateMap = new Map(items.filter(item => item?.candidateId).map(item => [item.candidateId, item]));
+}
+
+function isCandidatePreviewMode() {
+  return Boolean(state.activeCandidateId && state.candidateMode === 'preview');
+}
+
+function isCandidateWorkingMode() {
+  return Boolean(state.activeCandidateId && state.candidateMode === 'working');
+}
+
+function setCandidateSession(candidate, document, { readOnly = true } = {}) {
+  state.activeCandidateId = candidate?.candidateId ?? null;
+  state.activeCandidate = candidate ?? null;
+  state.candidateMode = readOnly ? 'preview' : 'working';
+  state.activeDocument = ensureMoveTreeDocument(document ?? createEmptyDocument());
+  state.activeDocumentPath = null;
+  state.selectedNodeId = state.activeDocument.activeNodeId ?? 'root';
+  syncDocumentFromSelection();
+  renderWorkspace();
+  renderActiveDocument();
+}
+
+function clearCandidateSession() {
+  state.activeCandidateId = null;
+  state.activeCandidate = null;
+  state.candidateMode = null;
+}
+
+function renderCandidatePanel(message = '') {
+  const items = state.candidates ?? [];
+  elements.candidateEmpty.hidden = items.length > 0;
+  elements.candidateSummaryNote.textContent = message || `Adaylar salt-okunur önizleme olarak listelenir. ${items.length} aday yüklendi.`;
+  elements.candidateList.replaceChildren(...items.map(renderCandidateItem));
+  renderCandidateDetails();
+}
+
+function renderCandidateItem(item) {
+  const li = document.createElement('li');
+  li.className = 'candidate-item';
+
+  const card = document.createElement(item.canOpen ? 'button' : 'div');
+  card.className = `candidate-card${item.candidateId && item.candidateId === state.activeCandidateId ? ' is-active' : ''}${item.valid === false ? ' is-broken' : ''}`;
+  if (item.canOpen) {
+    card.type = 'button';
+    card.dataset.candidateId = item.candidateId;
+    card.addEventListener('click', async () => openCandidatePreview(item.candidateId));
+  } else {
+    card.setAttribute('aria-disabled', 'true');
+  }
+
+  const badgeClass = item.valid === false ? 'is-warning' : item.status === 'promoted' ? 'is-success' : item.status === 'rejected' ? 'is-muted' : 'is-warning';
+  const title = item.title || item.candidateId || 'Bozuk aday dosyası';
+  const statusLabel = item.statusLabel || 'Hatalı dosya';
+  const reviewText = item.reviewRequired ? 'İnceleme gerekli' : 'İnceleme gerekmez';
+  const rightsText = item.canPublish ? 'Yayınlanabilir' : item.needsRightsReview ? 'Yayın hakkı inceleme bekliyor' : 'Yayın kapalı';
+
+  card.innerHTML = `
+    <div class="candidate-card__top">
+      <strong class="candidate-card__title">${escapeHtml(title)}</strong>
+      <span class="candidate-card__badge ${badgeClass}">${escapeHtml(statusLabel)}</span>
+    </div>
+    <p class="candidate-card__id">Candidate ID: ${escapeHtml(item.candidateId ?? '—')}</p>
+    <p class="candidate-card__meta">${escapeHtml(item.curriculumSection || '—')} · ${escapeHtml(item.curriculumLesson || '—')}</p>
+    <p class="candidate-card__source">Kaynak: ${escapeHtml(item.sourceSummary || '—')}</p>
+    <p class="candidate-card__rights">${escapeHtml(reviewText)} · ${escapeHtml(rightsText)}</p>
+    ${item.parseError ? `<p class="candidate-card__meta">Hata: ${escapeHtml(item.parseError)}</p>` : ''}
+  `;
+
+  li.appendChild(card);
+  return li;
+}
+
+function renderCandidateDetails() {
+  const candidate = state.activeCandidate;
+  const panelVisible = Boolean(candidate);
+  elements.candidatePreviewPanel.hidden = !panelVisible;
+  if (!panelVisible) {
+    elements.candidateStatus.textContent = 'Henüz aday seçilmedi.';
+    elements.candidateReadonlyMessage.hidden = true;
+    elements.candidateTitle.textContent = '—';
+    elements.candidateId.textContent = '—';
+    elements.candidateStatusLabel.textContent = '—';
+    elements.candidateCurriculum.textContent = '—';
+    elements.candidateSource.textContent = '—';
+    elements.candidateRights.textContent = '—';
+    elements.candidateWork.textContent = 'Studio belgesi olarak çalış';
+    elements.candidateWork.disabled = true;
+    elements.candidateReadonlyBanner.hidden = true;
+    return;
+  }
+
+  const modeText = isCandidatePreviewMode() ? 'Salt-okunur önizleme' : 'Çalışma belgesi';
+  const readOnlyText = isCandidatePreviewMode()
+    ? candidate.readOnlyNotice || 'Bu görünüm salt-okunur bir aday önizlemesidir.'
+    : 'Aday ayrı bir çalışma belgesi olarak açıldı.';
+
+  elements.candidateStatus.textContent = `${modeText} · ${candidate.boardSize}×${candidate.boardSize}`;
+  elements.candidateReadonlyMessage.hidden = false;
+  elements.candidateReadonlyMessage.textContent = readOnlyText;
+  elements.candidateTitle.textContent = candidate.title || '—';
+  elements.candidateId.textContent = candidate.candidateId || '—';
+  elements.candidateStatusLabel.textContent = candidate.statusLabel || '—';
+  elements.candidateCurriculum.textContent = `${candidate.curriculumSection || '—'} · ${candidate.curriculumLesson || '—'} · ${candidate.curriculumSkill || '—'}`;
+  elements.candidateSource.textContent = candidate.sourceSummary || '—';
+  elements.candidateRights.textContent = `${candidate.reviewRequired ? 'İnceleme gerekli' : 'İnceleme gerekmez'} · ${candidate.rightsSummary || '—'}`;
+  elements.candidateWork.textContent = isCandidatePreviewMode() ? 'Studio belgesi olarak çalış' : 'Çalışma belgesi açık';
+  elements.candidateWork.disabled = isCandidateWorkingMode();
+  elements.candidateReadonlyBanner.hidden = !isCandidatePreviewMode();
+  elements.candidateReadonlyBanner.textContent = isCandidatePreviewMode()
+    ? 'Bu görünüm salt-okunur bir aday önizlemesidir.'
+    : 'Aday ayrı bir çalışma belgesi olarak açık.';
+}
+
+function syncCandidateEditability() {
+  const readOnly = isCandidatePreviewMode();
+  for (const element of [
+    elements.treeColor,
+    elements.treeX,
+    elements.treeY,
+    elements.treeComment,
+    elements.treeAnnotations,
+    elements.treeAdd,
+    elements.treeDelete,
+    elements.treePromote,
+  ]) {
+    if (element) element.disabled = readOnly;
+  }
+  if (elements.actionSave) {
+    elements.actionSave.title = state.activeDocumentPath ? 'Belgeyi kaydet' : 'Bu belge ilk kez Farklı Kaydet ile kaydedilir.';
+  }
+  if (elements.treeStatus && readOnly) {
+    elements.treeStatus.textContent = 'Aday önizlemesi salt-okunur; düzenleme için Studio belgesi olarak çalış seçin.';
+  }
+}
+
+async function openCandidatePreview(candidateId) {
+  if (typeof api.openCandidatePreview !== 'function') return;
+  const result = await api.openCandidatePreview(candidateId);
+  if (!result || result.ok === false || !result.document) {
+    renderTreeStatus(result?.error ?? 'Aday önizlemesi açılamadı.');
+    return;
+  }
+  setCandidateSession(result.summary ?? result.candidate, result.document, { readOnly: true });
+}
+
+async function openCandidateWorkingDocument(candidateId) {
+  if (typeof api.openCandidateDocument !== 'function') return;
+  const result = await api.openCandidateDocument(candidateId);
+  if (!result || result.ok === false || !result.document) {
+    renderTreeStatus(result?.error ?? 'Aday çalışma belgesi açılamadı.');
+    return;
+  }
+  setCandidateSession(result.summary ?? result.candidate, result.document, { readOnly: false });
+}
+
+function renderCandidateState() {
+  renderCandidateDetails();
+  syncCandidateEditability();
 }
 
 function wireActions() {
@@ -130,13 +333,21 @@ function wireActions() {
     }
   });
 
+  elements.candidateWork.addEventListener('click', async () => {
+    if (!state.activeCandidateId || typeof api.openCandidateDocument !== 'function') {
+      return;
+    }
+    await openCandidateWorkingDocument(state.activeCandidateId);
+  });
+
   elements.actionNew.addEventListener('click', async () => {
     if (typeof api.newDocument !== 'function') {
       return;
     }
+    clearCandidateSession();
     const next = await api.newDocument();
     if (next?.document) {
-      setActiveDocument(next.document);
+      setActiveDocument(next.document, { filePath: next.filePath ?? null });
     }
   });
 
@@ -144,20 +355,28 @@ function wireActions() {
     if (typeof api.openDocument !== 'function') {
       return;
     }
+    clearCandidateSession();
     const next = await api.openDocument();
     if (next?.document) {
-      setActiveDocument(next.document);
+      setActiveDocument(next.document, { filePath: next.filePath ?? null });
     }
   });
 
   elements.actionSave.addEventListener('click', async () => {
+    syncDocumentFromSelection();
+    if (!state.activeDocumentPath && typeof api.saveDocumentAs === 'function') {
+      const result = await api.saveDocumentAs(state.activeDocument);
+      if (result?.document) {
+        setActiveDocument(result.document, { keepSelection: true, filePath: result.filePath ?? null, preserveCandidateSession: isCandidateWorkingMode() });
+      }
+      return;
+    }
     if (typeof api.saveDocument !== 'function') {
       return;
     }
-    syncDocumentFromSelection();
     const result = await api.saveDocument(state.activeDocument);
     if (result?.document) {
-      setActiveDocument(result.document, { keepSelection: true });
+      setActiveDocument(result.document, { keepSelection: true, filePath: result.filePath ?? null, preserveCandidateSession: isCandidateWorkingMode() });
     }
   });
 
@@ -168,7 +387,7 @@ function wireActions() {
     syncDocumentFromSelection();
     const result = await api.saveDocumentAs(state.activeDocument);
     if (result?.document) {
-      setActiveDocument(result.document, { keepSelection: true });
+      setActiveDocument(result.document, { keepSelection: true, filePath: result.filePath ?? null, preserveCandidateSession: isCandidateWorkingMode() });
     }
   });
 
@@ -213,9 +432,12 @@ function wireActions() {
   elements.treeComment.addEventListener('input', () => updateSelectedNodeMetadata());
   elements.treeAnnotations.addEventListener('input', () => updateSelectedNodeMetadata());
 }
-
-function setActiveDocument(document, { keepSelection = false } = {}) {
+function setActiveDocument(document, { keepSelection = false, filePath = null, preserveCandidateSession = false } = {}) {
+  if (!preserveCandidateSession) {
+    clearCandidateSession();
+  }
   state.activeDocument = ensureMoveTreeDocument(document);
+  state.activeDocumentPath = filePath;
   if (!keepSelection) {
     state.selectedNodeId = state.activeDocument.activeNodeId ?? 'root';
   } else {
@@ -247,11 +469,11 @@ function renderWorkspace() {
   elements.producerToggle.setAttribute('aria-pressed', String(state.contentProducerMode));
 
   elements.libraryList.replaceChildren(...state.documents.map(renderLibraryItem));
+  renderCandidatePanel();
   elements.timelineSummary.textContent = state.documents.length
     ? `${state.documents.length} belge yüklendi; son belge ${state.activeDocument?.title ?? 'belirlenmedi'}.`
     : 'Yeni belge ve doğrulama notları burada toplanır.';
 }
-
 function renderLibraryItem(item) {
   const li = document.createElement('li');
   li.className = 'library-item';
@@ -290,11 +512,16 @@ function renderActiveDocument() {
   renderMoveTree(doc.moveTree);
   renderSelectedNodeMetadata();
   renderTreeStatus(buildTreeStatus());
-  elements.boardCaption.textContent = validation.valid
+  renderCandidateState();
+  const candidateCaption = isCandidatePreviewMode()
+    ? 'Bu görünüm salt-okunur bir aday önizlemesidir. İlk kayıt Farklı Kaydet ile yapılır.'
+    : isCandidateWorkingMode()
+      ? 'Aday ayrı bir çalışma belgesi olarak açık. İlk kayıt Farklı Kaydet ile yapılır.'
+      : null;
+  elements.boardCaption.textContent = candidateCaption || (validation.valid
     ? 'Hamle ağacı seçili düğüme göre tahtayı yeniden kurar; teknik JSON ve doğrulama ayrıntıları sağ panelde gizli tutulur.'
-    : `Belge doğrulaması: ${validation.errors.length} hata, ${validation.warnings.length} uyarı.`;
+    : `Belge doğrulaması: ${validation.errors.length} hata, ${validation.warnings.length} uyarı.`);
 }
-
 function renderMoveTree(moveTree) {
   const root = moveTree.root;
   const path = getMovePath(root, state.selectedNodeId);
@@ -404,6 +631,10 @@ function buildTreeStatus() {
 function updateSelectedNodeMetadata() {
   const doc = state.activeDocument;
   if (!doc?.moveTree?.root) return;
+  if (isCandidatePreviewMode()) {
+    renderTreeStatus('Aday önizlemesi salt-okunur.');
+    return;
+  }
   const node = findMoveNode(doc.moveTree.root, state.selectedNodeId);
   if (!node) return;
   setMoveNodeComment(doc.moveTree.root, node.id, elements.treeComment.value);
@@ -412,10 +643,13 @@ function updateSelectedNodeMetadata() {
   syncDocumentFromSelection();
   renderActiveDocument();
 }
-
 function addTreeMoveFromForm() {
   const doc = state.activeDocument;
   if (!doc?.moveTree?.root) return;
+  if (isCandidatePreviewMode()) {
+    renderTreeStatus('Aday önizlemesi salt-okunur.');
+    return;
+  }
   const parent = findMoveNode(doc.moveTree.root, state.selectedNodeId) ?? doc.moveTree.root;
   const move = {
     color: elements.treeColor.value === 'white' ? 'white' : 'black',
@@ -437,16 +671,19 @@ function addTreeMoveFromForm() {
   state.selectedNodeId = result.node.id;
   syncDocumentFromSelection();
   renderActiveDocument();
-  renderTreeStatus(`Hamle eklendi: ${humanizeMove(result.node.move)}.`);
+  renderTreeStatus(`Hamle eklendi: ${humanizeMove(result.node.move)}`);
 }
-
 function requestDeleteSelectedVariant() {
   const doc = state.activeDocument;
   if (!doc?.moveTree?.root) return;
+  if (isCandidatePreviewMode()) {
+    renderTreeStatus('Aday önizlemesi salt-okunur.');
+    return;
+  }
   const node = findMoveNode(doc.moveTree.root, state.selectedNodeId);
   if (!node || node.id === 'root') return;
   const label = humanizeMove(node.move);
-  if (!window.confirm(`Bu varyantı silmek istiyor musunuz?\n${label}`)) {
+  if (!window.confirm(`Bu varyantı silmek istiyor musunuz?\\n${label}`)) {
     return;
   }
   const result = deleteMoveNode(doc.moveTree.root, node.id);
@@ -460,10 +697,13 @@ function requestDeleteSelectedVariant() {
   renderActiveDocument();
   renderTreeStatus('Varyant silindi.');
 }
-
 function promoteSelectedNode() {
   const doc = state.activeDocument;
   if (!doc?.moveTree?.root) return;
+  if (isCandidatePreviewMode()) {
+    renderTreeStatus('Aday önizlemesi salt-okunur.');
+    return;
+  }
   const node = findMoveNode(doc.moveTree.root, state.selectedNodeId);
   if (!node || node.id === 'root') return;
   const parent = findMoveNode(doc.moveTree.root, node.parentId);
@@ -474,7 +714,6 @@ function promoteSelectedNode() {
   renderActiveDocument();
   renderTreeStatus('Ana dal güncellendi.');
 }
-
 function goToParentNode() {
   const doc = state.activeDocument;
   if (!doc?.moveTree?.root) return;

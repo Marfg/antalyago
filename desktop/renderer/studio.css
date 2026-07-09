@@ -217,6 +217,146 @@ textarea {
   font-size: 0.875rem;
 }
 
+.candidate-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.candidate-item {
+  margin: 0;
+}
+
+.candidate-card {
+  width: 100%;
+  border: 1px solid var(--border, rgba(199, 178, 214, 0.18));
+  border-radius: 1rem;
+  background: var(--surface-soft, #281932);
+  color: var(--text-primary, #f4eff7);
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.45rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.candidate-card:hover {
+  background: var(--surface-raised, #20182b);
+}
+
+.candidate-card:focus-visible {
+  outline: 2px solid var(--focus-ring, #c7b2d6);
+  outline-offset: 2px;
+}
+
+.candidate-card.is-active {
+  border-color: var(--primary, #8969a2);
+  box-shadow: 0 0 0 1px var(--primary, #8969a2) inset;
+}
+
+.candidate-card.is-broken {
+  border-style: dashed;
+  opacity: 0.88;
+}
+
+.candidate-card__top {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.candidate-card__title {
+  margin: 0;
+  font-weight: 650;
+}
+
+.candidate-card__id,
+.candidate-card__meta,
+.candidate-card__source,
+.candidate-card__rights {
+  margin: 0;
+  color: var(--text-secondary, #c7b2d6);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.candidate-card__badge {
+  flex: none;
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.77rem;
+  font-weight: 650;
+  background: rgba(137, 105, 162, 0.14);
+  color: var(--text-primary, #f4eff7);
+  border: 1px solid rgba(137, 105, 162, 0.24);
+}
+
+.candidate-card__badge.is-warning {
+  background: rgba(237, 117, 111, 0.14);
+  border-color: rgba(237, 117, 111, 0.24);
+}
+
+.candidate-card__badge.is-success {
+  background: rgba(118, 198, 141, 0.14);
+  border-color: rgba(118, 198, 141, 0.24);
+}
+
+.candidate-card__badge.is-muted {
+  background: rgba(199, 178, 214, 0.12);
+  border-color: rgba(199, 178, 214, 0.2);
+}
+
+.candidate-panel__intro {
+  margin: 0 0 0.75rem;
+}
+
+.candidate-preview-panel .panel__body {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.candidate-preview__status {
+  font-weight: 650;
+}
+
+.candidate-preview__notice,
+.candidate-readonly-banner {
+  border-radius: 0.95rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(137, 105, 162, 0.24);
+  background: rgba(137, 105, 162, 0.12);
+  color: var(--text-primary, #f4eff7);
+}
+
+.candidate-preview__notice[hidden],
+.candidate-readonly-banner[hidden] {
+  display: none !important;
+}
+
+.candidate-preview__meta {
+  margin: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.candidate-preview__meta div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.candidate-preview__meta dt {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #c7b2d6);
+}
+
+.candidate-preview__meta dd {
+  margin: 0;
+  color: var(--text-primary, #f4eff7);
+}
+
 .board-stage {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;

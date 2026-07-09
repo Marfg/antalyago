@@ -20,7 +20,7 @@
                     "benchmark-ai":  "node scripts/ai/benchmark.mjs",
                     "studio":  "electron .",
                     "test-studio":  "node tests/studio-document.test.js \u0026\u0026 node tests/studio-text-tree.test.js \u0026\u0026 node tests/studio-server.test.js \u0026\u0026 npm run test-studio-electron \u0026\u0026 node tests/verify-studio-desktop.mjs",
-                    "test-studio-electron":  "node tests/studio-electron.test.js",
+                    "test-studio-electron":  "node tests/studio-electron.test.js && node tests/studio-candidate-electron.test.js",
                     "test-studio-text-tree":  "node tests/studio-text-tree.test.js",
                     "audit-problem-bank":  "node scripts/problem-bank/audit.mjs",
                     "migrate-problem-bank":  "node scripts/problem-bank/migrate.mjs",

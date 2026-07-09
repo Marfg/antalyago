@@ -21,6 +21,9 @@ function createStudioApi(ipcRenderer) {
     listDocuments: () => invoke(STUDIO_CHANNELS.LIST_DOCUMENTS),
     validateDocument: document => invoke(STUDIO_CHANNELS.VALIDATE_DOCUMENT, document),
     setContentProducerMode: enabled => invoke(STUDIO_CHANNELS.SET_CONTENT_PRODUCER_MODE, !!enabled),
+    listCandidates: () => invoke(STUDIO_CHANNELS.LIST_CANDIDATES),
+    openCandidatePreview: candidateId => invoke(STUDIO_CHANNELS.OPEN_CANDIDATE_PREVIEW, candidateId),
+    openCandidateDocument: candidateId => invoke(STUDIO_CHANNELS.OPEN_CANDIDATE_DOCUMENT, candidateId),
     onDocumentOpened: callback => on(STUDIO_CHANNELS.DOCUMENT_OPENED, callback),
     onWorkspaceChanged: callback => on(STUDIO_CHANNELS.WORKSPACE_CHANGED, callback),
   };

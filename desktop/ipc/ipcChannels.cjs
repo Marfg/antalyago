@@ -13,6 +13,9 @@ const STUDIO_CHANNELS = Object.freeze({
   GET_SETTINGS: 'studio:get-settings',
   DOCUMENT_OPENED: 'studio:document-opened',
   WORKSPACE_CHANGED: 'studio:workspace-changed',
+  LIST_CANDIDATES: 'studio:list-candidates',
+  OPEN_CANDIDATE_PREVIEW: 'studio:open-candidate-preview',
+  OPEN_CANDIDATE_DOCUMENT: 'studio:open-candidate-document',
 });
 
 module.exports = { STUDIO_CHANNELS };

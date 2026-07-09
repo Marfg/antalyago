@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -64,11 +64,17 @@ async function testIpcContract() {
   const api = createStudioApi(ipcRenderer);
   await api.boot();
   await api.openFilePath('sample.agstudio');
+  await api.listCandidates();
+  await api.openCandidatePreview('candidate-1');
+  await api.openCandidateDocument('candidate-1');
   const off = api.onDocumentOpened(() => {});
   assert.equal(subscriptions[0].channel, STUDIO_CHANNELS.DOCUMENT_OPENED);
   off();
   assert.equal(calls[0].channel, STUDIO_CHANNELS.BOOT);
   assert.equal(calls[1].channel, STUDIO_CHANNELS.OPEN_FILE_PATH);
+  assert.equal(calls[2].channel, STUDIO_CHANNELS.LIST_CANDIDATES);
+  assert.equal(calls[3].channel, STUDIO_CHANNELS.OPEN_CANDIDATE_PREVIEW);
+  assert.equal(calls[4].channel, STUDIO_CHANNELS.OPEN_CANDIDATE_DOCUMENT);
 }
 
 async function testPathPolicy() {
