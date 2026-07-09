@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -20,6 +20,15 @@ const PHASE9_FILES = [
 ];
 const PHASE9_IDS = PHASE9_FILES.map(file => path.basename(file, '.json'));
 const CATALOG_PATH = 'content/problem-bank/sources/catalog.json';
+const TURKISH_VISIBLE_WORDS = ['K\u00f6\u015fe', 'ta\u015f', 'nefes', 'kesi\u015fim', 'A\u015fa\u011f\u0131daki', 'g\u00fcvenli', 'Ka\u00e7\u0131\u015f\u0131'];
+const NO_MOJI_REGEX = /[\uFFFD\u00c3\u00c4\u00c5\u00d0]/;
+const REQUIRED_KEYWORDS = {
+  'candidate-fib-b1-liberty-count-0002': ['K\u00f6\u015fe', 'ta\u015f', 'nefes'],
+  'candidate-fib-b1-capture-0003': ['ta\u015f', 'nefes'],
+  'candidate-fib-b2-atari-0004': ['A\u015fa\u011f\u0131daki', 'nefes'],
+  'candidate-fib-b2-connect-cut-0005': ['g\u00fcvenli', 'kesi\u015fim'],
+  'candidate-fib-b2-ladder-intro-0006': ['Ka\u00e7\u0131\u015f\u0131', 'devam'],
+};
 let passed = 0;
 let failed = 0;
 
@@ -27,11 +36,11 @@ function test(name, fn) {
   return Promise.resolve()
     .then(fn)
     .then(() => {
-      console.log('  ✓', name);
+      console.log('  ?', name);
       passed += 1;
     })
     .catch(error => {
-      console.error('  ✗', name, '-', error.message);
+      console.error('  ?', name, '-', error.message);
       failed += 1;
     });
 }
@@ -63,7 +72,11 @@ async function copyCandidateTree(rootDir) {
   await fs.copyFile(path.join(ROOT, CATALOG_PATH), path.join(rootDir, CATALOG_PATH));
 }
 
-await test('5 yeni aday schema/validation ve katalog sözleşmesini geçer', async () => {
+function scanVisibleText(candidate) {
+  return [candidate.extraction?.notes, candidate.task?.prompt, candidate.task?.solution].map(value => String(value ?? '')).join(' ');
+}
+
+await test('5 yeni aday schema/validation ve katalog sozlesmesini gecer', async () => {
   const catalog = await readJson(CATALOG_PATH);
   const audit = await auditCandidateCatalog({ rootDir: ROOT });
   equal(audit.items.length, 6);
@@ -80,14 +93,22 @@ await test('5 yeni aday schema/validation ve katalog sözleşmesini geçer', asy
     equal(candidate.board.size, 9);
     equal(candidate.rights.canPublish, false);
     equal(candidate.rights.needsRightsReview, true);
+    ok(candidate.extraction.notes.trim().length > 0);
     ok(candidate.task.prompt.trim().length > 0);
     ok(candidate.task.solution.trim().length > 0);
     ok(candidate.task.answer !== undefined);
     ok(Array.isArray(candidate.review.checklist));
+    equal(NO_MOJI_REGEX.test(candidate.task.prompt), false, 'prompt mojibake');
+    equal(NO_MOJI_REGEX.test(candidate.task.solution), false, 'solution mojibake');
+    equal(NO_MOJI_REGEX.test(candidate.extraction.notes), false, 'notes mojibake');
+    const visibleText = scanVisibleText(candidate);
+    for (const keyword of REQUIRED_KEYWORDS[candidate.candidateId] ?? []) {
+      ok(visibleText.includes(keyword), `${candidate.candidateId} missing ${keyword}`);
+    }
   }
 });
 
-await test('review-problem-candidates ve promotion preview tüm yeni adayları raporlar', async () => {
+await test('review-problem-candidates ve promotion preview tum yeni adaylari raporlar', async () => {
   const reviewCatalog = await buildCandidateReviewCatalog({ rootDir: ROOT });
   equal(reviewCatalog.reports.length, 6);
   for (const id of PHASE9_IDS) {
@@ -125,7 +146,7 @@ await test('review-problem-candidates ve promotion preview tüm yeni adayları r
   }
 });
 
-await test('5 yeni aday için Studio preview güvenli kalır ve default çalıştırma dosya yazmaz', async () => {
+await test('5 yeni aday icin Studio preview guvenli kalir ve default calistirma dosya yazmaz', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ag-bank-phase9-studio-'));
   await copyCandidateTree(tempRoot);
 
@@ -149,7 +170,19 @@ await test('5 yeni aday için Studio preview güvenli kalır ve default çalış
   }
 });
 
-await test('aday dosyaları, canonical problem JSON ve index şeması değişmez', async () => {
+await test('phase 9 visible text UTF-8 clean', async () => {
+  for (const file of PHASE9_FILES) {
+    const candidate = await readJson(file);
+    const visibleText = scanVisibleText(candidate);
+    ok(NO_MOJI_REGEX.test(visibleText) === false, path.basename(file) + ' mojibake');
+    for (const keyword of REQUIRED_KEYWORDS[candidate.candidateId] ?? []) {
+      ok(visibleText.includes(keyword), `${candidate.candidateId} missing ${keyword}`);
+    }
+    ok(visibleText.trim().length > 0, path.basename(file) + ' visible text');
+  }
+});
+
+await test('aday dosyalari, canonical problem JSON ve index semasi degismez', async () => {
   const before = new Map();
   for (const rel of [...PHASE9_FILES, EXAMPLE_FILE, 'content/problem-bank/problems/b1-l2-liberty-count-0001.json', 'content/problem-bank/index.json']) {
     before.set(rel, sha256(await fs.readFile(path.join(ROOT, rel), 'utf8')));
@@ -167,5 +200,5 @@ await test('aday dosyaları, canonical problem JSON ve index şeması değişmez
   }
 });
 
-console.log(`\nToplam: ${passed + failed}  ✓ ${passed}  ✗ ${failed}`);
+console.log(`\nToplam: ${passed + failed}  ? ${passed}  ? ${failed}`);
 if (failed) process.exit(1);

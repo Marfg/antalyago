@@ -15,7 +15,7 @@
     "extractedAt": "2026-07-09T00:00:00Z",
     "extractor": "codex-reference-author",
     "confidence": 0.77,
-    "notes": "?zg?n aday; temel merdiven okumas? i?in k?sa giri? sorusu olarak uyarlanan referans."
+    "notes": "Özgün aday; temel merdiven okuması için kısa giriş sorusu olarak uyarlanan referans."
   },
   "curriculum": {
     "section": "B2",
@@ -62,7 +62,7 @@
   },
   "task": {
     "type": "sequence",
-    "prompt": "Ka???? zorla?t?ran do?ru devam dizisi hangisidir?",
+    "prompt": "Kaçışı zorlaştıran doğru devam dizisi hangisidir?",
     "expectedAnswer": [
       {
         "x": 6,
@@ -84,7 +84,7 @@
       }
     ],
     "answerPolicy": "ordered_move_sequence",
-    "solution": "Ka??? hatt? ayn? y?n? izleyerek geni?letilir; tek hamlede k?r?lmaz."
+    "solution": "Kaçış hattı aynı yönü izleyerek genişler; doğru devam dizisi grubun kolayca serbest kalmasını engeller."
   },
   "review": {
     "required": true,

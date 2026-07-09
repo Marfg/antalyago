@@ -15,7 +15,7 @@
     "extractedAt": "2026-07-09T00:00:00Z",
     "extractor": "codex-reference-author",
     "confidence": 0.79,
-    "notes": "?zg?n aday; ba?lant?/kesme fark?n? k?sa bir karar noktas? olarak uyarlayan referans."
+    "notes": "Özgün aday; bağlantı/kesme farkını kısa bir karar noktası olarak uyarlanan referans."
   },
   "curriculum": {
     "section": "B2",
@@ -62,7 +62,7 @@
   },
   "task": {
     "type": "construct",
-    "prompt": "Siyah?n iki grubunu g?venli bi?imde birle?tiren hamle hangisidir?",
+    "prompt": "Siyahın iki grubunu güvenli biçimde birleştiren hamle hangisidir?",
     "expectedAnswer": {
       "x": 3,
       "y": 2
@@ -72,7 +72,7 @@
       "y": 2
     },
     "answerPolicy": "single_point_selection",
-    "solution": "Ortadaki kesi?im iki siyah ta?? tek ba?lant?da toplar."
+    "solution": "Ortadaki kesişim iki siyah taşı tek bağlantıda toplar ve kesme tehdidini azaltır."
   },
   "review": {
     "required": true,

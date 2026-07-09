@@ -15,7 +15,7 @@
     "extractedAt": "2026-07-09T00:00:00Z",
     "extractor": "codex-reference-author",
     "confidence": 0.8,
-    "notes": "?zg?n aday; atari fark etmeyi ?l?en k?sa pedagojik uyarlama."
+    "notes": "Özgün aday; atari fark etmeyi ölçen kısa pedagojik uyarlama."
   },
   "curriculum": {
     "section": "B2",
@@ -72,7 +72,7 @@
       "y": 5
     },
     "answerPolicy": "single_point_selection",
-    "solution": "A?a??daki tek bo? nokta kapat?ld???nda beyaz grup atariye d??er."
+    "solution": "Aşağıdaki tek boş nokta kapatıldığında beyaz grup tek nefese düşer; bu nedenle grup ataridedir."
   },
   "review": {
     "required": true,

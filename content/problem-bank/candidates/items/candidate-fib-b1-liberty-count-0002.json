@@ -15,7 +15,7 @@
     "extractedAt": "2026-07-09T00:00:00Z",
     "extractor": "codex-reference-author",
     "confidence": 0.82,
-    "notes": "?zg?n aday; kaynak sayfa referans?ndan pedagojik uyarlama yap?ld?, telifli metin kopyalanmad?."
+    "notes": "Özgün aday; kaynak sayfa referansından pedagojik uyarlama yapıldı, telifli metin kopyalanmadı."
   },
   "curriculum": {
     "section": "B1",
@@ -47,11 +47,11 @@
   },
   "task": {
     "type": "numeric_count",
-    "prompt": "K??e ta??n?n ka? nefesi var?",
+    "prompt": "Köşe taşının kaç nefesi var?",
     "expectedAnswer": 2,
     "answer": 2,
     "answerPolicy": "single_numerical_answer",
-    "solution": "K??e ta?? yaln?zca iki bo? kom?uya sahiptir."
+    "solution": "Köşe taşı yalnızca iki boş komşuya sahiptir; iki yön tahta sınırına kapalı olduğu için nefes sayısı 2'dir."
   },
   "review": {
     "required": true,
