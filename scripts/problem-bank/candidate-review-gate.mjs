@@ -215,9 +215,14 @@ function validateTask(candidate) {
 
 function validatePedagogy(candidate) {
   const curriculum = candidate?.curriculum ?? {};
+  const pedagogy = isObject(candidate?.pedagogy) ? candidate.pedagogy : {};
   const tags = Array.isArray(curriculum.tags) ? curriculum.tags.filter(Boolean) : [];
   const skillMeaningful = Boolean(text(curriculum.section) && text(curriculum.lesson) && text(curriculum.skill));
-  const difficultyPresent = Boolean(candidate?.difficulty && (candidate.difficulty.estimated !== undefined || candidate.difficulty.authorLevel !== undefined));
+  const useCase = text(pedagogy.useCase);
+  const difficulty = text(pedagogy.difficulty);
+  const reviewDecision = text(pedagogy.reviewDecision);
+  const reviewNotes = text(pedagogy.reviewNotes);
+  const difficultyPresent = Boolean(difficulty);
   const curriculumMatch = skillMeaningful;
   const problemTypeClear = Boolean(text(candidate?.task?.type));
 
@@ -230,6 +235,10 @@ function validatePedagogy(candidate) {
     difficultyPresent,
     curriculumMatch,
     problemTypeClear,
+    useCase,
+    difficulty,
+    reviewDecision,
+    reviewNotes,
     warnings,
     valid: skillMeaningful && curriculumMatch && problemTypeClear,
   };

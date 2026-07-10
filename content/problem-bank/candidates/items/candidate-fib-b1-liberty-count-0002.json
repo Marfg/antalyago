@@ -25,7 +25,10 @@
       "falling-in-love-with-baduk",
       "b1",
       "liberty-count",
-      "count"
+      "count",
+      "corner",
+      "beginner",
+      "intro"
     ]
   },
   "board": {
@@ -84,5 +87,11 @@
     },
     "canPublish": false,
     "needsRightsReview": true
+  },
+  "pedagogy": {
+    "useCase": "intro-card",
+    "difficulty": "intro",
+    "reviewDecision": "revise",
+    "reviewNotes": "Notlandırılmış değerlendirme değil; ilk nefes sayma alıştırması olarak kullanılmalı."
   }
 }

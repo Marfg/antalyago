@@ -29,6 +29,33 @@ const REQUIRED_KEYWORDS = {
   'candidate-fib-b2-connect-cut-0005': ['g\u00fcvenli', 'kesi\u015fim'],
   'candidate-fib-b2-ladder-intro-0006': ['Ka\u00e7\u0131\u015f\u0131', 'devam'],
 };
+const EXPECTED_PEDAGOGY = {
+  'candidate-fib-b1-liberty-count-0002': {
+    useCase: 'intro-card',
+    difficulty: 'intro',
+    reviewDecision: 'revise',
+  },
+  'candidate-fib-b1-capture-0003': {
+    useCase: 'guided-practice',
+    difficulty: 'intro',
+    reviewDecision: 'revise',
+  },
+  'candidate-fib-b2-atari-0004': {
+    useCase: 'guided-practice',
+    difficulty: 'easy',
+    reviewDecision: 'keep',
+  },
+  'candidate-fib-b2-connect-cut-0005': {
+    useCase: 'guided-practice',
+    difficulty: 'easy',
+    reviewDecision: 'keep',
+  },
+  'candidate-fib-b2-ladder-intro-0006': {
+    useCase: 'redesign-needed',
+    difficulty: 'intro',
+    reviewDecision: 'redesign',
+  },
+};
 let passed = 0;
 let failed = 0;
 
@@ -97,6 +124,11 @@ await test('5 yeni aday schema/validation ve katalog sozlesmesini gecer', async 
     ok(candidate.task.prompt.trim().length > 0);
     ok(candidate.task.solution.trim().length > 0);
     ok(candidate.task.answer !== undefined);
+    ok(candidate.pedagogy);
+    equal(candidate.pedagogy.useCase, EXPECTED_PEDAGOGY[candidate.candidateId].useCase);
+    equal(candidate.pedagogy.difficulty, EXPECTED_PEDAGOGY[candidate.candidateId].difficulty);
+    equal(candidate.pedagogy.reviewDecision, EXPECTED_PEDAGOGY[candidate.candidateId].reviewDecision);
+    ok(typeof candidate.pedagogy.reviewNotes === 'string' && candidate.pedagogy.reviewNotes.trim().length > 0);
     ok(Array.isArray(candidate.review.checklist));
     equal(NO_MOJI_REGEX.test(candidate.task.prompt), false, 'prompt mojibake');
     equal(NO_MOJI_REGEX.test(candidate.task.solution), false, 'solution mojibake');
@@ -125,6 +157,9 @@ await test('review-problem-candidates ve promotion preview tum yeni adaylari rap
     equal(item.task.hasSolution, true);
     equal(item.task.answerTypeValid, true);
     equal(item.studioPreviewValidation.valid, true);
+    equal(item.pedagogy.useCase, EXPECTED_PEDAGOGY[id].useCase);
+    equal(item.pedagogy.difficulty, EXPECTED_PEDAGOGY[id].difficulty);
+    equal(item.pedagogy.reviewDecision, EXPECTED_PEDAGOGY[id].reviewDecision);
     ok(item.promotionReadiness.readyForPromotion);
     equal(item.promotionReadiness.blockingIssues.length, 0);
     equal(item.promotionReadiness.warnings.includes('rights.canPublish-false'), true);

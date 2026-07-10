@@ -25,7 +25,11 @@
       "falling-in-love-with-baduk",
       "b1",
       "capture",
-      "tactical"
+      "tactical",
+      "liberty",
+      "beginner",
+      "single-stone",
+      "intro"
     ]
   },
   "board": {
@@ -62,7 +66,7 @@
   },
   "task": {
     "type": "construct",
-    "prompt": "Beyaz taşın son nefesini kapatan hamle hangisidir?",
+    "prompt": "Beyaz taşın kaçışı hangi hamlede biter?",
     "expectedAnswer": {
       "x": 1,
       "y": 2
@@ -105,5 +109,11 @@
     },
     "canPublish": false,
     "needsRightsReview": true
+  },
+  "pedagogy": {
+    "useCase": "guided-practice",
+    "difficulty": "intro",
+    "reviewDecision": "revise",
+    "reviewNotes": "Prompt yumuşatıldı; ilk capture adımı için daha az ipucu veriyor."
   }
 }

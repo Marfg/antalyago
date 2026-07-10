@@ -25,7 +25,12 @@
       "falling-in-love-with-baduk",
       "b2",
       "ladder",
-      "reading"
+      "reading",
+      "ladder-intro",
+      "escape",
+      "follow-up",
+      "intro",
+      "tactical"
     ]
   },
   "board": {
@@ -117,5 +122,11 @@
     },
     "canPublish": false,
     "needsRightsReview": true
+  },
+  "pedagogy": {
+    "useCase": "redesign-needed",
+    "difficulty": "intro",
+    "reviewDecision": "redesign",
+    "reviewNotes": "Hedef grup ve kaçış hattı netleştirilmeden kullanıma hazır değil."
   }
 }

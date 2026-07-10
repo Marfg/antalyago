@@ -25,7 +25,9 @@
       "falling-in-love-with-baduk",
       "b2",
       "atari",
-      "tactical"
+      "tactical",
+      "single-liberty",
+      "beginner"
     ]
   },
   "board": {
@@ -105,5 +107,11 @@
     },
     "canPublish": false,
     "needsRightsReview": true
+  },
+  "pedagogy": {
+    "useCase": "guided-practice",
+    "difficulty": "easy",
+    "reviewDecision": "keep",
+    "reviewNotes": "Tek nefese düşen grubu tanıma alıştırması olarak güçlü."
   }
 }

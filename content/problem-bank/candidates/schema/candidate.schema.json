@@ -334,6 +334,46 @@
           "default": true
         }
       }
+    },
+    "pedagogy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "useCase": {
+          "type": "string",
+          "enum": [
+            "intro-card",
+            "drill",
+            "guided-practice",
+            "assessment",
+            "worked-example",
+            "worked-example-draft",
+            "redesign-needed"
+          ]
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": [
+            "intro",
+            "very-easy",
+            "easy",
+            "medium",
+            "hard"
+          ]
+        },
+        "reviewDecision": {
+          "type": "string",
+          "enum": [
+            "keep",
+            "revise",
+            "redesign",
+            "reject"
+          ]
+        },
+        "reviewNotes": {
+          "type": "string"
+        }
+      }
     }
   }
 }

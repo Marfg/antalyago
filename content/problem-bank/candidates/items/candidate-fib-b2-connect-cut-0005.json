@@ -25,7 +25,10 @@
       "falling-in-love-with-baduk",
       "b2",
       "connect-cut",
-      "tactical"
+      "tactical",
+      "connection",
+      "cut-threat",
+      "beginner"
     ]
   },
   "board": {
@@ -105,5 +108,11 @@
     },
     "canPublish": false,
     "needsRightsReview": true
+  },
+  "pedagogy": {
+    "useCase": "guided-practice",
+    "difficulty": "easy",
+    "reviewDecision": "keep",
+    "reviewNotes": "Bağlama ve kesme tehdidini ayırt eden güvenli pratik."
   }
 }
