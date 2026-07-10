@@ -1,0 +1,139 @@
+{
+  "candidateId": "candidate-fib-b2-forcing-chase-first-follow-0008",
+  "candidateVersion": "1.0.0",
+  "status": "needs-review",
+  "source": {
+    "sourceId": "falling-in-love-with-baduk",
+    "locator": {
+      "type": "pdf-page",
+      "value": 22
+    },
+    "usage": "concept_reference"
+  },
+  "extraction": {
+    "method": "manual",
+    "extractedAt": "2026-07-10T00:00:00Z",
+    "extractor": "codex-reference-author",
+    "confidence": 0.8,
+    "notes": "Özgün aday; takip hattı becerisini ölçmek için kaynak sayfa referansından pedagojik uyarlama yapıldı, telifli metin kopyalanmadı."
+  },
+  "curriculum": {
+    "section": "B2",
+    "lesson": "l2_deg",
+    "skill": "forcing-chase",
+    "tags": [
+      "forcing-chase",
+      "takip-hatti",
+      "follow-up",
+      "tactical",
+      "beginner",
+      "intro"
+    ]
+  },
+  "board": {
+    "size": 9,
+    "initialStones": [
+      {
+        "color": "white",
+        "x": 4,
+        "y": 4
+      },
+      {
+        "color": "black",
+        "x": 3,
+        "y": 4
+      },
+      {
+        "color": "black",
+        "x": 4,
+        "y": 5
+      },
+      {
+        "color": "black",
+        "x": 6,
+        "y": 4
+      },
+      {
+        "color": "black",
+        "x": 5,
+        "y": 5
+      }
+    ],
+    "markers": [
+      {
+        "x": 4,
+        "y": 4,
+        "label": "hedef"
+      },
+      {
+        "x": 5,
+        "y": 4,
+        "label": "kaçış"
+      },
+      {
+        "x": 4,
+        "y": 3,
+        "label": "takip"
+      }
+    ]
+  },
+  "task": {
+    "type": "choose-move",
+    "prompt": "İşaretli beyaz grubun kaçış hattını daraltan siyah hamle hangisidir?",
+    "expectedAnswer": {
+      "color": "black",
+      "move": {
+        "x": 4,
+        "y": 3
+      }
+    },
+    "answer": {
+      "color": "black",
+      "move": {
+        "x": 4,
+        "y": 3
+      }
+    },
+    "answerPolicy": "single_move_choice",
+    "solution": "Siyah, beyazın kaçış yönünü takip ederek grubun özgür alanını daraltır. Bu alıştırma takip hattını görmeyi öğretir."
+  },
+  "review": {
+    "required": true,
+    "reviewer": null,
+    "reviewedAt": null,
+    "checklist": [
+      "source id resolves in catalog",
+      "locator resolves to a valid page",
+      "board and answer reconstruction are consistent",
+      "rights snapshot is attached",
+      "follow-up line is visually trackable"
+    ]
+  },
+  "studio": {
+    "compatible": true,
+    "documentRef": null,
+    "proposedStudioDocument": {
+      "title": "Takip hattı aday önizlemesi",
+      "kind": "problem-candidate"
+    }
+  },
+  "rights": {
+    "sourceRightsSnapshot": {
+      "licenseStatus": "permission-required",
+      "rightsReviewRequired": true,
+      "distributionAllowed": false,
+      "allowedUse": "reference-only",
+      "distributionScope": "none",
+      "verificationLevel": "page-reference-only",
+      "rightsNote": "No redistributable license was established in this phase."
+    },
+    "canPublish": false,
+    "needsRightsReview": true
+  },
+  "pedagogy": {
+    "useCase": "guided-practice",
+    "difficulty": "intro",
+    "reviewDecision": "keep",
+    "reviewNotes": "İlk takip hamlesini gösteren giriş alıştırması; merdiven değil, takip hattı."
+  }
+}

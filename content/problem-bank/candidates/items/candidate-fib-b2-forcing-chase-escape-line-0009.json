@@ -1,0 +1,132 @@
+{
+  "candidateId": "candidate-fib-b2-forcing-chase-escape-line-0009",
+  "candidateVersion": "1.0.0",
+  "status": "needs-review",
+  "source": {
+    "sourceId": "falling-in-love-with-baduk",
+    "locator": {
+      "type": "pdf-page",
+      "value": 22
+    },
+    "usage": "concept_reference"
+  },
+  "extraction": {
+    "method": "manual",
+    "extractedAt": "2026-07-10T00:00:00Z",
+    "extractor": "codex-reference-author",
+    "confidence": 0.77,
+    "notes": "Özgün aday; takip hattı becerisini ölçmek için kaynak sayfa referansından pedagojik uyarlama yapıldı, telifli metin kopyalanmadı."
+  },
+  "curriculum": {
+    "section": "B2",
+    "lesson": "l2_deg",
+    "skill": "forcing-chase",
+    "tags": [
+      "forcing-chase",
+      "takip-hatti",
+      "escape-line",
+      "reading",
+      "beginner",
+      "drill"
+    ]
+  },
+  "board": {
+    "size": 9,
+    "initialStones": [
+      {
+        "color": "white",
+        "x": 4,
+        "y": 4
+      },
+      {
+        "color": "black",
+        "x": 3,
+        "y": 4
+      },
+      {
+        "color": "black",
+        "x": 4,
+        "y": 5
+      },
+      {
+        "color": "black",
+        "x": 6,
+        "y": 4
+      },
+      {
+        "color": "black",
+        "x": 5,
+        "y": 5
+      },
+      {
+        "color": "black",
+        "x": 6,
+        "y": 5
+      }
+    ],
+    "markers": [
+      {
+        "x": 4,
+        "y": 4,
+        "label": "hedef"
+      },
+      {
+        "x": 5,
+        "y": 4,
+        "label": "kaçış"
+      },
+      {
+        "x": 4,
+        "y": 3,
+        "label": "takip"
+      }
+    ]
+  },
+  "task": {
+    "type": "judgment",
+    "prompt": "Bu kaçış hattı siyahın takibiyle daralıyor mu?",
+    "expectedAnswer": true,
+    "answer": true,
+    "answerPolicy": "binary_judgement",
+    "solution": "Kaçış hattı açık görünse de siyahın takip hamlesi hattı daraltır; beyazın özgür alanı genişlemez. Bu nedenle pozisyon takip hattı pratiği için uygundur."
+  },
+  "review": {
+    "required": true,
+    "reviewer": null,
+    "reviewedAt": null,
+    "checklist": [
+      "source id resolves in catalog",
+      "locator resolves to a valid page",
+      "board and answer reconstruction are consistent",
+      "rights snapshot is attached",
+      "escape-line recognition is visually trackable"
+    ]
+  },
+  "studio": {
+    "compatible": true,
+    "documentRef": null,
+    "proposedStudioDocument": {
+      "title": "Takip hattı kaçış sorusu",
+      "kind": "problem-candidate"
+    }
+  },
+  "rights": {
+    "sourceRightsSnapshot": {
+      "licenseStatus": "permission-required",
+      "rightsReviewRequired": true,
+      "distributionAllowed": false,
+      "allowedUse": "reference-only",
+      "distributionScope": "none",
+      "verificationLevel": "page-reference-only",
+      "rightsNote": "No redistributable license was established in this phase."
+    },
+    "canPublish": false,
+    "needsRightsReview": true
+  },
+  "pedagogy": {
+    "useCase": "drill",
+    "difficulty": "easy",
+    "reviewDecision": "keep",
+    "reviewNotes": "Kaçış hattının daralmasını okutan kısa drill; takip hattı farkını sezdirir."
+  }
+}
