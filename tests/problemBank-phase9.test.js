@@ -17,7 +17,6 @@ const PHASE9_FILES = [
   'content/problem-bank/candidates/items/candidate-fib-b2-atari-0004.json',
   'content/problem-bank/candidates/items/candidate-fib-b2-connect-cut-0005.json',
   'content/problem-bank/candidates/items/candidate-fib-b2-ladder-intro-0006.json',
-  'content/problem-bank/candidates/items/candidate-fib-b2-ladder-intro-0007.json',
 ];
 const PHASE9_IDS = PHASE9_FILES.map(file => path.basename(file, '.json'));
 const CATALOG_PATH = 'content/problem-bank/sources/catalog.json';
@@ -29,7 +28,6 @@ const REQUIRED_KEYWORDS = {
   'candidate-fib-b2-atari-0004': ['A\u015fa\u011f\u0131daki', 'nefes'],
   'candidate-fib-b2-connect-cut-0005': ['g\u00fcvenli', 'kesi\u015fim'],
   'candidate-fib-b2-ladder-intro-0006': ['Ka\u00e7\u0131\u015f\u0131', 'devam'],
-  'candidate-fib-b2-ladder-intro-0007': ['merdiven', 'ka\u00e7\u0131\u015f', 'takip'],
 };
 const EXPECTED_PEDAGOGY = {
   'candidate-fib-b1-liberty-count-0002': {
@@ -56,11 +54,6 @@ const EXPECTED_PEDAGOGY = {
     useCase: 'redesign-needed',
     difficulty: 'intro',
     reviewDecision: 'redesign',
-  },
-  'candidate-fib-b2-ladder-intro-0007': {
-    useCase: 'guided-practice',
-    difficulty: 'intro',
-    reviewDecision: 'keep',
   },
 };
 let passed = 0;
@@ -224,24 +217,18 @@ await test('phase 9 visible text UTF-8 clean', async () => {
   }
 });
 
-await test('ladder intro 0007 is valid and 0006 remains redesign-needed', async () => {
+await test('ladder intro 0006 remains redesign-needed and 0007 is no longer expected', async () => {
   const ladder6 = await readJson('content/problem-bank/candidates/items/candidate-fib-b2-ladder-intro-0006.json');
-  const ladder7 = await readJson('content/problem-bank/candidates/items/candidate-fib-b2-ladder-intro-0007.json');
+  let ladder7Exists = true;
+  try {
+    await fs.access(path.join(ROOT, 'content/problem-bank/candidates/items/candidate-fib-b2-ladder-intro-0007.json'));
+  } catch {
+    ladder7Exists = false;
+  }
 
   equal(ladder6.pedagogy.reviewDecision, 'redesign');
-  equal(ladder7.status, 'needs-review');
-  equal(ladder7.pedagogy.useCase, 'guided-practice');
-  equal(ladder7.pedagogy.difficulty, 'intro');
-  equal(ladder7.pedagogy.reviewDecision, 'keep');
-  equal(ladder7.source.sourceId, 'falling-in-love-with-baduk');
-  equal(ladder7.source.locator.type, 'pdf-page');
-  equal(ladder7.board.size, 9);
-  ok(Array.isArray(ladder7.board.initialStones));
-  ok(Array.isArray(ladder7.task.expectedAnswer));
-  equal(ladder7.task.expectedAnswer.length, 3);
-  ok(ladder7.task.prompt.includes('ka\u00e7\u0131\u015f'));
-  ok(ladder7.task.solution.includes('merdiven'));
-  ok(NO_MOJI_REGEX.test(scanVisibleText(ladder7)) === false, 'ladder 0007 mojibake');
+  equal(ladder6.status, 'needs-review');
+  equal(ladder7Exists, false);
 });
 
 await test('aday dosyalari, canonical problem JSON ve index semasi degismez', async () => {

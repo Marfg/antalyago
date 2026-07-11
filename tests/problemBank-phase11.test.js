@@ -127,12 +127,16 @@ await test('0009 escape-line judgment previews safely and the follow-up line sti
   assert.equal(candidate.task.answer, true);
 });
 
-await test('0006 redesign-needed and 0007 exploratory record stay untouched in their current roles', async () => {
+await test('0006 redesign-needed stays untouched and 0007 is no longer expected', async () => {
   const c0006 = await readJson('content/problem-bank/candidates/items/candidate-fib-b2-ladder-intro-0006.json');
-  const c0007 = await readJson('content/problem-bank/candidates/items/candidate-fib-b2-ladder-intro-0007.json');
+  let c0007Exists = true;
+  try {
+    await fs.access(path.join(ROOT, 'content/problem-bank/candidates/items/candidate-fib-b2-ladder-intro-0007.json'));
+  } catch {
+    c0007Exists = false;
+  }
+
   assert.equal(c0006.pedagogy.reviewDecision, 'redesign');
   assert.equal(c0006.status, 'needs-review');
-  assert.equal(c0007.status, 'needs-review');
-  assert.equal(c0007.pedagogy.reviewDecision, 'keep');
-  assert.equal(c0007.curriculum.skill, 'ladder-intro');
+  assert.equal(c0007Exists, false);
 });
