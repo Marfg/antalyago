@@ -110,7 +110,7 @@ await test('0008 first follow move is legal and narrows the target group', async
   assert.deepEqual(groupLiberties(result.newState, 4, 4), ['5,4']);
 });
 
-await test('0009 escape-line judgment previews safely and the follow-up line still narrows', async () => {
+await test('0009 escape-line move selection previews safely and the follow-up line still narrows', async () => {
   const candidate = await readJson(NEW_FILES[1]);
   const doc = buildStudioDocument(candidate);
   assert.equal(doc.studioVersion, '1.1.0');
@@ -123,8 +123,16 @@ await test('0009 escape-line judgment previews safely and the follow-up line sti
   const result = applyMove(board, 4, 3, 'black');
   assert.equal(result.captured.length, 0);
   assert.deepEqual(groupLiberties(result.newState, 4, 4), ['5,4']);
-  assert.equal(candidate.task.expectedAnswer, true);
-  assert.equal(candidate.task.answer, true);
+  assert.equal(candidate.task.type, 'construct');
+  assert.equal(candidate.task.answerPolicy, 'single_point_selection');
+  assert.deepEqual(candidate.task.expectedAnswer, {
+    color: 'black',
+    move: { x: 4, y: 3 },
+  });
+  assert.deepEqual(candidate.task.answer, {
+    color: 'black',
+    move: { x: 4, y: 3 },
+  });
 });
 
 await test('0006 redesign-needed stays untouched and 0007 is no longer expected', async () => {

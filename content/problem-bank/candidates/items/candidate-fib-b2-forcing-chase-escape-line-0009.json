@@ -68,12 +68,12 @@
       {
         "x": 4,
         "y": 4,
-        "label": "hedef"
+        "label": "kaçış"
       },
       {
         "x": 5,
         "y": 4,
-        "label": "kaçış"
+        "label": "ka???"
       },
       {
         "x": 4,
@@ -83,12 +83,24 @@
     ]
   },
   "task": {
-    "type": "judgment",
-    "prompt": "Bu kaçış hattı siyahın takibiyle daralıyor mu?",
-    "expectedAnswer": true,
-    "answer": true,
-    "answerPolicy": "binary_judgement",
-    "solution": "Kaçış hattı açık görünse de siyahın takip hamlesi hattı daraltır; beyazın özgür alanı genişlemez. Bu nedenle pozisyon takip hattı pratiği için uygundur."
+    "type": "construct",
+    "prompt": "Beyazın kaçış hattını daraltan siyah hamle hangisidir?",
+    "expectedAnswer": {
+      "color": "black",
+      "move": {
+        "x": 4,
+        "y": 3
+      }
+    },
+    "answer": {
+      "color": "black",
+      "move": {
+        "x": 4,
+        "y": 3
+      }
+    },
+    "answerPolicy": "single_point_selection",
+    "solution": "Siyahın (4,3) hamlesi beyazın kaçış hattını daraltır; beyazın özgür alanı genişlemez. Bu alıştırma merdiven değil, takip hattını görme çalışmasıdır."
   },
   "review": {
     "required": true,
