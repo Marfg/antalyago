@@ -147,38 +147,117 @@ async function launchElectronSmoke(baseDir) {
   });
 }
 
-async function launchChromiumFallback(baseDir, bootFixture) {
-  const browser = await chromium.launch({
+const FALLBACK_CANDIDATES = [
+  {
+    label: 'env:PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH',
+    executablePath: () => {
+      const value = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+      return value && value.trim() ? value.trim() : null;
+    },
+  },
+  {
+    label: 'chrome:x64',
+    executablePath: () => 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+  },
+  {
+    label: 'chrome:x86',
+    executablePath: () => 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+  },
+  {
+    label: 'edge:x64',
+    executablePath: () => 'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
+  },
+  {
+    label: 'edge:x86',
+    executablePath: () => 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+  },
+  {
+    label: 'chrome:channel',
+    channel: 'chrome',
+  },
+  {
+    label: 'edge:channel',
+    channel: 'msedge',
+  },
+  {
+    label: 'playwright:default',
+    executablePath: () => null,
+  },
+];
+
+async function candidateExecutableExists(executablePath) {
+  if (!executablePath) return true;
+  try {
+    await fs.access(executablePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function launchChromiumFallback(baseDir, bootFixture, pageUrl) {
+  const launchOptions = {
     headless: true,
     args: ['--allow-file-access-from-files'],
-  });
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  await page.addInitScript(({ boot, candidate, summary, document }) => {
-    window.studioAPI = {
-      boot: async () => boot,
-      getVersion: async () => '0.0.0-test',
-      getSettings: async () => boot.settings,
-      chooseWorkspaceFolder: async () => ({ canceled: false, workspaceFolder: boot.settings.workspaceFolder }),
-      newDocument: async () => ({ document }),
-      openDocument: async () => ({ document }),
-      openFilePath: async () => ({ document }),
-      saveDocument: async nextDocument => ({ document: nextDocument }),
-      saveDocumentAs: async nextDocument => ({ document: nextDocument, filePath: null }),
-      listDocuments: async () => boot.documents,
-      validateDocument: async () => ({ valid: true, errors: [], warnings: [] }),
-      setContentProducerMode: async enabled => ({ enabled }),
-      listCandidates: async () => ({ ok: true, items: [summary] }),
-      openCandidatePreview: async () => ({ ok: true, candidate, summary, document, validation: { valid: true, errors: [], warnings: [] }, readOnly: true }),
-      openCandidateDocument: async () => ({ ok: true, candidate, summary, document, validation: { valid: true, errors: [], warnings: [] }, readOnly: false }),
-      onDocumentOpened: () => () => {},
-      onWorkspaceChanged: () => () => {},
-    };
-  }, bootFixture);
-  await page.goto(htmlUrl);
-  return { browser, page };
+  };
+  const attempts = [];
+  for (const candidate of FALLBACK_CANDIDATES) {
+    const executablePath = typeof candidate.executablePath === 'function' ? candidate.executablePath() : null;
+    const channel = candidate.channel ?? null;
+    if (!executablePath && !channel && candidate.label !== 'playwright:default') {
+      attempts.push({ label: candidate.label, executablePath: null, skipped: 'unset' });
+      continue;
+    }
+    if (executablePath && !(await candidateExecutableExists(executablePath))) {
+      attempts.push({ label: candidate.label, executablePath, skipped: 'missing' });
+      continue;
+    }
+    try {
+      const browser = executablePath
+        ? await chromium.launch({ ...launchOptions, executablePath })
+        : channel
+          ? await chromium.launch({ ...launchOptions, channel })
+          : await chromium.launch(launchOptions);
+      console.log('studio-candidate-electron.test.js: chromium fallback ' + candidate.label + (executablePath ? ' -> ' + executablePath : channel ? ' -> channel:' + channel : ' -> playwright default'));
+      const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+      await page.addInitScript(({ boot, candidate, summary, document }) => {
+        window.studioAPI = {
+          boot: async () => boot,
+          getVersion: async () => '0.0.0-test',
+          getSettings: async () => boot.settings,
+          chooseWorkspaceFolder: async () => ({ canceled: false, workspaceFolder: boot.settings.workspaceFolder }),
+          newDocument: async () => ({ document }),
+          openDocument: async () => ({ document }),
+          openFilePath: async () => ({ document }),
+          saveDocument: async nextDocument => ({ document: nextDocument }),
+          saveDocumentAs: async nextDocument => ({ document: nextDocument, filePath: null }),
+          listDocuments: async () => boot.documents,
+          validateDocument: async () => ({ valid: true, errors: [], warnings: [] }),
+          setContentProducerMode: async enabled => ({ enabled }),
+          listCandidates: async () => ({ ok: true, items: [summary] }),
+          openCandidatePreview: async () => ({ ok: true, candidate, summary, document, validation: { valid: true, errors: [], warnings: [] }, readOnly: true }),
+          openCandidateDocument: async () => ({ ok: true, candidate, summary, document, validation: { valid: true, errors: [], warnings: [] }, readOnly: false }),
+          onDocumentOpened: () => () => {},
+          onWorkspaceChanged: () => () => {},
+        };
+      }, bootFixture);
+      await page.goto(pageUrl, { waitUntil: 'domcontentloaded' });
+      return { browser, page, launchInfo: { label: candidate.label, executablePath: executablePath ?? null, attempts } };
+    } catch (error) {
+      attempts.push({
+        label: candidate.label,
+        executablePath: executablePath ?? null,
+        error: String(error?.message || error),
+      });
+      continue;
+    }
+  }
+  const details = attempts.map(item => item.label + (item.executablePath ? ' (' + item.executablePath + ')' : '') + ': ' + (item.error ?? item.skipped)).join(' | ');
+  throw new Error('All Chromium fallback launches failed: ' + details);
 }
 
 async function main() {
+
   const baseDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agstudio-candidate-electron-'));
   const beforeHash = await sha256File(candidatePath);
   const candidateFixture = await loadCandidateFixture();
@@ -232,7 +311,7 @@ async function main() {
     }
   } catch (error) {
     console.warn(`Electron smoke failed, falling back to Chromium harness: ${error?.message ?? error}`);
-    const fallback = await launchChromiumFallback(baseDir, bootFixture);
+    const fallback = await launchChromiumFallback(baseDir, bootFixture, htmlUrl);
     browser = fallback.browser;
     page = fallback.page;
     try {
