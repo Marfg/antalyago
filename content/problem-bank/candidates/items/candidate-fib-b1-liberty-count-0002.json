@@ -71,7 +71,7 @@
     "compatible": true,
     "documentRef": null,
     "proposedStudioDocument": {
-      "title": "Nefes sayma aday ?nizlemesi",
+      "title": "Nefes sayma aday önizlemesi",
       "kind": "problem-candidate"
     }
   },
@@ -91,7 +91,7 @@
   "pedagogy": {
     "useCase": "intro-card",
     "difficulty": "intro",
-    "reviewDecision": "revise",
-    "reviewNotes": "Notlandırılmış değerlendirme değil; ilk nefes sayma alıştırması olarak kullanılmalı."
+    "reviewDecision": "keep",
+    "reviewNotes": "İlk nefes sayma ısınması; notlandırılmış değerlendirme değil, köşe taşının iki nefesini görsel olarak fark ettiren giriş kartı."
   }
 }

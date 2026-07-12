@@ -24,7 +24,7 @@ const TURKISH_VISIBLE_WORDS = ['K\u00f6\u015fe', 'ta\u015f', 'nefes', 'kesi\u015
 const NO_MOJI_REGEX = /[\uFFFD\u00c3\u00c4\u00c5\u00d0]/;
 const REQUIRED_KEYWORDS = {
   'candidate-fib-b1-liberty-count-0002': ['K\u00f6\u015fe', 'ta\u015f', 'nefes'],
-  'candidate-fib-b1-capture-0003': ['ta\u015f', 'nefes'],
+  'candidate-fib-b1-capture-0003': ['ta\u015f', 'nefes', 'yakala'],
   'candidate-fib-b2-atari-0004': ['A\u015fa\u011f\u0131daki', 'nefes'],
   'candidate-fib-b2-connect-cut-0005': ['g\u00fcvenli', 'kesi\u015fim'],
   'candidate-fib-b2-ladder-intro-0006': ['Ka\u00e7\u0131\u015f\u0131', 'devam'],
@@ -33,12 +33,12 @@ const EXPECTED_PEDAGOGY = {
   'candidate-fib-b1-liberty-count-0002': {
     useCase: 'intro-card',
     difficulty: 'intro',
-    reviewDecision: 'revise',
+    reviewDecision: 'keep',
   },
   'candidate-fib-b1-capture-0003': {
     useCase: 'guided-practice',
     difficulty: 'intro',
-    reviewDecision: 'revise',
+    reviewDecision: 'keep',
   },
   'candidate-fib-b2-atari-0004': {
     useCase: 'guided-practice',
@@ -129,6 +129,13 @@ await test('5 yeni aday schema/validation ve katalog sozlesmesini gecer', async 
     equal(candidate.pedagogy.difficulty, EXPECTED_PEDAGOGY[candidate.candidateId].difficulty);
     equal(candidate.pedagogy.reviewDecision, EXPECTED_PEDAGOGY[candidate.candidateId].reviewDecision);
     ok(typeof candidate.pedagogy.reviewNotes === 'string' && candidate.pedagogy.reviewNotes.trim().length > 0);
+    if (candidate.candidateId === 'candidate-fib-b1-liberty-count-0002') {
+      ok(candidate.pedagogy.reviewNotes.includes('gıriş') || candidate.pedagogy.reviewNotes.includes('ısınma'), '0002 reviewNotes should mention giri?/?s?nma');
+    }
+    if (candidate.candidateId === 'candidate-fib-b1-capture-0003') {
+      ok(/son nefes/i.test(candidate.task.solution));
+      ok(/yakalar?|yakalam/i.test(candidate.task.solution));
+    }
     ok(Array.isArray(candidate.review.checklist));
     equal(NO_MOJI_REGEX.test(candidate.task.prompt), false, 'prompt mojibake');
     equal(NO_MOJI_REGEX.test(candidate.task.solution), false, 'solution mojibake');

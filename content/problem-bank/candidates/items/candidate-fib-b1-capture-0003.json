@@ -76,7 +76,7 @@
       "y": 2
     },
     "answerPolicy": "single_point_selection",
-    "solution": "Alt kesişimde oynanan hamle beyaz grubun son nefesini kapatır ve grubu yakalar."
+    "solution": "Bu hamle beyaz taşın son nefesini kapatır ve taşı yakalar."
   },
   "review": {
     "required": true,
@@ -93,7 +93,7 @@
     "compatible": true,
     "documentRef": null,
     "proposedStudioDocument": {
-      "title": "Ta? alma aday ?nizlemesi",
+      "title": "Taş alma aday önizlemesi",
       "kind": "problem-candidate"
     }
   },
@@ -113,7 +113,7 @@
   "pedagogy": {
     "useCase": "guided-practice",
     "difficulty": "intro",
-    "reviewDecision": "revise",
-    "reviewNotes": "Prompt yumuşatıldı; ilk capture adımı için daha az ipucu veriyor."
+    "reviewDecision": "keep",
+    "reviewNotes": "Guided-practice taş alma alıştırması; hedef son nefesi fark ettirmek ve hamle sonrası yakalamayı göstermek."
   }
 }
