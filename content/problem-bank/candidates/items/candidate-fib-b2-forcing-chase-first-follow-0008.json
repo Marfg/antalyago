@@ -79,7 +79,7 @@
   },
   "task": {
     "type": "choose-move",
-    "prompt": "İşaretli beyaz grubun kaçış hattını daraltan siyah hamle hangisidir?",
+    "prompt": "İşaretli takip hattını sürdüren ilk siyah hamleyi seç.",
     "expectedAnswer": {
       "color": "black",
       "move": {
@@ -95,7 +95,7 @@
       }
     },
     "answerPolicy": "single_move_choice",
-    "solution": "Siyah, beyazın kaçış yönünü takip ederek grubun özgür alanını daraltır. Bu alıştırma takip hattını görmeyi öğretir."
+    "solution": "Bu hamle işaretli takip hattını sürdürür, beyaz grubun kaçış alanını daraltır ve grubu tek nefese indirir."
   },
   "review": {
     "required": true,

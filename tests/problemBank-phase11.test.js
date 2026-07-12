@@ -30,6 +30,7 @@ const BASE_0009 = [
   { color: 'black', x: 6, y: 5 },
 ];
 const NO_MOJI_REGEX = /[\uFFFD\u00c3\u00c4\u00c5\u00d0]/;
+const NO_QUESTION_REGEX = /\?/;
 
 function makeBoard(stones) {
   const board = new BoardState(9);
@@ -47,6 +48,29 @@ async function readJson(relativePath) {
   return JSON.parse(raw.replace(/^\uFEFF/, ''));
 }
 
+const EXPECTED_SOURCE = {
+  sourceId: 'falling-in-love-with-baduk',
+  locator: {
+    type: 'pdf-page',
+    value: 22,
+  },
+  usage: 'concept_reference',
+};
+
+const EXPECTED_RIGHTS = {
+  canPublish: false,
+  needsRightsReview: true,
+  sourceRightsSnapshot: {
+    licenseStatus: 'permission-required',
+    rightsReviewRequired: true,
+    distributionAllowed: false,
+    allowedUse: 'reference-only',
+    distributionScope: 'none',
+    verificationLevel: 'page-reference-only',
+    rightsNote: 'No redistributable license was established in this phase.',
+  },
+};
+
 function assertNoMojibake(candidate) {
   const text = [
     candidate.extraction?.notes,
@@ -54,19 +78,22 @@ function assertNoMojibake(candidate) {
     candidate.task?.solution,
   ].join(' ');
   assert.equal(NO_MOJI_REGEX.test(text), false, `${candidate.candidateId} mojibake`);
+  assert.equal(NO_QUESTION_REGEX.test(text), false, `${candidate.candidateId} visible text contains ?`);
   assert.equal(candidate.task.prompt.includes('ladder'), false, `${candidate.candidateId} prompt ladder leak`);
   assert.equal(candidate.task.prompt.includes('merdiven'), false, `${candidate.candidateId} prompt merdiven leak`);
 }
 
+function assertMarkerTextClean(candidate) {
+  const markerText = candidate.board.markers.map(marker => marker.label).join(' ');
+  assert.equal(NO_MOJI_REGEX.test(markerText), false, `${candidate.candidateId} marker mojibake`);
+  assert.equal(NO_QUESTION_REGEX.test(markerText), false, `${candidate.candidateId} marker visible text contains ?`);
+}
+
 function assertCommonCandidateShape(candidate) {
   assert.equal(candidate.status, 'needs-review');
-  assert.equal(candidate.source.sourceId, 'falling-in-love-with-baduk');
-  assert.equal(candidate.source.locator.type, 'pdf-page');
-  assert.equal(candidate.source.locator.value, 22);
-  assert.equal(candidate.source.usage, 'concept_reference');
+  assert.deepEqual(candidate.source, EXPECTED_SOURCE);
   assert.equal(candidate.board.size, 9);
-  assert.equal(candidate.rights.canPublish, false);
-  assert.equal(candidate.rights.needsRightsReview, true);
+  assert.deepEqual(candidate.rights, EXPECTED_RIGHTS);
   assert.ok(candidate.extraction.notes.trim().length > 0);
   assert.ok(candidate.task.prompt.trim().length > 0);
   assert.ok(candidate.task.solution.trim().length > 0);
@@ -94,6 +121,7 @@ await test('0008 and 0009 validate, stay review-only, and match the forcing-chas
     assert.ok(validation.valid, validation.issues.map(issue => issue.code).join(', '));
     assertCommonCandidateShape(candidate);
     assertNoMojibake(candidate);
+    assertMarkerTextClean(candidate);
     assert.equal(candidate.pedagogy.useCase === 'guided-practice' || candidate.pedagogy.useCase === 'drill', true);
     assert.equal(candidate.pedagogy.reviewDecision, 'keep');
     assert.ok(candidate.pedagogy.reviewNotes.trim().length > 0);
@@ -102,12 +130,23 @@ await test('0008 and 0009 validate, stay review-only, and match the forcing-chas
 });
 
 await test('0008 first follow move is legal and narrows the target group', async () => {
+  const candidate = await readJson(NEW_FILES[0]);
   const board = makeBoard(BASE_0008);
   assert.deepEqual(groupLiberties(board, 4, 4), ['4,3', '5,4']);
   assert.deepEqual(isValidMove(board, 4, 3, 'black'), { valid: true });
   const result = applyMove(board, 4, 3, 'black');
   assert.equal(result.captured.length, 0);
   assert.deepEqual(groupLiberties(result.newState, 4, 4), ['5,4']);
+  assert.equal(candidate.task.type, 'choose-move');
+  assert.ok(candidate.task.prompt.includes('takip hatt\u0131'));
+  assert.equal(candidate.task.prompt.includes('?'), false);
+  assert.ok(candidate.task.solution.includes('takip hatt\u0131n\u0131'));
+  assert.equal(candidate.task.solution.includes('?'), false);
+  assert.ok(candidate.board.markers.some(marker => marker.label === 'takip'));
+  assert.equal(candidate.board.markers.some(marker => marker.label.includes('?')), false);
+  assert.equal(candidate.pedagogy.useCase, 'guided-practice');
+  assert.equal(candidate.pedagogy.difficulty, 'intro');
+  assert.equal(candidate.pedagogy.reviewDecision, 'keep');
 });
 
 await test('0009 escape-line move selection previews safely and the follow-up line still narrows', async () => {
@@ -125,6 +164,18 @@ await test('0009 escape-line move selection previews safely and the follow-up li
   assert.deepEqual(groupLiberties(result.newState, 4, 4), ['5,4']);
   assert.equal(candidate.task.type, 'construct');
   assert.equal(candidate.task.answerPolicy, 'single_point_selection');
+  assert.ok(candidate.task.prompt.includes('takip hamlesini'));
+  assert.ok(candidate.task.prompt.includes('ka\u00e7\u0131\u015f hatt\u0131'));
+  assert.equal(candidate.task.prompt.includes('?'), false);
+  assert.ok(candidate.task.solution.includes('ka\u00e7\u0131\u015f hatt\u0131'));
+  assert.ok(candidate.task.solution.includes('takip bask\u0131s\u0131'));
+  assert.equal(candidate.task.solution.includes('?'), false);
+  assert.deepEqual(candidate.board.markers.map(marker => marker.label), ['hedef', 'ka\u00e7\u0131\u015f', 'takip']);
+  assert.ok(candidate.board.markers.some(marker => marker.label === 'ka\u00e7\u0131\u015f'));
+  assert.equal(candidate.board.markers.some(marker => marker.label.includes('?')), false);
+  assert.equal(candidate.pedagogy.useCase, 'drill');
+  assert.equal(candidate.pedagogy.difficulty, 'easy');
+  assert.equal(candidate.pedagogy.reviewDecision, 'keep');
   assert.deepEqual(candidate.task.expectedAnswer, {
     color: 'black',
     move: { x: 4, y: 3 },
@@ -147,4 +198,11 @@ await test('0006 redesign-needed stays untouched and 0007 is no longer expected'
   assert.equal(c0006.pedagogy.reviewDecision, 'redesign');
   assert.equal(c0006.status, 'needs-review');
   assert.equal(c0007Exists, false);
+  assert.deepEqual(c0006.source, {
+    sourceId: 'falling-in-love-with-baduk',
+    locator: { type: 'pdf-page', value: 22 },
+    usage: 'concept_reference',
+  });
+  assert.equal(c0006.rights.canPublish, false);
+  assert.equal(c0006.rights.needsRightsReview, true);
 });

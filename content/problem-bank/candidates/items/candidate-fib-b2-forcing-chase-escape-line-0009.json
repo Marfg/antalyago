@@ -68,12 +68,12 @@
       {
         "x": 4,
         "y": 4,
-        "label": "kaçış"
+        "label": "hedef"
       },
       {
         "x": 5,
         "y": 4,
-        "label": "ka???"
+        "label": "kaçış"
       },
       {
         "x": 4,
@@ -84,7 +84,7 @@
   },
   "task": {
     "type": "construct",
-    "prompt": "Beyazın kaçış hattını daraltan siyah hamle hangisidir?",
+    "prompt": "İşaretli kaçış hattını daraltan siyah takip hamlesini seç.",
     "expectedAnswer": {
       "color": "black",
       "move": {
@@ -100,7 +100,7 @@
       }
     },
     "answerPolicy": "single_point_selection",
-    "solution": "Siyahın (4,3) hamlesi beyazın kaçış hattını daraltır; beyazın özgür alanı genişlemez. Bu alıştırma merdiven değil, takip hattını görme çalışmasıdır."
+    "solution": "Siyah bu noktaya oynadığında işaretli kaçış hattı daralır; beyaz grup tek nefeste kalır ve takip baskısı sürer."
   },
   "review": {
     "required": true,
