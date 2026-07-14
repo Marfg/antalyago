@@ -42,6 +42,7 @@ async function main() {
   await testBoardAdapter();
   await testSecurityTexts();
   await testModeSelector();
+  await testMoveTreeVisual();
   console.log('studio-electron.test.js: ok');
 }
 
@@ -186,6 +187,85 @@ async function testModeSelector() {
   assert.ok(app.includes("activeMode: 'review'"), 'activeMode default review mevcut');
   assert.ok(app.includes('setActiveMode'), 'setActiveMode fonksiyonu mevcut');
   assert.ok(app.includes('renderModeSelector'), 'renderModeSelector fonksiyonu mevcut');
+}
+
+async function testMoveTreeVisual() {
+  // Saf düzen algoritması testleri (DOM gerektirmez)
+  function buildLayout(root) {
+    const pos = new Map();
+    function layout(node, c, r) {
+      pos.set(node.id, { c, r });
+      if (!node.children?.length) return r;
+      const pref = node.children.find(n => n.id === node.preferredChildId) ?? node.children[0];
+      const rest = node.children.filter(n => n !== pref);
+      let bot = layout(pref, c + 1, r);
+      for (const ch of rest) bot = layout(ch, c + 1, bot + 1);
+      return bot;
+    }
+    layout(root, 0, 0);
+    return pos;
+  }
+
+  // Test 1: tek zincir → hepsi satır 0'da
+  {
+    const r = { id: 'r', preferredChildId: 'a', children: [
+      { id: 'a', parentId: 'r', preferredChildId: 'b', children: [
+        { id: 'b', parentId: 'a', children: [] },
+      ]},
+    ]};
+    const pos = buildLayout(r);
+    assert.equal(pos.get('r').r, 0, 'kök satır 0');
+    assert.equal(pos.get('a').r, 0, 'tercih edilen çocuk satır 0');
+    assert.equal(pos.get('b').r, 0, 'ana hat sonu satır 0');
+    assert.equal(pos.get('r').c, 0, 'kök sütun 0');
+    assert.equal(pos.get('a').c, 1, 'a sütun 1');
+    assert.equal(pos.get('b').c, 2, 'b sütun 2');
+  }
+
+  // Test 2: varyasyon bir alt satıra iner
+  {
+    const r = { id: 'r', preferredChildId: 'a', children: [
+      { id: 'a', parentId: 'r', preferredChildId: null, children: [
+        { id: 'b', parentId: 'a', children: [] },
+        { id: 'c', parentId: 'a', children: [] },
+      ]},
+    ]};
+    const pos = buildLayout(r);
+    assert.equal(pos.get('b').r, 0, 'tercih edilen çocuk ana hatta');
+    assert.equal(pos.get('c').r, 1, 'varyasyon alt satıra iner');
+    assert.equal(pos.get('b').c, pos.get('c').c, 'aynı sütunda farklı satır');
+  }
+
+  // Test 3: preferredChildId ana hattı belirler
+  {
+    const r = { id: 'r', preferredChildId: 'main', children: [
+      { id: 'main', parentId: 'r', children: [] },
+      { id: 'var',  parentId: 'r', children: [] },
+    ]};
+    const mainline = new Set(['r']);
+    let cur = r;
+    while (cur?.preferredChildId) {
+      const child = cur.children?.find(n => n.id === cur.preferredChildId);
+      if (!child || mainline.has(child.id)) break;
+      mainline.add(child.id);
+      cur = child;
+    }
+    assert.ok(mainline.has('main'), 'preferred child ana hatta');
+    assert.ok(!mainline.has('var'), 'diğer child varyasyon');
+  }
+
+  // Test 4: app.mjs SVG ağacını oluşturur
+  const appSrc = await fs.readFile(path.join(root, 'desktop', 'renderer', 'app.mjs'), 'utf8');
+  assert.ok(appSrc.includes('buildMoveTreeSvg'), 'buildMoveTreeSvg fonksiyonu mevcut');
+  assert.ok(appSrc.includes('tree-node__stone'), 'SVG node sınıfları mevcut');
+  assert.ok(appSrc.includes("'Pas'"), "pass node için 'Pas' etiketi mevcut");
+  assert.ok(!appSrc.includes('renderTreeBranch'), 'eski renderTreeBranch kaldırıldı');
+  assert.ok(!appSrc.includes('move-tree-item__select'), 'eski liste elemanları kaldırıldı');
+
+  // Test 5: HTML canvas listesiz, data-node-id SVG'de
+  const htmlSrc = await fs.readFile(path.join(root, 'desktop', 'index.html'), 'utf8');
+  assert.ok(!htmlSrc.includes('data-move-tree-list'), 'eski liste elementi kaldırıldı');
+  assert.ok(htmlSrc.includes('data-move-tree-canvas'), 'SVG canvas container mevcut');
 }
 
 async function testSecurityTexts() {

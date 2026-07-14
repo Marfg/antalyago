@@ -64,7 +64,6 @@ const elements = {
   treePath: document.querySelector('[data-move-tree-path]'),
   treeViewport: document.querySelector('[data-move-tree-viewport]'),
   treeCanvas: document.querySelector('[data-move-tree-canvas]'),
-  treeList: document.querySelector('[data-move-tree-list]'),
   treeStatus: document.querySelector('[data-move-tree-status]'),
   treeZoomOut: document.querySelector('[data-move-tree-zoom-out]'),
   treeZoomIn: document.querySelector('[data-move-tree-zoom-in]'),
@@ -558,10 +557,135 @@ function renderMoveTree(moveTree) {
   elements.treeCanvas.style.transform = `scale(${state.treeZoom.toFixed(2)})`;
   elements.treeCanvas.style.transformOrigin = 'top left';
 
-  elements.treeList.replaceChildren(renderTreeBranch(root, mainlineIds, 0));
+  elements.treeCanvas.replaceChildren(buildMoveTreeSvg(root, mainlineIds));
 
   const activeNode = findMoveNode(root, state.selectedNodeId) ?? root;
-  elements.treeViewport.setAttribute('aria-activedescendant', `move-node-${activeNode.id}`);
+  elements.treeViewport.setAttribute('aria-activedescendant', `tree-node-${activeNode.id}`);
+}
+
+function buildMoveTreeSvg(root, mainlineIds) {
+  const R  = 12;   // node yarıçapı
+  const CW = 40;   // sütun genişliği
+  const RH = 46;   // satır yüksekliği
+  const P  = 12;   // kenar boşluğu
+  const ns = 'http://www.w3.org/2000/svg';
+
+  // 1. Düzen: her düğüme (sütun, satır) ata
+  const pos = new Map();
+  let mC = 0, mR = 0;
+
+  function layout(node, c, r) {
+    pos.set(node.id, { c, r });
+    mC = Math.max(mC, c);
+    mR = Math.max(mR, r);
+    if (!node.children?.length) return r;
+    const pref = node.children.find(n => n.id === node.preferredChildId) ?? node.children[0];
+    const rest = node.children.filter(n => n !== pref);
+    let bot = layout(pref, c + 1, r);
+    for (const ch of rest) bot = layout(ch, c + 1, bot + 1);
+    return bot;
+  }
+  layout(root, 0, 0);
+
+  // 2. Derinlik haritası (hamle numaraları için)
+  const dep = new Map();
+  const bfsQ = [[root, 0]];
+  while (bfsQ.length) {
+    const [n, d] = bfsQ.shift();
+    dep.set(n.id, d);
+    for (const ch of n.children ?? []) bfsQ.push([ch, d + 1]);
+  }
+
+  // 3. SVG oluştur
+  const W = P * 2 + (mC + 1) * CW;
+  const H = P * 2 + (mR + 1) * RH;
+
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', H);
+  svg.setAttribute('class', 'move-tree-svg');
+  svg.setAttribute('aria-hidden', 'true');
+
+  const eL = document.createElementNS(ns, 'g');
+  eL.setAttribute('class', 'tree-edges');
+  const nL = document.createElementNS(ns, 'g');
+  nL.setAttribute('class', 'tree-nodes');
+
+  const stk = [root];
+  while (stk.length) {
+    const node = stk.pop();
+    const p = pos.get(node.id);
+    if (!p) continue;
+
+    const cx = P + p.c * CW + R;
+    const cy = P + p.r * RH + R;
+    const active = node.id === state.selectedNodeId;
+    const main = mainlineIds.has(node.id);
+
+    // Kenar (parent'tan bu düğüme)
+    if (node.parentId) {
+      const pp = pos.get(node.parentId);
+      if (pp) {
+        const px = P + pp.c * CW + R;
+        const py = P + pp.r * RH + R;
+        const d = pp.r === p.r
+          ? `M${px},${py} L${cx},${cy}`
+          : `M${px},${py} H${px + Math.round(CW * 0.5)} V${cy} H${cx}`;
+        const ep = document.createElementNS(ns, 'path');
+        ep.setAttribute('d', d);
+        ep.setAttribute('class', `tree-edge ${main ? 'tree-edge--main' : 'tree-edge--var'}`);
+        eL.appendChild(ep);
+      }
+    }
+
+    // Düğüm grubu
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('class', `tree-node${active ? ' is-active' : ''}${main ? ' is-mainline' : ''}`);
+    g.setAttribute('data-node-id', node.id);
+    g.id = `tree-node-${node.id}`;
+    if (active) g.setAttribute('aria-current', 'true');
+    g.addEventListener('click', () => setActiveNode(node.id, {}));
+
+    // Aktif halka
+    const ring = document.createElementNS(ns, 'circle');
+    ring.setAttribute('cx', cx);
+    ring.setAttribute('cy', cy);
+    ring.setAttribute('r', R + 4);
+    ring.setAttribute('class', 'tree-node__ring');
+    g.appendChild(ring);
+
+    // Taş çemberi
+    const st = document.createElementNS(ns, 'circle');
+    st.setAttribute('cx', cx);
+    st.setAttribute('cy', cy);
+    st.setAttribute('r', R);
+    let sc = 'tree-node__stone';
+    if (node.id === 'root')         sc += ' tree-node__stone--root';
+    else if (node.move?.pass)       sc += ` tree-node__stone--pass tree-node__stone--${node.move.color || 'black'}`;
+    else                            sc += ` tree-node__stone--${node.move?.color || 'black'}`;
+    st.setAttribute('class', sc);
+    g.appendChild(st);
+
+    // Etiket
+    const tx = document.createElementNS(ns, 'text');
+    tx.setAttribute('x', cx);
+    tx.setAttribute('y', cy);
+    tx.setAttribute('text-anchor', 'middle');
+    tx.setAttribute('dominant-baseline', 'central');
+    const lc = ['tree-node__label'];
+    if (node.move?.color === 'white') lc.push('tree-node__label--white');
+    if (node.move?.pass)              lc.push('tree-node__label--pass');
+    tx.setAttribute('class', lc.join(' '));
+    tx.textContent = node.id === 'root' ? '●' : node.move?.pass ? 'Pas' : String(dep.get(node.id) ?? 0);
+    g.appendChild(tx);
+
+    nL.appendChild(g);
+    for (const ch of [...(node.children ?? [])].reverse()) stk.push(ch);
+  }
+
+  svg.appendChild(eL);
+  svg.appendChild(nL);
+  return svg;
 }
 
 function renderPathNode(node, index, total) {
@@ -573,54 +697,6 @@ function renderPathNode(node, index, total) {
   button.textContent = formatPathLabel(node, index, total);
   button.setAttribute('aria-pressed', String(node.id === state.selectedNodeId));
   return button;
-}
-
-function renderTreeBranch(node, mainlineIds, depth) {
-  const item = document.createElement('li');
-  item.className = 'move-tree-item';
-  item.id = `move-node-${node.id}`;
-  if (node.id === state.selectedNodeId) item.classList.add('is-active');
-  if (mainlineIds.has(node.id)) item.classList.add('is-mainline');
-
-  const header = document.createElement('div');
-  header.className = 'move-tree-item__header';
-
-  const select = document.createElement('button');
-  select.type = 'button';
-  select.className = 'move-tree-item__select';
-  select.dataset.nodeId = node.id;
-  select.textContent = formatNodeLabel(node, depth);
-  select.setAttribute('aria-pressed', String(node.id === state.selectedNodeId));
-  header.appendChild(select);
-
-  const meta = document.createElement('span');
-  meta.className = 'move-tree-item__meta';
-  meta.textContent = node.id === 'root'
-    ? 'Başlangıç formasyonu'
-    : `${humanizeMove(node.move)}${node.comment ? ` · ${node.comment}` : ''}`;
-  header.appendChild(meta);
-
-  item.appendChild(header);
-
-  if (node.annotations?.length) {
-    const note = document.createElement('p');
-    note.className = 'move-tree-item__note';
-    note.textContent = node.annotations
-      .map(a => typeof a === 'object' ? (a.type ?? 'annotation') : String(a))
-      .join(' · ');
-    item.appendChild(note);
-  }
-
-  if (node.children?.length) {
-    const list = document.createElement('ol');
-    list.className = 'move-tree-children';
-    for (const child of node.children) {
-      list.appendChild(renderTreeBranch(child, mainlineIds, depth + 1));
-    }
-    item.appendChild(list);
-  }
-
-  return item;
 }
 
 function renderSelectedNodeMetadata() {
@@ -894,15 +970,6 @@ function formatPathLabel(node, index, total) {
   const move = humanizeMove(node.move);
   const position = `${index}/${Math.max(total - 1, 1)}`;
   return `${position} · ${move}`;
-}
-
-function formatNodeLabel(node, depth) {
-  if (node.id === 'root') {
-    return 'Başlangıç formasyonu';
-  }
-  const move = humanizeMove(node.move);
-  const branch = depth === 1 ? 'Ana dal' : `Dal ${depth}`;
-  return `${branch} · ${move}`;
 }
 
 function humanizeMove(move) {
