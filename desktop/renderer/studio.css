@@ -359,9 +359,27 @@ textarea {
 
 .board-stage {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0.75rem;
   min-height: 0;
+}
+
+.mode-toolbar {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.mode-toolbar .button[aria-pressed="true"] {
+  background: var(--primary, #8969a2);
+  border-color: var(--primary, #8969a2);
+  color: var(--primary-text, #ffffff);
+}
+
+.mode-toolbar .button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .board-shell {

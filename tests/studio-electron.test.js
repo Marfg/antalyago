@@ -41,6 +41,7 @@ async function main() {
   await testFileHandlers();
   await testBoardAdapter();
   await testSecurityTexts();
+  await testModeSelector();
   console.log('studio-electron.test.js: ok');
 }
 
@@ -169,6 +170,22 @@ async function testBoardAdapter() {
   assert.equal(merged.regions[0].id, 'r1');
   assert.equal(merged.viewport.scale, 1.5);
   assert.equal(merged.customField, 'keep-me');
+}
+
+async function testModeSelector() {
+  const html = await fs.readFile(path.join(root, 'desktop', 'index.html'), 'utf8');
+  assert.ok(html.includes('data-studio-mode="review"'), 'body data-studio-mode="review" mevcut');
+  assert.ok(html.includes('data-mode-toolbar'), 'data-mode-toolbar mevcut');
+  assert.ok(html.includes('data-mode="review"'), 'review modu mevcut');
+  assert.ok(html.includes('data-mode="move"'), 'move modu mevcut');
+  assert.ok(html.includes('data-mode="setup"'), 'setup modu mevcut');
+  assert.ok(html.includes('data-mode="marker"'), 'marker modu mevcut');
+
+  const app = await fs.readFile(path.join(root, 'desktop', 'renderer', 'app.mjs'), 'utf8');
+  assert.ok(app.includes('VALID_MODES'), 'VALID_MODES sabiti mevcut');
+  assert.ok(app.includes("activeMode: 'review'"), 'activeMode default review mevcut');
+  assert.ok(app.includes('setActiveMode'), 'setActiveMode fonksiyonu mevcut');
+  assert.ok(app.includes('renderModeSelector'), 'renderModeSelector fonksiyonu mevcut');
 }
 
 async function testSecurityTexts() {

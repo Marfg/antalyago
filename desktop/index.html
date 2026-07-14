@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="./renderer/studio.css">
     <script type="module" src="./renderer/app.mjs"></script>
   </head>
-  <body>
+  <body data-studio-mode="review">
     <div class="studio-shell">
       <header class="studio-topbar" aria-label="Studio üst çubuğu">
         <div class="studio-brand">
@@ -76,6 +76,12 @@
         </aside>
 
         <section class="board-stage" aria-label="Tahta alanı">
+          <div class="mode-toolbar" role="group" aria-label="Tahta modu" data-mode-toolbar>
+            <button type="button" class="button secondary" data-mode="review" aria-pressed="true">İncele</button>
+            <button type="button" class="button secondary" data-mode="move" aria-pressed="false">Hamle</button>
+            <button type="button" class="button secondary" data-mode="setup" aria-pressed="false">Kurulum</button>
+            <button type="button" class="button secondary" data-mode="marker" aria-pressed="false">İşaret</button>
+          </div>
           <div class="board-shell">
             <div class="board-frame" id="studio-board" aria-label="Go tahtası"></div>
           </div>

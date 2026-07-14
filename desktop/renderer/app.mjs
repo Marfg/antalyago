@@ -18,6 +18,8 @@ import { BoardState } from '../../core/boardState.js';
 import { createStudioBoardAdapter } from '../ipc/studioBoardAdapter.js';
 import { initTheme } from '../../core/theme.js';
 
+const VALID_MODES = new Set(['review', 'move', 'setup', 'marker']);
+
 const boardRenderer = createBoardRenderer('svg');
 const boardAdapter = createStudioBoardAdapter(BoardState);
 const api = globalThis.studioAPI ?? createOfflineApi();
@@ -77,6 +79,7 @@ const elements = {
   treeY: document.querySelector('[data-move-tree-y]'),
   treeComment: document.querySelector('[data-move-tree-comment]'),
   treeAnnotations: document.querySelector('[data-move-tree-annotations]'),
+  modeBtns: Array.from(document.querySelectorAll('[data-mode-toolbar] [data-mode]')),
 };
 
 const state = {
@@ -94,6 +97,7 @@ const state = {
   needsWorkspaceSelection: false,
   selectedNodeId: 'root',
   treeZoom: 1,
+  activeMode: 'review',
 };
 
 initTheme({ root: document });
@@ -157,6 +161,7 @@ function setCandidateSession(candidate, document, { readOnly = true } = {}) {
   state.activeCandidateId = candidate?.candidateId ?? null;
   state.activeCandidate = candidate ?? null;
   state.candidateMode = readOnly ? 'preview' : 'working';
+  if (readOnly) state.activeMode = 'review';
   state.activeDocument = ensureMoveTreeDocument(document ?? createEmptyDocument());
   state.activeDocumentPath = null;
   state.selectedNodeId = state.activeDocument.activeNodeId ?? 'root';
@@ -301,6 +306,22 @@ async function openCandidateWorkingDocument(candidateId) {
 function renderCandidateState() {
   renderCandidateDetails();
   syncCandidateEditability();
+  renderModeSelector();
+}
+
+function setActiveMode(mode) {
+  state.activeMode = VALID_MODES.has(mode) ? mode : 'review';
+  renderModeSelector();
+}
+
+function renderModeSelector() {
+  const readOnly = isCandidatePreviewMode();
+  document.body.setAttribute('data-studio-mode', state.activeMode);
+  for (const btn of elements.modeBtns) {
+    const m = btn.dataset.mode;
+    btn.setAttribute('aria-pressed', String(m === state.activeMode));
+    btn.disabled = readOnly && m !== 'review';
+  }
 }
 
 function wireActions() {
@@ -431,6 +452,10 @@ function wireActions() {
   elements.treeY.addEventListener('input', () => renderTreeStatus('Hamle koordinatı hazır.'));
   elements.treeComment.addEventListener('input', () => updateSelectedNodeMetadata());
   elements.treeAnnotations.addEventListener('input', () => updateSelectedNodeMetadata());
+
+  for (const btn of elements.modeBtns) {
+    btn.addEventListener('click', () => setActiveMode(btn.dataset.mode));
+  }
 }
 function setActiveDocument(document, { keepSelection = false, filePath = null, preserveCandidateSession = false } = {}) {
   if (!preserveCandidateSession) {
@@ -521,6 +546,7 @@ function renderActiveDocument() {
   elements.boardCaption.textContent = candidateCaption || (validation.valid
     ? 'Hamle ağacı seçili düğüme göre tahtayı yeniden kurar; teknik JSON ve doğrulama ayrıntıları sağ panelde gizli tutulur.'
     : `Belge doğrulaması: ${validation.errors.length} hata, ${validation.warnings.length} uyarı.`);
+  renderModeSelector();
 }
 function renderMoveTree(moveTree) {
   const root = moveTree.root;
