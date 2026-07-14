@@ -454,7 +454,7 @@ function syncDocumentFromSelection() {
 
   doc.activeNodeId = state.selectedNodeId;
   const boardState = rebuildBoardState(doc.moveTree.root, state.selectedNodeId);
-  doc.board = boardAdapter.toDocumentBoard(boardState);
+  doc.board = boardAdapter.mergeDocumentBoard(doc.board, boardAdapter.toDocumentBoard(boardState));
   doc.moves = serializeMainlineMoves(doc.moveTree.root);
   state.activeDocument = doc;
 }

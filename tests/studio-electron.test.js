@@ -150,6 +150,25 @@ async function testBoardAdapter() {
   const roundTrip = adapter.toDocumentBoard(boardState);
   assert.equal(roundTrip.stones[0].color, 'black');
   assert.equal(roundTrip.turn, 'white');
+
+  const merged = adapter.mergeDocumentBoard(
+    {
+      size: 9,
+      markers: [{ id: 'm1', type: 'triangle', point: { x: 2, y: 2 } }],
+      regions: [{ id: 'r1', type: 'region', points: [{ x: 1, y: 1 }] }],
+      viewport: { x: 0, y: 0, scale: 1.5 },
+      customField: 'keep-me',
+    },
+    roundTrip,
+  );
+  assert.equal(merged.size, 9);
+  assert.equal(merged.turn, 'white');
+  assert.equal(merged.ko?.x, 1);
+  assert.equal(merged.stones[0].color, 'black');
+  assert.equal(merged.markers[0].id, 'm1');
+  assert.equal(merged.regions[0].id, 'r1');
+  assert.equal(merged.viewport.scale, 1.5);
+  assert.equal(merged.customField, 'keep-me');
 }
 
 async function testSecurityTexts() {

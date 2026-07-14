@@ -1,4 +1,18 @@
-﻿import { createBoardStateFromSnapshot, rebuildBoardState, serializeMainlineMoves } from '../../studio/model/moveTree.js';
+import { createBoardStateFromSnapshot, rebuildBoardState, serializeMainlineMoves } from '../../studio/model/moveTree.js';
+
+function cloneBoardValue(value) {
+  if (Array.isArray(value)) {
+    return value.map(cloneBoardValue);
+  }
+  if (value && typeof value === 'object') {
+    const cloned = {};
+    for (const [key, entry] of Object.entries(value)) {
+      cloned[key] = cloneBoardValue(entry);
+    }
+    return cloned;
+  }
+  return value;
+}
 
 export function createStudioBoardAdapter(BoardState) {
   if (typeof BoardState !== 'function') {
@@ -18,6 +32,16 @@ export function createStudioBoardAdapter(BoardState) {
     };
   }
 
+  function mergeDocumentBoard(existingBoard = {}, runtimeBoard = {}) {
+    const merged = cloneBoardValue(existingBoard ?? {});
+    for (const [key, value] of Object.entries(runtimeBoard ?? {})) {
+      if (value !== undefined) {
+        merged[key] = cloneBoardValue(value);
+      }
+    }
+    return merged;
+  }
+
   function fromMoveTree(moveTree, nodeId = moveTree?.activeNodeId ?? moveTree?.root?.id ?? 'root') {
     if (!moveTree?.root) {
       return fromDocumentBoard({});
@@ -34,6 +58,7 @@ export function createStudioBoardAdapter(BoardState) {
     fromDocumentBoard,
     fromMoveTree,
     toDocumentBoard,
+    mergeDocumentBoard,
     toMoveTreeMainline,
   };
 }
