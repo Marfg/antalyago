@@ -417,6 +417,12 @@ function wireActions() {
     setActiveNode(button.dataset.nodeId, { focus: false });
   });
 
+  elements.treePath.addEventListener('click', event => {
+    const chip = event.target.closest('[data-node-id]');
+    if (!chip) return;
+    setActiveNode(chip.dataset.nodeId, { focus: false });
+  });
+
   elements.treeViewport.addEventListener('keydown', event => {
     if (!state.activeDocument?.moveTree?.root) return;
     if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
@@ -644,7 +650,6 @@ function buildMoveTreeSvg(root, mainlineIds) {
     g.setAttribute('data-node-id', node.id);
     g.id = `tree-node-${node.id}`;
     if (active) g.setAttribute('aria-current', 'true');
-    g.addEventListener('click', () => setActiveNode(node.id, {}));
 
     // Aktif halka
     const ring = document.createElementNS(ns, 'circle');

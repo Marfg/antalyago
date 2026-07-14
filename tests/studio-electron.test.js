@@ -266,6 +266,16 @@ async function testMoveTreeVisual() {
   const htmlSrc = await fs.readFile(path.join(root, 'desktop', 'index.html'), 'utf8');
   assert.ok(!htmlSrc.includes('data-move-tree-list'), 'eski liste elementi kaldırıldı');
   assert.ok(htmlSrc.includes('data-move-tree-canvas'), 'SVG canvas container mevcut');
+
+  // Test 6: S2A — tek click yolu (per-node listener yok)
+  assert.ok(!appSrc.includes("g.addEventListener('click'"), 'SVG node başına per-node click listener yok');
+  assert.ok(appSrc.includes("elements.treeViewport.addEventListener('click'"), 'viewport delegated click mevcut');
+
+  // Test 7: S2A — breadcrumb chip'leri tıklanabilir
+  assert.ok(appSrc.includes("elements.treePath.addEventListener('click'"), 'treePath delegated click mevcut');
+  const treePathIdx = appSrc.indexOf("elements.treePath.addEventListener('click'");
+  const viewportIdx = appSrc.indexOf("elements.treeViewport.addEventListener('click'");
+  assert.ok(treePathIdx !== viewportIdx, 'treePath ve treeViewport ayrı listener\'lara sahip');
 }
 
 async function testSecurityTexts() {
