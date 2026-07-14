@@ -407,6 +407,10 @@ textarea {
   border-radius: 1rem;
 }
 
+[data-studio-mode="move"] .board-frame {
+  cursor: crosshair;
+}
+
 .board-caption {
   color: var(--text-secondary, #c7b2d6);
   font-size: 0.92rem;

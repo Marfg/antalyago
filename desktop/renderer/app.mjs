@@ -461,6 +461,8 @@ function wireActions() {
   for (const btn of elements.modeBtns) {
     btn.addEventListener('click', () => setActiveMode(btn.dataset.mode));
   }
+
+  elements.board.addEventListener('click', addMoveFromBoardClick);
 }
 function setActiveDocument(document, { keepSelection = false, filePath = null, preserveCandidateSession = false } = {}) {
   if (!preserveCandidateSession) {
@@ -750,6 +752,42 @@ function updateSelectedNodeMetadata() {
   syncDocumentFromSelection();
   renderActiveDocument();
 }
+function boardClickCoord(event, boardEl, size) {
+  const svg = boardEl.querySelector('svg');
+  if (!svg) return null;
+  const rect = svg.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return null;
+  const VBOX = 360, PAD = 24, GRID = 312;
+  const svgX = (event.clientX - rect.left) / rect.width  * VBOX;
+  const svgY = (event.clientY - rect.top)  / rect.height * VBOX;
+  const cellSize = GRID / (size - 1);
+  const gx = Math.round((svgX - PAD) / cellSize);
+  const gy = Math.round((svgY - PAD) / cellSize);
+  if (gx < 0 || gx >= size || gy < 0 || gy >= size) return null;
+  return { x: gx, y: gy };
+}
+
+function addMoveFromBoardClick(event) {
+  if (state.activeMode !== 'move') return;
+  const doc = state.activeDocument;
+  if (!doc?.moveTree?.root) return;
+  if (isCandidatePreviewMode()) return;
+  const boardState = rebuildBoardState(doc.moveTree.root, state.selectedNodeId);
+  const coord = boardClickCoord(event, elements.board, boardState.size);
+  if (!coord) return;
+  const parent = findMoveNode(doc.moveTree.root, state.selectedNodeId) ?? doc.moveTree.root;
+  const result = addChildMove(doc.moveTree.root, parent.id, { color: boardState.turn, x: coord.x, y: coord.y });
+  if (!result.ok || !result.node) {
+    renderTreeStatus(moveErrorMessage(result.reason));
+    return;
+  }
+  doc.moveTree.activeNodeId = result.node.id;
+  state.selectedNodeId = result.node.id;
+  syncDocumentFromSelection();
+  renderActiveDocument();
+  renderTreeStatus(`Hamle eklendi: ${humanizeMove(result.node.move)}`);
+}
+
 function addTreeMoveFromForm() {
   const doc = state.activeDocument;
   if (!doc?.moveTree?.root) return;

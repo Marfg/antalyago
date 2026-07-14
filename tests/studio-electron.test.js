@@ -43,6 +43,7 @@ async function main() {
   await testSecurityTexts();
   await testModeSelector();
   await testMoveTreeVisual();
+  await testMoveModeClick();
   console.log('studio-electron.test.js: ok');
 }
 
@@ -276,6 +277,75 @@ async function testMoveTreeVisual() {
   const treePathIdx = appSrc.indexOf("elements.treePath.addEventListener('click'");
   const viewportIdx = appSrc.indexOf("elements.treeViewport.addEventListener('click'");
   assert.ok(treePathIdx !== viewportIdx, 'treePath ve treeViewport ayrı listener\'lara sahip');
+}
+
+async function testMoveModeClick() {
+  // 1. Saf koordinat çözümü matematigi (DOM gerektirmez)
+  function resolveCoord(clientX, clientY, rect, size) {
+    const VBOX = 360, PAD = 24, GRID = 312;
+    const svgX = (clientX - rect.left) / rect.width  * VBOX;
+    const svgY = (clientY - rect.top)  / rect.height * VBOX;
+    const cellSize = GRID / (size - 1);
+    const gx = Math.round((svgX - PAD) / cellSize);
+    const gy = Math.round((svgY - PAD) / cellSize);
+    if (gx < 0 || gx >= size || gy < 0 || gy >= size) return null;
+    return { x: gx, y: gy };
+  }
+  const r = { left: 0, top: 0, width: 300, height: 300 };
+
+  // Sol üst köşe (0,0): svgX=24→clientX=20
+  assert.deepEqual(resolveCoord(20, 20, r, 9), { x: 0, y: 0 }, '(0,0) köşesi');
+
+  // Merkez (4,4) 9x9: svgX=180→clientX=150
+  assert.deepEqual(resolveCoord(150, 150, r, 9), { x: 4, y: 4 }, '(4,4) merkez');
+
+  // Sağ alt (8,8) 9x9: svgX=336→clientX=280
+  assert.deepEqual(resolveCoord(280, 280, r, 9), { x: 8, y: 8 }, '(8,8) sağ alt köşe');
+
+  // Tahta dışı — sol üst padding öncesi
+  assert.equal(resolveCoord(0, 0, r, 9), null, 'tahta dışı null döner');
+
+  // 19x19 merkez (9,9): cell=312/18=17.33, svgX=24+9*17.33≈180
+  assert.deepEqual(resolveCoord(150, 150, r, 19), { x: 9, y: 9 }, '19x19 merkez (9,9)');
+
+  // 2. Kaynak doğrulaması
+  const appSrc = await fs.readFile(path.join(root, 'desktop', 'renderer', 'app.mjs'), 'utf8');
+  assert.ok(appSrc.includes('boardClickCoord'), 'boardClickCoord fonksiyonu mevcut');
+  assert.ok(appSrc.includes('addMoveFromBoardClick'), 'addMoveFromBoardClick fonksiyonu mevcut');
+  assert.ok(appSrc.includes("elements.board.addEventListener('click'"), 'board click listener bağlı');
+
+  // Guard sözleşmeleri fonksiyon gövdesinde
+  const fnStart = appSrc.indexOf('function addMoveFromBoardClick');
+  const fnEnd = appSrc.indexOf('\nfunction ', fnStart + 1);
+  const fnBody = appSrc.slice(fnStart, fnEnd > 0 ? fnEnd : fnStart + 800);
+  assert.ok(fnBody.includes("state.activeMode !== 'move'"), 'move mode guard mevcut');
+  assert.ok(fnBody.includes('isCandidatePreviewMode'), 'candidate preview guard mevcut');
+  assert.ok(fnBody.includes('boardClickCoord'), 'koordinat çözümü çağrılıyor');
+
+  // 3. MoveTree model: ikinci hamle sibling varyasyon olarak ekleniyor
+  const { createDocument } = await import('../studio/model/studioDocument.js');
+  const { addChildMove: acm, rebuildBoardState: rbs } = await import('../studio/model/moveTree.js');
+  const doc = createDocument({ id: 'click-test', title: 'Click Test', slug: 'click-test' });
+  const treeRoot = doc.moveTree.root;
+
+  const r1 = acm(treeRoot, 'root', { color: 'black', x: 3, y: 4 });
+  assert.ok(r1.ok, 'ilk hamle eklendi');
+  assert.equal(treeRoot.children.length, 1, 'bir child');
+
+  // İkinci farklı hamle — sibling varyasyon
+  const r2 = acm(treeRoot, 'root', { color: 'black', x: 4, y: 4 });
+  assert.ok(r2.ok, 'ikinci hamle eklendi');
+  assert.equal(treeRoot.children.length, 2, 'iki child — sibling varyasyon');
+  assert.equal(treeRoot.preferredChildId, r1.node.id, 'preferredChild ilk hamlede kaldı');
+
+  // Hamle sonrası sıra değişimi
+  const bs1 = rbs(treeRoot, r1.node.id);
+  assert.equal(bs1.turn, 'white', 'siyah sonrası sıra beyazda');
+
+  // Dolu kesişime hamle illegal
+  const rIllegal = acm(treeRoot, r1.node.id, { color: 'white', x: 3, y: 4 });
+  assert.ok(!rIllegal.ok, 'dolu kesişim reddedilir');
+  assert.equal(rIllegal.reason, 'OCCUPIED', 'OCCUPIED hatası');
 }
 
 async function testSecurityTexts() {
