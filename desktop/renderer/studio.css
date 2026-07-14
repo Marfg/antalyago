@@ -713,13 +713,24 @@ textarea {
 .tree-node__ring {
   fill: none;
   stroke: transparent;
-  stroke-width: 2;
-  transition: stroke 120ms ease, fill 120ms ease;
+  stroke-width: 2.5;
+  transition: stroke 100ms ease, fill 100ms ease;
+}
+
+.tree-node:hover .tree-node__ring {
+  stroke: rgba(199, 178, 214, 0.45);
+  fill: rgba(199, 178, 214, 0.08);
 }
 
 .tree-node.is-active .tree-node__ring {
   stroke: #5fa8d3;
-  fill: rgba(95, 168, 211, 0.18);
+  stroke-width: 3;
+  fill: rgba(95, 168, 211, 0.2);
+}
+
+.move-tree-viewport:focus-within .tree-node.is-active .tree-node__ring {
+  stroke: #7fc4e8;
+  stroke-width: 3.5;
 }
 
 .tree-node__stone--black {
@@ -764,19 +775,39 @@ textarea {
 
 .tree-edge {
   fill: none;
-  stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
+.tree-edge--active-path {
+  stroke: rgba(95, 168, 211, 0.8);
+  stroke-width: 2.5;
+}
+
 .tree-edge--main {
-  stroke: rgba(199, 178, 214, 0.5);
+  stroke: rgba(199, 178, 214, 0.6);
+  stroke-width: 2;
 }
 
 .tree-edge--var {
-  stroke: rgba(199, 178, 214, 0.22);
+  stroke: rgba(199, 178, 214, 0.2);
+  stroke-width: 1;
   stroke-dasharray: 4 3;
 }
+
+/* ── Gösterge ─────────────────────────────────────────────────────── */
+.move-tree-legend {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-muted, #a99faf);
+  padding: 0.2rem 0.1rem 0;
+  flex-wrap: wrap;
+}
+
+.move-tree-legend__active { color: #5fa8d3; }
+.move-tree-legend__main   { color: rgba(199, 178, 214, 0.65); }
+.move-tree-legend__var    { color: rgba(199, 178, 214, 0.35); }
 
 @media (max-width: 1180px) {
   .move-tree-toolbar,

@@ -277,6 +277,15 @@ async function testMoveTreeVisual() {
   const treePathIdx = appSrc.indexOf("elements.treePath.addEventListener('click'");
   const viewportIdx = appSrc.indexOf("elements.treeViewport.addEventListener('click'");
   assert.ok(treePathIdx !== viewportIdx, 'treePath ve treeViewport ayrı listener\'lara sahip');
+
+  // Test 8: S3B — aktif yol kenarları ayrı katmanda
+  assert.ok(appSrc.includes('tree-edge--active-path'), 'aktif yol kenar sınıfı mevcut');
+  assert.ok(appSrc.includes('activePathIds'), 'activePathIds buildMoveTreeSvg\'ye geçiyor');
+  assert.ok(appSrc.includes("buildMoveTreeSvg(root, mainlineIds, activePathIds)"), 'üçüncü parametre geçiliyor');
+
+  // Test 9: S3B — aktif node scroll + tooltip
+  assert.ok(appSrc.includes('scrollIntoView'), 'aktif node scroll mevcut');
+  assert.ok(appSrc.includes("createElementNS(ns, 'title')"), 'SVG title tooltip mevcut');
 }
 
 async function testMoveModeClick() {

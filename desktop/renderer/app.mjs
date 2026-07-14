@@ -559,23 +559,30 @@ function renderMoveTree(moveTree) {
   const root = moveTree.root;
   const path = getMovePath(root, state.selectedNodeId);
   const mainlineIds = getMainlineIdSet(root);
+  const activePathIds = new Set(path.map(n => n.id));
   elements.treeSummary.textContent = `Hamle ağacı · ${countTreeNodes(root)} düğüm · ${countTreeBranches(root)} dal`;
 
   elements.treePath.replaceChildren(...path.map((node, index) => renderPathNode(node, index, path.length)));
   elements.treeCanvas.style.transform = `scale(${state.treeZoom.toFixed(2)})`;
   elements.treeCanvas.style.transformOrigin = 'top left';
 
-  elements.treeCanvas.replaceChildren(buildMoveTreeSvg(root, mainlineIds));
+  elements.treeCanvas.replaceChildren(buildMoveTreeSvg(root, mainlineIds, activePathIds));
 
   const activeNode = findMoveNode(root, state.selectedNodeId) ?? root;
   elements.treeViewport.setAttribute('aria-activedescendant', `tree-node-${activeNode.id}`);
+
+  // Aktif node görünür alana kaydır
+  requestAnimationFrame(() => {
+    const activeEl = elements.treeCanvas.querySelector('[aria-current="true"]');
+    if (activeEl) activeEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  });
 }
 
-function buildMoveTreeSvg(root, mainlineIds) {
-  const R  = 12;   // node yarıçapı
-  const CW = 40;   // sütun genişliği
-  const RH = 46;   // satır yüksekliği
-  const P  = 12;   // kenar boşluğu
+function buildMoveTreeSvg(root, mainlineIds, activePathIds) {
+  const R  = 13;   // node yarıçapı
+  const CW = 44;   // sütun genişliği
+  const RH = 50;   // satır yüksekliği
+  const P  = 14;   // kenar boşluğu
   const ns = 'http://www.w3.org/2000/svg';
 
   // 1. Düzen: her düğüme (sütun, satır) ata
@@ -614,9 +621,11 @@ function buildMoveTreeSvg(root, mainlineIds) {
   svg.setAttribute('class', 'move-tree-svg');
   svg.setAttribute('aria-hidden', 'true');
 
-  const eL = document.createElementNS(ns, 'g');
+  const eL  = document.createElementNS(ns, 'g');
   eL.setAttribute('class', 'tree-edges');
-  const nL = document.createElementNS(ns, 'g');
+  const eLp = document.createElementNS(ns, 'g');
+  eLp.setAttribute('class', 'tree-edges tree-edges--active-path');
+  const nL  = document.createElementNS(ns, 'g');
   nL.setAttribute('class', 'tree-nodes');
 
   const stk = [root];
@@ -629,6 +638,7 @@ function buildMoveTreeSvg(root, mainlineIds) {
     const cy = P + p.r * RH + R;
     const active = node.id === state.selectedNodeId;
     const main = mainlineIds.has(node.id);
+    const onActivePath = activePathIds?.has(node.id) ?? false;
 
     // Kenar (parent'tan bu düğüme)
     if (node.parentId) {
@@ -641,8 +651,9 @@ function buildMoveTreeSvg(root, mainlineIds) {
           : `M${px},${py} H${px + Math.round(CW * 0.5)} V${cy} H${cx}`;
         const ep = document.createElementNS(ns, 'path');
         ep.setAttribute('d', d);
-        ep.setAttribute('class', `tree-edge ${main ? 'tree-edge--main' : 'tree-edge--var'}`);
-        eL.appendChild(ep);
+        const isActivePath = onActivePath && (activePathIds?.has(node.parentId) ?? false);
+        ep.setAttribute('class', `tree-edge ${isActivePath ? 'tree-edge--active-path' : main ? 'tree-edge--main' : 'tree-edge--var'}`);
+        (isActivePath ? eLp : eL).appendChild(ep);
       }
     }
 
@@ -653,11 +664,18 @@ function buildMoveTreeSvg(root, mainlineIds) {
     g.id = `tree-node-${node.id}`;
     if (active) g.setAttribute('aria-current', 'true');
 
+    // Tooltip (screen reader + hover)
+    const ttl = document.createElementNS(ns, 'title');
+    ttl.textContent = node.id === 'root'
+      ? 'Başlangıç pozisyonu'
+      : `${dep.get(node.id) ?? 0}. hamle — ${humanizeMove(node.move)}`;
+    g.appendChild(ttl);
+
     // Aktif halka
     const ring = document.createElementNS(ns, 'circle');
     ring.setAttribute('cx', cx);
     ring.setAttribute('cy', cy);
-    ring.setAttribute('r', R + 4);
+    ring.setAttribute('r', R + 5);
     ring.setAttribute('class', 'tree-node__ring');
     g.appendChild(ring);
 
@@ -691,6 +709,7 @@ function buildMoveTreeSvg(root, mainlineIds) {
   }
 
   svg.appendChild(eL);
+  svg.appendChild(eLp);
   svg.appendChild(nL);
   return svg;
 }
