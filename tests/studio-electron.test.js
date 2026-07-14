@@ -45,6 +45,8 @@ async function main() {
   await testMoveTreeVisual();
   await testMoveModeClick();
   await testSetupModeClick();
+  await testMarkerModeClick();
+  await testEmptyDocumentState();
   console.log('studio-electron.test.js: ok');
 }
 
@@ -465,6 +467,158 @@ async function testSetupModeClick() {
 
   const css = await fs.readFile(path.join(root, 'desktop', 'renderer', 'studio.css'), 'utf8');
   assert.ok(css.includes('[data-studio-mode="setup"] .board-frame'), 'setup mode crosshair CSS mevcut');
+}
+
+async function testMarkerModeClick() {
+  // 1. toggleBoardMarker saf döngü mantığı
+  function toggleBoardMarker(board, x, y) {
+    if (!board) return;
+    if (!Array.isArray(board.markers)) board.markers = [];
+    const idx = board.markers.findIndex(m => m.x === x && m.y === y);
+    if (idx === -1) {
+      board.markers.push({ x, y, type: 'circle' });
+    } else {
+      board.markers.splice(idx, 1);
+    }
+  }
+
+  // İlk tık: marker eklenir
+  const b = { size: 9, markers: [] };
+  toggleBoardMarker(b, 3, 3);
+  assert.equal(b.markers.length, 1, 'ilk tık: marker eklendi');
+  assert.equal(b.markers[0].type, 'circle', 'varsayılan tip circle');
+  assert.equal(b.markers[0].x, 3, 'x koordinatı doğru');
+  assert.equal(b.markers[0].y, 3, 'y koordinatı doğru');
+
+  // İkinci tık: marker kaldırılır
+  toggleBoardMarker(b, 3, 3);
+  assert.equal(b.markers.length, 0, 'ikinci tık: marker kaldırıldı');
+
+  // Duplicate oluşmaz: farklı hücreler bağımsız
+  toggleBoardMarker(b, 0, 0);
+  toggleBoardMarker(b, 8, 8);
+  assert.equal(b.markers.length, 2, 'iki farklı hücre bağımsız');
+  toggleBoardMarker(b, 0, 0);
+  assert.equal(b.markers.length, 1, '(0,0) kaldırıldı, (8,8) kaldı');
+  assert.equal(b.markers[0].x, 8, 'kalan marker (8,8)');
+
+  // markers dizisi yoksa oluşturulur
+  const b2 = { size: 9 };
+  toggleBoardMarker(b2, 4, 4);
+  assert.ok(Array.isArray(b2.markers), 'markers dizisi oluşturuldu');
+  assert.equal(b2.markers.length, 1, 'taş eklendi');
+
+  // 2. MoveTree / formation değişmezliği
+  const { createDocument: cd } = await import('../studio/model/studioDocument.js');
+  const { addChildMove: acm } = await import('../studio/model/moveTree.js');
+  const doc = cd({ id: 'marker-test', title: 'Marker Test', slug: 'marker-test' });
+  const treeRoot = doc.moveTree.root;
+
+  const r1 = acm(treeRoot, 'root', { color: 'black', x: 4, y: 4 });
+  assert.ok(r1.ok, 'hamle eklendi');
+  const childrenBefore = treeRoot.children.length;
+  const formationStonesBefore = [...(treeRoot.formation?.stones ?? [])];
+  const activeNodeBefore = doc.moveTree.activeNodeId ?? 'root';
+
+  // doc.board.markers üzerine yaz
+  if (!Array.isArray(doc.board.markers)) doc.board.markers = [];
+  toggleBoardMarker(doc.board, 2, 2);
+
+  // MoveTree yapısı değişmemeli
+  assert.equal(treeRoot.children.length, childrenBefore, 'children sayısı değişmedi');
+  assert.equal(doc.moveTree.activeNodeId ?? 'root', activeNodeBefore, 'activeNodeId değişmedi');
+
+  // root.formation.stones değişmemeli
+  assert.deepEqual(
+    treeRoot.formation?.stones ?? [],
+    formationStonesBefore,
+    'formation.stones değişmedi',
+  );
+
+  // doc.board.markers güncellendi
+  assert.ok(doc.board.markers.some(m => m.x === 2 && m.y === 2), 'marker doc.board.markers içinde');
+
+  // 3. mergeDocumentBoard metadata koruması (markers eklenirken regions/viewport/unknown korunur)
+  const adapter = createStudioBoardAdapter(BoardState);
+  const existingBoard = {
+    size: 9,
+    markers: [{ x: 1, y: 1, type: 'triangle' }],
+    regions: [{ id: 'r1', type: 'region', points: [{ x: 3, y: 3 }] }],
+    viewport: { x: 0, y: 0, scale: 1.5 },
+    customField: 'preserve-me',
+    stones: [],
+  };
+  const runtimeBoard = adapter.toDocumentBoard(
+    adapter.fromDocumentBoard({ size: 9, stones: [{ x: 4, y: 4, color: 'black' }] }),
+  );
+  const merged = adapter.mergeDocumentBoard(existingBoard, runtimeBoard);
+  // markers runtime'da yok → mevcut korunur
+  assert.equal(merged.markers[0].type, 'triangle', 'markers runtime tarafından bozulmadı');
+  assert.equal(merged.regions[0].id, 'r1', 'regions korundu');
+  assert.equal(merged.viewport.scale, 1.5, 'viewport korundu');
+  assert.equal(merged.customField, 'preserve-me', 'unknown alan korundu');
+  assert.ok(merged.stones.some(s => s.x === 4), 'yeni taş yansıdı');
+
+  // 4. Kaynak guard sözleşmeleri
+  const appSrc = await fs.readFile(path.join(root, 'desktop', 'renderer', 'app.mjs'), 'utf8');
+  assert.ok(appSrc.includes('toggleBoardMarker'), 'toggleBoardMarker fonksiyonu mevcut');
+  assert.ok(appSrc.includes('addMarkerFromBoardClick'), 'addMarkerFromBoardClick fonksiyonu mevcut');
+
+  const fnStart = appSrc.indexOf('function addMarkerFromBoardClick');
+  const fnEnd = appSrc.indexOf('\nfunction ', fnStart + 1);
+  const fnBody = appSrc.slice(fnStart, fnEnd > 0 ? fnEnd : fnStart + 800);
+  assert.ok(fnBody.includes("state.activeMode !== 'marker'"), 'marker mode guard mevcut');
+  assert.ok(fnBody.includes('isCandidatePreviewMode'), 'candidate preview guard mevcut');
+  assert.ok(fnBody.includes('boardClickCoord'), 'koordinat çözümü çağrılıyor');
+  assert.ok(!fnBody.includes('selectedNodeId ='), 'selectedNodeId mutasyonu yok');
+  assert.ok(!fnBody.includes('activeNodeId ='), 'activeNodeId mutasyonu yok');
+  assert.ok(!fnBody.includes('addChildMove'), 'addChildMove çağrısı yok');
+  assert.ok(!fnBody.includes('formation'), 'formation değişmez');
+
+  // markers renderBoard'a geçiyor
+  assert.ok(appSrc.includes("markers: doc.board?.markers ?? []"), 'markers renderBoard\'a geçiyor');
+
+  // CSS
+  const css = await fs.readFile(path.join(root, 'desktop', 'renderer', 'studio.css'), 'utf8');
+  assert.ok(css.includes('[data-studio-mode="marker"] .board-frame'), 'marker mode crosshair CSS mevcut');
+}
+
+async function testEmptyDocumentState() {
+  // 1. createDocument temel şablonu boş başlar
+  const { createDocument: cd } = await import('../studio/model/studioDocument.js');
+  const { rebuildBoardState: rbs } = await import('../studio/model/moveTree.js');
+
+  const doc = cd({ id: 'empty-test', title: 'Empty', slug: 'empty-test' });
+  assert.equal(doc.board.stones.length, 0, 'createDocument boş stones');
+  assert.equal(doc.board.markers.length, 0, 'createDocument boş markers');
+  assert.equal(doc.moveTree.root.children.length, 0, 'yeni belge moveTree children yok');
+  assert.deepEqual(doc.moveTree.root.formation?.stones ?? [], [], 'formation.stones boş');
+  assert.equal(doc.activeNodeId, 'root', 'activeNodeId root');
+
+  // rebuildBoardState kök için taş yok
+  const bs = rbs(doc.moveTree.root, 'root');
+  assert.equal(bs.stones.length, 0, 'kök pozisyonda taş yok');
+
+  // 2. createEmptyDocument (app.mjs) boş stones kullanıyor
+  const appSrc = await fs.readFile(path.join(root, 'desktop', 'renderer', 'app.mjs'), 'utf8');
+  const fnStart = appSrc.indexOf('function createEmptyDocument');
+  const fnEnd = appSrc.indexOf('\nfunction ', fnStart + 1);
+  const fnBody = appSrc.slice(fnStart, fnEnd > 0 ? fnEnd : fnStart + 600);
+  assert.ok(fnBody.includes('stones: []'), 'createEmptyDocument boş stones kullanıyor');
+  assert.ok(!fnBody.includes("color: 'black'") && !fnBody.includes("color: 'white'"), 'createEmptyDocument içinde hardcoded taş yok');
+
+  // 3. Kütüphane öğeleri data-doc-index ve role içeriyor
+  assert.ok(appSrc.includes('data-doc-index'), 'library item data-doc-index ile oluşturuluyor');
+  assert.ok(appSrc.includes("role', 'button'"), 'library item role=button');
+  assert.ok(appSrc.includes("elements.libraryList.addEventListener('click'"), 'library delegated click listener mevcut');
+
+  // 4. Markers renderBoard'a geçiyor (S5 koruması)
+  assert.ok(appSrc.includes("markers: doc.board?.markers ?? []"), 'markers renderBoard\'a geçiyor');
+
+  // 5. CSS: library item aktif ve hover state
+  const css = await fs.readFile(path.join(root, 'desktop', 'renderer', 'studio.css'), 'utf8');
+  assert.ok(css.includes('.library-item.is-active'), 'library-item aktif state CSS mevcut');
+  assert.ok(css.includes('.library-item:hover'), 'library-item hover CSS mevcut');
 }
 
 main().catch(error => {

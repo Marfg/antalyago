@@ -341,6 +341,24 @@ function wireActions() {
     renderWorkspace();
   });
 
+  elements.libraryList.addEventListener('click', event => {
+    const li = event.target.closest('[data-doc-index]');
+    if (!li) return;
+    const idx = Number(li.dataset.docIndex);
+    const doc = state.documents[idx];
+    if (doc) {
+      clearCandidateSession();
+      setActiveDocument(doc);
+    }
+  });
+  elements.libraryList.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const li = event.target.closest('[data-doc-index]');
+    if (!li) return;
+    event.preventDefault();
+    li.click();
+  });
+
   elements.workspacePicker.addEventListener('click', async () => {
     if (typeof api.chooseWorkspaceFolder !== 'function') {
       return;
@@ -464,6 +482,7 @@ function wireActions() {
 
   elements.board.addEventListener('click', addMoveFromBoardClick);
   elements.board.addEventListener('click', addStoneFromSetupClick);
+  elements.board.addEventListener('click', addMarkerFromBoardClick);
 }
 function setActiveDocument(document, { keepSelection = false, filePath = null, preserveCandidateSession = false } = {}) {
   if (!preserveCandidateSession) {
@@ -501,18 +520,23 @@ function renderWorkspace() {
   elements.producerToggle.textContent = state.contentProducerMode ? 'İçerik Üretici modu açık' : 'İçerik Üretici modu';
   elements.producerToggle.setAttribute('aria-pressed', String(state.contentProducerMode));
 
-  elements.libraryList.replaceChildren(...state.documents.map(renderLibraryItem));
+  elements.libraryList.replaceChildren(...state.documents.map((doc, idx) => renderLibraryItem(doc, idx)));
   renderCandidatePanel();
   elements.timelineSummary.textContent = state.documents.length
     ? `${state.documents.length} belge yüklendi; son belge ${state.activeDocument?.title ?? 'belirlenmedi'}.`
     : 'Yeni belge ve doğrulama notları burada toplanır.';
 }
-function renderLibraryItem(item) {
+function renderLibraryItem(item, index) {
   const li = document.createElement('li');
-  li.className = 'library-item';
+  const isActive = item.id === state.activeDocument?.id;
+  li.className = 'library-item' + (isActive ? ' is-active' : '');
+  li.dataset.docIndex = String(index);
+  li.setAttribute('role', 'button');
+  li.setAttribute('tabindex', '0');
+  const size = item.board?.size ?? 9;
   li.innerHTML = `
     <p class="library-item__title">${escapeHtml(item.title ?? 'Başlıksız belge')}</p>
-    <p class="library-item__meta">${escapeHtml(item.status ?? 'taslak')} · ${item.boardSize ?? '9'}×${item.boardSize ?? '9'}</p>
+    <p class="library-item__meta">${escapeHtml(item.status ?? 'taslak')} · ${size}×${size}</p>
   `;
   return li;
 }
@@ -541,7 +565,8 @@ function renderActiveDocument() {
   elements.technicalDetails.open = false;
 
   const boardState = boardAdapter.fromMoveTree(doc.moveTree, state.selectedNodeId);
-  boardRenderer.render(elements.board, boardAdapter.toDocumentBoard(boardState));
+  const renderBoard = { ...boardAdapter.toDocumentBoard(boardState), markers: doc.board?.markers ?? [] };
+  boardRenderer.render(elements.board, renderBoard);
   renderMoveTree(doc.moveTree);
   renderSelectedNodeMetadata();
   renderTreeStatus(buildTreeStatus());
@@ -838,6 +863,31 @@ function addStoneFromSetupClick(event) {
   renderTreeStatus(`Kurulum: ${label} (${coord.x},${coord.y})`);
 }
 
+function toggleBoardMarker(board, x, y) {
+  if (!board) return;
+  if (!Array.isArray(board.markers)) board.markers = [];
+  const idx = board.markers.findIndex(m => m.x === x && m.y === y);
+  if (idx === -1) {
+    board.markers.push({ x, y, type: 'circle' });
+  } else {
+    board.markers.splice(idx, 1);
+  }
+}
+
+function addMarkerFromBoardClick(event) {
+  if (state.activeMode !== 'marker') return;
+  const doc = state.activeDocument;
+  if (!doc?.board) return;
+  if (isCandidatePreviewMode()) return;
+  const size = doc.board.size ?? 9;
+  const coord = boardClickCoord(event, elements.board, size);
+  if (!coord) return;
+  toggleBoardMarker(doc.board, coord.x, coord.y);
+  renderActiveDocument();
+  const exists = doc.board.markers?.some(m => m.x === coord.x && m.y === coord.y);
+  renderTreeStatus(`İşaret: ${exists ? 'Eklendi' : 'Kaldırıldı'} (${coord.x},${coord.y})`);
+}
+
 function addTreeMoveFromForm() {
   const doc = state.activeDocument;
   if (!doc?.moveTree?.root) return;
@@ -948,18 +998,14 @@ function setTreeZoom(nextZoom) {
 function createEmptyDocument() {
   return createDocument({
     id: 'content-producer-draft',
-    title: 'Yeni içerik taslağı',
+    title: 'Yeni belge',
     slug: 'content-producer-draft',
-    summary: 'Tahta-merkezli içerik üretimi için başlangıç taslağı.',
     status: 'draft',
     board: {
       size: 9,
       turn: 'black',
       ko: null,
-      stones: [
-        { x: 2, y: 2, color: 'black' },
-        { x: 6, y: 6, color: 'white' },
-      ],
+      stones: [],
       markers: [],
       regions: [],
       viewport: null,

@@ -204,6 +204,22 @@ textarea {
   border-radius: 0.9rem;
   padding: 0.85rem;
   background: var(--surface-soft, #281932);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.library-item:hover {
+  background: var(--surface-raised, #20182b);
+}
+
+.library-item:focus-visible {
+  outline: 2px solid var(--focus-ring, #c7b2d6);
+  outline-offset: 2px;
+}
+
+.library-item.is-active {
+  border-color: var(--primary, #8969a2);
+  box-shadow: 0 0 0 1px var(--primary, #8969a2) inset;
 }
 
 .library-item__title {
@@ -408,7 +424,8 @@ textarea {
 }
 
 [data-studio-mode="move"] .board-frame,
-[data-studio-mode="setup"] .board-frame {
+[data-studio-mode="setup"] .board-frame,
+[data-studio-mode="marker"] .board-frame {
   cursor: crosshair;
 }
 
