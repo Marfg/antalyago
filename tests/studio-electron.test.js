@@ -47,6 +47,7 @@ async function main() {
   await testSetupModeClick();
   await testMarkerModeClick();
   await testEmptyDocumentState();
+  await testFileRoundTrip();
   console.log('studio-electron.test.js: ok');
 }
 
@@ -619,6 +620,80 @@ async function testEmptyDocumentState() {
   const css = await fs.readFile(path.join(root, 'desktop', 'renderer', 'studio.css'), 'utf8');
   assert.ok(css.includes('.library-item.is-active'), 'library-item aktif state CSS mevcut');
   assert.ok(css.includes('.library-item:hover'), 'library-item hover CSS mevcut');
+}
+
+async function testFileRoundTrip() {
+  const { createDocument: cd, migrateDocument } = await import('../studio/model/studioDocument.js');
+  const { addChildMove: acm, rebuildBoardState: rbs } = await import('../studio/model/moveTree.js');
+
+  // Belge oluştur: kurulum taşı + hamle + marker
+  const doc = cd({ id: 'rt', title: 'Round Trip', slug: 'rt' });
+  doc.moveTree.root.formation.stones.push({ x: 1, y: 1, color: 'black' });
+  const r1 = acm(doc.moveTree.root, 'root', { color: 'black', x: 4, y: 4 });
+  assert.ok(r1.ok, 'hamle eklendi');
+  doc.board.markers = [{ x: 3, y: 3, type: 'circle' }];
+  doc.board.regions = [{ id: 'r1', type: 'region', points: [{ x: 5, y: 5 }] }];
+  doc.board.viewport = { x: 0, y: 0, scale: 1.5 };
+  doc.activeNodeId = r1.node.id;
+  doc.moveTree.activeNodeId = r1.node.id;  // syncDocumentFromSelection eşdeğeri
+
+  // Serialize → deserialize → migrate
+  const json = JSON.stringify(doc);
+  const loaded = migrateDocument(JSON.parse(json));
+
+  // Formation taşı korunuyor
+  assert.ok(
+    loaded.moveTree.root.formation.stones.some(s => s.x === 1 && s.y === 1 && s.color === 'black'),
+    'formation.stones round-trip',
+  );
+
+  // Hamle ağacı children korunuyor
+  assert.equal(loaded.moveTree.root.children.length, 1, 'moveTree children round-trip');
+  assert.equal(loaded.moveTree.root.children[0].move.x, 4, 'hamle koordinatı korundu');
+
+  // Marker korunuyor
+  assert.ok(
+    Array.isArray(loaded.board.markers) && loaded.board.markers.some(m => m.x === 3 && m.y === 3),
+    'board.markers round-trip',
+  );
+
+  // regions / viewport korunuyor
+  assert.equal(loaded.board.regions[0].id, 'r1', 'regions round-trip');
+  assert.equal(loaded.board.viewport?.scale, 1.5, 'viewport round-trip');
+
+  // activeNodeId korunuyor
+  assert.equal(loaded.activeNodeId, r1.node.id, 'activeNodeId round-trip');
+
+  // rebuildBoardState yüklenen belgede doğru çalışıyor
+  const bs = rbs(loaded.moveTree.root, loaded.activeNodeId);
+  assert.ok(bs.stones.some(s => s.x === 1 && s.y === 1), 'formation taşı rebuild\'e yansıdı');
+  assert.ok(bs.stones.some(s => s.x === 4 && s.y === 4), 'hamle rebuild\'e yansıdı');
+
+  // Kaynak guard sözleşmeleri (app.mjs)
+  const appSrc = await fs.readFile(path.join(root, 'desktop', 'renderer', 'app.mjs'), 'utf8');
+
+  // activeMode review'a dönüyor (!keepSelection)
+  const fnStart = appSrc.indexOf('function setActiveDocument');
+  const fnEnd = appSrc.indexOf('\nfunction ', fnStart + 1);
+  const fnBody = appSrc.slice(fnStart, fnEnd > 0 ? fnEnd : fnStart + 800);
+  assert.ok(fnBody.includes("state.activeMode = 'review'"), 'setActiveDocument keepSelection=false activeMode sıfırlıyor');
+
+  // UI feedback mesajları
+  assert.ok(appSrc.includes("'Kaydedildi.'"), 'Kaydedildi mesajı mevcut');
+  assert.ok(appSrc.includes("'Farklı kaydedildi.'"), 'Farklı kaydedildi mesajı mevcut');
+  assert.ok(appSrc.includes("'Yeni belge oluşturuldu.'"), 'Yeni belge mesajı mevcut');
+  assert.ok(appSrc.includes("'Kaydetme iptal edildi.'"), 'İptal mesajı mevcut');
+
+  // boardSize fallback (workspace API belgelerinde boardSize alanı, in-memory'de board.size)
+  assert.ok(appSrc.includes('item.board?.size ?? item.boardSize ?? 9'), 'boardSize fallback doğru');
+
+  // main.cjs yeni belge boş başlıyor
+  const mainSrc = await fs.readFile(path.join(root, 'desktop', 'main.cjs'), 'utf8');
+  const newDocStart = mainSrc.indexOf('async function createNewDocument');
+  const newDocEnd = mainSrc.indexOf('\nasync function ', newDocStart + 1);
+  const newDocBody = mainSrc.slice(newDocStart, newDocEnd > 0 ? newDocEnd : newDocStart + 500);
+  assert.ok(!newDocBody.includes("color:"), 'main.cjs createNewDocument hardcoded taş içermiyor');
+  assert.ok(newDocBody.includes("'Yeni belge'"), 'main.cjs createNewDocument başlığı Yeni belge');
 }
 
 main().catch(error => {

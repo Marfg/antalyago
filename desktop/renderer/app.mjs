@@ -386,6 +386,7 @@ function wireActions() {
     const next = await api.newDocument();
     if (next?.document) {
       setActiveDocument(next.document, { filePath: next.filePath ?? null });
+      renderTreeStatus('Yeni belge oluşturuldu.');
     }
   });
 
@@ -395,8 +396,13 @@ function wireActions() {
     }
     clearCandidateSession();
     const next = await api.openDocument();
+    if (next?.canceled) {
+      renderTreeStatus('Açma iptal edildi.');
+      return;
+    }
     if (next?.document) {
       setActiveDocument(next.document, { filePath: next.filePath ?? null });
+      renderTreeStatus(`Açıldı: ${next.document.title || 'belge'}`);
     }
   });
 
@@ -404,8 +410,10 @@ function wireActions() {
     syncDocumentFromSelection();
     if (!state.activeDocumentPath && typeof api.saveDocumentAs === 'function') {
       const result = await api.saveDocumentAs(state.activeDocument);
+      if (result?.canceled) { renderTreeStatus('Kaydetme iptal edildi.'); return; }
       if (result?.document) {
         setActiveDocument(result.document, { keepSelection: true, filePath: result.filePath ?? null, preserveCandidateSession: isCandidateWorkingMode() });
+        renderTreeStatus('Farklı kaydedildi.');
       }
       return;
     }
@@ -413,8 +421,10 @@ function wireActions() {
       return;
     }
     const result = await api.saveDocument(state.activeDocument);
+    if (result?.canceled) { renderTreeStatus('Kaydetme iptal edildi.'); return; }
     if (result?.document) {
       setActiveDocument(result.document, { keepSelection: true, filePath: result.filePath ?? null, preserveCandidateSession: isCandidateWorkingMode() });
+      renderTreeStatus('Kaydedildi.');
     }
   });
 
@@ -424,8 +434,10 @@ function wireActions() {
     }
     syncDocumentFromSelection();
     const result = await api.saveDocumentAs(state.activeDocument);
+    if (result?.canceled) { renderTreeStatus('Kaydetme iptal edildi.'); return; }
     if (result?.document) {
       setActiveDocument(result.document, { keepSelection: true, filePath: result.filePath ?? null, preserveCandidateSession: isCandidateWorkingMode() });
+      renderTreeStatus('Farklı kaydedildi.');
     }
   });
 
@@ -492,6 +504,7 @@ function setActiveDocument(document, { keepSelection = false, filePath = null, p
   state.activeDocumentPath = filePath;
   if (!keepSelection) {
     state.selectedNodeId = state.activeDocument.activeNodeId ?? 'root';
+    state.activeMode = 'review';
   } else {
     state.selectedNodeId = state.activeDocument.activeNodeId ?? state.selectedNodeId ?? 'root';
   }
@@ -505,6 +518,7 @@ function syncDocumentFromSelection() {
   if (!doc?.moveTree?.root) return;
 
   doc.activeNodeId = state.selectedNodeId;
+  doc.moveTree.activeNodeId = state.selectedNodeId;
   const boardState = rebuildBoardState(doc.moveTree.root, state.selectedNodeId);
   doc.board = boardAdapter.mergeDocumentBoard(doc.board, boardAdapter.toDocumentBoard(boardState));
   doc.moves = serializeMainlineMoves(doc.moveTree.root);
@@ -533,7 +547,7 @@ function renderLibraryItem(item, index) {
   li.dataset.docIndex = String(index);
   li.setAttribute('role', 'button');
   li.setAttribute('tabindex', '0');
-  const size = item.board?.size ?? 9;
+  const size = item.board?.size ?? item.boardSize ?? 9;
   li.innerHTML = `
     <p class="library-item__title">${escapeHtml(item.title ?? 'Başlıksız belge')}</p>
     <p class="library-item__meta">${escapeHtml(item.status ?? 'taslak')} · ${size}×${size}</p>

@@ -158,9 +158,8 @@ async function createNewDocument() {
   const stamp = Date.now().toString(36);
   const document = createDocument({
     id: `studio-${stamp}`,
-    title: 'Yeni içerik belgesi',
+    title: 'Yeni belge',
     slug: `studio-${stamp}`,
-    summary: 'Tahta-merkezli içerik üretimi için başlangıç taslağı.',
   });
   activeDocument = document;
   activeDocumentPath = null;
