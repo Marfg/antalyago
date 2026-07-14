@@ -44,6 +44,7 @@ async function main() {
   await testModeSelector();
   await testMoveTreeVisual();
   await testMoveModeClick();
+  await testSetupModeClick();
   console.log('studio-electron.test.js: ok');
 }
 
@@ -367,6 +368,103 @@ async function testSecurityTexts() {
   assert.match(mainText, /webSecurity:\s*true/);
   assert.match(preloadText, /createStudioApi\(ipcRenderer\)/);
   assert.doesNotMatch(preloadText, /require\(['"]fs/);
+}
+
+async function testSetupModeClick() {
+  // 1. cycleSetupStone saf döngü mantığı
+  function cycleSetupStone(formation, x, y) {
+    if (!formation) return;
+    if (!Array.isArray(formation.stones)) formation.stones = [];
+    const idx = formation.stones.findIndex(s => s.x === x && s.y === y);
+    if (idx === -1) {
+      formation.stones.push({ x, y, color: 'black' });
+    } else if (formation.stones[idx].color === 'black') {
+      formation.stones[idx] = { x, y, color: 'white' };
+    } else {
+      formation.stones.splice(idx, 1);
+    }
+  }
+
+  // boş → siyah → beyaz → boş döngüsü
+  const f = { size: 9, stones: [] };
+  cycleSetupStone(f, 3, 3);
+  assert.equal(f.stones.length, 1, 'ilk tık: siyah taş eklendi');
+  assert.equal(f.stones[0].color, 'black', 'renk siyah');
+
+  cycleSetupStone(f, 3, 3);
+  assert.equal(f.stones.length, 1, 'ikinci tık: hâlâ 1 taş');
+  assert.equal(f.stones[0].color, 'white', 'renk beyaza döndü');
+
+  cycleSetupStone(f, 3, 3);
+  assert.equal(f.stones.length, 0, 'üçüncü tık: taş kaldırıldı');
+
+  // Farklı hücreler birbirini etkilemez
+  cycleSetupStone(f, 0, 0);
+  cycleSetupStone(f, 8, 8);
+  assert.equal(f.stones.length, 2, 'iki farklı hücre bağımsız');
+  cycleSetupStone(f, 0, 0);
+  assert.equal(f.stones.length, 2, '(0,0) beyaza geçti, (8,8) siyah kaldı');
+  assert.equal(f.stones.find(s => s.x === 0).color, 'white');
+
+  // 2. MoveTree ağacı değişmemeli
+  const { createDocument: cd } = await import('../studio/model/studioDocument.js');
+  const { addChildMove: acm, rebuildBoardState: rbs } = await import('../studio/model/moveTree.js');
+  const doc = cd({ id: 'setup-test', title: 'Setup Test', slug: 'setup-test' });
+  const treeRoot = doc.moveTree.root;
+
+  // Bir hamle ekle
+  const r1 = acm(treeRoot, 'root', { color: 'black', x: 4, y: 4 });
+  assert.ok(r1.ok, 'hamle eklendi');
+  const childrenBefore = treeRoot.children.length;
+  const activeNodeBefore = doc.moveTree.activeNodeId ?? 'root';
+
+  // Kurulum: formation'a taş ekle
+  cycleSetupStone(treeRoot.formation, 2, 2);
+
+  // Ağaç yapısı değişmemeli
+  assert.equal(treeRoot.children.length, childrenBefore, 'children sayısı değişmedi');
+  assert.equal(doc.moveTree.activeNodeId ?? 'root', activeNodeBefore, 'activeNodeId değişmedi');
+
+  // Formation taşı rebuildBoardState'de yansımalı
+  const bs = rbs(treeRoot, 'root');
+  assert.ok(bs.stones.some(s => s.x === 2 && s.y === 2 && s.color === 'black'), 'formation taşı kök pozisyona yansıdı');
+
+  // Hamle sonrası pozisyonda da formation taşı var
+  const bs2 = rbs(treeRoot, r1.node.id);
+  assert.ok(bs2.stones.some(s => s.x === 2 && s.y === 2 && s.color === 'black'), 'formation taşı hamle sonrası pozisyonda da mevcut');
+
+  // 3. mergeDocumentBoard metadata koruması
+  const adapter = createStudioBoardAdapter(BoardState);
+  const existingBoard = {
+    size: 9,
+    markers: [{ id: 'm1', type: 'triangle', point: { x: 5, y: 5 } }],
+    regions: [{ id: 'r1', type: 'region', points: [{ x: 1, y: 1 }] }],
+    viewport: { x: 0, y: 0, scale: 2.0 },
+    stones: [],
+  };
+  const newBoardState = adapter.fromDocumentBoard({ size: 9, stones: [{ x: 2, y: 2, color: 'black' }] });
+  const merged = adapter.mergeDocumentBoard(existingBoard, adapter.toDocumentBoard(newBoardState));
+  assert.equal(merged.markers[0].id, 'm1', 'markers korundu');
+  assert.equal(merged.regions[0].id, 'r1', 'regions korundu');
+  assert.equal(merged.viewport.scale, 2.0, 'viewport korundu');
+  assert.ok(merged.stones.some(s => s.x === 2 && s.y === 2), 'yeni taş yansıdı');
+
+  // 4. Kaynak guard sözleşmeleri
+  const appSrc = await fs.readFile(path.join(root, 'desktop', 'renderer', 'app.mjs'), 'utf8');
+  assert.ok(appSrc.includes('cycleSetupStone'), 'cycleSetupStone fonksiyonu mevcut');
+  assert.ok(appSrc.includes('addStoneFromSetupClick'), 'addStoneFromSetupClick fonksiyonu mevcut');
+
+  const fnStart = appSrc.indexOf('function addStoneFromSetupClick');
+  const fnEnd = appSrc.indexOf('\nfunction ', fnStart + 1);
+  const fnBody = appSrc.slice(fnStart, fnEnd > 0 ? fnEnd : fnStart + 800);
+  assert.ok(fnBody.includes("state.activeMode !== 'setup'"), 'setup mode guard mevcut');
+  assert.ok(fnBody.includes('isCandidatePreviewMode'), 'candidate preview guard mevcut');
+  assert.ok(fnBody.includes('boardClickCoord'), 'koordinat çözümü çağrılıyor');
+  assert.ok(!fnBody.includes('activeNodeId'), 'activeNodeId mutasyonu yok');
+  assert.ok(!fnBody.includes('selectedNodeId ='), 'selectedNodeId mutasyonu yok');
+
+  const css = await fs.readFile(path.join(root, 'desktop', 'renderer', 'studio.css'), 'utf8');
+  assert.ok(css.includes('[data-studio-mode="setup"] .board-frame'), 'setup mode crosshair CSS mevcut');
 }
 
 main().catch(error => {

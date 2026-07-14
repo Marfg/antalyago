@@ -407,7 +407,8 @@ textarea {
   border-radius: 1rem;
 }
 
-[data-studio-mode="move"] .board-frame {
+[data-studio-mode="move"] .board-frame,
+[data-studio-mode="setup"] .board-frame {
   cursor: crosshair;
 }
 

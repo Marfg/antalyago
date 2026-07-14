@@ -463,6 +463,7 @@ function wireActions() {
   }
 
   elements.board.addEventListener('click', addMoveFromBoardClick);
+  elements.board.addEventListener('click', addStoneFromSetupClick);
 }
 function setActiveDocument(document, { keepSelection = false, filePath = null, preserveCandidateSession = false } = {}) {
   if (!preserveCandidateSession) {
@@ -805,6 +806,36 @@ function addMoveFromBoardClick(event) {
   syncDocumentFromSelection();
   renderActiveDocument();
   renderTreeStatus(`Hamle eklendi: ${humanizeMove(result.node.move)}`);
+}
+
+function cycleSetupStone(formation, x, y) {
+  if (!formation) return;
+  if (!Array.isArray(formation.stones)) formation.stones = [];
+  const idx = formation.stones.findIndex(s => s.x === x && s.y === y);
+  if (idx === -1) {
+    formation.stones.push({ x, y, color: 'black' });
+  } else if (formation.stones[idx].color === 'black') {
+    formation.stones[idx] = { x, y, color: 'white' };
+  } else {
+    formation.stones.splice(idx, 1);
+  }
+}
+
+function addStoneFromSetupClick(event) {
+  if (state.activeMode !== 'setup') return;
+  const doc = state.activeDocument;
+  if (!doc?.moveTree?.root) return;
+  if (isCandidatePreviewMode()) return;
+  const formation = doc.moveTree.root.formation;
+  if (!formation) return;
+  const coord = boardClickCoord(event, elements.board, formation.size ?? 9);
+  if (!coord) return;
+  cycleSetupStone(formation, coord.x, coord.y);
+  syncDocumentFromSelection();
+  renderActiveDocument();
+  const stone = formation.stones.find(s => s.x === coord.x && s.y === coord.y);
+  const label = stone ? (stone.color === 'black' ? 'Siyah taş' : 'Beyaz taş') : 'Taş kaldırıldı';
+  renderTreeStatus(`Kurulum: ${label} (${coord.x},${coord.y})`);
 }
 
 function addTreeMoveFromForm() {
