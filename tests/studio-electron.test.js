@@ -48,6 +48,7 @@ async function main() {
   await testMarkerModeClick();
   await testEmptyDocumentState();
   await testFileRoundTrip();
+  await testStudioHeartbeatFlow();
   console.log('studio-electron.test.js: ok');
 }
 
@@ -694,6 +695,180 @@ async function testFileRoundTrip() {
   const newDocBody = mainSrc.slice(newDocStart, newDocEnd > 0 ? newDocEnd : newDocStart + 500);
   assert.ok(!newDocBody.includes("color:"), 'main.cjs createNewDocument hardcoded taş içermiyor');
   assert.ok(newDocBody.includes("'Yeni belge'"), 'main.cjs createNewDocument başlığı Yeni belge');
+}
+
+async function testStudioHeartbeatFlow() {
+  const { createDocument: cd } = await import('../studio/model/studioDocument.js');
+  const { addChildMove: acm, rebuildBoardState: rbs, serializeMainlineMoves } = await import('../studio/model/moveTree.js');
+
+  // ── Adım 1: Yeni belge ──────────────────────────────────────────────────
+  const doc = cd({ id: 'hb', title: 'Kalp Atışı', slug: 'hb' });
+
+  // ── Adım 2: Tahta boş başlıyor ────────────────────────────────────────
+  assert.equal(doc.board.stones.length, 0, 'hb: tahta boş başlıyor');
+  assert.equal(doc.board.markers.length, 0, 'hb: markers boş başlıyor');
+  assert.equal(doc.moveTree.root.children.length, 0, 'hb: moveTree children yok');
+  assert.deepEqual(doc.moveTree.root.formation?.stones ?? [], [], 'hb: formation.stones boş');
+  assert.equal(doc.activeNodeId, 'root', 'hb: activeNodeId root');
+
+  // ── Adım 3: Setup mode — başlangıç taşları ──────────────────────────
+  function cycleSetupStone(formation, x, y) {
+    if (!formation) return;
+    if (!Array.isArray(formation.stones)) formation.stones = [];
+    const idx = formation.stones.findIndex(s => s.x === x && s.y === y);
+    if (idx === -1) {
+      formation.stones.push({ x, y, color: 'black' });
+    } else if (formation.stones[idx].color === 'black') {
+      formation.stones[idx] = { x, y, color: 'white' };
+    } else {
+      formation.stones.splice(idx, 1);
+    }
+  }
+
+  const formation = doc.moveTree.root.formation;
+
+  // Döngü doğrulama: empty → black → white → empty
+  cycleSetupStone(formation, 3, 3);
+  assert.equal(formation.stones.length, 1, 'hb: döngü — siyah eklendi');
+  assert.equal(formation.stones[0].color, 'black', 'hb: döngü — renk siyah');
+  cycleSetupStone(formation, 3, 3);
+  assert.equal(formation.stones[0].color, 'white', 'hb: döngü — beyaza döndü');
+  cycleSetupStone(formation, 3, 3);
+  assert.equal(formation.stones.length, 0, 'hb: döngü — kaldırıldı');
+
+  // Gerçek setup taşları: (3,3) siyah, (5,5) beyaz
+  cycleSetupStone(formation, 3, 3);          // siyah
+  cycleSetupStone(formation, 5, 5);          // siyah
+  cycleSetupStone(formation, 5, 5);          // beyaz
+  assert.equal(formation.stones.length, 2, 'hb: 2 setup taşı');
+  assert.ok(formation.stones.some(s => s.x === 3 && s.y === 3 && s.color === 'black'), 'hb: (3,3) siyah setup');
+  assert.ok(formation.stones.some(s => s.x === 5 && s.y === 5 && s.color === 'white'), 'hb: (5,5) beyaz setup');
+
+  // Setup taşları moveTree.children içinde görünmemeli
+  assert.equal(doc.moveTree.root.children.length, 0, 'hb: setup taşları moveTree.children içinde değil');
+
+  // rebuildBoardState kökte setup taşlarını yansıtıyor
+  const bsRoot = rbs(doc.moveTree.root, 'root');
+  assert.ok(bsRoot.stones.some(s => s.x === 3 && s.y === 3 && s.color === 'black'), 'hb: kök board (3,3) siyah içeriyor');
+  assert.ok(bsRoot.stones.some(s => s.x === 5 && s.y === 5 && s.color === 'white'), 'hb: kök board (5,5) beyaz içeriyor');
+
+  // ── Adım 4: Marker mode ───────────────────────────────────────────────
+  function toggleBoardMarker(board, x, y) {
+    if (!board) return;
+    if (!Array.isArray(board.markers)) board.markers = [];
+    const idx = board.markers.findIndex(m => m.x === x && m.y === y);
+    if (idx === -1) board.markers.push({ x, y, type: 'circle' });
+    else board.markers.splice(idx, 1);
+  }
+
+  toggleBoardMarker(doc.board, 2, 2);
+  assert.equal(doc.board.markers.length, 1, 'hb: marker eklendi');
+  assert.equal(doc.board.markers[0].type, 'circle', 'hb: marker tipi circle');
+
+  // Marker moveTree/formation değiştirmemeli
+  assert.equal(doc.moveTree.root.children.length, 0, 'hb: marker sonrası children değişmedi');
+  assert.equal(formation.stones.length, 2, 'hb: marker sonrası formation.stones değişmedi');
+
+  // ── Adım 5: Move mode — hamle ve varyasyon ──────────────────────────
+  // Root'tan ilk hamle: siyah (4,4)
+  const m1 = acm(doc.moveTree.root, 'root', { color: 'black', x: 4, y: 4 });
+  assert.ok(m1.ok, `hb: ilk hamle eklendi (${m1.reason ?? 'ok'})`);
+  assert.equal(doc.moveTree.root.children.length, 1, 'hb: root 1 child');
+  assert.equal(doc.moveTree.root.preferredChildId, m1.node.id, 'hb: ilk hamle preferred');
+
+  // Root'a geri dönüp ikinci hamle: siyah (6,6) → sibling/varyasyon
+  const m2 = acm(doc.moveTree.root, 'root', { color: 'black', x: 6, y: 6 });
+  assert.ok(m2.ok, `hb: varyasyon hamlesi eklendi (${m2.reason ?? 'ok'})`);
+  assert.equal(doc.moveTree.root.children.length, 2, 'hb: root 2 child (varyasyon)');
+
+  // preferredChildId hâlâ ilk hamlede kalmalı
+  assert.equal(doc.moveTree.root.preferredChildId, m1.node.id, 'hb: preferredChildId ilk hamlede kaldı');
+  assert.notEqual(m1.node.id, m2.node.id, 'hb: iki varyasyon farklı node ID');
+
+  // ── Adım 6: Node seç — activeNodeId ve board rebuild ──────────────
+  // İlk hamle nodunu seç (syncDocumentFromSelection simülasyonu)
+  doc.activeNodeId = m1.node.id;
+  doc.moveTree.activeNodeId = m1.node.id;
+
+  const bsM1 = rbs(doc.moveTree.root, m1.node.id);
+  assert.ok(bsM1.stones.some(s => s.x === 3 && s.y === 3), 'hb: m1 board — setup (3,3) mevcut');
+  assert.ok(bsM1.stones.some(s => s.x === 4 && s.y === 4), 'hb: m1 board — hamle (4,4) mevcut');
+  assert.ok(!bsM1.stones.some(s => s.x === 6 && s.y === 6), 'hb: m1 board — varyasyon (6,6) yok');
+
+  const bsM2 = rbs(doc.moveTree.root, m2.node.id);
+  assert.ok(bsM2.stones.some(s => s.x === 6 && s.y === 6), 'hb: m2 board — varyasyon (6,6) mevcut');
+  assert.ok(!bsM2.stones.some(s => s.x === 4 && s.y === 4), 'hb: m2 board — (4,4) yok');
+
+  // ── Adım 7-8: Kaydet → Aç ────────────────────────────────────────────
+  doc.board.regions = [{ id: 'reg1', type: 'region', points: [{ x: 7, y: 7 }] }];
+  doc.board.viewport = { x: 0, y: 0, scale: 1.25 };
+  doc.board.customMeta = 'korunacak';
+
+  const tmpPath = path.join(os.tmpdir(), `hb-heartbeat-${Date.now()}.agstudio`);
+  await writeAgstudioDocument(tmpPath, doc);
+  const loaded = await readAgstudioDocument(tmpPath);  // readAgstudioDocument zaten migrate ediyor
+
+  // ── Adım 9: Tüm alanları doğrula ─────────────────────────────────────
+
+  // root.formation.stones
+  assert.ok(
+    loaded.moveTree.root.formation.stones.some(s => s.x === 3 && s.y === 3 && s.color === 'black'),
+    'hb rt: formation (3,3) siyah korundu',
+  );
+  assert.ok(
+    loaded.moveTree.root.formation.stones.some(s => s.x === 5 && s.y === 5 && s.color === 'white'),
+    'hb rt: formation (5,5) beyaz korundu',
+  );
+
+  // moveTree.children — 2 varyasyon
+  assert.equal(loaded.moveTree.root.children.length, 2, 'hb rt: children.length === 2');
+  assert.equal(loaded.moveTree.root.preferredChildId, m1.node.id, 'hb rt: preferredChildId korundu');
+
+  // activeNodeId
+  assert.equal(loaded.activeNodeId, m1.node.id, 'hb rt: activeNodeId korundu');
+  assert.equal(loaded.moveTree.activeNodeId, m1.node.id, 'hb rt: moveTree.activeNodeId korundu');
+
+  // doc.board.markers
+  assert.ok(
+    Array.isArray(loaded.board.markers) && loaded.board.markers.some(m => m.x === 2 && m.y === 2),
+    'hb rt: board.markers korundu',
+  );
+
+  // doc.board.regions
+  assert.equal(loaded.board.regions?.[0]?.id, 'reg1', 'hb rt: board.regions korundu');
+
+  // doc.board.viewport
+  assert.equal(loaded.board.viewport?.scale, 1.25, 'hb rt: board.viewport korundu');
+
+  // unknown board metadata
+  assert.equal(loaded.board.customMeta, 'korunacak', 'hb rt: board unknown metadata korundu');
+
+  // rebuildBoardState açılan belgede doğru çalışıyor
+  const bsLoaded = rbs(loaded.moveTree.root, loaded.activeNodeId);
+  assert.ok(bsLoaded.stones.some(s => s.x === 3 && s.y === 3), 'hb rt: açılan belge rebuild — formation (3,3)');
+  assert.ok(bsLoaded.stones.some(s => s.x === 4 && s.y === 4), 'hb rt: açılan belge rebuild — hamle (4,4)');
+  assert.ok(!bsLoaded.stones.some(s => s.x === 6 && s.y === 6), 'hb rt: açılan belge rebuild — (6,6) yok (m1 nodunda)');
+
+  // Setup taşı hamle gibi görünmüyor
+  assert.ok(
+    !loaded.moveTree.root.children.some(c => c.move?.x === 3 && c.move?.y === 3),
+    'hb rt: setup (3,3) moveTree.children içinde değil',
+  );
+
+  // Marker hamle gibi görünmüyor
+  assert.ok(
+    !loaded.moveTree.root.children.some(c => c.move?.x === 2 && c.move?.y === 2),
+    'hb rt: marker (2,2) moveTree.children içinde değil',
+  );
+
+  // serializeMainlineMoves ana hat: m1 (preferred)
+  const mainline = serializeMainlineMoves(loaded.moveTree.root);
+  assert.equal(mainline.length, 1, 'hb rt: ana hat 1 hamle');
+  assert.equal(mainline[0].x, 4, 'hb rt: ana hat hamlesi x=4');
+  assert.equal(mainline[0].y, 4, 'hb rt: ana hat hamlesi y=4');
+
+  // Temp dosyasını temizle
+  try { await fs.unlink(tmpPath); } catch {}
 }
 
 main().catch(error => {
