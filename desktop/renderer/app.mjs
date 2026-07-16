@@ -20,6 +20,13 @@ import { initTheme } from '../../core/theme.js';
 
 const VALID_MODES = new Set(['review', 'move', 'setup', 'marker']);
 
+const MODE_HINTS = {
+  review: 'Hamle ağacında gezin.',
+  move: 'Tahtaya tıklayarak seçili düğümden yeni hamle ekle.',
+  setup: 'Tahtaya tıklayarak başlangıç taşı döngüsü yap.',
+  marker: 'Tahtaya tıklayarak işaret ekle veya kaldır.',
+};
+
 const boardRenderer = createBoardRenderer('svg');
 const boardAdapter = createStudioBoardAdapter(BoardState);
 const api = globalThis.studioAPI ?? createOfflineApi();
@@ -33,6 +40,8 @@ const elements = {
   candidateList: document.querySelector('[data-candidate-list]'),
   candidateEmpty: document.querySelector('[data-candidate-empty]'),
   candidateSummaryNote: document.querySelector('[data-candidate-summary-note]'),
+  candidateDetails: document.querySelector('[data-candidate-details]'),
+  candidateCount: document.querySelector('[data-candidate-count]'),
   candidatePreviewPanel: document.querySelector('[data-candidate-preview-panel]'),
   candidateStatus: document.querySelector('[data-candidate-status]'),
   candidateReadonlyMessage: document.querySelector('[data-candidate-readonly-message]'),
@@ -46,6 +55,7 @@ const elements = {
   candidateReadonlyBanner: document.querySelector('[data-candidate-readonly-banner]'),
   board: document.getElementById('studio-board'),
   boardCaption: document.getElementById('studio-board-caption'),
+  modeHint: document.querySelector('[data-mode-hint]'),
   docTitle: document.querySelector('[data-doc-title]'),
   docStatus: document.querySelector('[data-doc-status]'),
   docSection: document.querySelector('[data-doc-section]'),
@@ -60,6 +70,7 @@ const elements = {
   actionOpen: document.querySelector('[data-action-open]'),
   actionSave: document.querySelector('[data-action-save]'),
   actionSaveAs: document.querySelector('[data-action-save-as]'),
+  saveFeedback: document.querySelector('[data-save-feedback]'),
   treeSummary: document.querySelector('[data-move-tree-summary]'),
   treePath: document.querySelector('[data-move-tree-path]'),
   treeViewport: document.querySelector('[data-move-tree-viewport]'),
@@ -89,6 +100,7 @@ const state = {
   activeCandidateId: null,
   activeCandidate: null,
   candidateMode: null,
+  candidatePanelManuallyToggled: false,
   activeDocumentPath: null,
   activeDocument: null,
   contentProducerMode: true,
@@ -180,6 +192,14 @@ function renderCandidatePanel(message = '') {
   elements.candidateEmpty.hidden = items.length > 0;
   elements.candidateSummaryNote.textContent = message || `Adaylar salt-okunur önizleme olarak listelenir. ${items.length} aday yüklendi.`;
   elements.candidateList.replaceChildren(...items.map(renderCandidateItem));
+  if (elements.candidateCount) {
+    elements.candidateCount.textContent = items.length > 0 ? `${items.length} aday` : 'Aday yok';
+  }
+  // Aday yoksa panel kompakt (kapalı) kalır; kullanıcı elle açıp kapattıysa
+  // müdahale edilmez. Aday sayısı 0'dan büyüğe geçince otomatik açılır.
+  if (elements.candidateDetails && !state.candidatePanelManuallyToggled) {
+    elements.candidateDetails.open = items.length > 0;
+  }
   renderCandidateDetails();
 }
 
@@ -321,9 +341,20 @@ function renderModeSelector() {
     btn.setAttribute('aria-pressed', String(m === state.activeMode));
     btn.disabled = readOnly && m !== 'review';
   }
+  if (elements.modeHint) {
+    elements.modeHint.textContent = readOnly
+      ? 'Aday önizlemesi salt-okunur; düzenleme modları (Hamle, Kurulum, İşaret) kilitli.'
+      : (MODE_HINTS[state.activeMode] ?? MODE_HINTS.review);
+  }
 }
 
 function wireActions() {
+  if (elements.candidateDetails) {
+    elements.candidateDetails.addEventListener('toggle', () => {
+      state.candidatePanelManuallyToggled = true;
+    });
+  }
+
   elements.producerToggle.addEventListener('click', async () => {
     state.contentProducerMode = !state.contentProducerMode;
     elements.contentMode.value = state.contentProducerMode ? 'producer' : 'editor';
@@ -410,10 +441,11 @@ function wireActions() {
     syncDocumentFromSelection();
     if (!state.activeDocumentPath && typeof api.saveDocumentAs === 'function') {
       const result = await api.saveDocumentAs(state.activeDocument);
-      if (result?.canceled) { renderTreeStatus('Kaydetme iptal edildi.'); return; }
+      if (result?.canceled) { renderTreeStatus('Kaydetme iptal edildi.'); renderSaveFeedback('Kaydetme iptal edildi.', 'muted'); return; }
       if (result?.document) {
         setActiveDocument(result.document, { keepSelection: true, filePath: result.filePath ?? null, preserveCandidateSession: isCandidateWorkingMode() });
         renderTreeStatus('Farklı kaydedildi.');
+        renderSaveFeedback('Farklı kaydedildi.', 'success');
       }
       return;
     }
@@ -421,10 +453,11 @@ function wireActions() {
       return;
     }
     const result = await api.saveDocument(state.activeDocument);
-    if (result?.canceled) { renderTreeStatus('Kaydetme iptal edildi.'); return; }
+    if (result?.canceled) { renderTreeStatus('Kaydetme iptal edildi.'); renderSaveFeedback('Kaydetme iptal edildi.', 'muted'); return; }
     if (result?.document) {
       setActiveDocument(result.document, { keepSelection: true, filePath: result.filePath ?? null, preserveCandidateSession: isCandidateWorkingMode() });
       renderTreeStatus('Kaydedildi.');
+      renderSaveFeedback('Kaydedildi.', 'success');
     }
   });
 
@@ -434,10 +467,11 @@ function wireActions() {
     }
     syncDocumentFromSelection();
     const result = await api.saveDocumentAs(state.activeDocument);
-    if (result?.canceled) { renderTreeStatus('Kaydetme iptal edildi.'); return; }
+    if (result?.canceled) { renderTreeStatus('Kaydetme iptal edildi.'); renderSaveFeedback('Kaydetme iptal edildi.', 'muted'); return; }
     if (result?.document) {
       setActiveDocument(result.document, { keepSelection: true, filePath: result.filePath ?? null, preserveCandidateSession: isCandidateWorkingMode() });
       renderTreeStatus('Farklı kaydedildi.');
+      renderSaveFeedback('Farklı kaydedildi.', 'success');
     }
   });
 
@@ -783,6 +817,12 @@ function renderSelectedNodeMetadata() {
 
 function renderTreeStatus(message) {
   elements.treeStatus.textContent = message;
+}
+
+function renderSaveFeedback(message, tone = 'muted') {
+  if (!elements.saveFeedback) return;
+  elements.saveFeedback.textContent = message;
+  elements.saveFeedback.dataset.tone = tone;
 }
 
 function buildTreeStatus() {

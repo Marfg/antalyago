@@ -48,16 +48,21 @@
           </section>
 
           <section class="panel candidate-panel" aria-label="Problem adayları">
-            <div class="panel__header">
-              <h2>Problem Adayları</h2>
-            </div>
-            <div class="panel__body">
-              <p class="board-caption candidate-panel__intro" data-candidate-summary-note>
-                Adaylar salt-okunur önizleme olarak listelenir.
-              </p>
-              <div class="empty-state" data-candidate-empty hidden>Aday bulunamadı. Kaynak kataloğu boş ya da aday dosyaları okunamadı.</div>
-              <ul class="candidate-list" data-candidate-list aria-label="Problem adayları listesi"></ul>
-            </div>
+            <details class="candidate-panel__details" data-candidate-details>
+              <summary class="panel__header candidate-panel__summary">
+                <div class="candidate-panel__summary-row">
+                  <h2>Problem Adayları</h2>
+                  <span class="candidate-panel__count" data-candidate-count>Aday yok</span>
+                </div>
+              </summary>
+              <div class="panel__body">
+                <p class="board-caption candidate-panel__intro" data-candidate-summary-note>
+                  Adaylar salt-okunur önizleme olarak listelenir.
+                </p>
+                <div class="empty-state" data-candidate-empty hidden>Aday bulunamadı. Kaynak kataloğu boş ya da aday dosyaları okunamadı.</div>
+                <ul class="candidate-list" data-candidate-list aria-label="Problem adayları listesi"></ul>
+              </div>
+            </details>
           </section>
 
           <section class="panel">
@@ -71,6 +76,7 @@
                 <button type="button" class="button secondary" data-action-save>Kaydet</button>
                 <button type="button" class="button secondary" data-action-save-as>Farklı kaydet</button>
               </div>
+              <p class="save-feedback" data-save-feedback aria-live="polite"></p>
             </div>
           </section>
         </aside>
@@ -82,6 +88,7 @@
             <button type="button" class="button secondary" data-mode="setup" aria-pressed="false">Kurulum</button>
             <button type="button" class="button secondary" data-mode="marker" aria-pressed="false">İşaret</button>
           </div>
+          <p class="board-caption mode-hint" data-mode-hint aria-live="polite"></p>
           <div class="board-shell">
             <div class="board-frame" id="studio-board" aria-label="Go tahtası"></div>
           </div>

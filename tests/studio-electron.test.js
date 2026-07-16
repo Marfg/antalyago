@@ -51,6 +51,9 @@ async function main() {
   await testStudioHeartbeatFlow();
   await testHumanizeMoveCoordinateLabels();
   await testInspectorOverflowFix();
+  await testSaveFeedbackNearButtons();
+  await testModeHintText();
+  await testCandidatePanelCompact();
   console.log('studio-electron.test.js: ok');
 }
 
@@ -969,6 +972,130 @@ async function testInspectorOverflowFix() {
   assert.ok(html.includes('data-move-tree-next'), 'Sonraki butonu DOM\'da mevcut');
   assert.ok(html.includes('data-move-tree-promote'), 'Ana dal yap butonu DOM\'da mevcut');
   assert.ok(html.includes('data-move-tree-delete'), 'Varyantı sil butonu DOM\'da mevcut');
+}
+
+async function testSaveFeedbackNearButtons() {
+  // ── HTML: geri bildirim elemanı Hızlı işlemler panelinde, kaydet
+  // butonlarına yakın (aynı panel__body içinde, field-grid'den hemen sonra) ──
+  const html = await fs.readFile(path.join(root, 'desktop', 'index.html'), 'utf8');
+  assert.ok(html.includes('data-save-feedback'), 'save-feedback elemanı DOM\'da mevcut');
+  assert.ok(/aria-live="polite"[^>]*data-save-feedback|data-save-feedback[^>]*aria-live="polite"/.test(html), 'save-feedback aria-live="polite" taşıyor');
+
+  const quickActionsStart = html.indexOf('Hızlı işlemler');
+  const quickActionsEnd = html.indexOf('</section>', quickActionsStart);
+  const quickActionsBlock = html.slice(quickActionsStart, quickActionsEnd > 0 ? quickActionsEnd : quickActionsStart + 1200);
+  assert.ok(quickActionsBlock.includes('data-action-save'), 'Kaydet butonu Hızlı işlemler bloğunda');
+  assert.ok(quickActionsBlock.includes('data-action-save-as'), 'Farklı kaydet butonu Hızlı işlemler bloğunda');
+  assert.ok(quickActionsBlock.includes('data-save-feedback'), 'save-feedback aynı blokta — butonlara yakın');
+
+  // ── JS: renderTreeStatus kaldırılmadı, sadece yakın feedback eklendi ──
+  const appSrc = await fs.readFile(path.join(root, 'desktop', 'renderer', 'app.mjs'), 'utf8');
+  assert.ok(appSrc.includes('function renderSaveFeedback(message, tone'), 'renderSaveFeedback fonksiyonu mevcut');
+  assert.ok(appSrc.includes("elements.saveFeedback.textContent = message"), 'renderSaveFeedback mesajı yazıyor');
+  assert.ok(appSrc.includes("elements.saveFeedback.dataset.tone = tone"), 'renderSaveFeedback tonu yazıyor');
+
+  const saveHandlerStart = appSrc.indexOf("elements.actionSave.addEventListener");
+  const saveAsHandlerStart = appSrc.indexOf("elements.actionSaveAs.addEventListener");
+  const saveHandlerBlock = appSrc.slice(saveHandlerStart, saveAsHandlerStart);
+  assert.ok(saveHandlerBlock.includes("renderTreeStatus('Kaydedildi.')"), 'mevcut Kaydedildi. renderTreeStatus mesajı korunuyor');
+  assert.ok(saveHandlerBlock.includes("renderTreeStatus('Farklı kaydedildi.')"), 'mevcut Farklı kaydedildi. renderTreeStatus mesajı korunuyor');
+  assert.ok(saveHandlerBlock.includes("renderTreeStatus('Kaydetme iptal edildi.')"), 'mevcut iptal renderTreeStatus mesajı korunuyor');
+  assert.ok(saveHandlerBlock.includes("renderSaveFeedback('Kaydedildi.', 'success')"), 'Kaydet: yakın başarı feedback\'i eklendi');
+  assert.ok(saveHandlerBlock.includes("renderSaveFeedback('Farklı kaydedildi.', 'success')"), 'Kaydet (ilk kayıt, save-as fallback): yakın başarı feedback\'i eklendi');
+  assert.ok(saveHandlerBlock.includes("renderSaveFeedback('Kaydetme iptal edildi.', 'muted')"), 'Kaydet: yakın iptal feedback\'i eklendi');
+
+  const saveAsHandlerEnd = appSrc.indexOf('\n  });', saveAsHandlerStart);
+  const saveAsHandlerBlock = appSrc.slice(saveAsHandlerStart, saveAsHandlerEnd > 0 ? saveAsHandlerEnd : saveAsHandlerStart + 600);
+  assert.ok(saveAsHandlerBlock.includes("renderSaveFeedback('Farklı kaydedildi.', 'success')"), 'Farklı kaydet: yakın başarı feedback\'i eklendi');
+  assert.ok(saveAsHandlerBlock.includes("renderSaveFeedback('Kaydetme iptal edildi.', 'muted')"), 'Farklı kaydet: yakın iptal feedback\'i eklendi');
+
+  // CSS: tonlar tanımlı
+  const css = await fs.readFile(path.join(root, 'desktop', 'renderer', 'studio.css'), 'utf8');
+  assert.ok(css.includes('.save-feedback'), 'save-feedback CSS kuralı mevcut');
+  assert.ok(css.includes('[data-tone="success"]'), 'success tonu CSS\'te tanımlı');
+}
+
+async function testModeHintText() {
+  // Saf yeniden uygulama: app.mjs'deki mod ipucu seçim mantığı
+  const MODE_HINTS = {
+    review: 'Hamle ağacında gezin.',
+    move: 'Tahtaya tıklayarak seçili düğümden yeni hamle ekle.',
+    setup: 'Tahtaya tıklayarak başlangıç taşı döngüsü yap.',
+    marker: 'Tahtaya tıklayarak işaret ekle veya kaldır.',
+  };
+  function resolveHint(activeMode, readOnly) {
+    return readOnly
+      ? 'Aday önizlemesi salt-okunur; düzenleme modları (Hamle, Kurulum, İşaret) kilitli.'
+      : (MODE_HINTS[activeMode] ?? MODE_HINTS.review);
+  }
+
+  assert.equal(resolveHint('review', false), 'Hamle ağacında gezin.', 'İncele ipucu');
+  assert.equal(resolveHint('move', false), 'Tahtaya tıklayarak seçili düğümden yeni hamle ekle.', 'Hamle ipucu');
+  assert.equal(resolveHint('setup', false), 'Tahtaya tıklayarak başlangıç taşı döngüsü yap.', 'Kurulum ipucu');
+  assert.equal(resolveHint('marker', false), 'Tahtaya tıklayarak işaret ekle veya kaldır.', 'İşaret ipucu');
+  // Candidate salt-okunur modda, aktif mod ne olursa olsun kilit mesajı gösterilir
+  assert.equal(resolveHint('review', true), 'Aday önizlemesi salt-okunur; düzenleme modları (Hamle, Kurulum, İşaret) kilitli.', 'salt-okunur kilit mesajı');
+  assert.equal(resolveHint('move', true), 'Aday önizlemesi salt-okunur; düzenleme modları (Hamle, Kurulum, İşaret) kilitli.', 'salt-okunur kilit mesajı mod fark etmeksizin');
+
+  // ── Kaynak guard ──
+  const html = await fs.readFile(path.join(root, 'desktop', 'index.html'), 'utf8');
+  assert.ok(html.includes('data-mode-hint'), 'mode-hint elemanı DOM\'da mevcut');
+  const modeToolbarIdx = html.indexOf('data-mode-toolbar');
+  const modeHintIdx = html.indexOf('data-mode-hint');
+  const boardShellIdx = html.indexOf('board-shell');
+  assert.ok(modeToolbarIdx < modeHintIdx && modeHintIdx < boardShellIdx, 'mode-hint mode-toolbar ile board-shell arasında (mode toolbar yakınında)');
+
+  const appSrc = await fs.readFile(path.join(root, 'desktop', 'renderer', 'app.mjs'), 'utf8');
+  assert.ok(appSrc.includes('const MODE_HINTS = {'), 'MODE_HINTS sabiti mevcut');
+  assert.ok(appSrc.includes("review: 'Hamle ağacında gezin.'"), 'review ipucu kaynak dosyada');
+  assert.ok(appSrc.includes("move: 'Tahtaya tıklayarak seçili düğümden yeni hamle ekle.'"), 'move ipucu kaynak dosyada');
+  assert.ok(appSrc.includes("setup: 'Tahtaya tıklayarak başlangıç taşı döngüsü yap.'"), 'setup ipucu kaynak dosyada');
+  assert.ok(appSrc.includes("marker: 'Tahtaya tıklayarak işaret ekle veya kaldır.'"), 'marker ipucu kaynak dosyada');
+  assert.ok(appSrc.includes('elements.modeHint.textContent'), 'renderModeSelector modeHint\'i güncelliyor');
+
+  // Mevcut davranışlar (aria-pressed / disabled mantığı) değişmedi
+  const fnStart = appSrc.indexOf('function renderModeSelector');
+  const fnEnd = appSrc.indexOf('\nfunction ', fnStart + 1);
+  const fnBody = appSrc.slice(fnStart, fnEnd > 0 ? fnEnd : fnStart + 700);
+  assert.ok(fnBody.includes("btn.setAttribute('aria-pressed'"), 'aria-pressed mantığı korunuyor');
+  assert.ok(fnBody.includes('btn.disabled = readOnly'), 'disabled mantığı korunuyor');
+}
+
+async function testCandidatePanelCompact() {
+  // Saf yeniden uygulama: app.mjs'deki panel açık/kapalı karar mantığı
+  function shouldBeOpen(itemCount, manuallyToggled) {
+    if (manuallyToggled) return null; // dokunulmaz
+    return itemCount > 0;
+  }
+  assert.equal(shouldBeOpen(0, false), false, '0 aday: panel kapalı/kompakt');
+  assert.equal(shouldBeOpen(3, false), true, 'adaylar var: panel açık');
+  assert.equal(shouldBeOpen(0, true), null, 'kullanıcı elle değiştirdiyse müdahale edilmez (0 aday)');
+  assert.equal(shouldBeOpen(3, true), null, 'kullanıcı elle değiştirdiyse müdahale edilmez (adaylar var)');
+
+  // ── Kaynak guard: HTML yapısı ──
+  const html = await fs.readFile(path.join(root, 'desktop', 'index.html'), 'utf8');
+  assert.ok(html.includes('data-candidate-details'), 'candidate-details <details> elemanı mevcut');
+  assert.ok(html.includes('data-candidate-count'), 'candidate-count elemanı mevcut');
+  assert.ok(html.includes('<details class="candidate-panel__details" data-candidate-details>'), 'details kapalı başlıyor (open attribute yok)');
+  assert.ok(html.includes('data-candidate-list'), 'candidate-list hâlâ mevcut (Kütüphane/aday akışı bozulmadı)');
+  assert.ok(html.includes('data-candidate-empty'), 'candidate-empty hâlâ mevcut');
+  assert.ok(html.includes('data-candidate-preview-panel'), 'candidate-preview-panel hâlâ mevcut (preview akışı bozulmadı)');
+  assert.ok(html.includes('data-candidate-work'), 'candidate-work butonu hâlâ mevcut (working document akışı bozulmadı)');
+  assert.ok(html.includes('data-action-new') && html.includes('data-action-open'), 'Hızlı işlemler butonları bozulmadı');
+
+  // ── Kaynak guard: JS mantığı ──
+  const appSrc = await fs.readFile(path.join(root, 'desktop', 'renderer', 'app.mjs'), 'utf8');
+  assert.ok(appSrc.includes('candidatePanelManuallyToggled'), 'manuel toggle takibi mevcut');
+  assert.ok(appSrc.includes("elements.candidateDetails.addEventListener('toggle'"), 'toggle event listener bağlı');
+
+  const fnStart = appSrc.indexOf('function renderCandidatePanel');
+  const fnEnd = appSrc.indexOf('\nfunction ', fnStart + 1);
+  const fnBody = appSrc.slice(fnStart, fnEnd > 0 ? fnEnd : fnStart + 800);
+  assert.ok(fnBody.includes('elements.candidateDetails.open = items.length > 0'), 'açık/kapalı kararı aday sayısına göre');
+  assert.ok(fnBody.includes('!state.candidatePanelManuallyToggled'), 'kullanıcı elle değiştirdiyse otomatik kapatma/açma atlanıyor');
+  assert.ok(fnBody.includes('elements.candidateEmpty.hidden = items.length > 0'), 'mevcut empty-state mantığı korunuyor');
+  assert.ok(fnBody.includes('elements.candidateList.replaceChildren'), 'mevcut liste render mantığı korunuyor');
+  assert.ok(fnBody.includes('renderCandidateDetails()'), 'mevcut aday detay render çağrısı korunuyor');
 }
 
 main().catch(error => {
