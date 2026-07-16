@@ -438,10 +438,7 @@ textarea {
 
 .inspector {
   max-height: calc(100vh - 8rem);
-}
-
-.inspector .panel {
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .inspector .panel__body {
@@ -590,10 +587,6 @@ textarea {
 
 .button.danger:hover {
   background: rgba(237, 117, 111, 0.24);
-}
-
-.move-tree-panel {
-  overflow: hidden;
 }
 
 .move-tree-panel__header {

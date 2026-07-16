@@ -49,6 +49,8 @@ async function main() {
   await testEmptyDocumentState();
   await testFileRoundTrip();
   await testStudioHeartbeatFlow();
+  await testHumanizeMoveCoordinateLabels();
+  await testInspectorOverflowFix();
   console.log('studio-electron.test.js: ok');
 }
 
@@ -286,7 +288,7 @@ async function testMoveTreeVisual() {
   // Test 8: S3B — aktif yol kenarları ayrı katmanda
   assert.ok(appSrc.includes('tree-edge--active-path'), 'aktif yol kenar sınıfı mevcut');
   assert.ok(appSrc.includes('activePathIds'), 'activePathIds buildMoveTreeSvg\'ye geçiyor');
-  assert.ok(appSrc.includes("buildMoveTreeSvg(root, mainlineIds, activePathIds)"), 'üçüncü parametre geçiliyor');
+  assert.ok(appSrc.includes("buildMoveTreeSvg(root, mainlineIds, activePathIds, size)"), 'üçüncü parametre geçiliyor');
 
   // Test 9: S3B — aktif node scroll + tooltip
   assert.ok(appSrc.includes('scrollIntoView'), 'aktif node scroll mevcut');
@@ -869,6 +871,104 @@ async function testStudioHeartbeatFlow() {
 
   // Temp dosyasını temizle
   try { await fs.unlink(tmpPath); } catch {}
+}
+
+async function testHumanizeMoveCoordinateLabels() {
+  // Saf yeniden uygulama: app.mjs humanizeMove ile birebir aynı mantık
+  // (boardRenderer.js satır etiketleriyle uyumlu: row = size - move.y)
+  function humanizeMove(move, size = 9) {
+    if (!move) return 'hamle yok';
+    const color = move.color === 'white' ? 'Beyaz' : 'Siyah';
+    if (move.pass) return `${color} Pas`;
+    const letters = 'ABCDEFGHJKLMNOPQRST';
+    const column = letters[move.x] ?? String(move.x);
+    const row = Number.isInteger(move.y) ? `${size - move.y}` : '?';
+    return `${color} ${column}${row}`;
+  }
+
+  // 9x9
+  assert.equal(humanizeMove({ color: 'black', x: 6, y: 6 }, 9), 'Siyah G3', '9x9 (6,6) → G3');
+  assert.equal(humanizeMove({ color: 'black', x: 0, y: 0 }, 9), 'Siyah A9', '9x9 (0,0) → A9 (sol üst köşe)');
+  assert.equal(humanizeMove({ color: 'white', x: 8, y: 8 }, 9), 'Beyaz J1', '9x9 (8,8) → J1 (I harfi atlanır)');
+
+  // 19x19
+  assert.equal(humanizeMove({ color: 'black', x: 3, y: 3 }, 19), 'Siyah D16', '19x19 (3,3) → D16');
+
+  // Pas hamlesi satır hesaplamasından etkilenmez
+  assert.equal(humanizeMove({ color: 'black', pass: true }, 9), 'Siyah Pas', 'pas hamlesi "Pas" kalır');
+  assert.equal(humanizeMove({ color: 'white', pass: true }, 19), 'Beyaz Pas', '19x19 pas hamlesi de "Pas" kalır');
+
+  // size verilmezse güvenli varsayılan (9) kullanılır
+  assert.equal(humanizeMove({ color: 'black', x: 4, y: 4 }), 'Siyah E5', 'size parametresi verilmezse 9 varsayılan');
+
+  // ── Kaynak guard: gerçek app.mjs boardRenderer ile aynı yönü kullanıyor ──
+  const appSrc = await fs.readFile(path.join(root, 'desktop', 'renderer', 'app.mjs'), 'utf8');
+  const boardRendererSrc = await fs.readFile(path.join(root, 'studio', 'boardRenderer.js'), 'utf8');
+  assert.ok(boardRendererSrc.includes('String(size - i)'), 'boardRenderer satır etiketi formülü referans olarak sabit');
+
+  const fnStart = appSrc.indexOf('function humanizeMove');
+  const fnEnd = appSrc.indexOf('\nfunction ', fnStart + 1);
+  const fnBody = appSrc.slice(fnStart, fnEnd > 0 ? fnEnd : fnStart + 500);
+  assert.ok(fnBody.includes('size - move.y'), 'humanizeMove boardRenderer ile aynı satır formülünü kullanıyor');
+  assert.ok(!fnBody.includes('move.y + 1'), 'humanizeMove eski ters formülü içermiyor');
+
+  // ── Kaynak guard: tüm çağrı noktaları size parametresi geçiyor ──
+  const callSites = [
+    /humanizeMove\(node\.move, size\)/,
+    /humanizeMove\(node\.move, doc\.board\?\.size \?\? 9\)/,
+    /humanizeMove\(result\.node\.move, boardState\.size\)/,
+    /humanizeMove\(result\.node\.move, doc\.board\?\.size \?\? 9\)/,
+  ];
+  for (const pattern of callSites) {
+    assert.ok(pattern.test(appSrc), `humanizeMove çağrı noktası size geçiriyor: ${pattern}`);
+  }
+  // Her humanizeMove(...) çağrısı/tanımı iki argüman içermeli (virgül var) —
+  // eski, size'sız tek argümanlı çağrı biçimi kalmamalı
+  const invocations = appSrc.match(/humanizeMove\([^)]*\)/g) ?? [];
+  assert.ok(invocations.length >= 6, `humanizeMove çağrı/tanım sayısı beklenenden az: ${invocations.length}`);
+  for (const call of invocations) {
+    assert.ok(call.includes(','), `humanizeMove çağrısı size argümanı içeriyor: ${call}`);
+  }
+  assert.ok(appSrc.includes('function formatPathLabel(node, index, total, size)'), 'formatPathLabel size parametresi alıyor');
+  assert.ok(appSrc.includes('function renderPathNode(node, index, total, size)'), 'renderPathNode size parametresi alıyor');
+  assert.ok(appSrc.includes('function buildMoveTreeSvg(root, mainlineIds, activePathIds, size = 9)'), 'buildMoveTreeSvg size parametresi alıyor');
+  assert.ok(appSrc.includes('renderMoveTree(doc.moveTree, doc.board?.size ?? boardState.size ?? 9)'), 'renderMoveTree çağrısı doküman board boyutunu geçiriyor');
+}
+
+async function testInspectorOverflowFix() {
+  const css = await fs.readFile(path.join(root, 'desktop', 'renderer', 'studio.css'), 'utf8');
+
+  // .inspector artık kendi içinde scroll edilebilir
+  // (not: dosyada ".rail,\n.inspector { display:flex... }" gibi birleşik bir
+  // selector da var; burada özellikle max-height kuralını taşıyan bloğu hedefliyoruz)
+  const inspectorRuleMatch = css.match(/\.inspector\s*\{\s*max-height:[^}]*\}/);
+  assert.ok(inspectorRuleMatch, '.inspector max-height kuralı mevcut');
+  assert.ok(/overflow-y:\s*auto/.test(inspectorRuleMatch[0]), '.inspector overflow-y: auto içeriyor');
+  assert.ok(/max-height/.test(inspectorRuleMatch[0]), '.inspector hâlâ viewport yüksekliğiyle sınırlı (tüm sayfa taşmıyor)');
+
+  // Panelleri flex-shrink ile ezip içeriği gizleyen eski kurallar kaldırıldı
+  assert.ok(!/\.inspector\s+\.panel\s*\{[^}]*overflow:\s*hidden/.test(css), '.inspector .panel artık overflow:hidden ile kırpmıyor');
+  assert.ok(!/\.move-tree-panel\s*\{[^}]*overflow:\s*hidden/.test(css), '.move-tree-panel artık overflow:hidden ile kırpmıyor');
+
+  // Gerçekten kendi içinde taşması gereken alanlar (teknik JSON, ağaç canvas'ı)
+  // kendi scroll'unu korumalı — bunlar bilinçli olarak dokunulmadı
+  assert.ok(/\.technical-details pre\s*\{[^}]*overflow:\s*auto/.test(css), 'technical-details pre kendi içinde scroll ediyor (dokunulmadı)');
+  assert.ok(/\.move-tree-viewport\s*\{[^}]*overflow:\s*auto/.test(css), 'move-tree-viewport kendi içinde scroll ediyor (dokunulmadı)');
+
+  // Hamle ağacı üst kontrolleri hâlâ CSS'te ve HTML'de tanımlı — kaldırılmadı, sadece kırpılmıyor
+  assert.ok(css.includes('.move-tree-panel__header'), 'move-tree-panel__header CSS kuralı hâlâ mevcut');
+  assert.ok(css.includes('.move-tree-panel__zoom'), 'move-tree-panel__zoom CSS kuralı hâlâ mevcut');
+  assert.ok(css.includes('.move-tree-path'), 'move-tree-path CSS kuralı hâlâ mevcut');
+  assert.ok(css.includes('.move-tree-toolbar'), 'move-tree-toolbar CSS kuralı hâlâ mevcut');
+
+  const html = await fs.readFile(path.join(root, 'desktop', 'index.html'), 'utf8');
+  assert.ok(html.includes('data-move-tree-zoom-out'), 'zoom out butonu DOM\'da mevcut');
+  assert.ok(html.includes('data-move-tree-zoom-in'), 'zoom in butonu DOM\'da mevcut');
+  assert.ok(html.includes('data-move-tree-path'), 'path breadcrumb konteyneri DOM\'da mevcut');
+  assert.ok(html.includes('data-move-tree-prev'), 'Önceki butonu DOM\'da mevcut');
+  assert.ok(html.includes('data-move-tree-next'), 'Sonraki butonu DOM\'da mevcut');
+  assert.ok(html.includes('data-move-tree-promote'), 'Ana dal yap butonu DOM\'da mevcut');
+  assert.ok(html.includes('data-move-tree-delete'), 'Varyantı sil butonu DOM\'da mevcut');
 }
 
 main().catch(error => {

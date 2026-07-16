@@ -581,7 +581,7 @@ function renderActiveDocument() {
   const boardState = boardAdapter.fromMoveTree(doc.moveTree, state.selectedNodeId);
   const renderBoard = { ...boardAdapter.toDocumentBoard(boardState), markers: doc.board?.markers ?? [] };
   boardRenderer.render(elements.board, renderBoard);
-  renderMoveTree(doc.moveTree);
+  renderMoveTree(doc.moveTree, doc.board?.size ?? boardState.size ?? 9);
   renderSelectedNodeMetadata();
   renderTreeStatus(buildTreeStatus());
   renderCandidateState();
@@ -595,18 +595,18 @@ function renderActiveDocument() {
     : `Belge doğrulaması: ${validation.errors.length} hata, ${validation.warnings.length} uyarı.`);
   renderModeSelector();
 }
-function renderMoveTree(moveTree) {
+function renderMoveTree(moveTree, size = 9) {
   const root = moveTree.root;
   const path = getMovePath(root, state.selectedNodeId);
   const mainlineIds = getMainlineIdSet(root);
   const activePathIds = new Set(path.map(n => n.id));
   elements.treeSummary.textContent = `Hamle ağacı · ${countTreeNodes(root)} düğüm · ${countTreeBranches(root)} dal`;
 
-  elements.treePath.replaceChildren(...path.map((node, index) => renderPathNode(node, index, path.length)));
+  elements.treePath.replaceChildren(...path.map((node, index) => renderPathNode(node, index, path.length, size)));
   elements.treeCanvas.style.transform = `scale(${state.treeZoom.toFixed(2)})`;
   elements.treeCanvas.style.transformOrigin = 'top left';
 
-  elements.treeCanvas.replaceChildren(buildMoveTreeSvg(root, mainlineIds, activePathIds));
+  elements.treeCanvas.replaceChildren(buildMoveTreeSvg(root, mainlineIds, activePathIds, size));
 
   const activeNode = findMoveNode(root, state.selectedNodeId) ?? root;
   elements.treeViewport.setAttribute('aria-activedescendant', `tree-node-${activeNode.id}`);
@@ -618,7 +618,7 @@ function renderMoveTree(moveTree) {
   });
 }
 
-function buildMoveTreeSvg(root, mainlineIds, activePathIds) {
+function buildMoveTreeSvg(root, mainlineIds, activePathIds, size = 9) {
   const R  = 13;   // node yarıçapı
   const CW = 44;   // sütun genişliği
   const RH = 50;   // satır yüksekliği
@@ -708,7 +708,7 @@ function buildMoveTreeSvg(root, mainlineIds, activePathIds) {
     const ttl = document.createElementNS(ns, 'title');
     ttl.textContent = node.id === 'root'
       ? 'Başlangıç pozisyonu'
-      : `${dep.get(node.id) ?? 0}. hamle — ${humanizeMove(node.move)}`;
+      : `${dep.get(node.id) ?? 0}. hamle — ${humanizeMove(node.move, size)}`;
     g.appendChild(ttl);
 
     // Aktif halka
@@ -754,13 +754,13 @@ function buildMoveTreeSvg(root, mainlineIds, activePathIds) {
   return svg;
 }
 
-function renderPathNode(node, index, total) {
+function renderPathNode(node, index, total, size) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'move-tree-chip';
   if (node.id === state.selectedNodeId) button.classList.add('is-active');
   button.dataset.nodeId = node.id;
-  button.textContent = formatPathLabel(node, index, total);
+  button.textContent = formatPathLabel(node, index, total, size);
   button.setAttribute('aria-pressed', String(node.id === state.selectedNodeId));
   return button;
 }
@@ -793,7 +793,7 @@ function buildTreeStatus() {
   const label = node.id === 'root' ? 'Kök' : formatMoveNumber(path.length - 1);
   return node.id === 'root'
     ? 'Kök formasyon seçili.'
-    : `${label} · ${humanizeMove(node.move)} seçili.`;
+    : `${label} · ${humanizeMove(node.move, doc.board?.size ?? 9)} seçili.`;
 }
 
 function updateSelectedNodeMetadata() {
@@ -844,7 +844,7 @@ function addMoveFromBoardClick(event) {
   state.selectedNodeId = result.node.id;
   syncDocumentFromSelection();
   renderActiveDocument();
-  renderTreeStatus(`Hamle eklendi: ${humanizeMove(result.node.move)}`);
+  renderTreeStatus(`Hamle eklendi: ${humanizeMove(result.node.move, boardState.size)}`);
 }
 
 function cycleSetupStone(formation, x, y) {
@@ -930,7 +930,7 @@ function addTreeMoveFromForm() {
   state.selectedNodeId = result.node.id;
   syncDocumentFromSelection();
   renderActiveDocument();
-  renderTreeStatus(`Hamle eklendi: ${humanizeMove(result.node.move)}`);
+  renderTreeStatus(`Hamle eklendi: ${humanizeMove(result.node.move, doc.board?.size ?? 9)}`);
 }
 function requestDeleteSelectedVariant() {
   const doc = state.activeDocument;
@@ -941,7 +941,7 @@ function requestDeleteSelectedVariant() {
   }
   const node = findMoveNode(doc.moveTree.root, state.selectedNodeId);
   if (!node || node.id === 'root') return;
-  const label = humanizeMove(node.move);
+  const label = humanizeMove(node.move, doc.board?.size ?? 9);
   if (!window.confirm(`Bu varyantı silmek istiyor musunuz?\\n${label}`)) {
     return;
   }
@@ -1116,22 +1116,23 @@ function formatMoveNumber(index) {
   return `${index}. hamle`;
 }
 
-function formatPathLabel(node, index, total) {
+function formatPathLabel(node, index, total, size) {
   if (node.id === 'root') {
     return 'Kök';
   }
-  const move = humanizeMove(node.move);
+  const move = humanizeMove(node.move, size);
   const position = `${index}/${Math.max(total - 1, 1)}`;
   return `${position} · ${move}`;
 }
 
-function humanizeMove(move) {
+function humanizeMove(move, size = 9) {
   if (!move) return 'hamle yok';
   const color = move.color === 'white' ? 'Beyaz' : 'Siyah';
   if (move.pass) return `${color} Pas`;
   const letters = 'ABCDEFGHJKLMNOPQRST';
   const column = letters[move.x] ?? String(move.x);
-  const row = Number.isInteger(move.y) ? `${move.y + 1}` : '?';
+  // boardRenderer satır etiketleriyle aynı yön: üstten alta size..1 (bkz. boardRenderer.js `String(size - i)`)
+  const row = Number.isInteger(move.y) ? `${size - move.y}` : '?';
   return `${color} ${column}${row}`;
 }
 
