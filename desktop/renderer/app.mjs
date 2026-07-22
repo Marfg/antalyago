@@ -636,7 +636,14 @@ function renderActiveDocument() {
   elements.technicalDetails.open = false;
 
   const boardState = boardAdapter.fromMoveTree(doc.moveTree, state.selectedNodeId);
-  const renderBoard = { ...boardAdapter.toDocumentBoard(boardState), markers: doc.board?.markers ?? [] };
+  const activeNode = findMoveNode(doc.moveTree.root, state.selectedNodeId);
+  // Yalnız SEÇİLİ düğümün annotation'ları gösterilir — node değişince marker
+  // görünümü de değişir (S10E). Eski/global doc.board.markers geriye uyumluluk
+  // için ayrıca gösterilmeye devam eder, node-annotation'larla birleştirilir.
+  const renderBoard = {
+    ...boardAdapter.toDocumentBoard(boardState),
+    markers: [...(doc.board?.markers ?? []), ...nodeAnnotationsAsMarkers(activeNode)],
+  };
   boardRenderer.render(elements.board, renderBoard);
   renderMoveTree(doc.moveTree, doc.board?.size ?? boardState.size ?? 9);
   renderSelectedNodeMetadata();
@@ -940,29 +947,44 @@ function addStoneFromSetupClick(event) {
   renderTreeStatus(`Kurulum: ${label} (${coord.x},${coord.y})`);
 }
 
-function toggleBoardMarker(board, x, y) {
-  if (!board) return;
-  if (!Array.isArray(board.markers)) board.markers = [];
-  const idx = board.markers.findIndex(m => m.x === x && m.y === y);
-  if (idx === -1) {
-    board.markers.push({ x, y, type: 'circle' });
-  } else {
-    board.markers.splice(idx, 1);
-  }
+// S10E: işaret modu artık doc.board.markers (global, düz liste) yerine seçili
+// move-tree düğümünün annotations dizisine yazıyor — bu, D0 Annotation
+// Sözleşmesi'yle (studio/docs/desktop-architecture.md) ve dolayısıyla
+// formatSGF()'in SGF markup kaynağıyla (node.annotations, bkz. sgfAdapter.js)
+// uyumlu tek model. Varsayılan/tek tip: circle (bkz. S10E kapsam sınırı).
+// doc.board.markers alanı SİLİNMEZ — eski/global marker verisi hâlâ
+// renderActiveDocument'ta gösterilmeye devam eder (geriye uyumluluk).
+function nodeAnnotationsAsMarkers(node) {
+  return (Array.isArray(node?.annotations) ? node.annotations : [])
+    .filter(a => a?.type === 'circle' && a.point)
+    .map(a => ({ x: a.point.x, y: a.point.y, type: 'circle' }));
+}
+
+function toggleNodeCircleAnnotation(root, nodeId, x, y, boardSize) {
+  const node = findMoveNode(root, nodeId);
+  if (!node) return { ok: false, added: false };
+  const current = Array.isArray(node.annotations) ? node.annotations : [];
+  const idx = current.findIndex(a => a?.type === 'circle' && a.point?.x === x && a.point?.y === y);
+  const next = idx === -1
+    ? [...current, { type: 'circle', point: { x, y } }]
+    : current.filter((_, i) => i !== idx);
+  const ok = setMoveNodeAnnotations(root, nodeId, next, boardSize);
+  return { ok, added: idx === -1 };
 }
 
 function addMarkerFromBoardClick(event) {
   if (state.activeMode !== 'marker') return;
   const doc = state.activeDocument;
-  if (!doc?.board) return;
+  if (!doc?.moveTree?.root) return;
   if (isCandidatePreviewMode()) return;
-  const size = doc.board.size ?? 9;
+  const size = doc.board?.size ?? 9;
   const coord = boardClickCoord(event, elements.board, size);
   if (!coord) return;
-  toggleBoardMarker(doc.board, coord.x, coord.y);
+  const { ok, added } = toggleNodeCircleAnnotation(doc.moveTree.root, state.selectedNodeId, coord.x, coord.y, size);
+  if (!ok) return;
+  syncDocumentFromSelection();
   renderActiveDocument();
-  const exists = doc.board.markers?.some(m => m.x === coord.x && m.y === coord.y);
-  renderTreeStatus(`İşaret: ${exists ? 'Eklendi' : 'Kaldırıldı'} (${coord.x},${coord.y})`);
+  renderTreeStatus(`İşaret: ${added ? 'Eklendi' : 'Kaldırıldı'} (${coord.x},${coord.y})`);
 }
 
 function addTreeMoveFromForm() {

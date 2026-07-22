@@ -323,25 +323,38 @@ async function testSgfExportWarningsEndToEnd() {
 }
 
 async function testSgfExportMarkerAnnotationGap() {
-  // S10D BULGUSU (düzeltilmedi — bkz. kapanış raporu): "İşaret" (marker)
-  // modu (bkz. app.mjs addMarkerFromBoardClick/toggleBoardMarker) taşıdığı
-  // işaretleri YALNIZCA doc.board.markers'a yazıyor. formatSGF() ise
-  // markup'ı YALNIZCA node.annotations'tan okuyor (D0 Annotation Sözleşmesi,
-  // studio/docs/desktop-architecture.md). İkisi arasında hiçbir senkronizasyon
-  // yok — bu yüzden marker modunda eklenen bir işaret .agstudio'da görünür
-  // kalır (round-trip korunur, ekranda render edilir) ama SGF'e AKTARILMAZ,
-  // sessizce (warning bile üretmeden). Bu test mevcut (kusurlu) davranışı
-  // kanıtlıyor; "minimal düzeltme" kapsamına girmiyor çünkü doğru çözüm
-  // marker modunun etkileşim modelini (board.markers → hangi node'un
-  // annotations'ı?) yeniden tasarlamayı gerektiriyor — bu S10D'nin "büyük
-  // özellik/yeniden tasarım yok" sınırını aşıyor.
-  const doc = createDocument({ id: 'sgf-export-marker-gap', title: '', slug: 'sgf-export-marker-gap' });
-  doc.board.markers.push({ x: 2, y: 2, type: 'circle' }); // gerçek marker-modu şekli (toggleBoardMarker)
-  assert.equal(doc.moveTree.root.annotations.length, 0, 'ön koşul: node.annotations boş (marker modu buraya hiç yazmıyor)');
+  // S10D BULGUSU → S10E DÜZELTMESİ. S10D'de "İşaret" modunun işaretleri
+  // yalnız doc.board.markers'a yazdığı, formatSGF()'in ise yalnız
+  // node.annotations okuduğu (D0 Annotation Sözleşmesi) için marker'ların
+  // SGF export'ta sessizce kaybolduğu kanıtlanmıştı. S10E'de marker modu
+  // node.annotations'a yazacak şekilde düzeltildi (bkz. app.mjs
+  // toggleNodeCircleAnnotation, testMarkerModeClick). Bu test artık DÜZELTİLMİŞ
+  // davranışı gerçek export handler zinciriyle uçtan uca kanıtlıyor.
+  const { findMoveNode, setMoveNodeAnnotations } = await import('../studio/model/moveTree.js');
 
-  const { sgf, warnings } = formatSGF(doc);
-  assert.ok(!sgf.includes('CR[cc]'), 'BİLİNEN BOŞLUK: board.markers\'taki (2,2) circle SGF\'e hiç yansımıyor');
-  assert.deepEqual(warnings, [], 'BİLİNEN BOŞLUK: kayıp sessiz — kullanıcıyı uyaran bir warning de üretilmiyor');
+  // Gerçek marker-modu yazım şekli: toggleNodeCircleAnnotation'ın ürettiği
+  // {type:'circle', point:{x,y}} — node.annotations üzerinden, board.markers değil.
+  const doc = createDocument({ id: 'sgf-export-marker-fixed', title: '', slug: 'sgf-export-marker-fixed' });
+  const root = doc.moveTree.root;
+  const ok = setMoveNodeAnnotations(root, 'root', [{ type: 'circle', point: { x: 2, y: 2 } }], 9);
+  assert.ok(ok, 'ön koşul: circle annotation node üzerinde ayarlanabildi');
+  assert.equal(findMoveNode(root, 'root').annotations.length, 1, 'ön koşul: annotation gerçekten node.annotations\'ta');
+
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), 'agstudio-sgf-marker-'));
+  const targetPath = path.join(base, 'sgf-export-marker-fixed.sgf');
+  const result = await exportSgfDocument({
+    document: doc,
+    formatSGF,
+    showSaveDialog: async () => ({ canceled: false, filePath: targetPath }),
+    writeSgfFile,
+    defaultFileName: doc.slug,
+  });
+
+  assert.equal(result.canceled, false);
+  assert.deepEqual(result.warnings, [], 'DÜZELTME: marker export\'ta hiç warning üretmiyor (kayıp yok, uyarılacak bir şey yok)');
+
+  const written = await fs.readFile(targetPath, 'utf8');
+  assert.ok(written.includes('CR[cc]'), 'DÜZELTME: marker modunda eklenen (2,2) circle artık CR[cc] olarak SGF\'e yansıyor');
 }
 
 async function testSgfExportDoesNotTouchAgstudioPath() {
@@ -734,75 +747,92 @@ async function testSetupModeClick() {
 }
 
 async function testMarkerModeClick() {
-  // 1. toggleBoardMarker saf döngü mantığı
-  function toggleBoardMarker(board, x, y) {
-    if (!board) return;
-    if (!Array.isArray(board.markers)) board.markers = [];
-    const idx = board.markers.findIndex(m => m.x === x && m.y === y);
-    if (idx === -1) {
-      board.markers.push({ x, y, type: 'circle' });
-    } else {
-      board.markers.splice(idx, 1);
-    }
+  // S10E: işaret modu artık doc.board.markers yerine seçili move-tree
+  // düğümünün annotations dizisine yazıyor (D0 Annotation Sözleşmesi ile
+  // uyumlu, formatSGF()'in okuduğu tek kaynak). Bu test app.mjs'teki
+  // toggleNodeCircleAnnotation/nodeAnnotationsAsMarkers'ın BİREBİR
+  // aynısını yerel olarak yeniden uygular (bu dosyanın kurulu geleneği —
+  // app.mjs doğrudan import edilemez, DOM'a bağımlı) ve gerçek
+  // findMoveNode/setMoveNodeAnnotations ile doğrular.
+  const { createDocument: cd } = await import('../studio/model/studioDocument.js');
+  const { addChildMove: acm, findMoveNode: fmn, setMoveNodeAnnotations: smna } = await import('../studio/model/moveTree.js');
+
+  function toggleNodeCircleAnnotation(root, nodeId, x, y, boardSize) {
+    const node = fmn(root, nodeId);
+    if (!node) return { ok: false, added: false };
+    const current = Array.isArray(node.annotations) ? node.annotations : [];
+    const idx = current.findIndex(a => a?.type === 'circle' && a.point?.x === x && a.point?.y === y);
+    const next = idx === -1
+      ? [...current, { type: 'circle', point: { x, y } }]
+      : current.filter((_, i) => i !== idx);
+    const ok = smna(root, nodeId, next, boardSize);
+    return { ok, added: idx === -1 };
   }
 
-  // İlk tık: marker eklenir
-  const b = { size: 9, markers: [] };
-  toggleBoardMarker(b, 3, 3);
-  assert.equal(b.markers.length, 1, 'ilk tık: marker eklendi');
-  assert.equal(b.markers[0].type, 'circle', 'varsayılan tip circle');
-  assert.equal(b.markers[0].x, 3, 'x koordinatı doğru');
-  assert.equal(b.markers[0].y, 3, 'y koordinatı doğru');
+  function nodeAnnotationsAsMarkers(node) {
+    return (Array.isArray(node?.annotations) ? node.annotations : [])
+      .filter(a => a?.type === 'circle' && a.point)
+      .map(a => ({ x: a.point.x, y: a.point.y, type: 'circle' }));
+  }
 
-  // İkinci tık: marker kaldırılır
-  toggleBoardMarker(b, 3, 3);
-  assert.equal(b.markers.length, 0, 'ikinci tık: marker kaldırıldı');
+  // ── 1. Saf toggle mantığı (root üzerinde) ──────────────────────────────
+  const doc0 = cd({ id: 'marker-toggle', title: '', slug: 'marker-toggle' });
+  const root0 = doc0.moveTree.root;
 
-  // Duplicate oluşmaz: farklı hücreler bağımsız
-  toggleBoardMarker(b, 0, 0);
-  toggleBoardMarker(b, 8, 8);
-  assert.equal(b.markers.length, 2, 'iki farklı hücre bağımsız');
-  toggleBoardMarker(b, 0, 0);
-  assert.equal(b.markers.length, 1, '(0,0) kaldırıldı, (8,8) kaldı');
-  assert.equal(b.markers[0].x, 8, 'kalan marker (8,8)');
+  const first = toggleNodeCircleAnnotation(root0, 'root', 3, 3, 9);
+  assert.ok(first.ok && first.added, 'ilk tık: annotation eklendi');
+  assert.deepEqual(nodeAnnotationsAsMarkers(root0), [{ x: 3, y: 3, type: 'circle' }], 'render-marker doğru üretildi');
+  assert.equal(root0.annotations[0].type, 'circle', 'varsayılan tip circle');
+  assert.ok(typeof root0.annotations[0].id === 'string' && root0.annotations[0].id, 'id otomatik atandı');
 
-  // markers dizisi yoksa oluşturulur
-  const b2 = { size: 9 };
-  toggleBoardMarker(b2, 4, 4);
-  assert.ok(Array.isArray(b2.markers), 'markers dizisi oluşturuldu');
-  assert.equal(b2.markers.length, 1, 'taş eklendi');
+  const second = toggleNodeCircleAnnotation(root0, 'root', 3, 3, 9);
+  assert.ok(second.ok && !second.added, 'ikinci tık: aynı koordinat kaldırıldı');
+  assert.equal(root0.annotations.length, 0, 'annotation temizlendi');
 
-  // 2. MoveTree / formation değişmezliği
-  const { createDocument: cd } = await import('../studio/model/studioDocument.js');
-  const { addChildMove: acm } = await import('../studio/model/moveTree.js');
+  // Farklı hücreler bağımsız
+  toggleNodeCircleAnnotation(root0, 'root', 0, 0, 9);
+  toggleNodeCircleAnnotation(root0, 'root', 8, 8, 9);
+  assert.equal(root0.annotations.length, 2, 'iki farklı hücre bağımsız');
+  toggleNodeCircleAnnotation(root0, 'root', 0, 0, 9);
+  assert.equal(root0.annotations.length, 1, '(0,0) kaldırıldı, (8,8) kaldı');
+  assert.equal(root0.annotations[0].point.x, 8, 'kalan annotation (8,8)');
+
+  // ── 2. MoveTree/formation değişmezliği + düğüm-bazlı izolasyon ─────────
   const doc = cd({ id: 'marker-test', title: 'Marker Test', slug: 'marker-test' });
   const treeRoot = doc.moveTree.root;
 
   const r1 = acm(treeRoot, 'root', { color: 'black', x: 4, y: 4 });
   assert.ok(r1.ok, 'hamle eklendi');
+  const childId = r1.node.id;
   const childrenBefore = treeRoot.children.length;
   const formationStonesBefore = [...(treeRoot.formation?.stones ?? [])];
   const activeNodeBefore = doc.moveTree.activeNodeId ?? 'root';
 
-  // doc.board.markers üzerine yaz
-  if (!Array.isArray(doc.board.markers)) doc.board.markers = [];
-  toggleBoardMarker(doc.board, 2, 2);
+  // Seçili düğüm child iken (2,2) işaretle
+  const onChild = toggleNodeCircleAnnotation(treeRoot, childId, 2, 2, 9);
+  assert.ok(onChild.ok && onChild.added, 'child düğümde annotation eklendi');
 
-  // MoveTree yapısı değişmemeli
+  // MoveTree yapısı ve formation DEĞİŞMEDİ — yalnız child.annotations değişti
   assert.equal(treeRoot.children.length, childrenBefore, 'children sayısı değişmedi');
-  assert.equal(doc.moveTree.activeNodeId ?? 'root', activeNodeBefore, 'activeNodeId değişmedi');
+  assert.equal(doc.moveTree.activeNodeId ?? 'root', activeNodeBefore, 'activeNodeId değişmedi (yalnız toggle çağrısıyla)');
+  assert.deepEqual(treeRoot.formation?.stones ?? [], formationStonesBefore, 'formation.stones değişmedi');
+  assert.equal(treeRoot.annotations.length, 0, 'root.annotations boş kaldı — marker child\'a gitti, root\'a değil');
 
-  // root.formation.stones değişmemeli
-  assert.deepEqual(
-    treeRoot.formation?.stones ?? [],
-    formationStonesBefore,
-    'formation.stones değişmedi',
-  );
+  const childNode = fmn(treeRoot, childId);
+  assert.ok(childNode.annotations.some(a => a.type === 'circle' && a.point.x === 2 && a.point.y === 2), 'annotation doğru düğümde (child)');
 
-  // doc.board.markers güncellendi
-  assert.ok(doc.board.markers.some(m => m.x === 2 && m.y === 2), 'marker doc.board.markers içinde');
+  // Şimdi root'ta (5,5) işaretle — child'ınki bozulmamalı (farklı node'da kalır)
+  const onRoot = toggleNodeCircleAnnotation(treeRoot, 'root', 5, 5, 9);
+  assert.ok(onRoot.ok && onRoot.added, 'root düğümde ayrı annotation eklendi');
+  assert.equal(treeRoot.annotations.length, 1, 'root artık 1 annotation taşıyor');
+  assert.equal(childNode.annotations.length, 1, 'child\'ın annotation\'ı bağımsız kaldı, silinmedi');
+  assert.ok(childNode.annotations.some(a => a.point.x === 2 && a.point.y === 2), 'child hâlâ kendi (2,2) işaretini taşıyor');
 
-  // 3. mergeDocumentBoard metadata koruması (markers eklenirken regions/viewport/unknown korunur)
+  // Düğüm-bazlı render izolasyonu: her düğümün kendi markerları
+  assert.deepEqual(nodeAnnotationsAsMarkers(treeRoot), [{ x: 5, y: 5, type: 'circle' }], 'root render-marker\'ı yalnız kendi annotation\'ı');
+  assert.deepEqual(nodeAnnotationsAsMarkers(childNode), [{ x: 2, y: 2, type: 'circle' }], 'child render-marker\'ı yalnız kendi annotation\'ı');
+
+  // ── 3. mergeDocumentBoard metadata koruması (eski/global markers hâlâ korunuyor) ──
   const adapter = createStudioBoardAdapter(BoardState);
   const existingBoard = {
     size: 9,
@@ -816,31 +846,35 @@ async function testMarkerModeClick() {
     adapter.fromDocumentBoard({ size: 9, stones: [{ x: 4, y: 4, color: 'black' }] }),
   );
   const merged = adapter.mergeDocumentBoard(existingBoard, runtimeBoard);
-  // markers runtime'da yok → mevcut korunur
-  assert.equal(merged.markers[0].type, 'triangle', 'markers runtime tarafından bozulmadı');
+  // markers runtime'da yok → mevcut (eski/global) markers korunur — S10E ile SİLİNMEDİ
+  assert.equal(merged.markers[0].type, 'triangle', 'eski/global doc.board.markers sessizce silinmedi, korundu');
   assert.equal(merged.regions[0].id, 'r1', 'regions korundu');
   assert.equal(merged.viewport.scale, 1.5, 'viewport korundu');
   assert.equal(merged.customField, 'preserve-me', 'unknown alan korundu');
   assert.ok(merged.stones.some(s => s.x === 4), 'yeni taş yansıdı');
 
-  // 4. Kaynak guard sözleşmeleri
+  // ── 4. Kaynak guard sözleşmeleri ────────────────────────────────────────
   const appSrc = await fs.readFile(path.join(root, 'desktop', 'renderer', 'app.mjs'), 'utf8');
-  assert.ok(appSrc.includes('toggleBoardMarker'), 'toggleBoardMarker fonksiyonu mevcut');
+  assert.ok(appSrc.includes('function toggleNodeCircleAnnotation'), 'toggleNodeCircleAnnotation fonksiyonu mevcut');
+  assert.ok(appSrc.includes('function nodeAnnotationsAsMarkers'), 'nodeAnnotationsAsMarkers fonksiyonu mevcut');
+  assert.ok(!appSrc.includes('function toggleBoardMarker'), 'eski toggleBoardMarker kaldırıldı (dead code bırakılmadı)');
   assert.ok(appSrc.includes('addMarkerFromBoardClick'), 'addMarkerFromBoardClick fonksiyonu mevcut');
+  assert.ok(appSrc.includes('setMoveNodeAnnotations(root, nodeId, next, boardSize)'), 'toggle gerçek setMoveNodeAnnotations ile yazıyor (D0 sözleşmesi)');
 
   const fnStart = appSrc.indexOf('function addMarkerFromBoardClick');
   const fnEnd = appSrc.indexOf('\nfunction ', fnStart + 1);
   const fnBody = appSrc.slice(fnStart, fnEnd > 0 ? fnEnd : fnStart + 800);
   assert.ok(fnBody.includes("state.activeMode !== 'marker'"), 'marker mode guard mevcut');
-  assert.ok(fnBody.includes('isCandidatePreviewMode'), 'candidate preview guard mevcut');
+  assert.ok(fnBody.includes('isCandidatePreviewMode'), 'candidate preview guard mevcut (tıklama no-op kalır)');
   assert.ok(fnBody.includes('boardClickCoord'), 'koordinat çözümü çağrılıyor');
+  assert.ok(fnBody.includes('toggleNodeCircleAnnotation'), 'toggle node-annotation helper\'ını çağırıyor');
   assert.ok(!fnBody.includes('selectedNodeId ='), 'selectedNodeId mutasyonu yok');
-  assert.ok(!fnBody.includes('activeNodeId ='), 'activeNodeId mutasyonu yok');
   assert.ok(!fnBody.includes('addChildMove'), 'addChildMove çağrısı yok');
-  assert.ok(!fnBody.includes('formation'), 'formation değişmez');
+  assert.ok(!fnBody.includes('formation'), 'formation\'a hiç değinmiyor');
 
-  // markers renderBoard'a geçiyor
-  assert.ok(appSrc.includes("markers: doc.board?.markers ?? []"), 'markers renderBoard\'a geçiyor');
+  // renderActiveDocument: hem eski/global markers hem seçili düğümün annotation'ları birleşiyor
+  assert.ok(appSrc.includes('...(doc.board?.markers ?? [])'), 'renderBoard: eski/global markers hâlâ gösteriliyor');
+  assert.ok(appSrc.includes('...nodeAnnotationsAsMarkers(activeNode)'), 'renderBoard: seçili düğümün annotation\'ları da gösteriliyor');
 
   // CSS
   const css = await fs.readFile(path.join(root, 'desktop', 'renderer', 'studio.css'), 'utf8');
@@ -876,8 +910,9 @@ async function testEmptyDocumentState() {
   assert.ok(appSrc.includes("role', 'button'"), 'library item role=button');
   assert.ok(appSrc.includes("elements.libraryList.addEventListener('click'"), 'library delegated click listener mevcut');
 
-  // 4. Markers renderBoard'a geçiyor (S5 koruması)
-  assert.ok(appSrc.includes("markers: doc.board?.markers ?? []"), 'markers renderBoard\'a geçiyor');
+  // 4. Markers renderBoard'a geçiyor (S5 koruması; S10E'de düğüm-annotation'larıyla birleşti)
+  assert.ok(appSrc.includes('...(doc.board?.markers ?? [])'), 'eski/global markers renderBoard\'a geçiyor');
+  assert.ok(appSrc.includes('...nodeAnnotationsAsMarkers(activeNode)'), 'seçili düğümün annotation-marker\'ları da renderBoard\'a geçiyor');
 
   // 5. CSS: library item aktif ve hover state
   const css = await fs.readFile(path.join(root, 'desktop', 'renderer', 'studio.css'), 'utf8');
@@ -887,9 +922,9 @@ async function testEmptyDocumentState() {
 
 async function testFileRoundTrip() {
   const { createDocument: cd, migrateDocument } = await import('../studio/model/studioDocument.js');
-  const { addChildMove: acm, rebuildBoardState: rbs } = await import('../studio/model/moveTree.js');
+  const { addChildMove: acm, rebuildBoardState: rbs, setMoveNodeAnnotations: smna } = await import('../studio/model/moveTree.js');
 
-  // Belge oluştur: kurulum taşı + hamle + marker
+  // Belge oluştur: kurulum taşı + hamle + marker (eski/global + S10E node-annotation)
   const doc = cd({ id: 'rt', title: 'Round Trip', slug: 'rt' });
   doc.moveTree.root.formation.stones.push({ x: 1, y: 1, color: 'black' });
   const r1 = acm(doc.moveTree.root, 'root', { color: 'black', x: 4, y: 4 });
@@ -899,6 +934,8 @@ async function testFileRoundTrip() {
   doc.board.viewport = { x: 0, y: 0, scale: 1.5 };
   doc.activeNodeId = r1.node.id;
   doc.moveTree.activeNodeId = r1.node.id;  // syncDocumentFromSelection eşdeğeri
+  // S10E: yeni node-annotation marker'ı — hamle düğümüne bağlı, root'a değil
+  assert.ok(smna(doc.moveTree.root, r1.node.id, [{ type: 'circle', point: { x: 6, y: 6 } }], 9), 'node-annotation ayarlandı');
 
   // Serialize → deserialize → migrate
   const json = JSON.stringify(doc);
@@ -914,11 +951,19 @@ async function testFileRoundTrip() {
   assert.equal(loaded.moveTree.root.children.length, 1, 'moveTree children round-trip');
   assert.equal(loaded.moveTree.root.children[0].move.x, 4, 'hamle koordinatı korundu');
 
-  // Marker korunuyor
+  // Marker (eski/global doc.board.markers) korunuyor
   assert.ok(
     Array.isArray(loaded.board.markers) && loaded.board.markers.some(m => m.x === 3 && m.y === 3),
-    'board.markers round-trip',
+    'board.markers (eski/global) round-trip',
   );
+
+  // S10E node-annotation marker'ı DOĞRU DÜĞÜMDE korunuyor (root'ta değil, hamle düğümünde)
+  const loadedChild = loaded.moveTree.root.children[0];
+  assert.ok(
+    loadedChild.annotations?.some(a => a.type === 'circle' && a.point?.x === 6 && a.point?.y === 6),
+    'S10E: node.annotations (marker-mode) round-trip — doğru düğümde',
+  );
+  assert.equal(loaded.moveTree.root.annotations?.length ?? 0, 0, 'S10E: node-annotation root\'a sızmadı');
 
   // regions / viewport korunuyor
   assert.equal(loaded.board.regions[0].id, 'r1', 'regions round-trip');
