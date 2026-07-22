@@ -18,6 +18,7 @@ function createStudioApi(ipcRenderer) {
     openFilePath: filePath => invoke(STUDIO_CHANNELS.OPEN_FILE_PATH, filePath),
     saveDocument: document => invoke(STUDIO_CHANNELS.SAVE_DOCUMENT, document),
     saveDocumentAs: document => invoke(STUDIO_CHANNELS.SAVE_DOCUMENT_AS, document),
+    exportSgfDocument: document => invoke(STUDIO_CHANNELS.EXPORT_SGF_DOCUMENT, document),
     listDocuments: () => invoke(STUDIO_CHANNELS.LIST_DOCUMENTS),
     validateDocument: document => invoke(STUDIO_CHANNELS.VALIDATE_DOCUMENT, document),
     setContentProducerMode: enabled => invoke(STUDIO_CHANNELS.SET_CONTENT_PRODUCER_MODE, !!enabled),

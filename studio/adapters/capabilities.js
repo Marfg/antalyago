@@ -23,8 +23,9 @@ export const OUTPUT_CAPABILITIES = Object.freeze({
   },
   sgf: {
     phase: 'E',
-    supported: false,
+    supported: true,
     description: 'StudioDocument → SGF dosyası',
+    note: 'formatSGF() (studio/adapters/sgfAdapter.js) + AG-STUDIO desktop "SGF dışa aktar" butonu (S10C) üzerinden aktif.',
   },
   motion: {
     phase: 'F',

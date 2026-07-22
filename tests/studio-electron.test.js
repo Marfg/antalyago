@@ -9,9 +9,12 @@ import studioApiModule from '../desktop/ipc/studioApi.cjs';
 import pathPolicyModule from '../desktop/ipc/pathPolicy.cjs';
 import settingsStoreModule from '../desktop/ipc/settingsStore.cjs';
 import fileHandlersModule from '../desktop/ipc/fileHandlers.cjs';
+import sgfExportHandlerModule from '../desktop/ipc/sgfExportHandler.cjs';
 import { createStudioBoardAdapter } from '../desktop/ipc/studioBoardAdapter.js';
 import { BoardState } from '../core/boardState.js';
 import { createDocument } from '../studio/model/studioDocument.js';
+import { formatSGF } from '../studio/adapters/sgfAdapter.js';
+import { OUTPUT_CAPABILITIES } from '../studio/adapters/capabilities.js';
 
 const { STUDIO_CHANNELS } = ipcChannelsModule;
 const { createStudioApi } = studioApiModule;
@@ -30,7 +33,9 @@ const {
   readAgstudioDocument,
   resolveDocumentPath,
   writeAgstudioDocument,
+  writeSgfFile,
 } = fileHandlersModule;
+const { exportSgfDocument } = sgfExportHandlerModule;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -39,6 +44,10 @@ async function main() {
   await testPathPolicy();
   await testSettingsStore();
   await testFileHandlers();
+  await testSgfExportHandler();
+  await testSgfExportDoesNotTouchAgstudioPath();
+  await testSgfExportUiButton();
+  await testSgfExportCapability();
   await testBoardAdapter();
   await testSecurityTexts();
   await testModeSelector();
@@ -80,6 +89,7 @@ async function testIpcContract() {
   await api.listCandidates();
   await api.openCandidatePreview('candidate-1');
   await api.openCandidateDocument('candidate-1');
+  await api.exportSgfDocument({ id: 'doc-1' });
   const off = api.onDocumentOpened(() => {});
   assert.equal(subscriptions[0].channel, STUDIO_CHANNELS.DOCUMENT_OPENED);
   off();
@@ -88,6 +98,9 @@ async function testIpcContract() {
   assert.equal(calls[2].channel, STUDIO_CHANNELS.LIST_CANDIDATES);
   assert.equal(calls[3].channel, STUDIO_CHANNELS.OPEN_CANDIDATE_PREVIEW);
   assert.equal(calls[4].channel, STUDIO_CHANNELS.OPEN_CANDIDATE_DOCUMENT);
+  assert.equal(calls[5].channel, STUDIO_CHANNELS.EXPORT_SGF_DOCUMENT);
+  assert.equal(STUDIO_CHANNELS.EXPORT_SGF_DOCUMENT, 'studio:export-sgf-document', 'kanal ismi sabit');
+  assert.deepEqual(calls[5].args, [{ id: 'doc-1' }], 'exportSgfDocument belgeyi olduğu gibi iletir');
 }
 
 async function testPathPolicy() {
@@ -144,6 +157,130 @@ async function testFileHandlers() {
   assert.equal(loaded.title, document.title);
   const docs = await listAgstudioDocuments(workspace);
   assert.equal(docs[0].filePath, filePath);
+}
+
+function buildSgfExportSampleDocument() {
+  const doc = createDocument({ id: 'sgf-export-check', title: 'SGF export check', slug: 'sgf-export-check' });
+  doc.moveTree.root.formation.stones.push({ x: 2, y: 2, color: 'black' });
+  doc.moveTree.root.formation.stones.push({ x: 6, y: 6, color: 'white' });
+  doc.moveTree.root.children.push({
+    id: 'sgf-export-move-1',
+    parentId: 'root',
+    move: { color: 'black', x: 3, y: 3 },
+    children: [], comment: '', annotations: [], rawProperties: {}, preferredChildId: null, formation: null,
+  });
+  doc.moveTree.root.preferredChildId = 'sgf-export-move-1';
+  return doc;
+}
+
+async function testSgfExportHandler() {
+  const doc = buildSgfExportSampleDocument();
+
+  // ── formatSGF gerçek adapter'dan geliyor (mock değil) ──────────────────
+  const { sgf: directSgf } = formatSGF(doc);
+  assert.ok(directSgf.startsWith('(;GM[1]FF[4]CA[UTF-8]'), 'formatSGF gerçek sgfAdapter header üretiyor');
+
+  // ── İptal edilen save dialog → canceled: true, dosya yazılmaz ───────────
+  let writeCalled = false;
+  const canceledResult = await exportSgfDocument({
+    document: doc,
+    formatSGF,
+    showSaveDialog: async () => ({ canceled: true }),
+    writeSgfFile: async () => { writeCalled = true; },
+    defaultFileName: doc.slug,
+  });
+  assert.deepEqual(canceledResult, { canceled: true }, 'sgfExportHandler: iptal → { canceled: true }');
+  assert.equal(writeCalled, false, 'sgfExportHandler: iptalde writeSgfFile çağrılmaz');
+
+  // ── Başarılı yazım: gerçek dosya sistemine, gerçek writeSgfFile ile ─────
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), 'agstudio-sgf-export-'));
+  const targetPath = path.join(base, 'sgf-export-check.sgf');
+  const successResult = await exportSgfDocument({
+    document: doc,
+    formatSGF,
+    showSaveDialog: async () => ({ canceled: false, filePath: targetPath }),
+    writeSgfFile,
+    defaultFileName: doc.slug,
+  });
+  assert.equal(successResult.canceled, false, 'sgfExportHandler: başarılı yazım canceled:false döner');
+  assert.equal(successResult.filePath, targetPath, 'sgfExportHandler: filePath dialog sonucunu yansıtır');
+  assert.ok(Array.isArray(successResult.warnings), 'sgfExportHandler: warnings result içinde bir dizi olarak döner');
+
+  const written = await fs.readFile(targetPath, 'utf8');
+  assert.ok(written.startsWith('(;GM[1]FF[4]CA[UTF-8]'), 'sgf: header (GM/FF/CA) mevcut');
+  assert.ok(written.includes('AB[cc]'), 'sgf: AB (siyah kurulum taşı) mevcut');
+  assert.ok(written.includes('AW[gg]'), 'sgf: AW (beyaz kurulum taşı) mevcut');
+  assert.ok(written.includes(';B[dd]'), 'sgf: B (siyah hamle) örneği mevcut');
+  assert.equal(written, directSgf, 'sgf: dosyaya yazılan metin formatSGF çıktısıyla birebir aynı');
+
+  // ── .sgf uzantısı zorunlu ────────────────────────────────────────────
+  await assert.rejects(
+    () => exportSgfDocument({
+      document: doc,
+      formatSGF,
+      showSaveDialog: async () => ({ canceled: false, filePath: path.join(base, 'no-extension') }),
+      writeSgfFile,
+      defaultFileName: doc.slug,
+    }),
+    /\.sgf/,
+    'sgfExportHandler: .sgf uzantısı olmayan yol reddedilir',
+  );
+
+  // ── belge yoksa açık hata ────────────────────────────────────────────
+  await assert.rejects(
+    () => exportSgfDocument({ document: null, formatSGF, showSaveDialog: async () => ({ canceled: true }), writeSgfFile }),
+    /Dışa aktarılacak belge yok/,
+  );
+}
+
+async function testSgfExportDoesNotTouchAgstudioPath() {
+  // main.cjs Electron'a bağımlı olduğu için doğrudan import edilemez (plain
+  // node altında require('electron') gerçek modülü vermez) — bu yüzden diğer
+  // Electron-bağımlı davranışlar gibi (bkz. testModeSelector) kaynak metni
+  // üzerinden statik doğrulama yapılır.
+  const mainSrc = await fs.readFile(path.join(root, 'desktop', 'main.cjs'), 'utf8');
+  assert.ok(mainSrc.includes('exportSgfDocumentHandler'), 'main.cjs: exportSgfDocumentHandler tanımlı');
+  assert.ok(mainSrc.includes('STUDIO_CHANNELS.EXPORT_SGF_DOCUMENT'), 'main.cjs: EXPORT_SGF_DOCUMENT kanalı bağlı');
+
+  const handlerStart = mainSrc.indexOf('async function exportSgfDocumentHandler');
+  const handlerEnd = mainSrc.indexOf('\nfunction validateDocument', handlerStart);
+  assert.ok(handlerStart !== -1 && handlerEnd !== -1, 'exportSgfDocumentHandler gövdesi bulunamadı');
+  const handlerBody = mainSrc.slice(handlerStart, handlerEnd);
+
+  assert.ok(!handlerBody.includes('activeDocumentPath ='), 'exportSgfDocumentHandler: activeDocumentPath değiştirilmiyor');
+  assert.ok(!handlerBody.includes('activeDocument ='), 'exportSgfDocumentHandler: activeDocument değiştirilmiyor');
+  assert.ok(!handlerBody.includes('settings.lastOpenedDocument'), 'exportSgfDocumentHandler: lastOpenedDocument değiştirilmiyor');
+  assert.ok(!handlerBody.includes('notifyDocumentOpened'), 'exportSgfDocumentHandler: DOCUMENT_OPENED tetiklenmiyor');
+  assert.ok(!handlerBody.includes('persistSettings'), 'exportSgfDocumentHandler: settings kaydedilmiyor');
+}
+
+async function testSgfExportUiButton() {
+  const html = await fs.readFile(path.join(root, 'desktop', 'index.html'), 'utf8');
+  assert.ok(html.includes('data-action-export-sgf'), 'index.html: SGF dışa aktar butonu mevcut');
+
+  const quickActionsStart = html.indexOf('Hızlı işlemler');
+  const quickActionsEnd = html.indexOf('</section>', quickActionsStart);
+  const quickActionsBlock = html.slice(quickActionsStart, quickActionsEnd > 0 ? quickActionsEnd : quickActionsStart + 1400);
+  assert.ok(quickActionsBlock.includes('data-action-export-sgf'), 'SGF dışa aktar butonu Hızlı işlemler bloğunda');
+
+  const appSrc = await fs.readFile(path.join(root, 'desktop', 'renderer', 'app.mjs'), 'utf8');
+  assert.ok(appSrc.includes("actionExportSgf: document.querySelector('[data-action-export-sgf]')"), 'app.mjs: actionExportSgf elementi tanımlı');
+  assert.ok(appSrc.includes('elements.actionExportSgf.addEventListener'), 'app.mjs: export butonu event listener\'ı mevcut');
+  assert.ok(appSrc.includes('api.exportSgfDocument(state.activeDocument)'), 'app.mjs: exportSgfDocument çalışma belgesiyle çağrılıyor');
+  assert.ok(appSrc.includes("'SGF dışa aktarıldı.'"), 'app.mjs: başarı mesajı mevcut');
+  assert.ok(appSrc.includes('uyarı var'), 'app.mjs: warnings sayısı mesajda gösteriliyor');
+  assert.ok(appSrc.includes("'SGF dışa aktarma iptal edildi.'"), 'app.mjs: iptal mesajı mevcut');
+
+  // Aday önizlemesi salt-okunur olsa bile export serbest: syncCandidateEditability
+  // disable listesinde actionExportSgf YER ALMAMALI.
+  const editabilityStart = appSrc.indexOf('function syncCandidateEditability');
+  const editabilityEnd = appSrc.indexOf('\nasync function openCandidatePreview', editabilityStart);
+  const editabilityBlock = appSrc.slice(editabilityStart, editabilityEnd > 0 ? editabilityEnd : editabilityStart + 800);
+  assert.ok(!editabilityBlock.includes('actionExportSgf'), 'syncCandidateEditability export butonunu devre dışı bırakmıyor (aday önizlemesinde de aktif kalmalı)');
+}
+
+async function testSgfExportCapability() {
+  assert.equal(OUTPUT_CAPABILITIES.sgf.supported, true, 'capabilities.js: sgf.supported artık true (S10C ile aktif)');
 }
 
 async function testBoardAdapter() {

@@ -70,6 +70,7 @@ const elements = {
   actionOpen: document.querySelector('[data-action-open]'),
   actionSave: document.querySelector('[data-action-save]'),
   actionSaveAs: document.querySelector('[data-action-save-as]'),
+  actionExportSgf: document.querySelector('[data-action-export-sgf]'),
   saveFeedback: document.querySelector('[data-save-feedback]'),
   treeSummary: document.querySelector('[data-move-tree-summary]'),
   treePath: document.querySelector('[data-move-tree-path]'),
@@ -473,6 +474,28 @@ function wireActions() {
       renderTreeStatus('Farklı kaydedildi.');
       renderSaveFeedback('Farklı kaydedildi.', 'success');
     }
+  });
+
+  elements.actionExportSgf.addEventListener('click', async () => {
+    if (typeof api.exportSgfDocument !== 'function') {
+      return;
+    }
+    syncDocumentFromSelection();
+    // Aday önizlemesi salt-okunur olsa bile dışa aktarma serbest — hâlihazırda
+    // yüklü belgeyi (preview ya da working) olduğu gibi dışa aktarır, düzenleme
+    // modlarını açmaz (syncCandidateEditability bu butonu devre dışı bırakmaz).
+    const result = await api.exportSgfDocument(state.activeDocument);
+    if (result?.canceled) {
+      renderTreeStatus('SGF dışa aktarma iptal edildi.');
+      renderSaveFeedback('SGF dışa aktarma iptal edildi.', 'muted');
+      return;
+    }
+    const warningCount = Array.isArray(result?.warnings) ? result.warnings.length : 0;
+    const message = warningCount > 0
+      ? `SGF dışa aktarıldı, ${warningCount} uyarı var.`
+      : 'SGF dışa aktarıldı.';
+    renderTreeStatus(message);
+    renderSaveFeedback(message, 'success');
   });
 
   elements.treeViewport.addEventListener('click', event => {
@@ -1132,6 +1155,7 @@ function createOfflineApi() {
     openDocument: async () => ({ document: createOfflineDocuments()[1] }),
     saveDocument: async document => ({ document }),
     saveDocumentAs: async document => ({ document }),
+    exportSgfDocument: async () => ({ canceled: true }),
   };
 }
 

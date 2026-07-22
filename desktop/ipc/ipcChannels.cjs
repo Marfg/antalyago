@@ -7,6 +7,7 @@ const STUDIO_CHANNELS = Object.freeze({
   OPEN_FILE_PATH: 'studio:open-file-path',
   SAVE_DOCUMENT: 'studio:save-document',
   SAVE_DOCUMENT_AS: 'studio:save-document-as',
+  EXPORT_SGF_DOCUMENT: 'studio:export-sgf-document',
   LIST_DOCUMENTS: 'studio:list-documents',
   VALIDATE_DOCUMENT: 'studio:validate-document',
   SET_CONTENT_PRODUCER_MODE: 'studio:set-content-producer-mode',

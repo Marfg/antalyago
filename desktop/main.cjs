@@ -8,7 +8,9 @@ const {
   readAgstudioDocument,
   resolveDocumentPath,
   writeAgstudioDocument,
+  writeSgfFile,
 } = require('./ipc/fileHandlers.cjs');
+const { exportSgfDocument } = require('./ipc/sgfExportHandler.cjs');
 const { getDefaultWorkspaceState } = require('./config.cjs');
 
 let mainWindow = null;
@@ -219,6 +221,24 @@ async function saveDocumentAs(document) {
   return { canceled: false, document: doc, filePath: resolved };
 }
 
+// .agstudio save akışından kasıtlı olarak ayrık: activeDocument/activeDocumentPath
+// veya settings.lastOpenedDocument'a hiç dokunmaz — yalnızca içeriği okur.
+async function exportSgfDocumentHandler(document) {
+  const doc = document ?? activeDocument;
+  if (!doc) {
+    throw new Error('Dışa aktarılacak belge yok.');
+  }
+
+  const { formatSGF } = await import('../studio/adapters/sgfAdapter.js');
+  return exportSgfDocument({
+    document: doc,
+    formatSGF,
+    showSaveDialog: options => dialog.showSaveDialog(options),
+    writeSgfFile,
+    defaultFileName: doc.slug ?? doc.id,
+  });
+}
+
 function validateDocument(document) {
   if (typeof validateStudioDocument !== 'function') {
     throw new Error('Doğrulama motoru başlatılamadı.');
@@ -272,6 +292,7 @@ async function registerIpcHandlers() {
   ipcMain.handle(STUDIO_CHANNELS.OPEN_FILE_PATH, async (_event, filePath) => openDocumentFile(filePath));
   ipcMain.handle(STUDIO_CHANNELS.SAVE_DOCUMENT, async (_event, document) => saveDocument(document));
   ipcMain.handle(STUDIO_CHANNELS.SAVE_DOCUMENT_AS, async (_event, document) => saveDocumentAs(document));
+  ipcMain.handle(STUDIO_CHANNELS.EXPORT_SGF_DOCUMENT, async (_event, document) => exportSgfDocumentHandler(document));
   ipcMain.handle(STUDIO_CHANNELS.LIST_DOCUMENTS, async () => loadWorkspaceDocuments());
   ipcMain.handle(STUDIO_CHANNELS.VALIDATE_DOCUMENT, async (_event, document) => validateDocument(document));
   ipcMain.handle(STUDIO_CHANNELS.LIST_CANDIDATES, async () => safeCandidateHandler(async () => {

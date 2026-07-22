@@ -66,9 +66,32 @@ function resolveDocumentPath(workspaceFolder, slug) {
   return resolveAgstudioPath(workspaceFolder, slug);
 }
 
+// .agstudio yazımından farklı olarak workspace'e kısıtlanmaz — kullanıcı save
+// dialog üzerinden herhangi bir yeri seçebilir; yalnızca uzantı doğrulanır.
+async function writeSgfFile(filePath, sgfText) {
+  if (typeof filePath !== 'string' || !filePath.toLowerCase().endsWith('.sgf')) {
+    throw new Error('Geçersiz .sgf yolu.');
+  }
+
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  const tempPath = `${filePath}.tmp.${process.pid}.${Date.now()}`;
+  await fs.writeFile(tempPath, sgfText, 'utf8');
+  try {
+    await fs.rename(tempPath, filePath);
+  } catch (error) {
+    try {
+      await fs.unlink(tempPath);
+    } catch {
+      // ignore cleanup failure
+    }
+    throw error;
+  }
+}
+
 module.exports = {
   listAgstudioDocuments,
   readAgstudioDocument,
   resolveDocumentPath,
   writeAgstudioDocument,
+  writeSgfFile,
 };
