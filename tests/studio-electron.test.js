@@ -233,6 +233,117 @@ async function testSgfExportHandler() {
   );
 }
 
+async function testSgfExportEmptyDocument() {
+  // S10D senaryo 1: hiç taş/hamle olmayan yepyeni bir belge — kurulum
+  // taşı, hamle ya da işaret yok. Gerçek handler zincirinin (dialog+write)
+  // hiç veri olmadan da geçerli, açılabilir bir SGF üretmesi gerekiyor.
+  const doc = createDocument({ id: 'sgf-export-empty', title: '', slug: 'sgf-export-empty' });
+  assert.equal(doc.moveTree.root.formation.stones.length, 0, 'ön koşul: kurulum taşı yok');
+  assert.equal(doc.moveTree.root.children.length, 0, 'ön koşul: hamle yok');
+
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), 'agstudio-sgf-empty-'));
+  const targetPath = path.join(base, 'sgf-export-empty.sgf');
+  const result = await exportSgfDocument({
+    document: doc,
+    formatSGF,
+    showSaveDialog: async () => ({ canceled: false, filePath: targetPath }),
+    writeSgfFile,
+    defaultFileName: doc.slug,
+  });
+
+  assert.equal(result.canceled, false, 'boş belge: export iptal edilmez');
+  assert.deepEqual(result.warnings, [], 'boş belge: warning üretmez');
+
+  const written = await fs.readFile(targetPath, 'utf8');
+  assert.equal(written, '(;GM[1]FF[4]CA[UTF-8]AP[AgStudio:1.1]SZ[9])', 'boş belge: yalnız header içeren geçerli SGF');
+  // Parantez dengesi — bağımsız bir sözdizimi kontrolü (studio-sgf-smoke.test.js
+  // ile aynı asgari well-formedness ilkesi)
+  assert.equal((written.match(/\(/g) ?? []).length, (written.match(/\)/g) ?? []).length, 'boş belge: parantez dengeli');
+}
+
+async function testSgfExportTitleSummaryEscaping() {
+  // S10D senaryo: Türkçe/özel karakterli title+summary — yalnızca C[] (comment)
+  // daha önce test edilmişti; GN (title)/GC (summary) hiç doğrulanmamıştı.
+  const doc = createDocument({
+    id: 'sgf-export-title',
+    title: 'Öğrenci ] testi \\ başlık',
+    summary: 'Açıklama: ığüşöçÇĞÜŞÖİ ] ve \\ karakterleri',
+    slug: 'sgf-export-title',
+  });
+
+  const { sgf } = formatSGF(doc);
+  assert.ok(sgf.includes(String.raw`GN[Öğrenci \] testi \\ başlık]`), 'GN (title): Türkçe + ]/\\ escape doğru — ' + sgf);
+  assert.ok(sgf.includes(String.raw`GC[Açıklama: ığüşöçÇĞÜŞÖİ \] ve \\ karakterleri]`), 'GC (summary): Türkçe + ]/\\ escape doğru — ' + sgf);
+
+  // Gerçek handler zincirinden geçince de aynı escape korunuyor mu?
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), 'agstudio-sgf-title-'));
+  const targetPath = path.join(base, 'sgf-export-title.sgf');
+  await exportSgfDocument({
+    document: doc,
+    formatSGF,
+    showSaveDialog: async () => ({ canceled: false, filePath: targetPath }),
+    writeSgfFile,
+    defaultFileName: doc.slug,
+  });
+  const written = await fs.readFile(targetPath, 'utf8');
+  assert.equal(written, sgf, 'title/summary escape\'i handler üzerinden de bozulmadan yazılıyor');
+}
+
+async function testSgfExportWarningsEndToEnd() {
+  // S10D senaryo 8: warning üreten bir annotation (region) gerçek handler
+  // zincirinden geçirilip warnings.length'in UI'nin okuyacağı result
+  // içinde doğru sayıda döndüğünü doğrular. app.mjs'nin mesaj metnini
+  // (`${warningCount} uyarı var`) statik olarak testSgfExportUiButton
+  // doğruluyor; bu test o sayının GERÇEKTEN doğru üretildiğini kanıtlıyor.
+  const { setMoveNodeAnnotations } = await import('../studio/model/moveTree.js');
+  const doc = createDocument({ id: 'sgf-export-warn', title: '', slug: 'sgf-export-warn' });
+  const root = doc.moveTree.root;
+  setMoveNodeAnnotations(root, 'root', [
+    { type: 'region', points: [{ x: 0, y: 0 }, { x: 1, y: 1 }] },
+    { type: 'triangle', point: { x: 4, y: 4 } },
+  ], 9);
+
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), 'agstudio-sgf-warn-'));
+  const targetPath = path.join(base, 'sgf-export-warn.sgf');
+  const result = await exportSgfDocument({
+    document: doc,
+    formatSGF,
+    showSaveDialog: async () => ({ canceled: false, filePath: targetPath }),
+    writeSgfFile,
+    defaultFileName: doc.slug,
+  });
+
+  assert.equal(result.canceled, false);
+  assert.equal(result.warnings.length, 1, 'region annotation tam olarak 1 warning üretmeli — UI "1 uyarı var" gösterecek');
+  assert.ok(result.warnings[0].includes('region'), 'warning metni region\'ı adlandırıyor: ' + result.warnings[0]);
+
+  const written = await fs.readFile(targetPath, 'utf8');
+  assert.ok(written.includes('TR[ee]'), 'region atlansa da geri kalan annotation (TR) yazılmaya devam ediyor');
+  assert.ok(!written.toLowerCase().includes('region'), 'region kelimesi SGF metninin içine sızmıyor (yalnız warnings\'te)');
+}
+
+async function testSgfExportMarkerAnnotationGap() {
+  // S10D BULGUSU (düzeltilmedi — bkz. kapanış raporu): "İşaret" (marker)
+  // modu (bkz. app.mjs addMarkerFromBoardClick/toggleBoardMarker) taşıdığı
+  // işaretleri YALNIZCA doc.board.markers'a yazıyor. formatSGF() ise
+  // markup'ı YALNIZCA node.annotations'tan okuyor (D0 Annotation Sözleşmesi,
+  // studio/docs/desktop-architecture.md). İkisi arasında hiçbir senkronizasyon
+  // yok — bu yüzden marker modunda eklenen bir işaret .agstudio'da görünür
+  // kalır (round-trip korunur, ekranda render edilir) ama SGF'e AKTARILMAZ,
+  // sessizce (warning bile üretmeden). Bu test mevcut (kusurlu) davranışı
+  // kanıtlıyor; "minimal düzeltme" kapsamına girmiyor çünkü doğru çözüm
+  // marker modunun etkileşim modelini (board.markers → hangi node'un
+  // annotations'ı?) yeniden tasarlamayı gerektiriyor — bu S10D'nin "büyük
+  // özellik/yeniden tasarım yok" sınırını aşıyor.
+  const doc = createDocument({ id: 'sgf-export-marker-gap', title: '', slug: 'sgf-export-marker-gap' });
+  doc.board.markers.push({ x: 2, y: 2, type: 'circle' }); // gerçek marker-modu şekli (toggleBoardMarker)
+  assert.equal(doc.moveTree.root.annotations.length, 0, 'ön koşul: node.annotations boş (marker modu buraya hiç yazmıyor)');
+
+  const { sgf, warnings } = formatSGF(doc);
+  assert.ok(!sgf.includes('CR[cc]'), 'BİLİNEN BOŞLUK: board.markers\'taki (2,2) circle SGF\'e hiç yansımıyor');
+  assert.deepEqual(warnings, [], 'BİLİNEN BOŞLUK: kayıp sessiz — kullanıcıyı uyaran bir warning de üretilmiyor');
+}
+
 async function testSgfExportDoesNotTouchAgstudioPath() {
   // main.cjs Electron'a bağımlı olduğu için doğrudan import edilemez (plain
   // node altında require('electron') gerçek modülü vermez) — bu yüzden diğer
@@ -277,6 +388,15 @@ async function testSgfExportUiButton() {
   const editabilityEnd = appSrc.indexOf('\nasync function openCandidatePreview', editabilityStart);
   const editabilityBlock = appSrc.slice(editabilityStart, editabilityEnd > 0 ? editabilityEnd : editabilityStart + 800);
   assert.ok(!editabilityBlock.includes('actionExportSgf'), 'syncCandidateEditability export butonunu devre dışı bırakmıyor (aday önizlemesinde de aktif kalmalı)');
+
+  // Renderer tarafında da .agstudio state'i (activeDocumentPath) değişmiyor:
+  // export click handler'ı setActiveDocument/setCandidateSession çağırmamalı
+  // (main.cjs tarafı testSgfExportDoesNotTouchAgstudioPath ile zaten kanıtlı).
+  const exportHandlerStart = appSrc.indexOf('elements.actionExportSgf.addEventListener');
+  const exportHandlerEnd = appSrc.indexOf('\n  });', exportHandlerStart);
+  const exportHandlerBlock = appSrc.slice(exportHandlerStart, exportHandlerEnd > 0 ? exportHandlerEnd : exportHandlerStart + 700);
+  assert.ok(!exportHandlerBlock.includes('setActiveDocument'), 'export click handler: setActiveDocument çağırmıyor (activeDocumentPath değişmiyor)');
+  assert.ok(!exportHandlerBlock.includes('setCandidateSession'), 'export click handler: setCandidateSession çağırmıyor (aday modu değişmiyor)');
 }
 
 async function testSgfExportCapability() {
