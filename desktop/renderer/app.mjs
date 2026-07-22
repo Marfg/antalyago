@@ -72,6 +72,7 @@ const elements = {
   actionSaveAs: document.querySelector('[data-action-save-as]'),
   actionExportSgf: document.querySelector('[data-action-export-sgf]'),
   saveFeedback: document.querySelector('[data-save-feedback]'),
+  sgfExportWarnings: document.querySelector('[data-sgf-export-warnings]'),
   treeSummary: document.querySelector('[data-move-tree-summary]'),
   treePath: document.querySelector('[data-move-tree-path]'),
   treeViewport: document.querySelector('[data-move-tree-viewport]'),
@@ -480,22 +481,28 @@ function wireActions() {
     if (typeof api.exportSgfDocument !== 'function') {
       return;
     }
-    syncDocumentFromSelection();
-    // Aday önizlemesi salt-okunur olsa bile dışa aktarma serbest — hâlihazırda
-    // yüklü belgeyi (preview ya da working) olduğu gibi dışa aktarır, düzenleme
-    // modlarını açmaz (syncCandidateEditability bu butonu devre dışı bırakmaz).
-    const result = await api.exportSgfDocument(state.activeDocument);
-    if (result?.canceled) {
-      renderTreeStatus('SGF dışa aktarma iptal edildi.');
-      renderSaveFeedback('SGF dışa aktarma iptal edildi.', 'muted');
-      return;
+    try {
+      syncDocumentFromSelection();
+      // Aday önizlemesi salt-okunur olsa bile dışa aktarma serbest — hâlihazırda
+      // yüklü belgeyi (preview ya da working) olduğu gibi dışa aktarır, düzenleme
+      // modlarını açmaz (syncCandidateEditability bu butonu devre dışı bırakmaz).
+      const result = await api.exportSgfDocument(state.activeDocument);
+      if (result?.canceled) {
+        renderTreeStatus('SGF dışa aktarma iptal edildi.');
+        renderSaveFeedback('SGF dışa aktarma iptal edildi.', 'muted');
+        renderSgfExportWarnings([]);
+        return;
+      }
+      const warnings = Array.isArray(result?.warnings) ? result.warnings : [];
+      const message = buildSgfExportMessage(basenameOf(result?.filePath), warnings.length);
+      renderTreeStatus(message);
+      renderSaveFeedback(message, 'success');
+      renderSgfExportWarnings(warnings);
+    } catch (error) {
+      renderTreeStatus(`SGF dışa aktarma hatası: ${error?.message ?? 'bilinmeyen hata'}`);
+      renderSaveFeedback('SGF dışa aktarılamadı.', 'error');
+      renderSgfExportWarnings([]);
     }
-    const warningCount = Array.isArray(result?.warnings) ? result.warnings.length : 0;
-    const message = warningCount > 0
-      ? `SGF dışa aktarıldı, ${warningCount} uyarı var.`
-      : 'SGF dışa aktarıldı.';
-    renderTreeStatus(message);
-    renderSaveFeedback(message, 'success');
   });
 
   elements.treeViewport.addEventListener('click', event => {
@@ -853,6 +860,44 @@ function renderSaveFeedback(message, tone = 'muted') {
   if (!elements.saveFeedback) return;
   elements.saveFeedback.textContent = message;
   elements.saveFeedback.dataset.tone = tone;
+}
+
+// S10F: uzun mutlak yol yerine dosya adı (basename) — hem "/" hem "\" ayırıcı
+// destekli, renderer sandbox'ta (nodeIntegration:false) Node 'path' modülü yok.
+function basenameOf(filePath) {
+  if (typeof filePath !== 'string' || !filePath) return '';
+  const segments = filePath.replace(/\\/g, '/').split('/').filter(Boolean);
+  return segments[segments.length - 1] ?? '';
+}
+
+function buildSgfExportMessage(fileLabel, warningCount) {
+  const suffix = warningCount > 0 ? `, ${warningCount} uyarı var.` : '.';
+  return fileLabel ? `SGF dışa aktarıldı: ${fileLabel}${suffix}` : `SGF dışa aktarıldı${suffix}`;
+}
+
+// Küçük, kalıcı uyarı detayı: ilk 3 warning + "+N uyarı daha". Konsola değil
+// UI'ye yazılır; teknik detay paneli değildir (bkz. S10F kapsam sınırı).
+function renderSgfExportWarnings(warnings) {
+  if (!elements.sgfExportWarnings) return;
+  const list = Array.isArray(warnings) ? warnings : [];
+  if (list.length === 0) {
+    elements.sgfExportWarnings.hidden = true;
+    elements.sgfExportWarnings.replaceChildren();
+    return;
+  }
+  const items = list.slice(0, 3).map(text => {
+    const li = document.createElement('li');
+    li.textContent = text;
+    return li;
+  });
+  const remaining = list.length - Math.min(list.length, 3);
+  if (remaining > 0) {
+    const li = document.createElement('li');
+    li.textContent = `+${remaining} uyarı daha`;
+    items.push(li);
+  }
+  elements.sgfExportWarnings.replaceChildren(...items);
+  elements.sgfExportWarnings.hidden = false;
 }
 
 function buildTreeStatus() {

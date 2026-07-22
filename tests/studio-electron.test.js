@@ -47,6 +47,7 @@ async function main() {
   await testSgfExportHandler();
   await testSgfExportDoesNotTouchAgstudioPath();
   await testSgfExportUiButton();
+  await testSgfExportFeedbackBehavior();
   await testSgfExportCapability();
   await testBoardAdapter();
   await testSecurityTexts();
@@ -391,9 +392,22 @@ async function testSgfExportUiButton() {
   assert.ok(appSrc.includes("actionExportSgf: document.querySelector('[data-action-export-sgf]')"), 'app.mjs: actionExportSgf elementi tanımlı');
   assert.ok(appSrc.includes('elements.actionExportSgf.addEventListener'), 'app.mjs: export butonu event listener\'ı mevcut');
   assert.ok(appSrc.includes('api.exportSgfDocument(state.activeDocument)'), 'app.mjs: exportSgfDocument çalışma belgesiyle çağrılıyor');
-  assert.ok(appSrc.includes("'SGF dışa aktarıldı.'"), 'app.mjs: başarı mesajı mevcut');
   assert.ok(appSrc.includes('uyarı var'), 'app.mjs: warnings sayısı mesajda gösteriliyor');
   assert.ok(appSrc.includes("'SGF dışa aktarma iptal edildi.'"), 'app.mjs: iptal mesajı mevcut');
+  assert.ok(!appSrc.includes('elements.actionExportSgf.disabled'), 'export butonu hiçbir yerde disabled yapılmıyor (aday önizlemesi dahil her zaman aktif)');
+
+  // S10F: başarı mesajı artık dosya adını (basename) içeriyor — path değil.
+  assert.ok(appSrc.includes('function basenameOf(filePath)'), 'app.mjs: basenameOf yardımcı fonksiyonu mevcut');
+  assert.ok(appSrc.includes('function buildSgfExportMessage(fileLabel, warningCount)'), 'app.mjs: buildSgfExportMessage yardımcı fonksiyonu mevcut');
+  assert.ok(appSrc.includes('SGF dışa aktarıldı: ${fileLabel}'), 'app.mjs: başarı mesajı dosya adını içeriyor');
+  assert.ok(appSrc.includes('basenameOf(result?.filePath)'), 'app.mjs: mesaj gerçek export sonucunun filePath\'inden basename çıkarıyor');
+
+  // S10F: warning detay listesi — küçük, kalıcı, console-only değil
+  assert.ok(appSrc.includes('function renderSgfExportWarnings(warnings)'), 'app.mjs: renderSgfExportWarnings fonksiyonu mevcut');
+  assert.ok(appSrc.includes('list.slice(0, 3)'), 'app.mjs: ilk 3 warning gösteriliyor');
+  assert.ok(appSrc.includes('+${remaining} uyarı daha'), 'app.mjs: fazlası "+N uyarı daha" ile özetleniyor');
+  assert.ok(appSrc.includes('sgfExportWarnings: document.querySelector'), 'app.mjs: warning detay elementi tanımlı');
+  assert.ok(!appSrc.includes('console.log(warnings') && !appSrc.includes('console.warn(warnings'), 'warnings console-only değil, UI\'ye yazılıyor');
 
   // Aday önizlemesi salt-okunur olsa bile export serbest: syncCandidateEditability
   // disable listesinde actionExportSgf YER ALMAMALI.
@@ -407,13 +421,148 @@ async function testSgfExportUiButton() {
   // (main.cjs tarafı testSgfExportDoesNotTouchAgstudioPath ile zaten kanıtlı).
   const exportHandlerStart = appSrc.indexOf('elements.actionExportSgf.addEventListener');
   const exportHandlerEnd = appSrc.indexOf('\n  });', exportHandlerStart);
-  const exportHandlerBlock = appSrc.slice(exportHandlerStart, exportHandlerEnd > 0 ? exportHandlerEnd : exportHandlerStart + 700);
+  const exportHandlerBlock = appSrc.slice(exportHandlerStart, exportHandlerEnd > 0 ? exportHandlerEnd : exportHandlerStart + 900);
   assert.ok(!exportHandlerBlock.includes('setActiveDocument'), 'export click handler: setActiveDocument çağırmıyor (activeDocumentPath değişmiyor)');
   assert.ok(!exportHandlerBlock.includes('setCandidateSession'), 'export click handler: setCandidateSession çağırmıyor (aday modu değişmiyor)');
+  assert.ok(!exportHandlerBlock.includes('notifyDocumentOpened'), 'export click handler: notifyDocumentOpened çağırmıyor');
+  assert.ok(!exportHandlerBlock.includes('persistSettings'), 'export click handler: persistSettings çağırmıyor');
+
+  // S10F: try/catch ile sarılı, hata kullanıcı dostu mesajla gösteriliyor, UI kilitlenmiyor
+  assert.ok(exportHandlerBlock.includes('try {'), 'export click handler: try/catch ile sarılı');
+  assert.ok(exportHandlerBlock.includes('} catch (error) {'), 'export click handler: catch bloğu mevcut');
+  assert.ok(exportHandlerBlock.includes("'SGF dışa aktarılamadı.'"), 'export click handler: kullanıcı dostu hata mesajı mevcut');
+  assert.ok(exportHandlerBlock.includes("renderSaveFeedback('SGF dışa aktarılamadı.', 'error')"), 'export click handler: hata data-save-feedback\'e \'error\' tonuyla yazılıyor');
+  assert.ok(exportHandlerBlock.includes('renderTreeStatus(`SGF dışa aktarma hatası:'), 'export click handler: kısa hata renderTreeStatus\'a da yazılıyor');
+
+  // S10F: iptal hâlâ 'muted' — hata gibi gösterilmiyor
+  const canceledBlockStart = exportHandlerBlock.indexOf('result?.canceled');
+  const canceledBlockEnd = exportHandlerBlock.indexOf('return;', canceledBlockStart);
+  const canceledBlock = exportHandlerBlock.slice(canceledBlockStart, canceledBlockEnd);
+  assert.ok(canceledBlock.includes("'muted'"), 'iptal muted tonuyla gösteriliyor, error değil');
+  assert.ok(!canceledBlock.includes("'error'"), 'iptal error tonuyla karıştırılmıyor');
+
+  // CSS: error tonu ve warning detay listesi stili tanımlı
+  const css = await fs.readFile(path.join(root, 'desktop', 'renderer', 'studio.css'), 'utf8');
+  assert.ok(css.includes('[data-tone="error"]'), 'studio.css: error tonu tanımlı');
+  assert.ok(css.includes('.sgf-export-warnings'), 'studio.css: warning detay listesi stili tanımlı');
+
+  // HTML: warning detay elementi Hızlı işlemler bloğunda, aria-live ile
+  assert.ok(html.includes('data-sgf-export-warnings'), 'index.html: warning detay elementi mevcut');
+  assert.ok(quickActionsBlock.includes('data-sgf-export-warnings'), 'warning detay elementi Hızlı işlemler bloğunda');
+  assert.ok(/aria-live="polite"[^>]*data-sgf-export-warnings|data-sgf-export-warnings[^>]*aria-live="polite"/.test(html), 'warning detay elementi aria-live="polite" taşıyor');
 }
 
 async function testSgfExportCapability() {
   assert.equal(OUTPUT_CAPABILITIES.sgf.supported, true, 'capabilities.js: sgf.supported artık true (S10C ile aktif)');
+}
+
+async function testSgfExportFeedbackBehavior() {
+  // S10F: davranışsal doğrulama — app.mjs'teki basenameOf/buildSgfExportMessage/
+  // renderSgfExportWarnings ile BİREBİR aynı saf mantığın yerel yeniden
+  // uygulaması (bu dosyanın kurulu geleneği — app.mjs DOM'a bağımlı, doğrudan
+  // import edilemez). testSgfExportUiButton bu fonksiyonların kaynakta var
+  // olduğunu statik doğruluyor; bu test GERÇEKTEN doğru sonuç ürettiklerini.
+
+  function basenameOf(filePath) {
+    if (typeof filePath !== 'string' || !filePath) return '';
+    const segments = filePath.replace(/\\/g, '/').split('/').filter(Boolean);
+    return segments[segments.length - 1] ?? '';
+  }
+
+  function buildSgfExportMessage(fileLabel, warningCount) {
+    const suffix = warningCount > 0 ? `, ${warningCount} uyarı var.` : '.';
+    return fileLabel ? `SGF dışa aktarıldı: ${fileLabel}${suffix}` : `SGF dışa aktarıldı${suffix}`;
+  }
+
+  function warningDisplayItems(warnings) {
+    const list = Array.isArray(warnings) ? warnings : [];
+    if (list.length === 0) return [];
+    const items = list.slice(0, 3);
+    const remaining = list.length - Math.min(list.length, 3);
+    if (remaining > 0) items.push(`+${remaining} uyarı daha`);
+    return items;
+  }
+
+  // ── 1. Başarılı export: dosya adı gösteriliyor (uzun path değil) ────────
+  assert.equal(basenameOf('C:\\Users\\Ekim\\Documents\\AntalyaGo Studio\\oyun.sgf'), 'oyun.sgf', 'Windows yolu → yalnız dosya adı');
+  assert.equal(basenameOf('/home/ekim/oyun.sgf'), 'oyun.sgf', 'POSIX yolu → yalnız dosya adı');
+  assert.equal(basenameOf(''), '', 'boş yol → boş etiket');
+  assert.equal(basenameOf(undefined), '', 'undefined yol → boş etiket, hata fırlatmaz');
+
+  assert.equal(
+    buildSgfExportMessage('oyun.sgf', 0),
+    'SGF dışa aktarıldı: oyun.sgf.',
+    'warning yok: mesaj dosya adını içeriyor, uzun path yok',
+  );
+  assert.equal(
+    buildSgfExportMessage('', 0),
+    'SGF dışa aktarıldı.',
+    'dosya adı çözülemezse eski davranışa (S10C) düşer',
+  );
+
+  // ── 2. Warning detayları UI metnine yansıyor ─────────────────────────────
+  assert.equal(
+    buildSgfExportMessage('oyun.sgf', 2),
+    'SGF dışa aktarıldı: oyun.sgf, 2 uyarı var.',
+    'warning sayısı + dosya adı aynı mesajda',
+  );
+  assert.deepEqual(
+    warningDisplayItems(['w1', 'w2']),
+    ['w1', 'w2'],
+    '3 veya az warning: hepsi gösteriliyor, özet satırı yok',
+  );
+
+  // ── 3. 3'ten fazla warning özetleniyor ("+N uyarı daha") ────────────────
+  const fiveWarnings = ['w1', 'w2', 'w3', 'w4', 'w5'];
+  const displayed = warningDisplayItems(fiveWarnings);
+  assert.equal(displayed.length, 4, 'ilk 3 + 1 özet satırı = 4 öğe');
+  assert.deepEqual(displayed.slice(0, 3), ['w1', 'w2', 'w3'], 'ilk 3 warning aynen gösteriliyor');
+  assert.equal(displayed[3], '+2 uyarı daha', 'kalan 2 warning "+2 uyarı daha" ile özetleniyor');
+
+  // ── 4. Export throw ederse kullanıcı dostu hata (gerçek click-handler akışının yeniden uygulaması) ──
+  async function simulateExportClick(exportSgfDocumentStub) {
+    const calls = { status: null, feedback: null, warnings: null };
+    try {
+      const result = await exportSgfDocumentStub();
+      if (result?.canceled) {
+        calls.status = 'SGF dışa aktarma iptal edildi.';
+        calls.feedback = { message: 'SGF dışa aktarma iptal edildi.', tone: 'muted' };
+        calls.warnings = [];
+        return calls;
+      }
+      const warnings = Array.isArray(result?.warnings) ? result.warnings : [];
+      const message = buildSgfExportMessage(basenameOf(result?.filePath), warnings.length);
+      calls.status = message;
+      calls.feedback = { message, tone: 'success' };
+      calls.warnings = warnings;
+    } catch (error) {
+      calls.status = `SGF dışa aktarma hatası: ${error?.message ?? 'bilinmeyen hata'}`;
+      calls.feedback = { message: 'SGF dışa aktarılamadı.', tone: 'error' };
+      calls.warnings = [];
+    }
+    return calls;
+  }
+
+  const errorResult = await simulateExportClick(async () => { throw new Error('disk dolu'); });
+  assert.equal(errorResult.feedback.message, 'SGF dışa aktarılamadı.', 'hata: kullanıcı dostu, teknik olmayan mesaj gösteriliyor');
+  assert.equal(errorResult.feedback.tone, 'error', 'hata: error tonuyla gösteriliyor');
+  assert.ok(errorResult.status.includes('disk dolu'), 'hata: teknik detay renderTreeStatus\'a yazılıyor (kullanıcı isterse görür)');
+  assert.deepEqual(errorResult.warnings, [], 'hata: warning listesi temizleniyor');
+
+  // ── 5. Cancel muted kalıyor, hata gibi gösterilmiyor ─────────────────────
+  const canceledResult = await simulateExportClick(async () => ({ canceled: true }));
+  assert.equal(canceledResult.feedback.tone, 'muted', 'iptal muted tonuyla kalıyor');
+  assert.notEqual(canceledResult.feedback.tone, 'error', 'iptal error tonuyla karışmıyor');
+
+  // ── 6. Başarı akışı da aynı simülasyonla uçtan uca tutarlı ───────────────
+  const successResult = await simulateExportClick(async () => ({
+    canceled: false,
+    filePath: 'C:\\Users\\Ekim\\Documents\\AntalyaGo Studio\\oyun.sgf',
+    warnings: ['root: region annotation (id=r1) SGF\'e yazılamadı — atlandı'],
+  }));
+  assert.equal(successResult.feedback.tone, 'success');
+  assert.equal(successResult.feedback.message, 'SGF dışa aktarıldı: oyun.sgf, 1 uyarı var.');
+  assert.equal(successResult.warnings.length, 1);
 }
 
 async function testBoardAdapter() {
