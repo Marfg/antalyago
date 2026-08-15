@@ -30,7 +30,7 @@ import { isValidMove, computeCaptures, applyMove } from './ruleEngine.js';
 import { isCorrectAnswer, stepRequiresAnswer }      from './lessonEngine.js';
 import {
   analyzePattern, buildFeedback, buildLibertyMiniQ,
-  wrongGoalMessage,
+  wrongGoalMessage, getLibertyInfo,
 } from './pedagogyEngine.js';
 
 export class ActionHandler {
@@ -56,6 +56,7 @@ export class ActionHandler {
       case 'LESSON_SELECT': return this._lessonSelect(action.payload);
       case 'BOARD_SIZE_SET':return this._boardSizeSet(action.payload);
       case 'HINT_REQUEST':  return this._hintRequest();
+      case 'SHOW_LIBERTIES_REQUEST': return this._showLibertiesRequest();
       default:
         return this._result(false, [], { text: 'Bilinmeyen aksiyon', type: 'error' });
     }
@@ -87,7 +88,7 @@ export class ActionHandler {
       return this._result(false, [], {
         text: ruleCheck.reason === 'KO' ? 'Ko kuralı — bu hamle yasak!' : 'Geçersiz hamle.',
         type: 'wrong',
-      });
+      }, false); // legal:false — bu bir kural ihlali, ders açısından "yanlış cevap" değil
     }
 
     // Ders cevap doğrulama
@@ -234,6 +235,28 @@ export class ActionHandler {
     );
   }
 
+  // ── SHOW_LIBERTIES_REQUEST ────────────────────────────────────────
+
+  /**
+   * Öğretmen aracı: tahtadaki TÜM taşların (her iki renk) nefes
+   * noktalarını hesaplayıp mevcut SHOW_LIBERTY_HIGHLIGHTS efektiyle
+   * vurgular — yeni bir çizim mekanizması icat etmez, var olanı
+   * yeniden kullanır (bkz. pedagogyEngine.js getLibertyInfo).
+   */
+  _showLibertiesRequest() {
+    const points = new Map();
+    for (const stone of this.board.stones) {
+      const info = getLibertyInfo(this.board, stone.x, stone.y);
+      for (const p of info.points) points.set(`${p.x},${p.y}`, p);
+    }
+    const targets = [...points.values()];
+
+    return this._result(true,
+      [{ type: 'SHOW_LIBERTY_HIGHLIGHTS', points: targets }],
+      { text: targets.length ? 'Nefes noktaları vurgulandı.' : 'Tahtada taş yok.', type: 'info' }
+    );
+  }
+
   // ── Yardımcı ─────────────────────────────────────────────────────
 
   /**
@@ -284,11 +307,19 @@ export class ActionHandler {
     return { text: fb.t, type: fb.c || 'info' };
   }
 
-  _result(ok, effects, feedback) {
+  /**
+   * @param {boolean} legal — hamle Go kurallarına göre geçerli miydi?
+   *   (KO/intihar gibi kural ihlalleri false; müfredat açısından "yanlış
+   *   cevap" olması AYRI bir şey — kural-geçerli ama ders hedefine
+   *   uymayan bir hamle hâlâ legal:true'dur.) Yalnız _boardTap'in kural
+   *   ihlali dalı false geçer; diğer tüm çağrılarda varsayılan true.
+   */
+  _result(ok, effects, feedback, legal = true) {
     return {
       ok,
       effects,
       feedback,
+      legal,
       boardState: this.board,
       lessonState: this.lesson._currentState?.() || null,
     };

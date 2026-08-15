@@ -3,6 +3,7 @@
   "main": "desktop/main.cjs",
   "scripts": {
     "serve": "npx serve . -p 3000 --no-clipboard",
+    "ai-teacher-proxy": "node scripts/ai/teacher-proxy.mjs",
     "test-core": "node --experimental-vm-modules tests/run.js",
     "test-problems": "node tests/problemBank.test.js && node tests/problemBank-audit.test.js && node tests/problemBank-sources.test.js && node tests/problemBank-candidates.test.js && node tests/problemBank-candidate-studio.test.js && node tests/problemBank-review.test.js && node tests/problemBank-promotion.test.js && node tests/problemBank-phase9.test.js && node tests/problemBank-phase11.test.js && node tests/problemBank-migration.test.js",
     "validate-problems": "node scripts/problem-bank/validate.mjs",
