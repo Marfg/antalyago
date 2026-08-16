@@ -13,6 +13,17 @@
  * yapılandırılmış bir cevap üretir — core/claudeTeacherProvider.js ile
  * TAMAMEN aynı sözleşmeyi uygular; core/teacherAssistant.js hangisinin
  * kullanıldığını bilmez.
+ *
+ * v0.4 — kademeli yardım: attempt 1-2'de sözlü ipucu (give_hint), attempt
+ * 3+'te (yalnızca uygun bir boardObservation varsa) "show_liberties" tool
+ * talebi. Mock'un kendisi de her zaman olduğu gibi hiçbir koordinat
+ * üretmez — action adından fazlasını döndürmez, gerçek hedefi
+ * core/teacherToolRouter.js bulur.
+ *
+ * v0.5 — context.studentModel.status varsa hint tonu buna göre değişir:
+ * "mastered" bir kavramda öğrenciye daha kısa/az destekleyici bir mesaj
+ * verilir (bkz. spesifikasyon §15/§27 örnekleri). Student Model YALNIZCA
+ * okunur — mock hiçbir zaman onu değiştirmez.
  */
 
 function colorTr(color) {
@@ -20,9 +31,7 @@ function colorTr(color) {
 }
 
 function hintLevelFor(attempt) {
-  if (attempt <= 1) return 1;
-  if (attempt === 2) return 2;
-  return 3;
+  return attempt <= 1 ? 1 : 2;
 }
 
 function mockResponseFor(context) {
@@ -39,14 +48,23 @@ function mockResponseFor(context) {
   }
 
   if (obs?.isAtari) {
+    if (attempt >= 3) {
+      return {
+        action: 'show_liberties',
+        message: `${colorTr(obs.targetColor)} grubun açık kalan nefes noktasına birlikte bakalım.`,
+        hintLevel: null,
+      };
+    }
     const hintLevel = hintLevelFor(attempt);
+    const status = context?.studentModel?.status;
     let message;
-    if (hintLevel === 1) {
+    if (status === 'mastered') {
+      // Bu kavramda zaten güvenilir — uzun/destekleyici anlatıma gerek yok.
+      message = 'Son nefes noktasını gözden kaçırdın. Tekrar dene.';
+    } else if (hintLevel === 1) {
       message = 'Rakip taşın kalan nefes noktasını tekrar bulmaya çalış.';
-    } else if (hintLevel === 2) {
-      message = `${colorTr(obs.targetColor)} grubun artık yalnızca tek nefes noktası var — o boş komşuyu bul.`;
     } else {
-      message = `${colorTr(obs.targetColor)} grubun son nefes noktası: ${obs.remainingLiberties.join(', ')}.`;
+      message = `${colorTr(obs.targetColor)} grubun artık yalnızca tek nefes noktası var — o boş komşuyu bul.`;
     }
     return { action: 'give_hint', message, hintLevel };
   }

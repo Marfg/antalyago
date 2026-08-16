@@ -7,12 +7,23 @@
  * çağıran taraf (core/teacherAssistant.js) bunu deterministic fallback
  * sinyali olarak kullanır. Saf — DOM yok, provider/network yok.
  *
- * Beklenen şekil (bkz. spesifikasyon §8):
- *   { "action": "say" | "give_hint", "message": "...", "hintLevel"?: 1|2|3 }
+ * Beklenen şekil (bkz. Teacher Tools v0.4 spesifikasyonu §6):
+ *   { "action": "say" | "give_hint" | "show_liberties", "message": "...", "hintLevel"?: 1|2|3 }
+ *
+ * v0.4: LLM'nin board koordinatı ÜRETEMEYECEĞİNİ şema seviyesinde de
+ * garanti altına almak için `points`/`coordinates`/`targets` gibi
+ * koordinat taşıyan alanlar STRICT olarak reddedilir — "show_liberties"
+ * istendiğinde gerçek hedefler core/teacherToolRouter.js tarafından
+ * deterministik motordan bulunur, LLM'in cevabından ASLA okunmaz.
  */
 
-export const ALLOWED_TEACHER_ACTIONS = ['say', 'give_hint'];
+export const ALLOWED_TEACHER_ACTIONS = ['say', 'give_hint', 'show_liberties'];
 const ALLOWED_ACTIONS = new Set(ALLOWED_TEACHER_ACTIONS);
+
+// LLM'nin koordinat/hedef üretmeye çalıştığının işareti olabilecek alanlar —
+// varsa response TÜMDEN reddedilir (yalnız show_liberties'e özel değil,
+// herhangi bir action için savunma amaçlı).
+const FORBIDDEN_COORDINATE_FIELDS = ['points', 'coordinates', 'targets'];
 
 // Türkçe, 1-2 kısa cümle hedefleyen bir öğretmen mesajı için üst sınır.
 // Kesin bir kural değil — LLM'in uzun ders anlatımına kaçmasını
@@ -26,6 +37,11 @@ const MAX_MESSAGE_LENGTH = 400;
 export function validateTeacherResponse(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     return { valid: false, reason: 'NOT_AN_OBJECT' };
+  }
+  for (const field of FORBIDDEN_COORDINATE_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(raw, field)) {
+      return { valid: false, reason: 'COORDINATES_NOT_ALLOWED' };
+    }
   }
   if (typeof raw.action !== 'string' || !ALLOWED_ACTIONS.has(raw.action)) {
     return { valid: false, reason: 'INVALID_ACTION' };

@@ -14,7 +14,7 @@ globalThis.localStorage = {
 import { BoardState } from '../core/boardState.js';
 import { LessonEngine } from '../core/lessonEngine.js';
 import { ActionHandler } from '../core/actionHandler.js';
-import { buildPanelSnapshot, deriveEvents } from '../core/teacherPanelBridge.js';
+import { buildPanelSnapshot, deriveEvents, resolveActiveConcept } from '../core/teacherPanelBridge.js';
 
 let passed = 0, failed = 0;
 function test(name, fn) {
@@ -348,6 +348,46 @@ test('STEP_GOTO ile atari içeren pozisyon yüklenince atari_detected üretilir'
   ok(detected, 'atari_detected üretilmeli: ' + JSON.stringify(events));
   equal(detected.payload.targetColor, 'white');
   equal(detected.payload.stoneCount, 1);
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// v0.5 — Student Model concept kaynağı (resolveActiveConcept)
+// ══════════════════════════════════════════════════════════════════════
+
+test('resolveActiveConcept: capture gerçekleştiyse "capture" döner', () => {
+  const { board, lesson, handler } = captureSetup(0);
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 4, y: 5 } };
+  const result = handler.handle(action);
+  const step = lesson.currentStep();
+  const concept = resolveActiveConcept({ lessonId: 'l3', boardState: boardBefore, step, result });
+  equal(concept, 'capture');
+});
+
+test('resolveActiveConcept: atari mevcut ama henüz yakalanmadıysa "atari" döner', () => {
+  const { board, lesson, handler } = captureSetup(0);
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } }; // yanlış — capture yok
+  const result = handler.handle(action);
+  const step = lesson.currentStep();
+  const concept = resolveActiveConcept({ lessonId: 'l3', boardState: boardBefore, step, result });
+  equal(concept, 'atari');
+});
+
+test('resolveActiveConcept: ne atari ne capture varsa dersin varsayılan kavramına düşer', () => {
+  const concept = resolveActiveConcept({ lessonId: 'l2', boardState: null, step: null, result: null });
+  equal(concept, 'liberty');
+});
+
+test('deriveEvents: answer_evaluated payload\'ı artık concept alanı taşır', () => {
+  const { board, lesson, handler } = captureSetup(0);
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } };
+  const result = handler.handle(action);
+  const events = deriveEvents({ action, result, lessonEngine: lesson, boardState: board, boardBefore });
+  const evaluated = events.find(e => e.type === 'answer_evaluated');
+  ok(evaluated, 'answer_evaluated üretilmeli');
+  equal(evaluated.payload.concept, 'atari');
 });
 
 console.log(`\nToplam: ${passed + failed}  ✓ ${passed}  ✗ ${failed}`);

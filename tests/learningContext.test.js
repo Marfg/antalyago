@@ -36,8 +36,9 @@ const audit = auditCurriculum(CURRICULUM);
 test('müfredatın tamamı sınıflandırılır', () => {
   equal(audit.summary.chapters, 3);
   equal(audit.summary.lessons, 18);
-  equal(audit.summary.steps, 109);
-  equal(audit.items.length, 109);
+  // v0.5.1: l2'ye 2 yeni saf nefes-noktası alıştırması eklendi (109→111).
+  equal(audit.summary.steps, 111);
+  equal(audit.items.length, 111);
 });
 
 test('uygulama ve değerlendirme adımları ayrıdır', () => {
@@ -49,15 +50,28 @@ test('uygulama ve değerlendirme adımları ayrıdır', () => {
 
 test('bağlam kavramları çıkarılır', () => {
   const lesson = CURRICULUM[0].lessons.find(item => item.id === 'l2');
+  // v0.5.1: l2'ye 2 yeni saf nefes-noktası adımı eklendiği için atari+capture
+  // içeren adım artık index 5 değil, index 7'dir (bkz. aşağıdaki yeni test).
   const context = classifyCurriculumStep({
     chapter: CURRICULUM[0],
     lesson,
-    step: lesson.steps[5],
-    stepIndex: 5,
+    step: lesson.steps[7],
+    stepIndex: 7,
   });
   ok(context.concepts.includes('capture'));
   ok(context.concepts.includes('atari'));
   equal(context.responseType, 'board_move');
+});
+
+test('v0.5.1: yeni saf nefes-noktası adımları (l2[5],l2[6]) yalnız "liberty" kavramı çıkarır, atari/capture DEĞİL', () => {
+  const lesson = CURRICULUM[0].lessons.find(item => item.id === 'l2');
+  for (const stepIndex of [5, 6]) {
+    const context = classifyCurriculumStep({ chapter: CURRICULUM[0], lesson, step: lesson.steps[stepIndex], stepIndex });
+    ok(context.concepts.includes('liberty'), `step[${stepIndex}] concepts liberty içermeli: ${context.concepts}`);
+    ok(!context.concepts.includes('atari'), `step[${stepIndex}] concepts atari İÇERMEMELİ: ${context.concepts}`);
+    ok(!context.concepts.includes('capture'), `step[${stepIndex}] concepts capture İÇERMEMELİ: ${context.concepts}`);
+    equal(context.responseType, 'board_move');
+  }
 });
 
 test('değerlendirme açıklaması puan paydasına girmez', () => {

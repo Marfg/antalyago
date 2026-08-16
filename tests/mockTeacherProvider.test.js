@@ -72,12 +72,53 @@ await test('yanlış + atari + attempt:2 → hintLevel:2, hâlâ koordinat veril
   ok(!parsed.value.message.includes('E4'), 'attempt 2\'de hâlâ doğru koordinat verilmemeli');
 });
 
-await test('yanlış + atari + attempt:3 → hintLevel:3, doğrudanlaştırılmış (koordinat) yönlendirme', async () => {
+// v0.4: attempt 3+'te artık metinde koordinat AÇIKLAMAK yerine
+// "show_liberties" tool talebi üretilir — gerçek koordinatı
+// core/teacherToolRouter.js, mock'un cevabından değil, deterministik
+// board gözleminden bulur.
+await test('yanlış + atari + attempt:3 → show_liberties tool talebi, mesajda koordinat YOK', async () => {
   const provider = createMockTeacherProvider();
   const response = await provider.generateTeacherResponse(atariContext({ attempt: 3 }));
   const parsed = parseTeacherResponse(response.raw);
-  equal(parsed.value.hintLevel, 3);
-  ok(parsed.value.message.includes('E4'), 'attempt 3+\'te doğrudan yönlendirme kabul edilir');
+  ok(parsed.valid, 'mock cevabı hâlâ şemaya uymalı: ' + response.raw);
+  equal(parsed.value.action, 'show_liberties');
+  ok(!parsed.value.message.includes('E4'), 'mock mesajında doğru koordinat asla geçmemeli');
+});
+
+await test('yanlış + atari + attempt:4+ → hâlâ show_liberties (escalation yukarı doğru sabitlenir)', async () => {
+  const provider = createMockTeacherProvider();
+  const response = await provider.generateTeacherResponse(atariContext({ attempt: 5 }));
+  const parsed = parseTeacherResponse(response.raw);
+  equal(parsed.value.action, 'show_liberties');
+});
+
+// ── v0.5: Student Model'in mock hint tonuna etkisi ───────────────────
+
+await test('studentModel.status="learning" → normal (attempt bazlı) hint metni', async () => {
+  const provider = createMockTeacherProvider();
+  const ctx = atariContext({ attempt: 1 });
+  ctx.studentModel = { currentConcept: 'capture', status: 'learning', attempts: 1, recentAccuracy: 0, independentCorrect: 0, hintsUsed: 0, toolAssists: 0 };
+  const response = await provider.generateTeacherResponse(ctx);
+  const parsed = parseTeacherResponse(response.raw);
+  equal(parsed.value.message, 'Rakip taşın kalan nefes noktasını tekrar bulmaya çalış.');
+});
+
+await test('studentModel.status="mastered" → DAHA KISA/terse mesaj, attempt seviyesinden BAĞIMSIZ', async () => {
+  const provider = createMockTeacherProvider();
+  const ctx = atariContext({ attempt: 1 }); // attempt 1 olsa bile
+  ctx.studentModel = { currentConcept: 'capture', status: 'mastered', attempts: 6, recentAccuracy: 0.9, independentCorrect: 5, hintsUsed: 0, toolAssists: 0 };
+  const response = await provider.generateTeacherResponse(ctx);
+  const parsed = parseTeacherResponse(response.raw);
+  equal(parsed.value.action, 'give_hint');
+  equal(parsed.value.message, 'Son nefes noktasını gözden kaçırdın. Tekrar dene.');
+  ok(!parsed.value.message.includes('E4'), 'mastered mesajı da koordinat içermemeli');
+});
+
+await test('studentModel verilmezse (undefined) davranış v0.4 ile birebir aynı kalır', async () => {
+  const provider = createMockTeacherProvider();
+  const response = await provider.generateTeacherResponse(atariContext({ attempt: 1 }));
+  const parsed = parseTeacherResponse(response.raw);
+  equal(parsed.value.message, 'Rakip taşın kalan nefes noktasını tekrar bulmaya çalış.');
 });
 
 await test('atari yoksa (boardObservation null) genel bir "say" mesajı üretir', async () => {

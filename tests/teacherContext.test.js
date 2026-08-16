@@ -17,6 +17,7 @@ import { BoardState } from '../core/boardState.js';
 import { LessonEngine } from '../core/lessonEngine.js';
 import { ActionHandler } from '../core/actionHandler.js';
 import { buildTeacherContext, coordLabel } from '../core/teacherContext.js';
+import { createStudentModel, applyStudentEvent } from '../core/studentModel.js';
 
 let passed = 0, failed = 0;
 function test(name, fn) {
@@ -166,6 +167,43 @@ test('task.teacherMessage HTML\'den arındırılmış, expectedInteraction doğr
   const ctx = buildTeacherContext({ lessonEngine: lesson, boardState: board });
   ok(!ctx.task.teacherMessage.includes('<'));
   equal(ctx.task.expectedInteraction, 'board_move');
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// v0.5 — Student Model entegrasyonu
+// ══════════════════════════════════════════════════════════════════════
+
+test('studentModel verilmezse context.studentModel null — context KIRILMAZ', () => {
+  const { board, lesson } = captureSetup();
+  const ctx = buildTeacherContext({ lessonEngine: lesson, boardState: board });
+  equal(ctx.studentModel, null);
+});
+
+test('studentModel verilir ama bu kavramda henüz veri yoksa null (not_started veri taşımaz)', () => {
+  const { board, lesson } = captureSetup();
+  const model = createStudentModel();
+  const ctx = buildTeacherContext({ lessonEngine: lesson, boardState: board, studentModel: model });
+  // capture kavramı henüz hiç güncellenmedi → getConceptState yine de bir
+  // obje döner (not_started), bu yüzden studentModel dolu ama status not_started olmalı.
+  ok(ctx.studentModel, 'not_started durumu da bir obje olarak taşınmalı');
+  equal(ctx.studentModel.status, 'not_started');
+  equal(ctx.studentModel.attempts, 0);
+});
+
+test('aktif concept Student Model özeti doğru eklenir (atari/capture ayrımına saygılı)', () => {
+  const { board, lesson, handler } = captureSetup();
+  let model = createStudentModel();
+  ({ model } = applyStudentEvent(model, { type: 'answer_evaluated', lessonId: 'l3', stepId: 'l3:0', payload: { result: 'incorrect', concept: 'atari' } }));
+  ({ model } = applyStudentEvent(model, { type: 'answer_evaluated', lessonId: 'l3', stepId: 'l3:0', payload: { result: 'incorrect', concept: 'atari' } }));
+
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } }; // yanlış — atari hâlâ aktif
+  const result = handler.handle(action);
+  const ctx = buildTeacherContext({ lessonEngine: lesson, boardState: board, boardBefore, action, result, studentModel: model });
+
+  equal(ctx.studentModel.currentConcept, 'atari');
+  equal(ctx.studentModel.attempts, 2);
+  equal(ctx.studentModel.status, 'learning');
 });
 
 console.log(`\nToplam: ${passed + failed}  ✓ ${passed}  ✗ ${failed}`);

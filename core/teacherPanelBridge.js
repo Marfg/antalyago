@@ -14,11 +14,18 @@
  * v0.3: primaryAtariGroup / removeStonesEffectOf / studentActionOf artık
  * export edilir — core/teacherContext.js aynı atari/capture tespitini
  * TEKRAR YAZMAK yerine buradan içe aktarır.
+ *
+ * v0.5: resolveActiveConcept() eklendi — Student Model'in (core/studentModel.js)
+ * "bu etkileşim hangi kavrama ait" sorusunun TEK kaynağı. answer_evaluated
+ * event'inin payload'ına eklenir; core/teacherAssistant.js da (hint/tool
+ * assist event'leri için) modelin currentConcept'i üzerinden aynı kovaya
+ * yazar — ayrıca hesaplamaz.
  */
 
 import { stripMarkup, responseTypeOf } from './learningContext.js';
 import { stepRequiresAnswer } from './lessonEngine.js';
 import { findAtariGroups } from './captureObservation.js';
+import { defaultConceptForLesson } from './conceptMap.js';
 
 // ── Beklenen cevap (yalnızca öğretmen/debug amaçlı) ──────────────────
 
@@ -58,6 +65,29 @@ export function primaryAtariGroup(board, step) {
 
 export function removeStonesEffectOf(result) {
   return (result?.effects ?? []).find(e => e.type === 'REMOVE_STONES') ?? null;
+}
+
+/**
+ * v0.5 — Bir etkileşimin (BOARD_TAP sonucu) ait olduğu Student Model
+ * kavramını GERÇEK board transition'ından belirler: capture gerçekleştiyse
+ * 'capture', atari mevcutsa (henüz yakalanmamış) 'atari', hiçbiri değilse
+ * dersin varsayılan kavramı (bkz. core/conceptMap.js). Curriculum'un
+ * "beklenen cevabından" değil, buildPanelSnapshot'ın activeConcept'iyle
+ * AYNI mantıktan türer — burada tek, paylaşılan kaynak olarak toplanmıştır.
+ *
+ * @param {object} params
+ * @param {string|null} params.lessonId
+ * @param {import('./boardState.js').BoardState|null} params.boardState — genelde boardBefore
+ * @param {object|null} params.step
+ * @param {object|null} params.result — ActionHandler.handle() sonucu
+ * @returns {string}
+ */
+export function resolveActiveConcept({ lessonId, boardState = null, step = null, result = null }) {
+  const removeEffect = removeStonesEffectOf(result);
+  if (removeEffect && removeEffect.points.length > 0) return 'capture';
+  const atariGroup = primaryAtariGroup(boardState, step);
+  if (atariGroup) return 'atari';
+  return defaultConceptForLesson(lessonId);
 }
 
 /**
@@ -187,7 +217,11 @@ export function deriveEvents({ action, result, lessonEngine, boardState = null, 
       events.push({ type: 'student_board_tap', lessonId, stepId, payload: { x: action.payload?.x, y: action.payload?.y } });
       const evalType = result?.feedback?.type;
       if (evalType === 'correct' || evalType === 'wrong') {
-        events.push({ type: 'answer_evaluated', lessonId, stepId, payload: { result: evalType === 'correct' ? 'correct' : 'incorrect' } });
+        // v0.5: concept — Student Model'in bu etkileşimi hangi kovaya
+        // yazacağı. boardBefore verilmemişse (bu case'te nadir) resolveActiveConcept
+        // yine de dersin varsayılan kavramına güvenle düşer.
+        const concept = resolveActiveConcept({ lessonId, boardState: boardBefore || boardState, step, result });
+        events.push({ type: 'answer_evaluated', lessonId, stepId, payload: { result: evalType === 'correct' ? 'correct' : 'incorrect', concept } });
       }
 
       // Yalnız GERÇEK bir değerlendirme üretmiş tıklamalar için (dolu

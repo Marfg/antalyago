@@ -99,6 +99,12 @@ export const CURRICULUM = [
 
       { text:`<p>★★ <strong>Alıştırma:</strong> Beyazın yanına siyah geldi — şimdi kaç nefes kaldı?</p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4}], auto:true, showLiberties:true, size:9, camera:CAM.center, miniQuestion:{text:'Beyazın kalan nefes sayısı?',options:[{text:'3',correct:true,feedback:'Doğru! Dört nefesten biri siyahla kapandı.'},{text:'4',correct:false,feedback:'Hayır — soldaki nokta artık siyah taşla dolu.'},{text:'2',correct:false,feedback:'Yakın ama hayır — hâlâ 3 boş komşu kaldı.'}]}, fb:{t:'Siyah taş beyazın bir nefesini kapattı.',c:'info'} },
 
+      // ── v0.5.1: saf nefes noktası tanıma (capture/atari YOK — Student
+      // Model'in "liberty" kovasını gerçek etkileşimden besler) ──
+      { text:`<p>★ <strong>Alıştırma:</strong> Bu taşın nefes noktalarına dokun.</p>`, board:[{color:'B',x:4,y:4}], answers:[{x:3,y:4},{x:5,y:4},{x:4,y:3},{x:4,y:5}], turn:'black', size:9, camera:CAM.center, fb:{t:'Taşın etrafındaki boş noktalardan birine dokun.',c:'info'}, fb_ok:'Doğru! Bu bir nefes noktasıydı.', fb_err:'Bu nokta taşa bitişik boş bir nokta değil.' },
+
+      { text:`<p>★★ <strong>Alıştırma:</strong> Bu iki bağlı taşın ortak nefes noktalarından birine dokun.</p>`, board:[{color:'B',x:0,y:3},{color:'B',x:0,y:4}], answers:[{x:1,y:3},{x:0,y:2},{x:1,y:4},{x:0,y:5}], turn:'black', size:9, camera:CAM.corner_tl, fb:{t:'Grubun boş komşu noktalarından birini bul.',c:'info'}, fb_ok:'Doğru! Grubun nefes noktalarından birini buldun.', fb_err:'Bu nokta gruba bitişik boş bir nokta değil.' },
+
       { text:`<p>★★★ <strong>Alıştırma:</strong> Beyazın tek bir nefesi kaldı — bu <strong>atari!</strong> Taşı yakala.</p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:3},{color:'B',x:5,y:4}], answer:{x:4,y:5}, turn:'black', size:9, camera:CAM.center, fb:{t:'Son nefes noktasına oyna ve yakala!',c:'info'}, fb_ok:'Mükemmel! Atariyi fark edip taşı yakaladın.', fb_err:'Beyaz taşa dokunan tek boş noktayı bul.' },
     ]},
 

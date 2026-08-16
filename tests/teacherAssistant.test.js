@@ -18,6 +18,7 @@ import { LessonEngine } from '../core/lessonEngine.js';
 import { ActionHandler } from '../core/actionHandler.js';
 import { createMockTeacherProvider } from '../core/mockTeacherProvider.js';
 import { requestTeacherResponse, shouldRequestTeacherResponse, buildAiReviewEvent } from '../core/teacherAssistant.js';
+import { createStudentModel, applyStudentEvent } from '../core/studentModel.js';
 
 let passed = 0, failed = 0;
 async function test(name, fn) {
@@ -109,6 +110,107 @@ await test('mock provider + yanlış capture attempt → source:"ai", ai_teacher
   ok(outcome.message.length > 0);
   equal(outcome.events.map(e => e.type).join(','), 'ai_teacher_requested,ai_teacher_responded');
   equal(outcome.events[0].lessonId, 'l3');
+});
+
+// ── v0.4: show_liberties tool routing ────────────────────────────────
+
+await test('say/give_hint → outcome.tool === null, tool event\'i ÜRETİLMEZ (yalnız show_liberties router\'dan geçer)', async () => {
+  const { board, lesson, handler } = captureSetup();
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } };
+  const result = handler.handle(action);
+  const provider = fakeProvider('claude', async () => ({ ok: true, raw: JSON.stringify({ action: 'give_hint', message: 'x', hintLevel: 1 }), latencyMs: 5 }));
+  const outcome = await requestTeacherResponse({ provider, lessonEngine: lesson, boardState: board, boardBefore, action, result });
+
+  equal(outcome.source, 'ai');
+  equal(outcome.tool, null);
+  ok(!outcome.events.some(e => e.type.startsWith('teacher_tool_')), 'give_hint tool event\'i üretmemeli');
+});
+
+await test('AI show_liberties isterse (atari mevcut) → allowed, SHOW_LIBERTY_HIGHLIGHTS effect\'i, applied event\'i', async () => {
+  const { board, lesson, handler } = captureSetup();
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } }; // yanlış — atari hâlâ geçerli
+  const result = handler.handle(action);
+  const provider = fakeProvider('claude', async () => ({ ok: true, raw: JSON.stringify({ action: 'show_liberties', message: 'Bakalım.' }), latencyMs: 5 }));
+  const outcome = await requestTeacherResponse({ provider, lessonEngine: lesson, boardState: board, boardBefore, action, result });
+
+  equal(outcome.source, 'ai');
+  equal(outcome.aiAction, 'show_liberties');
+  ok(outcome.tool, 'tool alanı dolu olmalı');
+  equal(outcome.tool.allowed, true);
+  equal(outcome.tool.effects[0].type, 'SHOW_LIBERTY_HIGHLIGHTS');
+  equal(outcome.tool.effects[0].points[0].x, 4);
+  equal(outcome.tool.effects[0].points[0].y, 5);
+  equal(
+    outcome.events.map(e => e.type).join(','),
+    'ai_teacher_requested,ai_teacher_responded,teacher_tool_requested,teacher_tool_allowed,teacher_tool_applied',
+  );
+});
+
+await test('AI show_liberties isterse ama hedef grup yoksa → rejected, board effect YOK, ders akışı bozulmaz', async () => {
+  // l3'ün DIŞINDA, atarisiz bir ders — show_liberties'in reddedilmesi gereken durum.
+  const NO_ATARI_CURRICULUM = [
+    { id: 'c1', title: 'Test', lessons: [
+      { id: 'l2', title: 'Nefes Noktaları', steps: [
+        { text: '<p>Nefes noktalarını say.</p>', board: [{ color: 'B', x: 4, y: 4 }], answer: { x: 4, y: 5 }, turn: 'black', size: 9 },
+      ] },
+    ] },
+  ];
+  const board = new BoardState(9);
+  const lesson = new LessonEngine(NO_ATARI_CURRICULUM);
+  lesson.loadLesson('l2');
+  board.placeStone(4, 4, 'black');
+  const handler = new ActionHandler(board, lesson);
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } };
+  const result = handler.handle(action);
+  const provider = fakeProvider('claude', async () => ({ ok: true, raw: JSON.stringify({ action: 'show_liberties', message: 'Bakalım.' }), latencyMs: 5 }));
+  const outcome = await requestTeacherResponse({ provider, lessonEngine: lesson, boardState: board, boardBefore, action, result });
+
+  equal(outcome.source, 'ai', 'mesaj hâlâ AI\'dan gösterilir');
+  ok(outcome.message.length > 0);
+  equal(outcome.tool.allowed, false);
+  equal(outcome.tool.reason, 'no_target_group');
+  equal(outcome.tool.effects.length, 0, 'reddedilen tool board\'u DEĞİŞTİRMEMELİ');
+  ok(outcome.events.some(e => e.type === 'teacher_tool_rejected' && e.payload.reason === 'no_target_group'));
+});
+
+await test('LLM show_liberties response\'una sahte bir "points" alanı eklerse → şema seviyesinde reddedilir, deterministic fallback', async () => {
+  const { board, lesson, handler } = captureSetup();
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } };
+  const result = handler.handle(action);
+  const provider = fakeProvider('claude', async () => ({
+    ok: true,
+    raw: JSON.stringify({ action: 'show_liberties', message: 'x', points: [{ x: 0, y: 0 }] }),
+    latencyMs: 5,
+  }));
+  const outcome = await requestTeacherResponse({ provider, lessonEngine: lesson, boardState: board, boardBefore, action, result });
+
+  equal(outcome.source, 'deterministic', 'koordinat üretmeye çalışan LLM cevabı şema seviyesinde reddedilmeli');
+  equal(outcome.error, 'COORDINATES_NOT_ALLOWED');
+  equal(outcome.tool, null);
+});
+
+// ── v0.5: studentModel context'e ulaşır ──────────────────────────────
+
+await test('studentModel verilirse context.studentModel dolar; verilmezse null (kırılmaz)', async () => {
+  const { board, lesson, handler } = captureSetup();
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } };
+  const result = handler.handle(action);
+  const provider = createMockTeacherProvider();
+
+  let model = createStudentModel();
+  ({ model } = applyStudentEvent(model, { type: 'answer_evaluated', lessonId: 'l3', stepId: 'l3:0', payload: { result: 'incorrect', concept: 'atari' } }));
+
+  const withModel = await requestTeacherResponse({ provider, lessonEngine: lesson, boardState: board, boardBefore, action, result, studentModel: model });
+  ok(withModel.context.studentModel, 'context.studentModel dolu olmalı');
+  equal(withModel.context.studentModel.attempts, 1);
+
+  const withoutModel = await requestTeacherResponse({ provider, lessonEngine: lesson, boardState: board, boardBefore, action, result });
+  equal(withoutModel.context.studentModel, null);
 });
 
 // ── Fallback: provider hata fırlatırsa ───────────────────────────────

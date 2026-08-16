@@ -13,10 +13,16 @@
  * için core/teacherPanelBridge.js'in (v0.2'de kurulmuş) primaryAtariGroup
  * ve removeStonesEffectOf fonksiyonlarını yeniden kullanır — aynı mantığı
  * ikinci kez yazmaz.
+ *
+ * v0.5: opsiyonel `studentModel` parametresi verilirse, aktif kavrama ait
+ * KÜÇÜK bir Student Model özeti context'e eklenir (bkz. core/studentModel.js).
+ * Bu modül Student Model'i asla YAZMAZ — yalnızca core/studentModel.js'in
+ * `getConceptState()`'iyle salt-okunur okur.
  */
 
 import { classifyCurriculumStep, responseTypeOf, stripMarkup } from './learningContext.js';
-import { primaryAtariGroup, removeStonesEffectOf, studentActionOf } from './teacherPanelBridge.js';
+import { primaryAtariGroup, removeStonesEffectOf, studentActionOf, resolveActiveConcept } from './teacherPanelBridge.js';
+import { getConceptState } from './studentModel.js';
 
 // ── Koordinat etiketi ─────────────────────────────────────────────────
 // ogren-3d.html'in kendi tahta etiketleriyle (LTRS_ALL, I harfi atlanır)
@@ -50,9 +56,10 @@ function attemptCountOf(lessonEngine, evaluationResult) {
  * @param {import('./boardState.js').BoardState} [params.boardBefore] — BOARD_TAP'ten hemen ÖNCE alınmış kopya (varsa atari gözlemi bunu kullanır — hedef, hamleden ÖNCEKİ gerçek durumdur)
  * @param {{type:string,payload?:object}} [params.action]
  * @param {object} [params.result] — ActionHandler.handle() sonucu
+ * @param {object} [params.studentModel] — core/studentModel.js'in modeli (v0.5, opsiyonel)
  * @returns {object|null} lessonEngine'de yüklü bir adım yoksa null
  */
-export function buildTeacherContext({ lessonEngine, boardState = null, boardBefore = null, action = null, result = null }) {
+export function buildTeacherContext({ lessonEngine, boardState = null, boardBefore = null, action = null, result = null, studentModel = null }) {
   const lesson = lessonEngine?.curLesson ?? null;
   const step = lessonEngine?.currentStep?.() ?? null;
   if (!lesson || !step) return null;
@@ -76,6 +83,13 @@ export function buildTeacherContext({ lessonEngine, boardState = null, boardBefo
   const actionPoint = studentAction?.type === 'board_tap'
     ? coordLabel(studentAction.x, studentAction.y, size)
     : null;
+
+  // v0.5 — Student Model özeti. resolveActiveConcept, Student Model'in
+  // KENDİSİNİN izlediği aynı ince-taneli kavramı (atari'yi capture'dan
+  // AYRI) hesaplar — böylece LLM'e gösterilen "currentConcept",
+  // Student Model'in stats'ını okuduğu kovayla her zaman TUTARLIDIR.
+  const activeConcept = resolveActiveConcept({ lessonId: lesson.id, boardState: boardBefore || boardState, step, result });
+  const conceptStats = studentModel ? getConceptState(studentModel, activeConcept) : null;
 
   return {
     lesson: {
@@ -102,6 +116,18 @@ export function buildTeacherContext({ lessonEngine, boardState = null, boardBefo
       targetStones: atariGroup.points.map(p => coordLabel(p.x, p.y, size)),
       isAtari: true,
       remainingLiberties: atariGroup.liberties.map(p => coordLabel(p.x, p.y, size)),
+    } : null,
+    // v0.5 — yalnızca aktif kavramın küçük bir özeti; öğrencinin TÜM
+    // geçmişi gönderilmez (bkz. spesifikasyon §13). studentModel
+    // verilmemişse veya bu kavram için henüz veri yoksa null.
+    studentModel: conceptStats ? {
+      currentConcept: activeConcept,
+      status: conceptStats.status,
+      attempts: conceptStats.attempts,
+      recentAccuracy: conceptStats.recentAccuracy,
+      independentCorrect: conceptStats.independentCorrect,
+      hintsUsed: conceptStats.hintsUsed,
+      toolAssists: conceptStats.toolAssists,
     } : null,
   };
 }

@@ -1062,6 +1062,47 @@
     <section class="tp-section"><h4>AI Response</h4><pre id="tp-ai-response" class="tp-pre tp-json">—</pre></section>
     <section class="tp-section"><h4>AI Hata</h4><div id="tp-ai-error">—</div></section>
 
+    <!-- ── Teacher Tool (v0.4) ─────────────────────────────────────
+         AI'ın TALEP ettiği tool ile o talebin gerçekten uygulanması
+         ayrı gözlemlenebilir olmalı (bkz. spesifikasyon §10). Ham
+         koordinatlar burada değil — yalnız debug amaçlı sayı/etiket. -->
+    <section class="tp-section">
+      <h4>Teacher Tool</h4>
+      <div class="tp-ai-grid">
+        <div><b>Requested Tool:</b> <span id="tp-tool-requested">—</span></div>
+        <div><b>Allowed:</b> <span id="tp-tool-allowed">—</span></div>
+        <div><b>Rejection Reason:</b> <span id="tp-tool-reason">—</span></div>
+        <div><b>Generated Effect:</b> <span id="tp-tool-effect">—</span></div>
+        <div><b>Effect Target Count:</b> <span id="tp-tool-target-count">—</span></div>
+        <div><b>Execution Result:</b> <span id="tp-tool-result">—</span></div>
+      </div>
+    </section>
+
+    <!-- ── Student Model (v0.5) ─────────────────────────────────────
+         Salt-okunur gözlem — gözlem + reset dışında bir işlev yok (bkz.
+         spesifikasyon §18-20; mastery elle değiştirme/force etme burada
+         YOK, ileride Admin Studio'ya bırakıldı). -->
+    <section class="tp-section">
+      <h4>Student Model</h4>
+      <div class="tp-ai-grid">
+        <div><b>Current Concept:</b> <span id="tp-sm-concept">—</span></div>
+        <div><b>Status:</b> <span id="tp-sm-status">—</span></div>
+        <div><b>Attempts:</b> <span id="tp-sm-attempts">—</span></div>
+        <div><b>Correct:</b> <span id="tp-sm-correct">—</span></div>
+        <div><b>Incorrect:</b> <span id="tp-sm-incorrect">—</span></div>
+        <div><b>Independent Correct:</b> <span id="tp-sm-independent">—</span></div>
+        <div><b>Hints Used:</b> <span id="tp-sm-hints">—</span></div>
+        <div><b>Tool Assists:</b> <span id="tp-sm-tools">—</span></div>
+        <div><b>Recent Accuracy:</b> <span id="tp-sm-accuracy">—</span></div>
+      </div>
+    </section>
+    <section class="tp-section"><h4>Kavram Özeti</h4><pre id="tp-sm-summary" class="tp-pre tp-json">—</pre></section>
+    <section class="tp-section tp-tools">
+      <div class="tp-tool-grid">
+        <button id="tp-btn-sm-reset" type="button">Student Model'i Sıfırla</button>
+      </div>
+    </section>
+
     <section class="tp-section tp-tools">
       <h4>Öğretmen Araçları</h4>
       <div class="tp-tool-grid">
@@ -1181,6 +1222,8 @@ import { buildPanelSnapshot, deriveEvents }      from './core/teacherPanelBridge
 import { createMockTeacherProvider }             from './core/mockTeacherProvider.js';
 import { createClaudeTeacherProvider }           from './core/claudeTeacherProvider.js';
 import { requestTeacherResponse, shouldRequestTeacherResponse, buildAiReviewEvent } from './core/teacherAssistant.js';
+import { createStudentModel, applyStudentEvent, hydrateStudentModel } from './core/studentModel.js';
+import { KNOWN_CONCEPTS } from './core/conceptMap.js';
 
 /* ═══════════════════════════════════════════════════════
    3D ENGINE
@@ -2827,6 +2870,31 @@ const teacherLogStorage = {
 const teacherEventLog = new EventLog();
 teacherEventLog.restore(teacherLogStorage.load());
 
+/* ── Student Model (v0.5) ─────────────────────────────────────────
+   core/studentModel.js TAMAMEN SAF — localStorage'a hiç dokunmuyor.
+   Persistence burada, teacherLogStorage ile AYNI desende: küçük bir
+   sarmalayıcı, core/ dışında. `session` (step-level hint/tool-assist
+   bayrakları) BİLEREK persist edilmez — core/studentModel.js'in
+   hydrateStudentModel()'i zaten her yüklemede temiz bir session'la başlar. */
+const STUDENT_MODEL_KEY = 'go_student_model_v1';
+const studentModelStorage = {
+  load() {
+    try { return hydrateStudentModel(JSON.parse(localStorage.getItem(STUDENT_MODEL_KEY) || 'null')); }
+    catch { return createStudentModel(); }
+  },
+  save(model) {
+    try {
+      localStorage.setItem(STUDENT_MODEL_KEY, JSON.stringify({
+        version: model.version, currentConcept: model.currentConcept, concepts: model.concepts,
+      }));
+    } catch {}
+  },
+  clear() {
+    try { localStorage.removeItem(STUDENT_MODEL_KEY); } catch {}
+  },
+};
+let studentModel = studentModelStorage.load();
+
 let teacherPanelOpen = new URLSearchParams(location.search).get('teacher') === '1';
 
 /* ── AI Öğretmen (Teacher Assistant v0.3) ─────────────────────────
@@ -2840,10 +2908,47 @@ let aiTeacherEnabled = new URLSearchParams(location.search).get('ai') === '1';
 let aiTeacherProviderName = new URLSearchParams(location.search).get('aiProvider') === 'claude' ? 'claude' : 'mock';
 let lastAiOutcome = null;
 let lastAiRequestParams = null;
+// v0.4 — Teacher Tool son çalıştırma sonucu: 'applied' | 'rejected' | 'failed' | null.
+// outcome.tool'un kendisi ("allowed" vb.) core/teacherAssistant.js'ten gelir;
+// bu değişken yalnız browser tarafının gerçekten processEffects() çağırıp
+// çağırmadığını (§10 "tool request ile tool'un uygulanması ayrı gözlemlenmeli") izler.
+let lastToolExecution = null;
 
 function currentAiProvider() {
   if (!aiTeacherEnabled) return null;
+  // Yalnızca otomatik test/QA harness'leri için (bkz. window.onClick3D ile
+  // aynı gerekçe) — testin, gerçek bir provider'a bağlı kalmadan Teacher
+  // Tool Router'ın "rejected" dalını (ör. uygun hedef olmayan bir adımda
+  // show_liberties istemek) tarayıcıda gerçekten gözlemleyebilmesi için.
+  // Üretim davranışını değiştirmez — yalnız test script'i bu global'i set ederse etkilidir.
+  if (window.__tpTestProviderOverride) return window.__tpTestProviderOverride;
   return aiTeacherProviderName === 'claude' ? createClaudeTeacherProvider() : createMockTeacherProvider();
+}
+
+/**
+ * Bir event dizisini (deriveEvents veya requestTeacherResponse çıktısı)
+ * core/studentModel.js'in SAF reducer'ından geçirir. Reducer'ın ürettiği
+ * `concept_status_changed` gibi türetilmiş event'ler de event log'a
+ * eklenir. Model gerçekten değiştiyse persist edilir ve panel güncellenir.
+ * Student Model YALNIZCA bu tek noktadan güncellenir.
+ */
+function applyStudentEventsAndPersist(events) {
+  if (!events || !events.length) return;
+  let changed = false;
+  for (const e of events) {
+    const { model: nextModel, derivedEvents } = applyStudentEvent(studentModel, e);
+    if (nextModel !== studentModel) { studentModel = nextModel; changed = true; }
+    for (const de of derivedEvents) {
+      teacherEventLog.append(de);
+      changed = true;
+    }
+  }
+  if (changed) {
+    studentModelStorage.save(studentModel);
+    teacherLogStorage.save(teacherEventLog.getAll());
+    renderStudentModelPanel();
+    renderTeacherLog();
+  }
 }
 
 /**
@@ -2858,23 +2963,44 @@ async function runTeacherAssistant(action, result, boardBefore) {
   lastAiRequestParams = { lessonEngine: lessonEng, boardState: boardSt, boardBefore: boardBefore || null, action, result };
   if (!provider) {
     lastAiOutcome = null;
+    lastToolExecution = null;
     renderAiPanel(null);
     return;
   }
-  const outcome = await requestTeacherResponse({ provider, ...lastAiRequestParams });
+  const outcome = await requestTeacherResponse({ provider, studentModel, ...lastAiRequestParams });
   if (outcome.events.length) {
     outcome.events.forEach(e => teacherEventLog.append(e));
     teacherLogStorage.save(teacherEventLog.getAll());
     renderTeacherLog();
   }
+  applyStudentEventsAndPersist(outcome.events);
   lastAiOutcome = outcome;
-  renderAiPanel(outcome);
 
   // Yalnızca AI geçerli bir cevap ürettiyse öğrenciye gösterilen mesajı
   // günceller — effects[]'e hiç dokunmaz, yalnızca metni değiştirir.
   if (outcome.source === 'ai' && outcome.message) {
     setFb(outcome.message, result?.feedback?.type || 'info', { show: true });
   }
+
+  // v0.4 — Teacher Tool: outcome.tool yalnız "show_liberties" istendiğinde
+  // dolu olur (bkz. core/teacherAssistant.js). Board'a uygulanacak TEK şey
+  // router'ın ürettiği effects[]'tir — MEVCUT processEffects() hattı
+  // yeniden kullanılır, LLM'in cevabından hiçbir koordinat okunmaz.
+  lastToolExecution = null;
+  if (outcome.tool) {
+    if (outcome.tool.allowed && outcome.tool.effects.length) {
+      try {
+        processEffects(outcome.tool.effects);
+        lastToolExecution = 'applied';
+      } catch {
+        lastToolExecution = 'failed';
+      }
+    } else if (!outcome.tool.allowed) {
+      lastToolExecution = 'rejected';
+    }
+  }
+
+  renderAiPanel(outcome);
 }
 
 function fmtAiJson(value) {
@@ -2898,6 +3024,49 @@ function renderAiPanel(outcome) {
     else if (outcome.source === 'ai') { sourceEl.textContent = 'Source: AI'; sourceEl.className = 'tp-ai-source-ai'; }
     else { sourceEl.textContent = 'Source: Deterministic fallback'; sourceEl.className = 'tp-ai-source-fallback'; }
   }
+
+  // ── Teacher Tool (v0.4) ─────────────────────────────────────────
+  const tool = outcome?.tool ?? null;
+  set('tp-tool-requested', tool?.tool || (outcome?.aiAction === 'show_liberties' ? 'show_liberties' : '—'));
+  set('tp-tool-allowed', tool ? (tool.allowed ? 'YES' : 'NO') : '—');
+  set('tp-tool-reason', tool && !tool.allowed ? tool.reason : '—');
+  set('tp-tool-effect', tool?.effects?.[0]?.type || '—');
+  set('tp-tool-target-count', tool?.targetCount != null ? String(tool.targetCount) : '—');
+  set('tp-tool-result', lastToolExecution || '—');
+}
+
+function fmtPct(x) {
+  return `${Math.round((x ?? 0) * 100)}%`;
+}
+
+/**
+ * Student Model (v0.5) — salt-okunur gözlem. Gözlem + reset dışında bir
+ * şey yapmaz (bkz. spesifikasyon §18-20): status/counter'ları elle
+ * değiştirme veya mastery force etme YOK — bunlar ileride Admin Studio'ya
+ * bırakıldı.
+ */
+function renderStudentModelPanel() {
+  if (!teacherPanelOpen) return;
+  const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  const concept = studentModel.currentConcept;
+  const stats = concept ? studentModel.concepts[concept] : null;
+
+  set('tp-sm-concept', concept || '—');
+  set('tp-sm-status', stats ? stats.status : '—');
+  set('tp-sm-attempts', stats ? String(stats.attempts) : '—');
+  set('tp-sm-correct', stats ? String(stats.correct) : '—');
+  set('tp-sm-incorrect', stats ? String(stats.incorrect) : '—');
+  set('tp-sm-independent', stats ? String(stats.independentCorrect) : '—');
+  set('tp-sm-hints', stats ? String(stats.hintsUsed) : '—');
+  set('tp-sm-tools', stats ? String(stats.toolAssists) : '—');
+  set('tp-sm-accuracy', stats ? fmtPct(stats.recentAccuracy) : '—');
+
+  const summaryEl = document.getElementById('tp-sm-summary');
+  if (summaryEl) {
+    summaryEl.textContent = KNOWN_CONCEPTS
+      .map(c => `${c.padEnd(16)}${studentModel.concepts[c].status}`)
+      .join('\n');
+  }
 }
 
 function toggleTeacherPanel(forceOpen) {
@@ -2909,6 +3078,7 @@ function toggleTeacherPanel(forceOpen) {
   if (teacherPanelOpen) {
     renderTeacherPanel(buildPanelSnapshot({ lessonEngine: lessonEng, boardState: boardSt }));
     renderAiPanel(lastAiOutcome);
+    renderStudentModelPanel();
   }
 }
 window.toggleTeacherPanel = toggleTeacherPanel;
@@ -3047,6 +3217,7 @@ function observeTeacherPanel(action, result, boardBefore) {
     events.forEach(e => teacherEventLog.append(e));
     teacherLogStorage.save(teacherEventLog.getAll());
   }
+  applyStudentEventsAndPersist(events);
   const snapshot = buildPanelSnapshot({ lessonEngine: lessonEng, boardState: boardSt, action, result });
   renderTeacherPanel(snapshot);
 }
@@ -3104,6 +3275,21 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('tp-btn-ai-reject')?.addEventListener('click', () => {
     teacherEventLog.append(buildAiReviewEvent('rejected', { lessonEngine: lessonEng }));
     teacherLogStorage.save(teacherEventLog.getAll());
+    renderTeacherLog();
+  });
+
+  // ── Student Model (v0.5) — yalnız açık, manuel debug aksiyonu ────
+  document.getElementById('tp-btn-sm-reset')?.addEventListener('click', () => {
+    studentModel = createStudentModel();
+    studentModelStorage.save(studentModel);
+    teacherEventLog.append({
+      type: 'student_model_reset',
+      lessonId: lessonEng.curLesson?.id ?? null,
+      stepId: lessonEng.curLesson ? `${lessonEng.curLesson.id}:${lessonEng.curStepIdx}` : null,
+      payload: {},
+    });
+    teacherLogStorage.save(teacherEventLog.getAll());
+    renderStudentModelPanel();
     renderTeacherLog();
   });
 

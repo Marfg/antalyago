@@ -40,6 +40,33 @@ test('mesajdaki baş/son boşluklar temizlenir', () => {
   equal(r.value.message, 'Merhaba');
 });
 
+// ── v0.4: show_liberties tool ────────────────────────────────────────
+
+test('geçerli "show_liberties" response kabul edilir (yalnız action+message)', () => {
+  const r = validateTeacherResponse({ action: 'show_liberties', message: 'Nefes noktalarına bakalım.' });
+  ok(r.valid);
+  equal(r.value.action, 'show_liberties');
+  equal(r.value.hintLevel, null);
+});
+
+test('show_liberties + points alanı içeren response REDDEDİLİR (koordinat üretimi yasak)', () => {
+  const r = validateTeacherResponse({ action: 'show_liberties', message: 'x', points: [{ x: 4, y: 5 }] });
+  equal(r.valid, false);
+  equal(r.reason, 'COORDINATES_NOT_ALLOWED');
+});
+
+test('coordinates alanı — herhangi bir action için de reddedilir (savunma amaçlı, yalnız show_liberties özel değil)', () => {
+  const r = validateTeacherResponse({ action: 'say', message: 'x', coordinates: ['E4'] });
+  equal(r.valid, false);
+  equal(r.reason, 'COORDINATES_NOT_ALLOWED');
+});
+
+test('targets alanı da reddedilir', () => {
+  const r = validateTeacherResponse({ action: 'give_hint', message: 'x', targets: ['E4'] });
+  equal(r.valid, false);
+  equal(r.reason, 'COORDINATES_NOT_ALLOWED');
+});
+
 // ── Geçersiz response ───────────────────────────────────────────────
 
 test('bilinmeyen action reddedilir', () => {

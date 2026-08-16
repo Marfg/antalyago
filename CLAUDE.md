@@ -192,7 +192,7 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
 
 ### B1 — Temel Kurallar
 - l1 Tahta ve Taşlar — 6 adım (adım 1: asistan intro, adım 2: merkez taş, adım 3: nefes keşfi, adım 4: köşe, adım 5: bitişik, adım 6: hareket etmez)
-- l2 Nefes Noktaları — tam (3 adım)
+- l2 Nefes Noktaları — 8 adım (v0.5.1: adım 6-7 — saf nefes noktası tanıma alıştırmaları, atari/capture içermez, Student Model'in "liberty" kovasını besler)
 - l3 Taş Alma — tam (4 adım)
 - l4 Yasak Hamleler — tam (2 adım)
 - l5 Ko Kuralı — tam (2 adım)

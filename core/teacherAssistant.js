@@ -1,7 +1,7 @@
 /**
  * core/teacherAssistant.js
  *
- * Teacher Assistant v0.3 orkestratörü:
+ * Teacher Assistant orkestratörü:
  *
  *   Action result → deterministic feedback hazır
  *         ↓
@@ -10,22 +10,29 @@
  *      └── evet → provider.generateTeacherResponse(context)
  *                    ↓
  *                 valid response?
- *                  ├── evet → AI mesajı
- *                  └── hayır → deterministic feedback (fallback)
+ *                  ├── hayır → deterministic feedback (fallback)
+ *                  └── evet → AI mesajı
+ *                       + (v0.4) action==="show_liberties" ise
+ *                         core/teacherToolRouter.js'ten geçer:
+ *                         permission/target doğrulaması + MEVCUT
+ *                         effects[] sözleşmesine (SHOW_LIBERTY_HIGHLIGHTS)
+ *                         çevirme. LLM burada da hiçbir koordinat üretmez —
+ *                         router hedefi deterministik motordan bulur.
  *
  * "provider" enjekte edilir (core/mockTeacherProvider.js veya
  * core/claudeTeacherProvider.js) — bu modül HANGİ LLM'in kullanıldığını
  * bilmez, yalnızca ortak sözleşmeyi ({name, generateTeacherResponse})
- * çağırır. AI hiçbir zaman board'u değiştirmez, yalnızca bir öğretmen
- * mesajı üretir — effects[] üretmez.
+ * çağırır.
  *
  * Saf DEĞİL (provider çağrısı async/network olabilir) ama DOM/localStorage
  * bilmez; context inşası core/teacherContext.js'e, doğrulama
- * core/teacherResponseSchema.js'e devredilmiştir.
+ * core/teacherResponseSchema.js'e, tool yönlendirmesi
+ * core/teacherToolRouter.js'e devredilmiştir.
  */
 
 import { buildTeacherContext } from './teacherContext.js';
 import { parseTeacherResponse } from './teacherResponseSchema.js';
+import { routeTeacherTool } from './teacherToolRouter.js';
 
 /**
  * AI her board tap'inde OTOMATİK çağrılmaz — yalnızca gerçek bir
@@ -52,23 +59,25 @@ function stepIdOf(context, lessonEngine) {
  * @param {import('./boardState.js').BoardState} [params.boardBefore]
  * @param {{type:string,payload?:object}} [params.action]
  * @param {object} [params.result] — ActionHandler.handle() sonucu
+ * @param {object} [params.studentModel] — core/studentModel.js'in modeli (v0.5, opsiyonel; salt-okunur, buradan asla yazılmaz)
  * @returns {Promise<{
  *   source: 'ai'|'deterministic', message: string|null, hintLevel: number|null,
  *   aiAction: string|null, provider: string|null, context: object|null,
  *   rawResponse: *, error: string|null, latencyMs: number|null,
  *   events: Array<{type:string,lessonId:?string,stepId:?string,payload:object}>,
+ *   tool: {allowed:boolean, tool:string, effects:Array<object>, reason:string|null, targetCount:number|null} | null,
  * }>}
  */
-export async function requestTeacherResponse({ provider, lessonEngine, boardState = null, boardBefore = null, action = null, result = null }) {
+export async function requestTeacherResponse({ provider, lessonEngine, boardState = null, boardBefore = null, action = null, result = null, studentModel = null }) {
   const deterministicMessage = result?.feedback?.text ?? null;
-  const context = buildTeacherContext({ lessonEngine, boardState, boardBefore, action, result });
+  const context = buildTeacherContext({ lessonEngine, boardState, boardBefore, action, result, studentModel });
   const lessonId = lessonEngine?.curLesson?.id ?? null;
   const stepId = stepIdOf(context, lessonEngine);
   const events = [];
 
   const deterministicResult = () => ({
     source: 'deterministic', message: deterministicMessage, hintLevel: null, aiAction: null,
-    provider: provider?.name ?? null, context, rawResponse: null, error: null, latencyMs: null, events,
+    provider: provider?.name ?? null, context, rawResponse: null, error: null, latencyMs: null, events, tool: null,
   });
 
   // AI kapalı VEYA bu adımda context üretilemiyor (ör. ders yüklü değil)
@@ -94,7 +103,7 @@ export async function requestTeacherResponse({ provider, lessonEngine, boardStat
     return {
       source: 'deterministic', message: deterministicMessage, hintLevel: null, aiAction: null,
       provider: provider.name, context, rawResponse: response?.raw ?? null, error,
-      latencyMs: response?.latencyMs ?? null, events,
+      latencyMs: response?.latencyMs ?? null, events, tool: null,
     };
   }
 
@@ -105,7 +114,7 @@ export async function requestTeacherResponse({ provider, lessonEngine, boardStat
     return {
       source: 'deterministic', message: deterministicMessage, hintLevel: null, aiAction: null,
       provider: provider.name, context, rawResponse: response.raw, error: parsed.reason,
-      latencyMs: response.latencyMs ?? null, events,
+      latencyMs: response.latencyMs ?? null, events, tool: null,
     };
   }
 
@@ -114,10 +123,31 @@ export async function requestTeacherResponse({ provider, lessonEngine, boardStat
     payload: { provider: provider.name, action: parsed.value.action, hintLevel: parsed.value.hintLevel, latencyMs: response.latencyMs ?? null },
   });
 
+  // v0.4 — yalnız "show_liberties" router'dan geçer (permission + hedef
+  // gözlemi + mevcut effects[] sözleşmesi). say/give_hint mesaj-yalnız
+  // kalır; ai_teacher_responded event'i onlar için zaten yeterli, ayrıca
+  // "tool" event'i eklemek (her zaman "allowed" olacağından) gürültü olurdu.
+  let tool = null;
+  if (parsed.value.action === 'show_liberties') {
+    events.push({ type: 'teacher_tool_requested', lessonId, stepId, payload: { tool: 'show_liberties', source: 'ai' } });
+    tool = routeTeacherTool({ toolResponse: parsed.value, lessonEngine, boardState: boardBefore || boardState });
+    if (tool.allowed) {
+      events.push({ type: 'teacher_tool_allowed', lessonId, stepId, payload: { tool: 'show_liberties' } });
+      if (tool.effects.length) {
+        events.push({
+          type: 'teacher_tool_applied', lessonId, stepId,
+          payload: { tool: 'show_liberties', effect: tool.effects[0].type, targetCount: tool.targetCount },
+        });
+      }
+    } else {
+      events.push({ type: 'teacher_tool_rejected', lessonId, stepId, payload: { tool: 'show_liberties', reason: tool.reason } });
+    }
+  }
+
   return {
     source: 'ai', message: parsed.value.message, hintLevel: parsed.value.hintLevel, aiAction: parsed.value.action,
     provider: provider.name, context, rawResponse: response.raw, error: null,
-    latencyMs: response.latencyMs ?? null, events,
+    latencyMs: response.latencyMs ?? null, events, tool,
   };
 }
 
