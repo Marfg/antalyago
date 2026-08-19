@@ -1103,6 +1103,25 @@
       </div>
     </section>
 
+    <!-- ── Content Retrieval (RAG v0.6) ──────────────────────────────
+         Deterministik, embedding'siz retrieval — outcome.context.retrieval'i
+         SALT-OKUNUR gösterir, ikinci bir retrieval çağrısı yapmaz. -->
+    <section class="tp-section">
+      <h4>Content Retrieval</h4>
+      <div class="tp-ai-grid">
+        <div><b>Concept:</b> <span id="tp-rag-concept">—</span></div>
+        <div><b>Stage:</b> <span id="tp-rag-stage">—</span></div>
+        <div><b>Status:</b> <span id="tp-rag-status">—</span></div>
+        <div><b>Purpose:</b> <span id="tp-rag-purpose">—</span></div>
+        <div><b>Match:</b> <span id="tp-rag-match">—</span></div>
+        <div><b>Fallback Level:</b> <span id="tp-rag-fallback">—</span></div>
+        <div><b>Item Count:</b> <span id="tp-rag-count">—</span></div>
+        <div><b>Source:</b> <span id="tp-rag-source">—</span></div>
+      </div>
+    </section>
+    <section class="tp-section"><h4>Selected Content IDs</h4><div id="tp-rag-ids">—</div></section>
+    <section class="tp-section"><h4>Retrieved Text</h4><pre id="tp-rag-text" class="tp-pre tp-json">—</pre></section>
+
     <section class="tp-section tp-tools">
       <h4>Öğretmen Araçları</h4>
       <div class="tp-tool-grid">
@@ -1224,6 +1243,9 @@ import { createClaudeTeacherProvider }           from './core/claudeTeacherProvi
 import { requestTeacherResponse, shouldRequestTeacherResponse, buildAiReviewEvent } from './core/teacherAssistant.js';
 import { createStudentModel, applyStudentEvent, hydrateStudentModel } from './core/studentModel.js';
 import { KNOWN_CONCEPTS } from './core/conceptMap.js';
+import { TEACHING_NOTES } from './core/contentStore.js';
+import { mergeContentOverrides } from './core/contentOverrides.js';
+import { teacherContentOverrides } from './adapters/teacherContentOverrides.js';
 
 /* ═══════════════════════════════════════════════════════
    3D ENGINE
@@ -2870,6 +2892,17 @@ const teacherLogStorage = {
 const teacherEventLog = new EventLog();
 teacherEventLog.restore(teacherLogStorage.load());
 
+/* v0.7 — Teacher Studio ayrı bir sekme/sayfa olarak AYNI event log
+   anahtarına yazabilir (ör. teacher_content_override_saved/reset).
+   teacherEventLog bellekte YALNIZ bir kez restore edildiği için, yeni bir
+   event eklemeden ÖNCE storage'dan yeniden senkronize etmezsek, buradaki
+   .save() çağrısı Studio'nun o sırada yazmış olabileceği event'lerin
+   üzerine yazıp onları sessizce kaybeder. Her append kümesinden önce
+   çağrılmalı. */
+function resyncTeacherEventLog() {
+  teacherEventLog.restore(teacherLogStorage.load());
+}
+
 /* ── Student Model (v0.5) ─────────────────────────────────────────
    core/studentModel.js TAMAMEN SAF — localStorage'a hiç dokunmuyor.
    Persistence burada, teacherLogStorage ile AYNI desende: küçük bir
@@ -2894,6 +2927,16 @@ const studentModelStorage = {
   },
 };
 let studentModel = studentModelStorage.load();
+
+/* ── Teacher Studio local content override entegrasyonu (v0.7) ───
+   Bu dosya localStorage'a yalnızca adapters/teacherContentOverrides.js
+   ÜZERİNDEN dokunur (core/ değil). "Effective" içerik HER ai çağrısında
+   TAZE hesaplanır (module-load'da bir kez değil) — böylece Teacher
+   Studio'da kaydedilen bir override, Teacher Lab sayfası yeniden
+   yüklendiğinde HEMEN etkili olur. */
+function effectiveTeachingNotes() {
+  return mergeContentOverrides(TEACHING_NOTES, teacherContentOverrides.loadAll());
+}
 
 let teacherPanelOpen = new URLSearchParams(location.search).get('teacher') === '1';
 
@@ -2935,6 +2978,7 @@ function currentAiProvider() {
 function applyStudentEventsAndPersist(events) {
   if (!events || !events.length) return;
   let changed = false;
+  resyncTeacherEventLog();
   for (const e of events) {
     const { model: nextModel, derivedEvents } = applyStudentEvent(studentModel, e);
     if (nextModel !== studentModel) { studentModel = nextModel; changed = true; }
@@ -2967,8 +3011,9 @@ async function runTeacherAssistant(action, result, boardBefore) {
     renderAiPanel(null);
     return;
   }
-  const outcome = await requestTeacherResponse({ provider, studentModel, ...lastAiRequestParams });
+  const outcome = await requestTeacherResponse({ provider, studentModel, teachingNotes: effectiveTeachingNotes(), ...lastAiRequestParams });
   if (outcome.events.length) {
+    resyncTeacherEventLog();
     outcome.events.forEach(e => teacherEventLog.append(e));
     teacherLogStorage.save(teacherEventLog.getAll());
     renderTeacherLog();
@@ -3033,6 +3078,26 @@ function renderAiPanel(outcome) {
   set('tp-tool-effect', tool?.effects?.[0]?.type || '—');
   set('tp-tool-target-count', tool?.targetCount != null ? String(tool.targetCount) : '—');
   set('tp-tool-result', lastToolExecution || '—');
+
+  // ── Content Retrieval (RAG v0.6) ─────────────────────────────────
+  // outcome.context.retrieval'i SALT-OKUNUR gösterir — core/teacherContext.js
+  // tarafından zaten hesaplanmış; burada ikinci bir retrieval çağrısı YOK.
+  const retrieval = outcome?.context?.retrieval ?? null;
+  const query = retrieval?.query ?? null;
+  set('tp-rag-concept', query?.concept || '—');
+  set('tp-rag-stage', query?.stage || '—');
+  set('tp-rag-status', query?.studentStatus || '—');
+  set('tp-rag-purpose', query?.purpose || '—');
+  set('tp-rag-match', retrieval ? (retrieval.matched ? 'YES' : 'NO') : '—');
+  set('tp-rag-fallback', retrieval?.fallbackLevel || '—');
+  set('tp-rag-count', retrieval ? String(retrieval.items.length) : '—');
+  set('tp-rag-ids', retrieval?.items?.length ? retrieval.items.map(i => i.id).join(', ') : '—');
+  set('tp-rag-text', retrieval?.items?.length ? retrieval.items.map(i => `[${i.id}] ${i.text}`).join('\n\n') : '—');
+  // v0.7 — bu seçili item'lerden en az biri bir Teacher Studio local
+  // override'ından mı geldi? (bkz. core/teacherContext.js overrideIds)
+  set('tp-rag-source', retrieval?.items?.length
+    ? (retrieval.overrideIds?.length ? 'Local Override' : 'Base')
+    : '—');
 }
 
 function fmtPct(x) {
@@ -3214,6 +3279,7 @@ function renderTeacherLog() {
 function observeTeacherPanel(action, result, boardBefore) {
   const events = deriveEvents({ action, result, lessonEngine: lessonEng, boardState: boardSt, boardBefore: boardBefore || null });
   if (events.length) {
+    resyncTeacherEventLog();
     events.forEach(e => teacherEventLog.append(e));
     teacherLogStorage.save(teacherEventLog.getAll());
   }
@@ -3268,11 +3334,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (fb) setFb(fb.text, fb.type, { show: true });
   });
   document.getElementById('tp-btn-ai-approve')?.addEventListener('click', () => {
+    resyncTeacherEventLog();
     teacherEventLog.append(buildAiReviewEvent('approved', { lessonEngine: lessonEng }));
     teacherLogStorage.save(teacherEventLog.getAll());
     renderTeacherLog();
   });
   document.getElementById('tp-btn-ai-reject')?.addEventListener('click', () => {
+    resyncTeacherEventLog();
     teacherEventLog.append(buildAiReviewEvent('rejected', { lessonEngine: lessonEng }));
     teacherLogStorage.save(teacherEventLog.getAll());
     renderTeacherLog();
@@ -3282,6 +3350,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('tp-btn-sm-reset')?.addEventListener('click', () => {
     studentModel = createStudentModel();
     studentModelStorage.save(studentModel);
+    resyncTeacherEventLog();
     teacherEventLog.append({
       type: 'student_model_reset',
       lessonId: lessonEng.curLesson?.id ?? null,

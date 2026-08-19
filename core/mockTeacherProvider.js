@@ -24,6 +24,14 @@
  * "mastered" bir kavramda öğrenciye daha kısa/az destekleyici bir mesaj
  * verilir (bkz. spesifikasyon §15/§27 örnekleri). Student Model YALNIZCA
  * okunur — mock hiçbir zaman onu değiştirmez.
+ *
+ * v0.6 — context.retrieval.matched ise (atari VEYA atarisiz saf kavram
+ * tanıma adımlarında — ör. l2'nin liberty-only adımları, bkz. v0.5.1)
+ * ilk seviye hint/onay için ÖNCE retrieval'in metnini kullanır — sabit
+ * kodlu cümle yerine. Mock bir retrieval ENGINE'i DEĞİLDİR: yalnız
+ * "retrieval item varsa kullanılabilir" davranışını göstermek için
+ * uygulanır; retrieval yoksa (context.retrieval eksik/matched:false)
+ * davranış v0.5 ile birebir aynı kalır.
  */
 
 function colorTr(color) {
@@ -38,12 +46,13 @@ function mockResponseFor(context) {
   const attempt = context?.student?.attempt ?? 1;
   const evalResult = context?.evaluation?.result;
   const obs = context?.boardObservation;
+  const retrievedText = context?.retrieval?.matched ? (context.retrieval.items?.[0]?.text ?? null) : null;
 
   if (evalResult === 'correct') {
     const count = context?.evaluation?.capturedCount ?? 0;
-    const message = count > 1
+    const message = retrievedText || (count > 1
       ? `Harika! ${count} taşı birden yakaladın — grubun son nefes noktasını doğru buldun.`
-      : 'Harika! Taşın son nefes noktasını doğru buldun.';
+      : 'Harika! Taşın son nefes noktasını doğru buldun.');
     return { action: 'say', message, hintLevel: null };
   }
 
@@ -62,11 +71,18 @@ function mockResponseFor(context) {
       // Bu kavramda zaten güvenilir — uzun/destekleyici anlatıma gerek yok.
       message = 'Son nefes noktasını gözden kaçırdın. Tekrar dene.';
     } else if (hintLevel === 1) {
-      message = 'Rakip taşın kalan nefes noktasını tekrar bulmaya çalış.';
+      message = retrievedText || 'Rakip taşın kalan nefes noktasını tekrar bulmaya çalış.';
     } else {
       message = `${colorTr(obs.targetColor)} grubun artık yalnızca tek nefes noktası var — o boş komşuyu bul.`;
     }
     return { action: 'give_hint', message, hintLevel };
+  }
+
+  // v0.6 — atari YOK ama yine de yanlış cevap verildi (ör. saf nefes
+  // noktası tanıma adımı, bkz. v0.5.1). Retrieval eşleştiyse bunu bir
+  // sözlü ipucu olarak kullan; eşleşmediyse mevcut genel mesaj korunur.
+  if (evalResult === 'incorrect' && retrievedText) {
+    return { action: 'give_hint', message: retrievedText, hintLevel: 1 };
   }
 
   return { action: 'say', message: 'Tahtaya tekrar bak ve az önce anlatılanı uygulamaya çalış.', hintLevel: null };

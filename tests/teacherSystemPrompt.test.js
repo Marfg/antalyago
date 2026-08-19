@@ -73,5 +73,33 @@ test('Student Model\'i AI\'ın değiştiremeyeceği/yeniden sınıflandıramayac
   ok(/deterministik.{0,40}sistem çıktısı/i.test(TEACHER_SYSTEM_PROMPT));
 });
 
+// ── v0.6: RAG sınırları ───────────────────────────────────────────────
+
+test('retrieval alanının anlamı (matched/query/items/fallbackLevel) açıklanmış', () => {
+  ok(TEACHER_SYSTEM_PROMPT.includes('retrieval'));
+  ok(TEACHER_SYSTEM_PROMPT.includes('fallbackLevel'));
+});
+
+test('retrieval içeriğinin board gerçeğini asla geçersiz kılmadığı AÇIKÇA belirtilmiş', () => {
+  // NOT: .toLowerCase() Türkçe "İ" harfini beklenmeyen bir şekilde
+  // (birleşik nokta işaretiyle) küçültür — bu yüzden burada büyük harfli
+  // orijinal metinle doğrudan karşılaştırılıyor (mojibake testindeki
+  // Türkçe-I gotcha'sının bir başka türü).
+  ok(TEACHER_SYSTEM_PROMPT.includes('ASLA geçersiz kılmaz'));
+  ok(TEACHER_SYSTEM_PROMPT.includes('board gerçeği DEĞİLDİR'));
+});
+
+test('retrieval ile boardObservation çelişirse boardObservation\'ın doğru olduğu belirtilmiş', () => {
+  ok(/boardObservation.{0,60}her zaman doğrudur/i.test(TEACHER_SYSTEM_PROMPT.replace(/\n/g, ' ')));
+});
+
+test('retrieval metnini kelimesi kelimesine kopyalama zorunluluğu OLMADIĞI belirtilmiş', () => {
+  ok(TEACHER_SYSTEM_PROMPT.includes('kelimesine kopyalamak ZORUNDA DEĞİLSİN'));
+});
+
+test('retrieval yoksa/eşleşmezse mevcut context ile devam etme talimatı var', () => {
+  ok(TEACHER_SYSTEM_PROMPT.includes('matched') && TEACHER_SYSTEM_PROMPT.includes('false'));
+});
+
 console.log(`\nToplam: ${passed + failed}  ✓ ${passed}  ✗ ${failed}`);
 if (failed) process.exit(1);

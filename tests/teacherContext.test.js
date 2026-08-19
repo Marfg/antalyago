@@ -18,6 +18,8 @@ import { LessonEngine } from '../core/lessonEngine.js';
 import { ActionHandler } from '../core/actionHandler.js';
 import { buildTeacherContext, coordLabel } from '../core/teacherContext.js';
 import { createStudentModel, applyStudentEvent } from '../core/studentModel.js';
+import { mergeContentOverrides } from '../core/contentOverrides.js';
+import { TEACHING_NOTES } from '../core/contentStore.js';
 
 let passed = 0, failed = 0;
 function test(name, fn) {
@@ -204,6 +206,124 @@ test('aktif concept Student Model özeti doğru eklenir (atari/capture ayrımın
   equal(ctx.studentModel.currentConcept, 'atari');
   equal(ctx.studentModel.attempts, 2);
   equal(ctx.studentModel.status, 'learning');
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// v0.6 — RAG / content retrieval entegrasyonu
+// ══════════════════════════════════════════════════════════════════════
+
+test('retrieval her zaman dolu bir nesne döner (matched:false olsa bile null DEĞİL)', () => {
+  const { board, lesson } = captureSetup();
+  const ctx = buildTeacherContext({ lessonEngine: lesson, boardState: board });
+  ok(ctx.retrieval, 'context.retrieval bir obje olmalı, context kırılmamalı');
+  ok(typeof ctx.retrieval.matched === 'boolean');
+  ok(Array.isArray(ctx.retrieval.items));
+});
+
+test('retrieval query context\'in kendi concept/stage bilgisiyle TUTARLI', () => {
+  const { board, lesson } = captureSetup(); // l3 step0 — atari mevcut, henüz cevap yok
+  const ctx = buildTeacherContext({ lessonEngine: lesson, boardState: board });
+  equal(ctx.retrieval.query.concept, 'atari', 'context.boardObservation.isAtari ile aynı aktif kavram');
+});
+
+test('yanlış capture attempt (atari + incorrect) → gerçek "atari-hint" içeriği eşleşir', () => {
+  const { board, lesson, handler } = captureSetup();
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } };
+  const result = handler.handle(action);
+  const ctx = buildTeacherContext({ lessonEngine: lesson, boardState: board, boardBefore, action, result });
+
+  equal(ctx.retrieval.query.concept, 'atari');
+  equal(ctx.retrieval.query.purpose, 'hint');
+  ok(ctx.retrieval.matched, 'gerçek content havuzunda atari+hint içeriği olmalı: ' + JSON.stringify(ctx.retrieval));
+  ok(ctx.retrieval.items.length > 0);
+  ok(ctx.retrieval.items.length <= 2, 'MAX_RETRIEVAL_ITEMS aşılmamalı');
+  ok(ctx.retrieval.items[0].text.length > 0);
+});
+
+test('doğru capture cevabı (correct) → "confirm" amaçlı içerik eşleşir', () => {
+  const { board, lesson, handler } = captureSetup();
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 4, y: 5 } };
+  const result = handler.handle(action);
+  ok(result.ok);
+  const ctx = buildTeacherContext({ lessonEngine: lesson, boardState: board, boardBefore, action, result });
+
+  equal(ctx.retrieval.query.purpose, 'confirm');
+  ok(ctx.retrieval.matched);
+});
+
+test('items yalnız {id,text} taşır — score/reason gibi iç alanlar LLM context\'ine SIZMAZ', () => {
+  const { board, lesson, handler } = captureSetup();
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } };
+  const result = handler.handle(action);
+  const ctx = buildTeacherContext({ lessonEngine: lesson, boardState: board, boardBefore, action, result });
+
+  for (const item of ctx.retrieval.items) {
+    equal(Object.keys(item).sort().join(','), 'id,text');
+  }
+});
+
+test('mevcut v0.3/v0.4/v0.5 alanları (boardObservation, studentModel, evaluation, action) retrieval eklenince DEĞİŞMEDİ', () => {
+  const { board, lesson, handler } = captureSetup();
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 4, y: 5 } };
+  const result = handler.handle(action);
+  const ctx = buildTeacherContext({ lessonEngine: lesson, boardState: board, boardBefore, action, result });
+
+  equal(ctx.evaluation.result, 'correct');
+  equal(ctx.evaluation.capturedCount, 1);
+  equal(ctx.action.point, 'E4');
+  equal(ctx.studentModel, null); // studentModel verilmedi — v0.5 davranışı aynen korunuyor
+  ok('boardObservation' in ctx);
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// v0.7 — Teacher Studio local content override entegrasyonu
+// ══════════════════════════════════════════════════════════════════════
+
+test('teachingNotes verilmezse davranış BASE içerikle v0.6 ile birebir aynı (overrideIds boş)', () => {
+  const { board, lesson, handler } = captureSetup();
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } };
+  const result = handler.handle(action);
+  const ctx = buildTeacherContext({ lessonEngine: lesson, boardState: board, boardBefore, action, result });
+  ok(ctx.retrieval.matched);
+  equal(ctx.retrieval.overrideIds.length, 0);
+});
+
+test('local override VERİLDİĞİNDE retrieval effective (override edilmiş) metni seçer', () => {
+  const { board, lesson, handler } = captureSetup();
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } };
+  const result = handler.handle(action);
+
+  // Önce override'sız context ile hangi item'in seçildiğini öğren.
+  const before = buildTeacherContext({ lessonEngine: lesson, boardState: board, boardBefore, action, result });
+  ok(before.retrieval.matched);
+  const selectedId = before.retrieval.items[0].id;
+
+  // O ID'ye bir local override uygula (core/contentStore.js'in GERÇEK BASE'i üzerinden).
+  const effective = mergeContentOverrides(TEACHING_NOTES, { [selectedId]: { text: 'TEACHER STUDIO ÖZEL METNİ' } });
+
+  const after = buildTeacherContext({ lessonEngine: lesson, boardState: board, boardBefore, action, result, teachingNotes: effective });
+  equal(after.retrieval.items[0].id, selectedId, 'aynı content ID hâlâ seçilmeli (concept/purpose değişmedi)');
+  equal(after.retrieval.items[0].text, 'TEACHER STUDIO ÖZEL METNİ', 'context artık OVERRIDE EDİLMİŞ metni taşımalı');
+  ok(after.retrieval.overrideIds.includes(selectedId), 'overrideIds seçili item\'i işaretlemeli');
+});
+
+test('override başka content ID\'yi ETKİLEMEZ — ilgisiz bir override retrieval sonucunu değiştirmez', () => {
+  const { board, lesson, handler } = captureSetup();
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } };
+  const result = handler.handle(action);
+
+  const effective = mergeContentOverrides(TEACHING_NOTES, { 'stone_placement-explain-01': { text: 'İLGİSİZ DEĞİŞİKLİK' } });
+
+  const ctx = buildTeacherContext({ lessonEngine: lesson, boardState: board, boardBefore, action, result, teachingNotes: effective });
+  ok(!ctx.retrieval.items.some(i => i.text === 'İLGİSİZ DEĞİŞİKLİK'));
+  equal(ctx.retrieval.overrideIds.length, 0, 'seçilen item override edilmediği için overrideIds boş kalmalı');
 });
 
 console.log(`\nToplam: ${passed + failed}  ✓ ${passed}  ✗ ${failed}`);

@@ -121,6 +121,75 @@ await test('studentModel verilmezse (undefined) davranış v0.4 ile birebir ayn�
   equal(parsed.value.message, 'Rakip taşın kalan nefes noktasını tekrar bulmaya çalış.');
 });
 
+// ── v0.6: retrieval kullanımı ─────────────────────────────────────────
+
+await test('context.retrieval.matched=true (attempt:1) → mesaj retrieval metnini kullanır', async () => {
+  const provider = createMockTeacherProvider();
+  const ctx = atariContext({ attempt: 1 });
+  ctx.retrieval = {
+    matched: true,
+    query: { concept: 'atari', stage: 'guided_practice', studentStatus: 'learning', purpose: 'hint' },
+    items: [{ id: 'atari-hint-01', text: 'Rakip taşın çevresindeki nefes noktalarını tek tek say.' }],
+    fallbackLevel: 'exact',
+  };
+  const response = await provider.generateTeacherResponse(ctx);
+  const parsed = parseTeacherResponse(response.raw);
+  equal(parsed.value.action, 'give_hint');
+  equal(parsed.value.message, 'Rakip taşın çevresindeki nefes noktalarını tek tek say.');
+});
+
+await test('context.retrieval yoksa (v0.5 context\'i) davranış AYNI kalır — retrieval sadece EK bir kaynak', async () => {
+  const provider = createMockTeacherProvider();
+  const response = await provider.generateTeacherResponse(atariContext({ attempt: 1 }));
+  const parsed = parseTeacherResponse(response.raw);
+  equal(parsed.value.message, 'Rakip taşın kalan nefes noktasını tekrar bulmaya çalış.');
+});
+
+await test('context.retrieval.matched=false → sabit kodlu mesaja düşer (retrieval engine\'e dönüşmedi)', async () => {
+  const provider = createMockTeacherProvider();
+  const ctx = atariContext({ attempt: 1 });
+  ctx.retrieval = { matched: false, query: { concept: 'atari', purpose: 'hint' }, items: [], fallbackLevel: 'none' };
+  const response = await provider.generateTeacherResponse(ctx);
+  const parsed = parseTeacherResponse(response.raw);
+  equal(parsed.value.message, 'Rakip taşın kalan nefes noktasını tekrar bulmaya çalış.');
+});
+
+await test('atari YOK ama yanlış cevap + retrieval eşleşti (ör. saf liberty adımı) → give_hint, retrieval metni kullanılır', async () => {
+  const provider = createMockTeacherProvider();
+  const ctx = atariContext({ attempt: 1 });
+  ctx.boardObservation = null; // v0.5.1 liberty-only adımlarında atari YOK
+  ctx.retrieval = {
+    matched: true,
+    query: { concept: 'liberty', purpose: 'hint' },
+    items: [{ id: 'liberty-hint-01', text: 'Taşın yatay ve dikey komşularına odaklan.' }],
+    fallbackLevel: 'exact',
+  };
+  const response = await provider.generateTeacherResponse(ctx);
+  const parsed = parseTeacherResponse(response.raw);
+  equal(parsed.value.action, 'give_hint');
+  equal(parsed.value.message, 'Taşın yatay ve dikey komşularına odaklan.');
+});
+
+await test('atari YOK, retrieval de eşleşmedi → v0.5 ile aynı genel mesaj (regresyon)', async () => {
+  const provider = createMockTeacherProvider();
+  const ctx = atariContext({ attempt: 1 });
+  ctx.boardObservation = null;
+  const response = await provider.generateTeacherResponse(ctx);
+  const parsed = parseTeacherResponse(response.raw);
+  equal(parsed.value.action, 'say');
+  equal(parsed.value.message, 'Tahtaya tekrar bak ve az önce anlatılanı uygulamaya çalış.');
+});
+
+await test('retrieval sadece hintLevel:1/"learning" dalında kullanılır — mastered dalı hâlâ sabit mesajını korur', async () => {
+  const provider = createMockTeacherProvider();
+  const ctx = atariContext({ attempt: 1 });
+  ctx.studentModel = { currentConcept: 'atari', status: 'mastered', attempts: 6, recentAccuracy: 0.9, independentCorrect: 5, hintsUsed: 0, toolAssists: 0 };
+  ctx.retrieval = { matched: true, query: {}, items: [{ id: 'atari-reinforce-01', text: 'Bu retrieval metni mastered dalında GÖRÜNMEMELİ.' }], fallbackLevel: 'exact' };
+  const response = await provider.generateTeacherResponse(ctx);
+  const parsed = parseTeacherResponse(response.raw);
+  equal(parsed.value.message, 'Son nefes noktasını gözden kaçırdın. Tekrar dene.');
+});
+
 await test('atari yoksa (boardObservation null) genel bir "say" mesajı üretir', async () => {
   const provider = createMockTeacherProvider();
   const ctx = atariContext();

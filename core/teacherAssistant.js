@@ -52,6 +52,29 @@ function stepIdOf(context, lessonEngine) {
 }
 
 /**
+ * v0.6 — `context.retrieval`'den (core/teacherContext.js zaten hesaplamış)
+ * event log taslaklarını türetir. Küçük, saf bir fonksiyon olarak
+ * ayrıştırıldı — ikinci bir retrieval ÇAĞRISI yapmaz, yalnız zaten var
+ * olan sonucu event şekline çevirir; bu sayede `matched:false` (miss)
+ * yolu da gerçek content havuzuna bağlı kalmadan doğrudan test edilebilir.
+ *
+ * @param {{matched:boolean, query:object, items:Array<{id:string}>, fallbackLevel:string}|null} retrieval
+ * @param {{lessonId:?string, stepId:?string}} ids
+ * @returns {Array<{type:string,lessonId:?string,stepId:?string,payload:object}>}
+ */
+export function deriveRetrievalEvents(retrieval, { lessonId = null, stepId = null } = {}) {
+  if (!retrieval) return [];
+  const events = [{
+    type: 'content_retrieval_requested', lessonId, stepId,
+    payload: { concept: retrieval.query.concept, purpose: retrieval.query.purpose },
+  }];
+  events.push(retrieval.matched
+    ? { type: 'content_retrieval_matched', lessonId, stepId, payload: { concept: retrieval.query.concept, purpose: retrieval.query.purpose, itemIds: retrieval.items.map(i => i.id), fallbackLevel: retrieval.fallbackLevel } }
+    : { type: 'content_retrieval_missed', lessonId, stepId, payload: { concept: retrieval.query.concept, purpose: retrieval.query.purpose } });
+  return events;
+}
+
+/**
  * @param {object} params
  * @param {{name:string, generateTeacherResponse: (context:object) => Promise<object>}|null} params.provider — null/undefined → AI kapalı
  * @param {import('./lessonEngine.js').LessonEngine} params.lessonEngine
@@ -60,6 +83,7 @@ function stepIdOf(context, lessonEngine) {
  * @param {{type:string,payload?:object}} [params.action]
  * @param {object} [params.result] — ActionHandler.handle() sonucu
  * @param {object} [params.studentModel] — core/studentModel.js'in modeli (v0.5, opsiyonel; salt-okunur, buradan asla yazılmaz)
+ * @param {Array<object>} [params.teachingNotes] — Teacher Studio local override'larıyla birleştirilmiş effective içerik (v0.7, opsiyonel; varsayılan: BASE)
  * @returns {Promise<{
  *   source: 'ai'|'deterministic', message: string|null, hintLevel: number|null,
  *   aiAction: string|null, provider: string|null, context: object|null,
@@ -68,9 +92,9 @@ function stepIdOf(context, lessonEngine) {
  *   tool: {allowed:boolean, tool:string, effects:Array<object>, reason:string|null, targetCount:number|null} | null,
  * }>}
  */
-export async function requestTeacherResponse({ provider, lessonEngine, boardState = null, boardBefore = null, action = null, result = null, studentModel = null }) {
+export async function requestTeacherResponse({ provider, lessonEngine, boardState = null, boardBefore = null, action = null, result = null, studentModel = null, teachingNotes = undefined }) {
   const deterministicMessage = result?.feedback?.text ?? null;
-  const context = buildTeacherContext({ lessonEngine, boardState, boardBefore, action, result, studentModel });
+  const context = buildTeacherContext({ lessonEngine, boardState, boardBefore, action, result, studentModel, ...(teachingNotes !== undefined ? { teachingNotes } : {}) });
   const lessonId = lessonEngine?.curLesson?.id ?? null;
   const stepId = stepIdOf(context, lessonEngine);
   const events = [];
@@ -83,6 +107,11 @@ export async function requestTeacherResponse({ provider, lessonEngine, boardStat
   // AI kapalı VEYA bu adımda context üretilemiyor (ör. ders yüklü değil)
   // → sistem AI'ya hiç bağımlı değil, deterministic feedback her zaman çalışır.
   if (!provider || !context) return deterministicResult();
+
+  // v0.6 — RAG: retrieval context.retrieval'de ZATEN hesaplanmış olarak
+  // gelir (core/teacherContext.js). Burada yalnız event log için okunur —
+  // ikinci bir retrieval çağrısı YAPILMAZ.
+  events.push(...deriveRetrievalEvents(context.retrieval, { lessonId, stepId }));
 
   events.push({
     type: 'ai_teacher_requested', lessonId, stepId,

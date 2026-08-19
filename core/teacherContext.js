@@ -18,11 +18,25 @@
  * KÜÇÜK bir Student Model özeti context'e eklenir (bkz. core/studentModel.js).
  * Bu modül Student Model'i asla YAZMAZ — yalnızca core/studentModel.js'in
  * `getConceptState()`'iyle salt-okunur okur.
+ *
+ * v0.6: aktif concept/stage/Student Model status'undan deterministik bir
+ * retrieval query'si üretilip core/contentRetriever.js'e verilir; sonuç
+ * (varsa) küçük bir `context.retrieval` özeti olarak eklenir. RAG hiçbir
+ * zaman Go gerçeğinin kaynağı DEĞİLDİR — yalnızca pedagojik referans metni
+ * taşır (bkz. core/teacherSystemPrompt.js'teki sınır).
+ *
+ * v0.7: opsiyonel `teachingNotes` parametresi verilirse retrieval BUNU
+ * kullanır (varsayılan: core/contentStore.js'in BASE `TEACHING_NOTES`'u).
+ * Bu, Teacher Studio'nun local override'larını (bkz. core/contentOverrides.js
+ * `mergeContentOverrides()`) retrieval'e ULAŞTIRMANIN TEK yoludur — bu
+ * modül hâlâ localStorage'ı hiç bilmez, yalnızca enjekte edilen veriyi okur.
  */
 
 import { classifyCurriculumStep, responseTypeOf, stripMarkup } from './learningContext.js';
 import { primaryAtariGroup, removeStonesEffectOf, studentActionOf, resolveActiveConcept } from './teacherPanelBridge.js';
 import { getConceptState } from './studentModel.js';
+import { buildRetrievalQuery, retrieveContent } from './contentRetriever.js';
+import { TEACHING_NOTES } from './contentStore.js';
 
 // ── Koordinat etiketi ─────────────────────────────────────────────────
 // ogren-3d.html'in kendi tahta etiketleriyle (LTRS_ALL, I harfi atlanır)
@@ -57,9 +71,10 @@ function attemptCountOf(lessonEngine, evaluationResult) {
  * @param {{type:string,payload?:object}} [params.action]
  * @param {object} [params.result] — ActionHandler.handle() sonucu
  * @param {object} [params.studentModel] — core/studentModel.js'in modeli (v0.5, opsiyonel)
+ * @param {Array<object>} [params.teachingNotes] — retrieval'in kullanacağı içerik havuzu (v0.7, opsiyonel; varsayılan: BASE TEACHING_NOTES — override edilmemiş)
  * @returns {object|null} lessonEngine'de yüklü bir adım yoksa null
  */
-export function buildTeacherContext({ lessonEngine, boardState = null, boardBefore = null, action = null, result = null, studentModel = null }) {
+export function buildTeacherContext({ lessonEngine, boardState = null, boardBefore = null, action = null, result = null, studentModel = null, teachingNotes = TEACHING_NOTES }) {
   const lesson = lessonEngine?.curLesson ?? null;
   const step = lessonEngine?.currentStep?.() ?? null;
   if (!lesson || !step) return null;
@@ -90,6 +105,24 @@ export function buildTeacherContext({ lessonEngine, boardState = null, boardBefo
   // Student Model'in stats'ını okuduğu kovayla her zaman TUTARLIDIR.
   const activeConcept = resolveActiveConcept({ lessonId: lesson.id, boardState: boardBefore || boardState, step, result });
   const conceptStats = studentModel ? getConceptState(studentModel, activeConcept) : null;
+
+  // v0.6 — RAG: query TAMAMEN deterministik sistemden türer (concept,
+  // stage, Student Model status, evaluation) — LLM bu query'yi asla üretmez.
+  const retrievalQuery = buildRetrievalQuery({
+    concept: activeConcept,
+    stage: classification.stage,
+    studentStatus: conceptStats?.status ?? null,
+    evaluationResult: evaluation,
+  });
+  const retrievalResult = retrieveContent({ query: retrievalQuery, entries: teachingNotes });
+  // v0.7 — hangi SEÇİLMİŞ item'lerin bir local override'dan geldiğini
+  // işaretler (bkz. spesifikasyon §38 "Source: Base / Local Override").
+  // LLM'e gönderilen items[] bilinçli olarak {id,text} ile sınırlı kalır
+  // (v0.6 sözleşmesi bozulmaz) — bu yalnızca Teacher Panel/Studio içindir.
+  const overrideIds = retrievalResult.items
+    .map(i => teachingNotes.find(e => e.id === i.id))
+    .filter(e => e?.source === 'override')
+    .map(e => e.id);
 
   return {
     lesson: {
@@ -129,5 +162,17 @@ export function buildTeacherContext({ lessonEngine, boardState = null, boardBefo
       hintsUsed: conceptStats.hintsUsed,
       toolAssists: conceptStats.toolAssists,
     } : null,
+    // v0.6 — yalnızca kısa, ilgili öğretim notları (en fazla
+    // MAX_RETRIEVAL_ITEMS); score/reason gibi iç diagnostic alanlar LLM'e
+    // gönderilmez (yalnız core/contentRetriever.js'in kendi testlerinde
+    // ve Teacher Panel'in ihtiyacı için kullanılır — panel bu alanı
+    // context'ten okur, ayrı bir çağrı yapmaz).
+    retrieval: {
+      matched: retrievalResult.matched,
+      query: retrievalQuery,
+      items: retrievalResult.items.map(i => ({ id: i.id, text: i.text })),
+      fallbackLevel: retrievalResult.fallbackLevel,
+      overrideIds,
+    },
   };
 }

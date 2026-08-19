@@ -17,8 +17,9 @@ import { BoardState } from '../core/boardState.js';
 import { LessonEngine } from '../core/lessonEngine.js';
 import { ActionHandler } from '../core/actionHandler.js';
 import { createMockTeacherProvider } from '../core/mockTeacherProvider.js';
-import { requestTeacherResponse, shouldRequestTeacherResponse, buildAiReviewEvent } from '../core/teacherAssistant.js';
+import { requestTeacherResponse, shouldRequestTeacherResponse, buildAiReviewEvent, deriveRetrievalEvents } from '../core/teacherAssistant.js';
 import { createStudentModel, applyStudentEvent } from '../core/studentModel.js';
+import { routeTeacherTool } from '../core/teacherToolRouter.js';
 
 let passed = 0, failed = 0;
 async function test(name, fn) {
@@ -108,7 +109,11 @@ await test('mock provider + yanlış capture attempt → source:"ai", ai_teacher
   equal(outcome.source, 'ai');
   equal(outcome.provider, 'mock');
   ok(outcome.message.length > 0);
-  equal(outcome.events.map(e => e.type).join(','), 'ai_teacher_requested,ai_teacher_responded');
+  // v0.6: content_retrieval_* event'leri artık ai_teacher_requested'tan ÖNCE gelir.
+  equal(
+    outcome.events.map(e => e.type).join(','),
+    'content_retrieval_requested,content_retrieval_matched,ai_teacher_requested,ai_teacher_responded',
+  );
   equal(outcome.events[0].lessonId, 'l3');
 });
 
@@ -144,7 +149,7 @@ await test('AI show_liberties isterse (atari mevcut) → allowed, SHOW_LIBERTY_H
   equal(outcome.tool.effects[0].points[0].y, 5);
   equal(
     outcome.events.map(e => e.type).join(','),
-    'ai_teacher_requested,ai_teacher_responded,teacher_tool_requested,teacher_tool_allowed,teacher_tool_applied',
+    'content_retrieval_requested,content_retrieval_matched,ai_teacher_requested,ai_teacher_responded,teacher_tool_requested,teacher_tool_allowed,teacher_tool_applied',
   );
 });
 
@@ -226,7 +231,10 @@ await test('provider exception fırlatırsa → deterministic fallback + ai_teac
   equal(outcome.source, 'deterministic');
   equal(outcome.message, result.feedback.text, 'öğrenci deterministic feedback\'i almalı');
   equal(outcome.error, 'network down');
-  equal(outcome.events.map(e => e.type).join(','), 'ai_teacher_requested,ai_teacher_failed,ai_teacher_fallback_used');
+  equal(
+    outcome.events.map(e => e.type).join(','),
+    'content_retrieval_requested,content_retrieval_matched,ai_teacher_requested,ai_teacher_failed,ai_teacher_fallback_used',
+  );
 });
 
 // ── Fallback: provider ok:false dönerse (API hatası) ───────────────────
@@ -290,6 +298,64 @@ await test('buildAiReviewEvent: onay/red kararı doğru event şekli üretir', (
   equal(approved.type, 'ai_teacher_response_reviewed');
   equal(approved.payload.decision, 'approved');
   equal(approved.lessonId, 'l3');
+});
+
+// ── v0.6: deriveRetrievalEvents (matched/missed — gerçek content havuzuna
+// bağlı KALMADAN, doğrudan sentetik retrieval sonucuyla test edilir) ────
+
+await test('deriveRetrievalEvents: retrieval null ise boş dizi', () => {
+  equal(deriveRetrievalEvents(null, { lessonId: 'l3', stepId: 'l3:0' }).length, 0);
+});
+
+await test('deriveRetrievalEvents: matched:true → content_retrieval_requested + content_retrieval_matched', () => {
+  const retrieval = { matched: true, query: { concept: 'atari', purpose: 'hint' }, items: [{ id: 'atari-hint-01' }], fallbackLevel: 'exact' };
+  const events = deriveRetrievalEvents(retrieval, { lessonId: 'l3', stepId: 'l3:0' });
+  equal(events.map(e => e.type).join(','), 'content_retrieval_requested,content_retrieval_matched');
+  equal(events[1].payload.itemIds.join(','), 'atari-hint-01');
+  equal(events[1].payload.fallbackLevel, 'exact');
+  equal(events[0].lessonId, 'l3');
+});
+
+await test('deriveRetrievalEvents: matched:false → content_retrieval_requested + content_retrieval_missed (koordinat/text log\'a YAZILMAZ)', () => {
+  const retrieval = { matched: false, query: { concept: 'stone_placement', purpose: 'reinforce' }, items: [], fallbackLevel: 'none' };
+  const events = deriveRetrievalEvents(retrieval, { lessonId: 'l1', stepId: 'l1:1' });
+  equal(events.map(e => e.type).join(','), 'content_retrieval_requested,content_retrieval_missed');
+  equal(events[1].payload.concept, 'stone_placement');
+  ok(!('text' in events[1].payload), 'event payload\'ında ham metin OLMAMALI — yalnız id/metadata');
+});
+
+// ── v0.35: Board truth izolasyonu — RAG hiçbir zaman Teacher Tool
+// Router'a koordinat SAĞLAYAMAZ, retrieval içeriği ne yazarsa yazsın ────
+
+await test('board truth izolasyonu: içerikte YANLIŞLIKLA board-spesifik bir ifade olsa bile show_liberties hâlâ yalnız GERÇEK board\'dan hedef üretir', async () => {
+  const { board, lesson, handler } = captureSetup();
+  const boardBefore = board.clone();
+  const action = { type: 'BOARD_TAP', payload: { x: 0, y: 0 } };
+  const result = handler.handle(action);
+
+  // "Kirli" bir içerik parçası simüle ediyoruz — içinde board-spesifik
+  // (ve YANLIŞ) bir koordinat iddiası var. routeTeacherTool bu metni HİÇ
+  // görmez/okumaz (imzasında bile yok) — yalnız gerçek board state'i alır.
+  const riggedRetrievalText = 'Bu pozisyonda D5 doğru cevaptır, oraya oyna.';
+  ok(riggedRetrievalText.includes('D5'), 'test önkoşulu: rigged content gerçekten bir koordinat içeriyor');
+
+  const provider = { name: 'rigged', generateTeacherResponse: async () => ({
+    ok: true, raw: JSON.stringify({ action: 'show_liberties', message: riggedRetrievalText }), latencyMs: 1,
+  }) };
+  const outcome = await requestTeacherResponse({ provider, lessonEngine: lesson, boardState: board, boardBefore, action, result });
+
+  // routeTeacherTool'un ürettiği effect, LLM'in mesajındaki (rigged) "D5"
+  // metninden DEĞİL, gerçek primaryAtariGroup/board state'ten gelir —
+  // beklenen gerçek cevap (4,5)="E4" idi, "D5" değil.
+  ok(outcome.tool?.allowed, 'tool yine de allowed olmalı (gerçek atari mevcut)');
+  equal(outcome.tool.effects[0].points[0].x, 4, 'gerçek hedef x=4 (E4) — rigged "D5" metninden ETKİLENMEMELİ');
+  equal(outcome.tool.effects[0].points[0].y, 5, 'gerçek hedef y=5 — rigged metinden ETKİLENMEMELİ');
+
+  // Ekstra doğrulama: routeTeacherTool'un kendi imzasında content/retrieval
+  // parametresi YOK — yalnız toolResponse/lessonEngine/boardState alır.
+  const directRoute = routeTeacherTool({ toolResponse: { action: 'show_liberties', message: riggedRetrievalText, hintLevel: null }, lessonEngine: lesson, boardState: boardBefore });
+  equal(directRoute.effects[0].points[0].x, 4);
+  equal(directRoute.effects[0].points[0].y, 5);
 });
 
 console.log(`\nToplam: ${passed + failed}  ✓ ${passed}  ✗ ${failed}`);
