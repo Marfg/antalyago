@@ -114,7 +114,12 @@ function buildDom(context) {
     <div class="s01-intro" id="s01-intro">
       <div class="s01-intro-card">
         <p id="s01-intro-text"></p>
-        <button type="button" class="s01-confirm-btn" id="s01-confirm">Anladım</button>
+        <span class="s01-tick-wrap">
+          <button type="button" class="s01-tick" id="s01-confirm" aria-label="Bilgiyi onayla">
+            <svg class="s01-tick-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+          </button>
+          <span class="s01-tick-tip" aria-hidden="true">Onayla</span>
+        </span>
       </div>
     </div>
     <div class="s01-explore" id="s01-explore" hidden>
@@ -191,7 +196,18 @@ export const scene01BoardIntro = {
     });
     els.descEl.textContent = SIZE_DESCS[DEFAULT_SIZE];
 
+    let confirming = false;
     on(els.confirmBtn, 'click', () => {
+      // scene_intro_confirmed'in TEK sefer üretilmesini garanti eden kilit —
+      // tıklama, tekrar tıklama veya Enter/Space tekrarı (220ms'lik kapanış
+      // penceresi içinde) event'i İKİNCİ KEZ üretemez.
+      if (confirming || introConfirmed) return;
+      confirming = true;
+      els.confirmBtn.disabled = true;
+      // Tick'in kendi kısa tamamlanma geri bildirimi (renk/ikon vurgusu) —
+      // kartın kapanma geçişiyle EŞ ZAMANLI başlar.
+      els.confirmBtn.classList.add('s01-confirmed');
+
       const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const doConfirm = () => {
         introConfirmed = true;

@@ -7,14 +7,22 @@
 <link rel="stylesheet" href="styles/learning-scenes.css" />
 </head>
 <body>
-<canvas id="ls-canvas" aria-hidden="true"></canvas>
+<!-- Board ve bilgi alanı AYRI layout bölgeleridir — bilgi alanı canvas
+     üzerine position:absolute ile bindirilmiyor, gerçek bir yan/alt
+     bölge olarak akışa katılıyor (bkz. styles/learning-scenes.css). -->
+<div id="ls-layout">
+  <div id="ls-board-region">
+    <canvas id="ls-canvas" aria-hidden="true"></canvas>
+  </div>
+  <div id="ls-info-region">
+    <!-- Sahne modülleri kendi UI'larını buraya kurar (context.container) -->
+    <div id="ls-scene-host" aria-live="polite"></div>
+  </div>
+</div>
 
 <div id="ls-topbar">
   <a href="index.html">← Ana</a>
 </div>
-
-<!-- Sahne modülleri kendi UI'larını buraya kurar (context.container) -->
-<div id="ls-scene-host" aria-live="polite"></div>
 
 <div id="ls-final" role="status">
   <h2>Tahtaları tanıdın.</h2>

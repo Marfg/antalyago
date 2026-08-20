@@ -95,6 +95,66 @@ addTest('1) sayfa açılıyor, Sahne #1 otomatik başlıyor', async () => {
   } finally { await s.close(); }
 });
 
+addTest('"Anladım" görünür metni artık yok, erişilebilir tick button doğru adla mevcut', async () => {
+  const s = await openScenesPage();
+  try {
+    const bodyText = await s.page.locator('#ls-info-region').textContent();
+    ensure(!bodyText.includes('Anladım'), '"Anladım" metni hâlâ görünüyor');
+    const tick = s.page.locator('#s01-confirm');
+    ensure(await tick.evaluate(el => el.tagName === 'BUTTON'), 'tick gerçek bir <button> değil');
+    ensure(await tick.evaluate(el => el.classList.contains('s01-tick')), 'tick sınıfı eksik');
+    ensure((await tick.getAttribute('aria-label')) === 'Bilgiyi onayla', 'aria-label yanlış');
+    ensure((await tick.textContent())?.trim() === '', 'tick görünür metin İÇERMEMELİ (yalnız ikon+aria-label)');
+    ensure(await s.page.locator('#s01-confirm .s01-tick-icon').count() === 1, 'görünür ✓ ikonu yok');
+  } finally { await s.close(); }
+});
+
+addTest('tick mouse ile çalışıyor', async () => {
+  const s = await openScenesPage();
+  try {
+    await s.page.click('#s01-confirm');
+    await s.page.waitForTimeout(280);
+    ensure(await s.page.locator('#s01-intro').isHidden(), 'mouse tıklaması kartı kapatmadı');
+    ensure(await s.page.locator('#s01-explore').isVisible(), 'mouse tıklaması sonrası keşif paneli açılmadı');
+  } finally { await s.close(); }
+});
+
+addTest('tick klavyeyle çalışıyor (Tab + Enter/Space)', async () => {
+  const s = await openScenesPage();
+  try {
+    await s.page.locator('#s01-confirm').focus();
+    ensure(await s.page.evaluate(() => document.activeElement?.id) === 's01-confirm', 'tick focus alamadı');
+    await s.page.keyboard.press('Enter');
+    await s.page.waitForTimeout(280);
+    ensure(await s.page.locator('#s01-intro').isHidden(), 'Enter ile tick tetiklenmedi');
+  } finally { await s.close(); }
+});
+
+addTest('scene_intro_confirmed hızlı/tekrarlı tetiklemede bile YALNIZ BİR KEZ üretiliyor', async () => {
+  const s = await openScenesPage();
+  try {
+    // Kapanış animasyonu sürerken tekrar tekrar tıkla — kilit bunu engellemeli.
+    await s.page.click('#s01-confirm');
+    await s.page.click('#s01-confirm').catch(() => {});
+    await s.page.keyboard.press('Enter').catch(() => {});
+    await s.page.waitForTimeout(300);
+    const types = await s.page.evaluate(() => {
+      try { return JSON.parse(localStorage.getItem('go_teacher_event_log_v1') || '[]').map(e => e.type); }
+      catch { return []; }
+    });
+    ensure(types.filter(t => t === 'scene_intro_confirmed').length === 1, 'scene_intro_confirmed birden fazla üretildi');
+  } finally { await s.close(); }
+});
+
+addTest('animasyon sonunda kart erişilebilir ağaçtan doğru biçimde kaldırılıyor (hidden attribute)', async () => {
+  const s = await openScenesPage();
+  try {
+    await confirmIntro(s.page);
+    const introHiddenAttr = await s.page.locator('#s01-intro').evaluate(el => el.hidden);
+    ensure(introHiddenAttr === true, 'kart hidden özniteliğiyle kaldırılmadı (yalnız CSS ile gizlenmiş olabilir)');
+  } finally { await s.close(); }
+});
+
 addTest('2) yalnız gerekli UI görünüyor — eski ogren-3d.html elemanları/globalleri YOK', async () => {
   const s = await openScenesPage();
   try {
@@ -260,6 +320,65 @@ addTest('mobil: yatay taşma yok, kontroller dokunulabilir boyutta, tahta viewpo
     const continueBox = await s.page.locator('#s01-continue').boundingBox();
     ensure(continueBox && continueBox.height >= 40, 'Devam et düğmesi dokunma hedefi için çok küçük');
   } finally { await s.close(); }
+});
+
+function boxesIntersect(a, b) {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+addTest('masaüstü: board ve bilgi alanı bounding box\'ları KESİŞMİYOR, board yan tarafta daha geniş', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.desktop });
+  try {
+    const boardBox = await s.page.locator('#ls-board-region').boundingBox();
+    const infoBox = await s.page.locator('#ls-info-region').boundingBox();
+    ensure(boardBox && infoBox, 'bbox eksik');
+    ensure(!boxesIntersect(boardBox, infoBox), 'masaüstünde board ve bilgi alanı KESİŞİYOR');
+    ensure(boardBox.width > infoBox.width, 'board bilgi alanından daha geniş olmalı (ana görsel odak)');
+    await confirmIntro(s.page);
+    const boardBoxAfter = await s.page.locator('#ls-board-region').boundingBox();
+    ensure(Math.abs(boardBoxAfter.width - boardBox.width) < 1 && Math.abs(boardBoxAfter.height - boardBox.height) < 1,
+      'kart onaylanınca board bölgesi boyut değiştirdi (layout shift)');
+    const exploreBox = await s.page.locator('#s01-explore').boundingBox();
+    ensure(!boxesIntersect(boardBox, exploreBox), 'keşif paneli açıldıktan sonra board ile kesişiyor');
+  } finally { await s.close(); }
+});
+
+addTest('mobil: bilgi alanı board\'un ALTINA geçiyor, bbox\'lar kesişmiyor', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile });
+  try {
+    const boardBox = await s.page.locator('#ls-board-region').boundingBox();
+    const infoBox = await s.page.locator('#ls-info-region').boundingBox();
+    ensure(boardBox && infoBox, 'bbox eksik');
+    ensure(!boxesIntersect(boardBox, infoBox), 'mobilde board ve bilgi alanı KESİŞİYOR');
+    ensure(infoBox.y >= boardBox.y + boardBox.height - 1, 'bilgi alanı board\'un altında değil');
+    const boardHeightBefore = boardBox.height;
+    await confirmIntro(s.page);
+    const boardBoxAfter = await s.page.locator('#ls-board-region').boundingBox();
+    ensure(Math.abs(boardBoxAfter.height - boardHeightBefore) < 1, 'mobilde kart onaylanınca board zıpladı (yükseklik değişti)');
+    const exploreBox = await s.page.locator('#s01-explore').boundingBox();
+    ensure(!boxesIntersect(boardBoxAfter, exploreBox), 'mobilde keşif paneli board ile kesişiyor');
+  } finally { await s.close(); }
+});
+
+addTest('uzun açıklama metninde de board ile bilgi alanı KESİŞMİYOR (masaüstü + mobil)', async () => {
+  const longText = 'Bu, sınır durumlarını test etmek için bilerek uzatılmış çok satırlı bir açıklama metnidir. '.repeat(6);
+  for (const viewport of [VIEWPORTS.desktop, VIEWPORTS.mobile]) {
+    const s = await openScenesPage({ viewport });
+    try {
+      await confirmIntro(s.page);
+      const boardBoxBefore = await s.page.locator('#ls-board-region').boundingBox();
+      await s.page.evaluate((text) => {
+        document.getElementById('s01-desc').textContent = text;
+      }, longText);
+      await s.page.waitForTimeout(80);
+      const boardBox = await s.page.locator('#ls-board-region').boundingBox();
+      const infoBox = await s.page.locator('#ls-info-region').boundingBox();
+      ensure(!boxesIntersect(boardBox, infoBox), `uzun metinde (${viewport.width}px) board/bilgi alanı kesişiyor`);
+      ensure(Math.abs(boardBox.height - boardBoxBefore.height) < 1 && Math.abs(boardBox.width - boardBoxBefore.width) < 1,
+        `uzun metin board boyutunu değiştirdi (${viewport.width}px)`);
+      ensure((await s.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)), `uzun metinde (${viewport.width}px) yatay taşma var`);
+    } finally { await s.close(); }
+  }
 });
 
 addTest('konsolda/pageerror\'da hata yok (tam akış boyunca)', async () => {

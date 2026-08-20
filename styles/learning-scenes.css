@@ -5,6 +5,15 @@
  * bespoke koyu/altın renk paletiyle (--gold/--dark/--glass/--gborder)
  * TUTARLI ama kopyası DEĞİL — yalnız bu sayfanın ihtiyacı olan minimal
  * sahne yüzeyi için yazıldı.
+ *
+ * Layout ilkesi: board ve bilgi alanı AYRI bölgelerdir (#ls-board-region /
+ * #ls-info-region), flex ile bölünür. Bilgi alanı canvas'ın üzerine
+ * position:absolute/fixed ile BİNDİRİLMEZ — masaüstünde board'un
+ * YANINDA sabit genişlikli bir sütun, dar viewport'ta board'un ALTINDA
+ * kalan-alanı-dolduran bir bölge olarak akışa katılır. Bilgi alanı
+ * kendi içeriği (intro kartı ↔ keşif paneli) değiştiğinde board
+ * bölgesinin boyutu ASLA değişmez (bkz. #ls-board-region'ın sabit
+ * flex-basis'i) — bu yüzden kart açılıp kapanırken board zıplamaz.
  */
 
 :root {
@@ -25,71 +34,102 @@ body {
   font-family: 'Segoe UI', 'Noto Sans', sans-serif;
 }
 
-#ls-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+/* ── Layout iskeleti ──────────────────────────────────────────────── */
+#ls-layout {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: row;
+}
+#ls-board-region {
+  flex: 1 1 auto; min-width: 0; position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+#ls-canvas { width: 100%; height: 100%; display: block; }
+
+#ls-info-region {
+  flex: 0 0 clamp(320px, 30vw, 420px);
+  min-width: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 1.4rem 1.3rem;
+  overflow-y: auto;
+  background: var(--glass); backdrop-filter: blur(16px);
+  border-left: 1px solid var(--gborder);
+}
 
 #ls-topbar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 20;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: .7rem 1rem; pointer-events: none;
+  position: fixed; top: 0; left: 0; z-index: 20;
+  padding: .7rem 1rem;
 }
 #ls-topbar a {
-  pointer-events: auto; color: var(--text); text-decoration: none;
+  color: var(--text); text-decoration: none;
   background: var(--glass); border: 1px solid var(--gborder); border-radius: 8px;
   padding: .4rem .8rem; font-size: .8rem; backdrop-filter: blur(10px);
 }
 #ls-topbar a:hover { border-color: var(--gold); }
 
-#ls-scene-host {
-  position: fixed; inset: 0; z-index: 10;
-  display: flex; align-items: flex-end; justify-content: center;
-  pointer-events: none;
-}
-#ls-scene-host > * { pointer-events: auto; }
+.s01-root { width: 100%; display: flex; flex-direction: column; gap: .9rem; }
 
-.s01-root { width: 100%; height: 100%; position: relative; }
-
-/* ── Onboarding bilgi kartı ── */
-.s01-intro {
-  position: fixed; top: calc(env(safe-area-inset-top, 0px) + 72px); left: 50%;
-  transform: translateX(-50%); z-index: 30;
-  width: min(440px, calc(100vw - 2rem));
-  display: flex; justify-content: center;
-}
+/* ── Onboarding bilgi kartı — artık normal akışta, canvas üzerine
+   bindirilmiyor. Board'la görsel rekabete girmesin diye sade/ikincil. ── */
+.s01-intro { width: 100%; }
 .s01-intro[hidden] { display: none; }
 .s01-intro-card {
-  background: var(--glass); backdrop-filter: blur(14px);
+  background: rgba(255, 255, 255, .03);
   border: 1px solid var(--gborder); border-radius: 12px;
-  padding: .9rem 1.1rem; box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
-  display: flex; flex-direction: column; gap: .65rem; align-items: flex-start;
+  padding: 1rem 1.1rem;
+  display: flex; flex-direction: column; gap: .8rem; align-items: flex-end;
   opacity: 1; transform: translateY(0) scale(1);
   transition: opacity .22s ease, transform .22s ease;
 }
-.s01-intro.s01-closing .s01-intro-card { opacity: 0; transform: translateY(-8px) scale(.96); }
-.s01-intro-card p { margin: 0; font-size: .88rem; line-height: 1.55; color: var(--text); }
-.s01-confirm-btn {
-  align-self: flex-end; padding: .45rem 1rem; border-radius: 7px;
-  border: 1px solid var(--gold); background: var(--gold); color: var(--dark);
-  font-size: .78rem; font-weight: 700; cursor: pointer; transition: filter .15s;
-  font-family: inherit;
-}
-.s01-confirm-btn:hover { filter: brightness(1.08); }
-.s01-confirm-btn:focus-visible, .s01-card:focus-visible, .s01-continue-btn:focus-visible {
-  outline: 2px solid var(--gold2); outline-offset: 2px;
-}
+.s01-intro.s01-closing .s01-intro-card { opacity: 0; transform: translateY(-6px) scale(.97); }
+.s01-intro-card p { margin: 0; align-self: flex-start; font-size: .86rem; line-height: 1.6; color: var(--text); }
 @media (prefers-reduced-motion: reduce) {
   .s01-intro-card, .s01-intro.s01-closing .s01-intro-card { transition: none; }
 }
 
-/* ── Keşif paneli ── */
-.s01-explore {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 25;
-  max-width: 460px; margin: 0 auto;
-  background: var(--glass); backdrop-filter: blur(16px);
-  border: 1px solid var(--gborder); border-bottom: none;
-  border-radius: 14px 14px 0 0;
-  padding: 1rem 1.1rem calc(1rem + env(safe-area-inset-bottom, 0px));
-  display: flex; flex-direction: column; gap: .65rem;
+/* ── Tick onay kontrolü — metin düğmesi DEĞİL, dairesel bir ikon
+   düğmesi. Erişilebilir adı aria-label ile taşınır (görünür metin
+   YOK); hover/focus'ta küçük bir "Onayla" ipucu belirir. ── */
+.s01-tick-wrap { position: relative; display: inline-flex; }
+.s01-tick {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid var(--gborder); background: rgba(200, 168, 75, .08);
+  color: var(--gold); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .16s ease, border-color .16s ease, transform .16s ease;
+  padding: 0;
 }
+.s01-tick:hover { border-color: var(--gold); background: rgba(200, 168, 75, .16); }
+.s01-tick-icon { width: 20px; height: 20px; }
+.s01-tick-icon path {
+  fill: none; stroke: currentColor; stroke-width: 2.4;
+  stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 20; stroke-dashoffset: 0;
+}
+.s01-tick.s01-confirmed {
+  border-color: var(--green); background: rgba(62, 207, 128, .16); color: var(--green);
+  transform: scale(1.08);
+}
+.s01-tick-tip {
+  position: absolute; top: 50%; right: calc(100% + 8px); transform: translateY(-50%) translateX(4px);
+  background: var(--glass); border: 1px solid var(--gborder); border-radius: 6px;
+  padding: .25rem .55rem; font-size: .68rem; color: var(--text); white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity .14s ease, transform .14s ease;
+}
+.s01-tick:hover + .s01-tick-tip,
+.s01-tick:focus-visible + .s01-tick-tip {
+  opacity: 1; transform: translateY(-50%) translateX(0);
+}
+.s01-tick:focus-visible, .s01-card:focus-visible, .s01-continue-btn:focus-visible {
+  outline: 2px solid var(--gold2); outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .s01-tick { transition: none; }
+  .s01-tick.s01-confirmed { transform: none; }
+  .s01-tick-tip { transition: none; }
+}
+
+/* ── Keşif paneli — aynı bilgi bölgesinde, intro kartının yerini alır ── */
+.s01-explore { width: 100%; display: flex; flex-direction: column; gap: .65rem; }
 .s01-explore[hidden] { display: none; }
 .s01-label { font-size: .82rem; font-weight: 600; color: var(--text); }
 .s01-cards { display: flex; gap: .5rem; }
@@ -106,6 +146,9 @@ body {
 .s01-grid { display: block; margin: .2rem auto .1rem; opacity: .55; }
 .s01-check { position: absolute; top: 3px; right: 4px; font-size: .62rem; color: var(--green); opacity: 0; transform: scale(.6); transition: opacity .18s, transform .18s; }
 .s01-card.seen .s01-check { opacity: 1; transform: scale(1); }
+@media (prefers-reduced-motion: reduce) {
+  .s01-card, .s01-check { transition: none; }
+}
 .s01-desc {
   font-size: .74rem; color: var(--muted); line-height: 1.55; padding: .35rem .55rem;
   background: rgba(200, 168, 75, .05); border-radius: 4px; border-left: 2px solid var(--gborder);
@@ -146,10 +189,23 @@ body {
 #ls-error.show { display: flex; }
 #ls-error p { color: var(--muted); font-size: .85rem; max-width: 360px; }
 
-@media (max-width: 640px) {
-  .s01-intro { top: calc(env(safe-area-inset-top, 0px) + 52px); width: calc(100vw - 1.5rem); }
-  .s01-intro-card { padding: .75rem .9rem; }
-  .s01-intro-card p { font-size: .8rem; }
+/* ── Dar viewport (tablet/mobil): board üstte SABİT yükseklikte,
+   bilgi alanı altta kalan-alanı-doldurur. Board'un yüksekliği
+   #ls-info-region'daki içerik DEĞİŞTİĞİNDE bile SABİT kalır — bu
+   yüzden kart açılıp kapanırken board zıplamaz. Eşik (768px) mevcut
+   styles/learning-ui.css'in tablet kırılımıyla TUTARLI — cihaz
+   modeline göre değil, düzenin iki sütuna rahatça sığıp sığmadığına
+   göre seçildi. ── */
+@media (max-width: 768px) {
+  #ls-layout { flex-direction: column; }
+  #ls-board-region { flex: 0 0 52vh; }
+  #ls-info-region {
+    flex: 1 1 auto;
+    border-left: none; border-top: 1px solid var(--gborder);
+    padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    justify-content: flex-start;
+  }
   .s01-continue-btn { width: 100%; align-self: stretch; }
-  .s01-explore { border-radius: 12px 12px 0 0; }
+  .s01-tick-tip { top: calc(100% + 8px); right: auto; left: 50%; transform: translateX(-50%) translateY(-4px); }
+  .s01-tick:hover + .s01-tick-tip, .s01-tick:focus-visible + .s01-tick-tip { transform: translateX(-50%) translateY(0); }
 }
