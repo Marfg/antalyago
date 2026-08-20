@@ -1,0 +1,155 @@
+/**
+ * styles/learning-scenes.css
+ *
+ * Yeni sahne tabanlı öğrenme kabuğunun stil dosyası. ogren-3d.html'in
+ * bespoke koyu/altın renk paletiyle (--gold/--dark/--glass/--gborder)
+ * TUTARLI ama kopyası DEĞİL — yalnız bu sayfanın ihtiyacı olan minimal
+ * sahne yüzeyi için yazıldı.
+ */
+
+:root {
+  --gold: #c8a84b;
+  --gold2: #e0c060;
+  --dark: #08080e;
+  --glass: rgba(10, 10, 18, .88);
+  --gborder: rgba(200, 168, 75, .22);
+  --text: #e8e4de;
+  --muted: rgba(232, 228, 222, .5);
+  --green: #3ecf80;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+body {
+  background: var(--dark); color: var(--text);
+  font-family: 'Segoe UI', 'Noto Sans', sans-serif;
+}
+
+#ls-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+#ls-topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .7rem 1rem; pointer-events: none;
+}
+#ls-topbar a {
+  pointer-events: auto; color: var(--text); text-decoration: none;
+  background: var(--glass); border: 1px solid var(--gborder); border-radius: 8px;
+  padding: .4rem .8rem; font-size: .8rem; backdrop-filter: blur(10px);
+}
+#ls-topbar a:hover { border-color: var(--gold); }
+
+#ls-scene-host {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; align-items: flex-end; justify-content: center;
+  pointer-events: none;
+}
+#ls-scene-host > * { pointer-events: auto; }
+
+.s01-root { width: 100%; height: 100%; position: relative; }
+
+/* ── Onboarding bilgi kartı ── */
+.s01-intro {
+  position: fixed; top: calc(env(safe-area-inset-top, 0px) + 72px); left: 50%;
+  transform: translateX(-50%); z-index: 30;
+  width: min(440px, calc(100vw - 2rem));
+  display: flex; justify-content: center;
+}
+.s01-intro[hidden] { display: none; }
+.s01-intro-card {
+  background: var(--glass); backdrop-filter: blur(14px);
+  border: 1px solid var(--gborder); border-radius: 12px;
+  padding: .9rem 1.1rem; box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
+  display: flex; flex-direction: column; gap: .65rem; align-items: flex-start;
+  opacity: 1; transform: translateY(0) scale(1);
+  transition: opacity .22s ease, transform .22s ease;
+}
+.s01-intro.s01-closing .s01-intro-card { opacity: 0; transform: translateY(-8px) scale(.96); }
+.s01-intro-card p { margin: 0; font-size: .88rem; line-height: 1.55; color: var(--text); }
+.s01-confirm-btn {
+  align-self: flex-end; padding: .45rem 1rem; border-radius: 7px;
+  border: 1px solid var(--gold); background: var(--gold); color: var(--dark);
+  font-size: .78rem; font-weight: 700; cursor: pointer; transition: filter .15s;
+  font-family: inherit;
+}
+.s01-confirm-btn:hover { filter: brightness(1.08); }
+.s01-confirm-btn:focus-visible, .s01-card:focus-visible, .s01-continue-btn:focus-visible {
+  outline: 2px solid var(--gold2); outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .s01-intro-card, .s01-intro.s01-closing .s01-intro-card { transition: none; }
+}
+
+/* ── Keşif paneli ── */
+.s01-explore {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 25;
+  max-width: 460px; margin: 0 auto;
+  background: var(--glass); backdrop-filter: blur(16px);
+  border: 1px solid var(--gborder); border-bottom: none;
+  border-radius: 14px 14px 0 0;
+  padding: 1rem 1.1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: .65rem;
+}
+.s01-explore[hidden] { display: none; }
+.s01-label { font-size: .82rem; font-weight: 600; color: var(--text); }
+.s01-cards { display: flex; gap: .5rem; }
+.s01-card {
+  flex: 1; padding: .6rem .3rem; border: 1px solid var(--gborder); border-radius: 8px;
+  background: transparent; color: var(--muted); font-size: .74rem; font-weight: 600;
+  cursor: pointer; text-align: center; transition: all .18s;
+  font-family: inherit; line-height: 1.5; position: relative; min-height: 44px;
+}
+.s01-card:hover { border-color: var(--gold); color: var(--text); }
+.s01-card.active { background: rgba(200, 168, 75, .14); border-color: var(--gold); color: var(--gold); box-shadow: 0 0 10px rgba(200, 168, 75, .15); }
+.s01-card.next-hint:not(.active) { border-color: rgba(200, 168, 75, .45); }
+.s01-sub { display: block; font-size: .62rem; font-weight: 400; opacity: .75; }
+.s01-grid { display: block; margin: .2rem auto .1rem; opacity: .55; }
+.s01-check { position: absolute; top: 3px; right: 4px; font-size: .62rem; color: var(--green); opacity: 0; transform: scale(.6); transition: opacity .18s, transform .18s; }
+.s01-card.seen .s01-check { opacity: 1; transform: scale(1); }
+.s01-desc {
+  font-size: .74rem; color: var(--muted); line-height: 1.55; padding: .35rem .55rem;
+  background: rgba(200, 168, 75, .05); border-radius: 4px; border-left: 2px solid var(--gborder);
+}
+.s01-progress { display: flex; align-items: center; gap: .5rem; font-size: .72rem; color: var(--muted); }
+.s01-dots { display: inline-flex; gap: .3rem; }
+.s01-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gborder); transition: background .18s; }
+.s01-dot.done { background: var(--green); }
+.s01-continue-wrap { display: flex; flex-direction: column; gap: .35rem; }
+.s01-continue-reason { margin: 0; font-size: .68rem; color: var(--muted); line-height: 1.4; }
+.s01-continue-reason.success { color: var(--green); font-weight: 600; }
+.s01-continue-btn {
+  align-self: flex-start; padding: .55rem 1.2rem; border-radius: 8px; min-height: 44px;
+  border: 1px solid var(--gborder); background: rgba(200, 168, 75, .1); color: var(--muted);
+  font-size: .8rem; font-weight: 700; cursor: pointer; transition: all .18s; font-family: inherit;
+}
+.s01-continue-btn:disabled { cursor: default; opacity: .5; }
+.s01-continue-btn:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--dark); }
+.s01-continue-btn:not(:disabled):hover { filter: brightness(1.08); }
+
+/* ── Sahne bitti / sıradaki sahne hazırlanıyor ── */
+#ls-final {
+  position: fixed; inset: 0; z-index: 40; display: none;
+  align-items: center; justify-content: center; text-align: center;
+  background: rgba(8, 8, 14, .92); backdrop-filter: blur(10px);
+  flex-direction: column; gap: .8rem; padding: 2rem;
+}
+#ls-final.show { display: flex; }
+#ls-final h2 { font-family: 'Noto Serif', serif; color: var(--gold); margin: 0; font-size: 1.3rem; }
+#ls-final p { color: var(--muted); margin: 0; max-width: 380px; font-size: .88rem; line-height: 1.6; }
+
+/* ── Hata / bilinmeyen sahne ── */
+#ls-error {
+  position: fixed; inset: 0; z-index: 50; display: none;
+  align-items: center; justify-content: center; text-align: center;
+  background: var(--dark); flex-direction: column; gap: .6rem; padding: 2rem;
+}
+#ls-error.show { display: flex; }
+#ls-error p { color: var(--muted); font-size: .85rem; max-width: 360px; }
+
+@media (max-width: 640px) {
+  .s01-intro { top: calc(env(safe-area-inset-top, 0px) + 52px); width: calc(100vw - 1.5rem); }
+  .s01-intro-card { padding: .75rem .9rem; }
+  .s01-intro-card p { font-size: .8rem; }
+  .s01-continue-btn { width: 100%; align-self: stretch; }
+  .s01-explore { border-radius: 12px 12px 0 0; }
+}

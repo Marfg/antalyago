@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Antalya GO — Öğrenme Sahneleri</title>
+<link rel="stylesheet" href="styles/learning-scenes.css" />
+</head>
+<body>
+<canvas id="ls-canvas" aria-hidden="true"></canvas>
+
+<div id="ls-topbar">
+  <a href="index.html">← Ana</a>
+</div>
+
+<!-- Sahne modülleri kendi UI'larını buraya kurar (context.container) -->
+<div id="ls-scene-host" aria-live="polite"></div>
+
+<div id="ls-final" role="status">
+  <h2>Tahtaları tanıdın.</h2>
+  <p id="ls-final-text">Sıradaki sahne hazırlanıyor.</p>
+</div>
+
+<div id="ls-error" role="alert">
+  <h2>Sahne yüklenemedi</h2>
+  <p id="ls-error-text"></p>
+</div>
+
+<script type="module">
+import { createSceneRuntime } from './core/sceneRuntime.js';
+import { createSceneRegistry } from './scenes/sceneRegistry.js';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js';
+import { EventLog } from './core/eventLog.js';
+
+/* ── Event log — ogren-3d.html/teacher-studio.html İLE AYNI anahtar ────
+   Sahne event'leri Teacher Studio'nun MEVCUT Event Log panelinde
+   görünsün diye paylaşılan 'go_teacher_event_log_v1' anahtarına yazılır.
+   Studio ayrı bir sekmede aynı anahtara yazabileceği için, her ekleme
+   ÖNCESİ storage'dan taze okunur (v0.7'de kurulan "resync" deseniyle
+   AYNI) — yoksa bu sayfanın bir yazması Studio'nun az önce eklediği bir
+   event'i sessizce silebilir. */
+const TEACHER_LOG_KEY = 'go_teacher_event_log_v1';
+function readAllEvents() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TEACHER_LOG_KEY) || '[]');
+    return Array.isArray(raw) ? raw : [];
+  } catch { return []; }
+}
+function appendEvent(partial) {
+  const log = new EventLog();
+  log.restore(readAllEvents());
+  log.append(partial);
+  try { localStorage.setItem(TEACHER_LOG_KEY, JSON.stringify(log.getAll().slice(-500))); } catch {}
+}
+
+const canvas = document.getElementById('ls-canvas');
+const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
+const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19 });
+
+const registry = createSceneRegistry([scene01BoardIntro]);
+
+const sceneHost = document.getElementById('ls-scene-host');
+const finalEl = document.getElementById('ls-final');
+const errorEl = document.getElementById('ls-error');
+
+const runtime = createSceneRuntime({
+  registry,
+  progressAdapter: sceneProgressAdapter,
+  emitEvent: appendEvent,
+  contextExtras: () => ({ container: sceneHost, boardAdapter }),
+});
+
+function showFinalState() {
+  errorEl.classList.remove('show');
+  finalEl.classList.add('show');
+}
+function showErrorState(message) {
+  finalEl.classList.remove('show');
+  document.getElementById('ls-error-text').textContent = message;
+  errorEl.classList.add('show');
+}
+
+/* ── Bootstrap ──────────────────────────────────────────────────────
+   Mevcut ürün sözleşmesiyle tutarlı: bir sahne zaten tamamlanmışsa VE
+   registry'de bir sonraki sahne yoksa, tekrar oynatmak yerine doğrudan
+   güvenli "tamamlandı" durumu gösterilir (ogren-3d.html'in "ilk
+   TAMAMLANMAMIŞ dersi aç" yaklaşımıyla aynı ruh). */
+function boot() {
+  if (!registry.size) { showErrorState('Kayıtlı bir sahne bulunamadı.'); return; }
+  const firstScene = registry.list()[0];
+  const progress = sceneProgressAdapter.load();
+  const firstDone = progress.completedSceneIds.includes(firstScene.id);
+  const hasNext = firstDone && !!registry.next(firstScene.id);
+
+  if (firstDone && !hasNext) { showFinalState(); return; }
+
+  const result = runtime.start(firstScene.id);
+  if (!result.ok) { showErrorState('Bu sahne şu anda başlatılamıyor.'); return; }
+}
+
+/* Sahne modülü "sıradaki sahne yok" bilgisini bir DOM event'iyle iletir
+   (context.requestComplete()'in dönüşünden — bkz. scene01BoardIntro.js) —
+   bu sayfa bunu dinleyip final durumu gösterir; kendisi hiçbir zaman
+   ogren-3d.html'e otomatik YÖNLENDİRMEZ. */
+sceneHost.addEventListener('scene:all-complete', () => showFinalState());
+
+boot();
+</script>
+</body>
+</html>

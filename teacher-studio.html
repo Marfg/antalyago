@@ -136,6 +136,11 @@
             <p class="empty">Bir ders, sonra bir adım seç.</p>
           </div>
         </div>
+        <div class="card" style="margin-top:.8rem;">
+          <h3>Sahneler (Scene Runtime)</h3>
+          <p class="empty">Yeni sahne tabanlı öğrenme deneyiminin (learning-scenes.html) curriculumRef ile ilişkilendirdiği sahneler.</p>
+          <table class="studio-table" id="curriculum-scene-table"></table>
+        </div>
       </section>
 
       <!-- ═══ RAG CONTENT ═══ -->
@@ -179,7 +184,11 @@
 
         <h3>Retrieval Fallback Coverage (l1/l2/l3 interaktif adımlar)</h3>
         <p class="empty">Her adım için, o adımın concept+stage'ine "hint" amacıyla en iyi hangi fallback seviyesinde içerik bulunabiliyor.</p>
-        <table class="studio-table" id="diag-fallback-table"></table>
+        <table class="studio-table" id="diag-fallback-table" style="margin-bottom:1.2rem;"></table>
+
+        <h3>Scene Registry Diagnostics</h3>
+        <p class="empty">Duplicate/eksik scene ID, geçersiz version, registry'de olmayan next scene, eksik curriculum reference, bilinmeyen lesson, eksik mount/unmount/completion sözleşmesi.</p>
+        <table class="studio-table" id="diag-scene-table"></table>
       </section>
 
       <!-- ═══ EVENT LOG ═══ -->
@@ -193,6 +202,7 @@
             <option value="rag">RAG</option>
             <option value="teacher_tool">Teacher Tool</option>
             <option value="lesson">Lesson</option>
+            <option value="scene">Scene</option>
           </select>
           <input id="log-filter-type" type="text" placeholder="event type ara…" />
           <input id="log-filter-lesson" type="text" placeholder="lessonId…" />
@@ -217,6 +227,16 @@ import { teacherContentOverrides } from './adapters/teacherContentOverrides.js';
 import { buildRetrievalQuery, retrieveContent } from './core/contentRetriever.js';
 import { EventLog } from './core/eventLog.js';
 import { buildAiReviewEvent } from './core/teacherAssistant.js';
+import { createSceneRegistry } from './scenes/sceneRegistry.js';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js';
+
+/* v0.8 — Sahne tabanlı öğrenme deneyimi (learning-scenes.html) yalnız
+   İZLENİR: Studio sahne modüllerini asla mount ETMEZ (DOM'a dokunmaz),
+   yalnız statik metadata'larını (id/version/curriculumRef) registry
+   üzerinden okur — mevcut Curriculum/Diagnostics/Event Log panelleri
+   genişletildi, yeni bir dashboard YOK. */
+const sceneRegistry = createSceneRegistry([scene01BoardIntro]);
 
 /* ── localStorage erişimi — ogren-3d.html İLE AYNI anahtarlar ──────
    Studio kendi core mantığını YAZMAZ; yalnızca aynı adaptör deseniyle
@@ -278,7 +298,7 @@ function showTab(name) {
   saveStudioUi({ lastTab: name });
   if (name === 'overview') renderOverview();
   if (name === 'student-model') renderStudentModel();
-  if (name === 'curriculum') renderCurriculumLessons();
+  if (name === 'curriculum') { renderCurriculumLessons(); renderCurriculumScenes(); }
   if (name === 'rag-content') renderRagList();
   if (name === 'ai-decisions') renderAiDecisions();
   if (name === 'diagnostics') renderDiagnostics();
@@ -316,6 +336,8 @@ async function renderOverview() {
   const lastTool = lastEventOfType(['teacher_tool_applied', 'teacher_tool_rejected']);
   const lastRag = lastEventOfType(['content_retrieval_matched']);
   const invalidCount = TEACHING_NOTES_DIAGNOSTICS.length;
+  const lastSceneEvent = lastEventOfType(['scene_started', 'scene_intro_confirmed', 'scene_board_size_viewed', 'scene_completion_unlocked', 'scene_completed', 'scene_failed']);
+  const lastCompletedScene = sceneProgressAdapter.load().completedSceneIds.slice(-1)[0] || null;
 
   const cards = [
     ['Curriculum Lessons', CURRICULUM.flatMap(c => c.lessons).length],
@@ -328,6 +350,9 @@ async function renderOverview() {
     ['Last Teacher Tool', lastTool ? `${lastTool.payload.tool} (${lastTool.type === 'teacher_tool_applied' ? 'applied' : 'rejected'})` : 'none'],
     ['RAG Last Match', lastRag ? lastRag.payload.itemIds?.[0] || '—' : '—'],
     ['Mock Provider', 'available'],
+    ['Registered Scenes', sceneRegistry.size],
+    ['Last Scene Event', lastSceneEvent ? lastSceneEvent.type : '—'],
+    ['Last Completed Scene', lastCompletedScene || '—'],
   ];
   const grid = document.getElementById('overview-grid');
   grid.innerHTML = cards.map(([label, value]) => `<div class="card"><h3>${label}</h3><div class="value">${escapeHtml(String(value))}</div></div>`).join('');
@@ -435,6 +460,21 @@ function renderCurriculumDetail() {
     <h3 style="margin-top:.7rem;">Board Seed</h3>
     <div class="pre-box">${escapeHtml(JSON.stringify(step.board || [], null, 2))}</div>
   `;
+}
+
+function renderCurriculumScenes() {
+  const table = document.getElementById('curriculum-scene-table');
+  if (!table) return;
+  const completed = sceneProgressAdapter.load().completedSceneIds;
+  const rows = sceneRegistry.list().map(scene => `
+    <tr>
+      <td>${scene.id}</td>
+      <td>${scene.curriculumRef?.lessonId ?? '—'}</td>
+      <td>${scene.curriculumRef?.concept ?? '—'}</td>
+      <td>v${scene.version}</td>
+      <td>${completed.includes(scene.id) ? '<span class="pill ok">tamamlandı</span>' : '<span class="pill muted">—</span>'}</td>
+    </tr>`).join('');
+  table.innerHTML = `<tr><th>Scene ID</th><th>Lesson</th><th>Concept</th><th>Version</th><th>Durum</th></tr>${rows || '<tr><td colspan="5" class="empty">Kayıtlı sahne yok.</td></tr>'}`;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -688,6 +728,30 @@ function renderDiagnostics() {
     </tr>`).join('');
   document.getElementById('diag-fallback-table').innerHTML =
     `<tr><th>Step</th><th>Concept</th><th>Stage</th><th>Exact content available</th><th>Fallback level</th></tr>${fbRowsHtml}`;
+
+  renderSceneDiagnostics();
+}
+
+// Scene Registry Diagnostics — registry KAYIT SIRASINDA topladığı
+// sorunları (duplicate/eksik ID, geçersiz version, bilinmeyen next scene,
+// eksik mount/unmount/completion sözleşmesi) doğrudan raporlar; ikinci
+// bir validation YAZILMADI (bkz. scenes/sceneRegistry.js validateSceneDefinition).
+function renderSceneDiagnostics() {
+  const table = document.getElementById('diag-scene-table');
+  if (!table) return;
+  const rows = sceneRegistry.issues.map(i => `<tr><td>${i.id ?? '(no id)'}</td><td>${i.reasons.join(', ')}</td></tr>`);
+
+  // Registry şekli geçerli olsa bile, curriculumRef.lessonId GERÇEKTEN
+  // müfredatta var mı? — bu çapraz-kontrol yalnız Studio'da yapılır
+  // (scenes/sceneRegistry.js curriculum.js'e bağımlı KALMASIN diye).
+  const allLessonIds = new Set(ALL_LESSONS.map(x => x.lesson.id));
+  for (const scene of sceneRegistry.list()) {
+    const lessonId = scene.curriculumRef?.lessonId;
+    if (lessonId && !allLessonIds.has(lessonId)) {
+      rows.push(`<tr><td>${scene.id}</td><td>UNKNOWN_CURRICULUM_LESSON:${lessonId}</td></tr>`);
+    }
+  }
+  table.innerHTML = `<tr><th>Scene ID</th><th>Reasons</th></tr>${rows.join('') || '<tr><td colspan="2" class="empty">Tüm sahneler geçerli ✓</td></tr>'}`;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -699,6 +763,7 @@ const CATEGORY_PREFIXES = {
   rag: ['content_retrieval_', 'teacher_content_override_'],
   teacher_tool: ['teacher_tool_'],
   lesson: ['lesson_'],
+  scene: ['scene_'],
 };
 function matchesCategory(type, category) {
   if (!category) return true;
