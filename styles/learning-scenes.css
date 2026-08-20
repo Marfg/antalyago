@@ -49,10 +49,11 @@ body {
   flex: 0 0 clamp(320px, 30vw, 420px);
   min-width: 0;
   display: flex; flex-direction: column; justify-content: center;
-  padding: 1.4rem 1.3rem;
+  padding: 1.4rem 1.6rem;
   overflow-y: auto;
+  /* Board'dan AYRIŞMA çizgiyle değil, yalnız bu ince yüzey-tonu
+     farkı ve boşlukla sağlanır — bkz. dosya başı layout notu. */
   background: var(--glass); backdrop-filter: blur(16px);
-  border-left: 1px solid var(--gborder);
 }
 
 #ls-topbar {
@@ -169,6 +170,15 @@ body {
 .s01-continue-btn:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--dark); }
 .s01-continue-btn:not(:disabled):hover { filter: brightness(1.08); }
 
+/* ── Sahne #2 — sıra/ilerleme paneli. Adım kartları .s01-intro/.s01-intro-card
+   İLE AYNI stilleri paylaşır (bkz. scenes/scene02TurnsAndIntersections.js
+   buildDom); burada yalnız kart dizisinin bittiği yerde başlayan sade
+   oyun-durumu satırı için ek kurallar var. Board üzerine BİNDİRİLMEZ. ── */
+.s02-play { display: flex; flex-direction: column; gap: .7rem; width: 100%; }
+.s02-play[hidden] { display: none; }
+.s02-turn { min-height: 1.2em; font-size: .82rem; color: var(--text); }
+.s02-continue-wrap { display: flex; flex-direction: column; gap: .35rem; }
+
 /* ── Sahne bitti / sıradaki sahne hazırlanıyor ── */
 #ls-final {
   position: fixed; inset: 0; z-index: 40; display: none;
@@ -201,7 +211,6 @@ body {
   #ls-board-region { flex: 0 0 52vh; }
   #ls-info-region {
     flex: 1 1 auto;
-    border-left: none; border-top: 1px solid var(--gborder);
     padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
     justify-content: flex-start;
   }

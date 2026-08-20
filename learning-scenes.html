@@ -24,9 +24,11 @@
   <a href="index.html">← Ana</a>
 </div>
 
+<!-- Nötr, sahne-bağımsız geçiş metni — HERHANGİ bir sahne son kayıtlı
+     sahneyse burada biter. "Sahne/tamamlandı" gibi teknik dil KULLANILMAZ
+     (bkz. scene02TurnsAndIntersections.js dosya başı notu). -->
 <div id="ls-final" role="status">
-  <h2>Tahtaları tanıdın.</h2>
-  <p id="ls-final-text">Sıradaki sahne hazırlanıyor.</p>
+  <h2>Bir sonraki konu yakında burada devam edecek.</h2>
 </div>
 
 <div id="ls-error" role="alert">
@@ -38,6 +40,7 @@
 import { createSceneRuntime } from './core/sceneRuntime.js';
 import { createSceneRegistry } from './scenes/sceneRegistry.js';
 import { scene01BoardIntro } from './scenes/scene01BoardIntro.js';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js';
 import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js';
 import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js';
 import { EventLog } from './core/eventLog.js';
@@ -67,17 +70,29 @@ const canvas = document.getElementById('ls-canvas');
 const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
 const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19 });
 
-const registry = createSceneRegistry([scene01BoardIntro]);
+const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections]);
 
 const sceneHost = document.getElementById('ls-scene-host');
 const finalEl = document.getElementById('ls-final');
 const errorEl = document.getElementById('ls-error');
 
+/* Test-only hook: ?whiteMoveDelayMs=N Sahne #2'nin beyaz cevap gecikmesini
+   ezer — YALNIZ turn-loop testlerinin gerçek zamanlı 450–700ms beklemeler
+   yüzünden yavaşlamaması/deterministik bir kilit penceresi test edebilmesi
+   için (bkz. görev talimatı). Üretim davranışını DEĞİŞTİRMEZ: parametre
+   yoksa context.whiteMoveDelayMs verilmez, scene02TurnsAndIntersections.js
+   kendi varsayılanını (450–700ms aralığının ortası) kullanır. */
+const whiteMoveDelayParam = new URLSearchParams(location.search).get('whiteMoveDelayMs');
+const whiteMoveDelayOverride = whiteMoveDelayParam != null && Number.isFinite(Number(whiteMoveDelayParam)) ? Number(whiteMoveDelayParam) : null;
 const runtime = createSceneRuntime({
   registry,
   progressAdapter: sceneProgressAdapter,
   emitEvent: appendEvent,
-  contextExtras: () => ({ container: sceneHost, boardAdapter }),
+  contextExtras: () => ({
+    container: sceneHost,
+    boardAdapter,
+    ...(whiteMoveDelayOverride != null ? { whiteMoveDelayMs: whiteMoveDelayOverride } : {}),
+  }),
 });
 
 function showFinalState() {
@@ -91,20 +106,18 @@ function showErrorState(message) {
 }
 
 /* ── Bootstrap ──────────────────────────────────────────────────────
-   Mevcut ürün sözleşmesiyle tutarlı: bir sahne zaten tamamlanmışsa VE
-   registry'de bir sonraki sahne yoksa, tekrar oynatmak yerine doğrudan
-   güvenli "tamamlandı" durumu gösterilir (ogren-3d.html'in "ilk
-   TAMAMLANMAMIŞ dersi aç" yaklaşımıyla aynı ruh). */
+   ogren-3d.html'in "ilk TAMAMLANMAMIŞ dersi aç" yaklaşımıyla AYNI ruh:
+   registry sırasında ilerleyip henüz completedSceneIds'te OLMAYAN ilk
+   sahneyi başlatır. Hepsi tamamlanmışsa (kayıtlı son sahne dahil) tekrar
+   oynatmak yerine doğrudan nötr "sıradaki konu" durumu gösterilir. */
 function boot() {
   if (!registry.size) { showErrorState('Kayıtlı bir sahne bulunamadı.'); return; }
-  const firstScene = registry.list()[0];
   const progress = sceneProgressAdapter.load();
-  const firstDone = progress.completedSceneIds.includes(firstScene.id);
-  const hasNext = firstDone && !!registry.next(firstScene.id);
+  const nextIncomplete = registry.list().find(scene => !progress.completedSceneIds.includes(scene.id));
 
-  if (firstDone && !hasNext) { showFinalState(); return; }
+  if (!nextIncomplete) { showFinalState(); return; }
 
-  const result = runtime.start(firstScene.id);
+  const result = runtime.start(nextIncomplete.id);
   if (!result.ok) { showErrorState('Bu sahne şu anda başlatılamıyor.'); return; }
 }
 

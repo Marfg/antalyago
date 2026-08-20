@@ -229,6 +229,8 @@ import { EventLog } from './core/eventLog.js';
 import { buildAiReviewEvent } from './core/teacherAssistant.js';
 import { createSceneRegistry } from './scenes/sceneRegistry.js';
 import { scene01BoardIntro } from './scenes/scene01BoardIntro.js';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js';
+import { validateCandidateOrder } from './scenes/turnPolicy.js';
 import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js';
 
 /* v0.8 — Sahne tabanlı öğrenme deneyimi (learning-scenes.html) yalnız
@@ -236,7 +238,7 @@ import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js';
    yalnız statik metadata'larını (id/version/curriculumRef) registry
    üzerinden okur — mevcut Curriculum/Diagnostics/Event Log panelleri
    genişletildi, yeni bir dashboard YOK. */
-const sceneRegistry = createSceneRegistry([scene01BoardIntro]);
+const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections]);
 
 /* ── localStorage erişimi — ogren-3d.html İLE AYNI anahtarlar ──────
    Studio kendi core mantığını YAZMAZ; yalnızca aynı adaptör deseniyle
@@ -751,6 +753,14 @@ function renderSceneDiagnostics() {
       rows.push(`<tr><td>${scene.id}</td><td>UNKNOWN_CURRICULUM_LESSON:${lessonId}</td></tr>`);
     }
   }
+
+  // Sahne #2'nin deterministik beyaz aday listesi gerçek 9×9 koordinat mı? —
+  // scenes/turnPolicy.js'in saf validateCandidateOrder()'ı üzerinden.
+  const candidateCheck = validateCandidateOrder(9);
+  if (!candidateCheck.valid) {
+    rows.push(`<tr><td>${scene02TurnsAndIntersections.id}</td><td>INVALID_WHITE_CANDIDATES:${candidateCheck.reasons.join('|')}</td></tr>`);
+  }
+
   table.innerHTML = `<tr><th>Scene ID</th><th>Reasons</th></tr>${rows.join('') || '<tr><td colspan="2" class="empty">Tüm sahneler geçerli ✓</td></tr>'}`;
 }
 
