@@ -28,7 +28,12 @@
  *   board.clearLiberties();
  *   board.setMovePreview({row,col,color}); // yasal boş kesişimde yarı saydam taş silueti + ince turkuaz halka
  *   board.clearMovePreview();
- *   board.setInputEnabled(bool);       // false iken onIntersectionTap/onIntersectionHover ASLA tetiklenmez; preview'ı da temizler
+ *   board.getMovePreviewState();       // {row,col,color}|null — salt-okunur, YALNIZ test/gözlem amaçlı
+ *   board.setInputEnabled(bool);       // false iken onIntersectionTap/onIntersectionHover ASLA tetiklenmez; preview'ı da temizler.
+ *                                      // true'ya DIŞARIDAN (aynı oturumda daha önce zaten açıkken değil) geçildiğinde
+ *                                      // abone olan onIntersectionHover handler'larına `null` bildirilir (bkz. Konular
+ *                                      // paneli kapanışı) — hangi görselin gösterileceğine adaptör KARAR VERMEZ,
+ *                                      // yalnız "girdi az önce açıldı, henüz güvenilir bir hover konumu yok" bilgisini iletir.
  *   const off = board.onIntersectionTap(({row,col}) => {...});   // off() ile abone iptali
  *   const offH = board.onIntersectionHover(hitOrNull => {...});  // pointer hareket/dokunuşunda; board dışında/kilitliyken null
  *   board.destroy();                   // RAF/resize/click listener'ı + tüm durumu temizler
@@ -45,6 +50,24 @@
  * talimatı, Bölüm A/B — tam kaynak referansları dosya içinde ilgili
  * fonksiyonların üstünde belirtilmiştir). Renk/pulse'suz statik sunum bu
  * projenin kendi tercihidir; eski dosyadaki sürekli pulse BİLEREK alınmadı.
+ *
+ * v0.12 — kök neden düzeltmesi: `setInputEnabled(true)` daha önce mevcut
+ * `movePreview`'a HİÇ dokunmuyordu — bir sahne yalnız gerçek bir
+ * pointermove/pointerdown geldiğinde (onIntersectionHover üzerinden)
+ * önizleme kuruyorsa, girdi yeni açıldığı anda (ör. Sahne #3'ün intro
+ * onayından hemen sonra VEYA Konular paneli kapanışında) kullanıcı fareyi
+ * henüz oynatmamışsa board GEÇİCİ olarak silueti boş görünüyordu. Adaptör
+ * artık girdi false→true geçişinde abone olan onIntersectionHover
+ * handler'larına `null` bildirir (mevcut `hoverPoint` GÜVENİLMEZ olabilir —
+ * girdi kapalıyken güncellenmez, ör. Konular paneli açıkken imleç panel
+ * öğeleri üzerinde hareket etmiş olabilir). Bu, "hangi noktada varsayılan
+ * bir silüet gösterilsin" kararını ASLA adaptöre TAŞIMAZ (bu tamamen
+ * sahneye özgü, bkz. scenes/scene03LibertiesByPosition.js handleHover) —
+ * yalnız "girdi az önce açıldı" sinyalini iletir. Ayrıca salt-okunur
+ * `getMovePreviewState()` eklendi — YALNIZ tarayıcı testlerinin canvas-only
+ * ghost durumunu DOM/event log'a yansımadan doğrulayabilmesi için (bkz.
+ * learning-scenes.html `?exposeBoardAdapter=1` test-only hook'u, üretim
+ * davranışını DEĞİŞTİRMEZ).
  */
 
 import { CAM } from '../core/curriculum.js';
@@ -531,10 +554,32 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       movePreview = null;
     },
 
-    /** false iken onIntersectionTap/onIntersectionHover abonelerine ASLA ulaşılmaz (girdi kilidi) — preview'ı da temizler. */
+    /**
+     * Salt-okunur önizleme durumu — YALNIZ gözlem/test amaçlı, hiçbir
+     * state DEĞİŞTİRMEZ (bkz. dosya başı v0.12 notu).
+     * @returns {{row:number,col:number,color:string}|null}
+     */
+    getMovePreviewState() {
+      return movePreview ? { row: movePreview.gz, col: movePreview.gx, color: movePreview.color } : null;
+    },
+
+    /** false iken onIntersectionTap/onIntersectionHover abonelerine ASLA ulaşılmaz (girdi kilidi) — preview'ı da temizler.
+        true'ya DIŞARIDAN (false'tan) geçişte abone olan hover handler'larına `null` bildirilir (bkz. dosya başı v0.12 notu). */
     setInputEnabled(enabled) {
+      const wasEnabled = inputEnabled;
       inputEnabled = !!enabled;
-      if (!inputEnabled) movePreview = null;
+      if (!inputEnabled) {
+        movePreview = null;
+      } else if (!wasEnabled) {
+        // Devre dışıyken hoverPoint GÜNCELLENMEDİĞİ için güvenilmez
+        // olabilir (ör. Konular paneli açıkken imleç panel öğeleri
+        // üzerinde hareket etmiş olabilir, canvas hiç pointermove
+        // almamıştır) — null bildirerek abone olan sahnenin KENDİ
+        // varsayılan/temizleme mantığını çalıştırmasına izin verilir;
+        // bir sonraki GERÇEK pointermove güncel konumu zaten düzeltir.
+        hoverPoint = null;
+        notifyHover(null);
+      }
     },
     isInputEnabled() { return inputEnabled; },
 

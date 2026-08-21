@@ -43,6 +43,13 @@ const S03_ID = 'scene-03-liberties-by-position';
 // dosya başı test-hook notu). Sahne #3'ün artık HİÇBİR zamanlayıcısı yok
 // (senkron serbest keşif), bu yüzden ek bir "fast" parametresi gerekmiyor.
 const FAST_QUERY = '?whiteMoveDelayMs=0';
+// Yalnız Sahne #3'ün başlangıç taş silueti (ghost preview) testleri için —
+// learning-scenes.html'in ?exposeBoardAdapter=1 test-only hook'unu da
+// devreye sokar (window.__lsTestBoardAdapter.getMovePreview()), böylece
+// canvas-only preview durumu DOM/event log'a yansımadan gerçek tarayıcıda
+// doğrulanabilir. Parametre yoksa üretim davranışı DEĞİŞMEZ (bkz. adaptör/
+// learning-scenes.html v0.12 notları).
+const PREVIEW_QUERY = '?whiteMoveDelayMs=0&exposeBoardAdapter=1';
 
 let pass = 0, fail = 0;
 const tests = [];
@@ -928,6 +935,220 @@ addTest('C22) Studio çapraz sekmede Sahne #3 event\'lerini (zone/libertyCount) 
 
     ensure(studioErrors.length === 0, `Studio'da hata: ${studioErrors.join(' | ')}`);
     await studioPage.close();
+  } finally { await s.close(); }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   BÖLÜM D — Sahne #3 başlangıç taş silueti (v0.12 kök neden düzeltmesi)
+   Önceden önizleme YALNIZ gerçek bir pointermove/pointerdown geldiğinde
+   (handleHover üzerinden) kuruluyordu — kullanıcı fareyi hiç oynatmazsa
+   board boş görünüyordu. Artık intro onayının HEMEN ardından, hiçbir
+   pointer olayı beklenmeden, varsayılan merkez (4,4) konumunda başlangıç
+   silueti doğrudan kurulur (bkz. scenes/scene03LibertiesByPosition.js).
+   ══════════════════════════════════════════════════════════════════ */
+
+async function getMovePreview(page) {
+  return page.evaluate(() => window.__lsTestBoardAdapter?.getMovePreview() ?? null);
+}
+
+addTest('D1) intro onayından hemen sonra, hiçbir mouse hareketi olmadan başlangıç ghost preview (4,4) çiziliyor', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page); // #s03-confirm tıklanır, board'a HİÇ dokunulmaz
+    const preview = await getMovePreview(s.page);
+    ensure(preview && preview.row === 4 && preview.col === 4 && preview.color === 'black', `başlangıç preview (4,4) siyah olmalı, bulunan: ${JSON.stringify(preview)}`);
+  } finally { await s.close(); }
+});
+
+addTest('D2) başlangıç preview kurulmuşken hamle/liberty/completion event\'i YOK ve BoardState GERÇEKTEN boş (aynı noktaya tıklamak occupied reddi ÜRETMİYOR, GERÇEK 4 liberty)', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    const eventsBefore = eventsFor(await getEventLog(s.page), S03_ID).filter(e => ['scene_move_played', 'scene_liberties_shown', 'scene_completion_unlocked', 'scene_completed'].includes(e.type));
+    ensure(eventsBefore.length === 0, `preview kurulmuşken hamle/liberty/completion event'i olmamalı, bulunan: ${JSON.stringify(eventsBefore.map(e => e.type))}`);
+
+    // BoardState'in GERÇEKTEN boş olduğunun kanıtı: preview'ın gösterildiği
+    // AYNI noktaya (4,4) tıklamak "OCCUPIED" reddi ÜRETMEMELİ — üretseydi
+    // ghost'un BoardState'e sızdığı anlamına gelirdi.
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(150);
+    const eventsAfter = eventsFor(await getEventLog(s.page), S03_ID);
+    const moved = eventsAfter.find(e => e.type === 'scene_move_played');
+    ensure(!!moved && moved.payload.exampleNumber === 1, `(4,4) tıklaması GERÇEK ilk hamle olarak geçmeli (occupied reddi yok), bulunan: ${JSON.stringify(moved?.payload)}`);
+    const libShown = eventsAfter.find(e => e.type === 'scene_liberties_shown');
+    ensure(libShown?.payload.libertyCount === 4, `merkez GERÇEK 4 liberty göstermeli (preview boardState'i bozmamış), bulunan: ${libShown?.payload.libertyCount}`);
+  } finally { await s.close(); }
+});
+
+addTest('D3) başlangıç preview gösterilirken "Sonraki konu" disabled kalıyor', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    ensure(!!(await getMovePreview(s.page)), 'başlangıç preview kurulmamış (ön koşul)');
+    ensure(await s.page.locator('#s03-next').isDisabled(), '"Sonraki konu" preview gösterilirken hâlâ disabled OLMALI');
+  } finally { await s.close(); }
+});
+
+addTest('D4) pointer başka yasal kesişime gidince siluet o noktaya taşınıyor', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.move(box.x + box.width / 2 - 50, box.y + box.height / 2 - 40);
+    await s.page.waitForTimeout(120);
+    const preview = await getMovePreview(s.page);
+    ensure(preview && !(preview.row === 4 && preview.col === 4), `hover farklı bir noktaya taşınmalı (merkezde kalmamalı), bulunan: ${JSON.stringify(preview)}`);
+  } finally { await s.close(); }
+});
+
+addTest('D5) ilk gerçek tıklamada yalnız BİR hamle ve yalnız BİR örnek oluşuyor', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(150);
+    const moves = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played');
+    ensure(moves.length === 1 && moves[0].payload.exampleNumber === 1, `tam bir hamle/bir örnek olmalı, bulunan: ${JSON.stringify(moves.map(m => m.payload.exampleNumber))}`);
+  } finally { await s.close(); }
+});
+
+addTest('D6) ghost, gerçek taş ve turkuaz nefes işaretleri birbirine karışmıyor (gerçek tıklama ANINDA preview temizlenir, sonraki hover yine çalışır)', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(150);
+    const previewAfterClick = await getMovePreview(s.page);
+    ensure(previewAfterClick === null, `gerçek taş yerleşince ghost preview temizlenmeli, bulunan: ${JSON.stringify(previewAfterClick)}`);
+
+    await s.page.mouse.move(box.x + box.width / 2 - 50, box.y + box.height / 2 - 40);
+    await s.page.waitForTimeout(120);
+    const previewAfterHover = await getMovePreview(s.page);
+    ensure(!!previewAfterHover, 'ilk hamleden SONRA da hover ile yeni bir ghost preview kurulabilmeli (karışmadan)');
+  } finally { await s.close(); }
+});
+
+addTest('D7) Konular paneli açıldığında preview kayboluyor', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    ensure(!!(await getMovePreview(s.page)), 'başlangıç preview kurulmamış (ön koşul)');
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    const preview = await getMovePreview(s.page);
+    ensure(preview === null, `Konular paneli açıkken preview null olmalı, bulunan: ${JSON.stringify(preview)}`);
+  } finally { await s.close(); }
+});
+
+addTest('D8) panel kapanınca ilk hamle yapılmadıysa başlangıç preview (4,4) geri geliyor', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(150);
+    const preview = await getMovePreview(s.page);
+    ensure(preview && preview.row === 4 && preview.col === 4, `panel kapanınca (ilk hamle yok) varsayılan merkez preview dönmeli, bulunan: ${JSON.stringify(preview)}`);
+    ensure(await s.page.locator('#s03-next').isDisabled(), 'panel kapanınca "Sonraki konu" hâlâ disabled (ilk hamle yapılmadı)');
+  } finally { await s.close(); }
+});
+
+addTest('D9) ilk hamleden sonra panel aç/kapat merkezde SAHTE preview oluşturmuyor', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(150);
+    ensure(!(await s.page.locator('#s03-next').isDisabled()), 'ilk hamleden sonra devam kontrolü aktif olmalı (ön koşul)');
+
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(150);
+    const preview = await getMovePreview(s.page);
+    ensure(preview === null, `ilk hamleden SONRA panel aç/kapat merkezde sahte preview OLUŞTURMAMALI, bulunan: ${JSON.stringify(preview)}`);
+  } finally { await s.close(); }
+});
+
+addTest('D10) replay/unmount/sahne geçişinde stale preview kalmıyor', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    ensure(!!(await getMovePreview(s.page)), 'başlangıç preview kurulmamış (ön koşul)');
+
+    // "Bu konuyu tekrar et" → GERÇEK unmount + yeniden mount (intro'ya döner,
+    // yeniden onaylanana kadar preview kurulmamalı).
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(150);
+    await s.page.click('#s03-next');
+    await s.page.waitForTimeout(200);
+    await s.page.click('.ls-topic-end [data-action="replay"]');
+    await s.page.waitForTimeout(250);
+    ensure(await s.page.locator('#s03-intro').isVisible(), 'replay sonrası intro state\'ine dönülmedi');
+    const previewAfterReplay = await getMovePreview(s.page);
+    ensure(previewAfterReplay === null, `replay (unmount+mount) hemen sonrası, intro onaylanmadan preview null olmalı, bulunan: ${JSON.stringify(previewAfterReplay)}`);
+
+    // Şimdi başka bir sahneye GEÇİŞ (Konular → Sahne #2) — stale preview sızmamalı.
+    await confirmS03Intro(s.page);
+    ensure(!!(await getMovePreview(s.page)), 'yeniden onay sonrası preview tekrar kurulmalı (ön koşul)');
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    // Aktif sahnenin (Sahne #3) kendi öğesine tıklamak runtime'da NO-OP'tur
+    // (aynı sahne için start() ikinci kez mount etmez) — GERÇEK bir sahne
+    // geçişi görmek için tamamlanmış, AKTİF-OLMAYAN ilk öğeyi (Sahne #1)
+    // seçilir.
+    await s.page.locator('.ls-topic-item').nth(0).click();
+    await s.page.waitForTimeout(250);
+    const previewAfterSceneSwitch = await getMovePreview(s.page);
+    ensure(previewAfterSceneSwitch === null, `başka sahneye geçince stale preview sızmamalı, bulunan: ${JSON.stringify(previewAfterSceneSwitch)}`);
+  } finally { await s.close(); }
+});
+
+addTest('D11) mobil tek dokunuş hâlâ tek hamle üretiyor (başlangıç önizlemesi eklenmesinden ETKİLENMEZ)', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, query: PREVIEW_QUERY, hasTouch: true });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const before = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played').length;
+    await s.page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(150);
+    const after = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played').length;
+    ensure(after === before + 1, `tek dokunuşla tam bir hamle yerleşmeli, bulunan: önce ${before} sonra ${after}`);
+  } finally { await s.close(); }
+});
+
+addTest('D12) başlangıç silueti akışı boyunca konsolda/pageerror\'da hata yok', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.move(box.x + box.width / 2 - 50, box.y + box.height / 2 - 40);
+    await s.page.waitForTimeout(80);
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(100);
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(100);
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(150);
+    ensure(s.consoleErrors.length === 0, `hata bulundu: ${s.consoleErrors.join(' | ')}`);
   } finally { await s.close(); }
 });
 

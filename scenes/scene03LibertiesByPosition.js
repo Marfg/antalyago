@@ -36,6 +36,24 @@
  * talimatı Bölüm A) — yalnız kullanıcı "Sonraki konu"ya BASINCA mount
  * edilir; ilk hamleden hemen sonra DEĞİL (kullanıcı isterse durmadan
  * başka konumları incelemeye devam edebilsin diye).
+ *
+ * v0.12 — kök neden düzeltmesi (bkz. görev talimatı): önizleme yalnızca
+ * `handleHover()` GERÇEK bir pointermove/pointerdown geldiğinde
+ * `setMovePreview()` çağırdığı için kuruluyordu — kullanıcı fareyi hiç
+ * oynatmazsa (veya Konular paneli kapanışı gibi DIŞARIDAN bir input-
+ * enable geldiğinde) board silüetsiz kalıyordu. Artık:
+ *   - Intro onayının HEMEN ardından (`doAdvance`), hiçbir pointer olayı
+ *     BEKLENMEDEN, varsayılan merkez `DEFAULT_PREVIEW` (temiz 9×9'da
+ *     (4,4)) konumunda başlangıç silueti doğrudan kurulur.
+ *   - `handleHover(context, null)` — yani pointer board dışına çıktığında
+ *     veya adapters/sceneBoardAdapter.js'in `setInputEnabled(true)`
+ *     yeniden-bildirimi tetiklendiğinde — İLK hamle henüz yapılmamışsa
+ *     AYNI varsayılan merkeze GÜVENLE geri döner; ilk hamleden SONRA ise
+ *     zorla merkez önizlemesi OLUŞTURMAZ (mevcut örnek taş/nefes işaretleri
+ *     sakin kalsın diye), yalnız önizlemeyi temizler.
+ * Bu başlangıç silueti YALNIZ bu sahneye özgüdür — adapters/
+ * sceneBoardAdapter.js hiçbir sahneye otomatik varsayılan taş GÖSTERMEZ,
+ * yalnız "girdi az önce açıldı" sinyalini iletir (bkz. adaptör v0.12 notu).
  */
 
 import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './boardZones.js';
@@ -53,6 +71,9 @@ const SECONDARY_HINT = 'İstersen başka bir kesişimi de deneyebilirsin.';
 const CONTINUE_DISABLED_HINT = 'Devam etmek için tahtada bir kesişime taş yerleştir.';
 const ZONE_SUBJECT = { corner: 'Köşedeki', edge: 'Kenardaki', interior: 'Tahtanın içindeki' };
 const SUMMARY_TEXT = 'Taşın konumu, sahip olduğu nefes sayısını değiştirir.';
+// Temiz 9×9 tahtanın merkezi — ilk hamleden önceki varsayılan başlangıç
+// silueti burada gösterilir (bkz. görev talimatı, dosya başı v0.12 notu).
+const DEFAULT_PREVIEW = { row: 4, col: 4 };
 
 function resultText(zone, count) {
   return `${ZONE_SUBJECT[zone]} taşın ${count} nefes noktası var.`;
@@ -103,8 +124,22 @@ function unsubscribeBoardListeners() {
 }
 
 function handleHover(context, hit) {
-  if (topicEnded || state === STATE.INTRO || !hit) {
+  if (topicEnded || state === STATE.INTRO) {
     context.boardAdapter.clearMovePreview();
+    return;
+  }
+  if (!hit) {
+    // Pointer board dışına çıktı VEYA girdi dışarıdan yeniden açıldı (bkz.
+    // adapters/sceneBoardAdapter.js setInputEnabled v0.12 notu — Konular
+    // paneli kapanışı BUNU tetikler). İlk hamle henüz yapılmadıysa board
+    // ASLA silüetsiz kalmasın diye varsayılan merkeze güvenle dönülür;
+    // ilk hamleden SONRA ise mevcut örnek taş/nefes işaretleri sakin
+    // kalsın diye ZORLA merkez önizlemesi OLUŞTURULMAZ.
+    if (!hasPlacedFirst) {
+      context.boardAdapter.setMovePreview({ row: DEFAULT_PREVIEW.row, col: DEFAULT_PREVIEW.col, color: 'black' });
+    } else {
+      context.boardAdapter.clearMovePreview();
+    }
     return;
   }
   if (!context.boardAdapter.isLegalMove({ row: hit.row, col: hit.col, color: 'black' })) {
@@ -240,6 +275,11 @@ export const scene03LibertiesByPosition = {
         context.boardAdapter.setInputEnabled(true);
         unsubscribeTap = context.boardAdapter.onIntersectionTap(hit => handleTap(context, hit));
         unsubscribeHover = context.boardAdapter.onIntersectionHover(hit => handleHover(context, hit));
+        // Kök neden düzeltmesi: kullanıcı fareyi HİÇ oynatmasa bile board
+        // etkileşime açılır açılmaz varsayılan merkez silueti hemen
+        // görünür olmalı — önceden yalnız gerçek bir pointermove/hover
+        // geldiğinde (yukarıdaki handleHover üzerinden) kuruluyordu.
+        context.boardAdapter.setMovePreview({ row: DEFAULT_PREVIEW.row, col: DEFAULT_PREVIEW.col, color: 'black' });
         render();
       };
       if (reduceMotion) { doAdvance(); return; }
@@ -252,7 +292,11 @@ export const scene03LibertiesByPosition = {
     render();
   },
 
-  unmount() {
+  unmount(context) {
+    // Savunma amaçlı: replay/unmount/sahne geçişi sırasında stale bir
+    // önizleme bir sonraki mount'un ilk setInputEnabled(false) çağrısını
+    // bekleyecek kadar bile GECİKMEDEN temizlenir (bkz. görev talimatı).
+    context.boardAdapter.clearMovePreview();
     cleanupFns.forEach(fn => fn());
     cleanupFns = [];
     unsubscribeBoardListeners();

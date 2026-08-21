@@ -81,6 +81,16 @@ const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersec
 
 const searchParams = new URLSearchParams(location.search);
 
+/* Test-only hook: ?exposeBoardAdapter=1 boardAdapter'ın SEÇİLİ, salt-okunur
+   bir durum sorgusunu (yalnız getMovePreviewState) window'a bağlar — YALNIZ
+   Sahne #3'ün başlangıç taş silueti gibi canvas-only ghost preview
+   durumunu gerçek tarayıcı testlerinde DOM/event log'a yansımadan
+   doğrulayabilmek için (bkz. görev talimatı). Parametre yoksa hiçbir
+   global değişken OLUŞTURULMAZ — üretim davranışı ETKİLENMEZ. */
+if (searchParams.get('exposeBoardAdapter') === '1') {
+  window.__lsTestBoardAdapter = { getMovePreview: () => boardAdapter.getMovePreviewState() };
+}
+
 /* Test-only hook: ?forceMountError=<sceneId> o TEK sahnenin mount()'unu
    kasıtlı olarak fırlatan bir sürümle DEĞİŞTİRİR — YALNIZ Bölüm C'nin
    "mount hatası → #ls-error + Yeniden yükle" kurtarma UI'ını gerçek
