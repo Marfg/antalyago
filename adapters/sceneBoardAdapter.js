@@ -68,6 +68,16 @@
  * ghost durumunu DOM/event log'a yansımadan doğrulayabilmesi için (bkz.
  * learning-scenes.html `?exposeBoardAdapter=1` test-only hook'u, üretim
  * davranışını DEĞİŞTİRMEZ).
+ *
+ * v0.13 — canlı kullanıcı testi "state var ama görünmüyor" sorununu ortaya
+ * çıkardı: `drawMovePreview()`'in yarıçapı ÖLÇÜLDÜĞÜNDE gerçek taşla
+ * neredeyse birebirdi (~%103) — asıl sorun DÜŞÜK KONTRASTTI (alpha=0.30,
+ * bu tahtanın sıcak/açık ahşap zeminine karşı piksel örneklemesiyle
+ * ölçülen sapma gerçek taşınkinin yalnız ~%30'u). Alpha 0.42'ye yükseltildi
+ * (bkz. drawMovePreview üstündeki not, tam ölçüm kanıtı orada). Ayrıca
+ * silüetin YALNIZ hangi sahne durumunda gösterileceği kararı hâlâ sahneye
+ * özgüdür (bkz. scenes/scene03LibertiesByPosition.js v0.13 notu) — bu
+ * dosya yalnız ÇİZİM kalitesini iyileştirdi, YAŞAM DÖNGÜSÜ kararı taşımadı.
  */
 
 import { CAM } from '../core/curriculum.js';
@@ -314,9 +324,22 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
    * halkasıyla birleştirir (halka geometrisi ogren-3d.html'in ghost-ring
    * çizim TEKNİĞİNden adapte edildi, renk turkuaza çevrildi, pulse
    * KALDIRILDI — bkz. görev talimatı). Büyük glow/pulse YOK.
+   *
+   * v0.13 — alpha 0.30→0.42: canlı kullanıcı testinde PİKSEL ÖRNEKLEMESİYLE
+   * ölçüldü — bu tahtanın sıcak/açık ahşap zeminine karşı 0.30 alpha'da
+   * ghost'un board'a göre RENK SAPMASI, aynı noktadaki gerçek taşın board'a
+   * göre sapmasının yalnız ~%29-30'u kadardı (geometrik yarıçap zaten
+   * DOĞRUYDU — ~%103, gerçek taşla neredeyse birebir — sorun BOYUT değil
+   * KONTRASTTI, bkz. görev talimatı test raporu). 0.30/0.38/0.42 üçü de
+   * piksel örneklemesi + ekran görüntüsü karşılaştırmasıyla test edildi;
+   * 0.42'de sapma oranı ~%39'a çıkıyor ve ghost artık ekran görüntüsünde
+   * NET biçimde hacimli/küresel bir siluet olarak okunuyor, board dokusu
+   * hâlâ hafifçe seçilebiliyor ve gerçek taştan (alpha=1, tam opak) AÇIKÇA
+   * ayırt edilebilir kalıyor — görev talimatının izin verdiği 0.30–0.42
+   * aralığının üst sınırı.
    */
   function drawMovePreview(gx, gz, color) {
-    drawStone(gx, gz, color, 1, 0.30);
+    drawStone(gx, gz, color, 1, 0.42);
     const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
     const p = project(wx, stoneSurfaceY(), wz);
     const { rx, ry } = stoneRadii(p, 1.1);

@@ -1084,15 +1084,14 @@ addTest('D9) ilk hamleden sonra panel aç/kapat merkezde SAHTE preview oluşturm
   } finally { await s.close(); }
 });
 
-addTest('D10) replay/unmount/sahne geçişinde stale preview kalmıyor', async () => {
+addTest('D10) replay Sahne #3\'ü TEMİZ intro + başlangıç siluetiyle açar (v0.13); sahne geçişinde stale preview kalmıyor', async () => {
   const s = await openScenesPage({ query: PREVIEW_QUERY });
   try {
     await advanceToScene3(s.page);
     await confirmS03Intro(s.page);
     ensure(!!(await getMovePreview(s.page)), 'başlangıç preview kurulmamış (ön koşul)');
 
-    // "Bu konuyu tekrar et" → GERÇEK unmount + yeniden mount (intro'ya döner,
-    // yeniden onaylanana kadar preview kurulmamalı).
+    // "Bu konuyu tekrar et" → GERÇEK unmount + yeniden mount.
     const box = await s.page.locator('#ls-canvas').boundingBox();
     await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
     await s.page.waitForTimeout(150);
@@ -1101,8 +1100,12 @@ addTest('D10) replay/unmount/sahne geçişinde stale preview kalmıyor', async (
     await s.page.click('.ls-topic-end [data-action="replay"]');
     await s.page.waitForTimeout(250);
     ensure(await s.page.locator('#s03-intro').isVisible(), 'replay sonrası intro state\'ine dönülmedi');
+    // v0.13: replay TEMİZ intro + başlangıç siluetiyle açar — tick henüz
+    // onaylanmadan preview ZATEN (4,4)'te olmalı (bkz. görev talimatı).
     const previewAfterReplay = await getMovePreview(s.page);
-    ensure(previewAfterReplay === null, `replay (unmount+mount) hemen sonrası, intro onaylanmadan preview null olmalı, bulunan: ${JSON.stringify(previewAfterReplay)}`);
+    ensure(previewAfterReplay && previewAfterReplay.row === 4 && previewAfterReplay.col === 4, `replay sonrası (tick öncesi bile) başlangıç silueti (4,4) hemen görünmeli, bulunan: ${JSON.stringify(previewAfterReplay)}`);
+    const eventsAfterReplayMount = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_replay_started');
+    ensure(eventsAfterReplayMount.length >= 1, 'replay mount event\'i üretilmedi (ön koşul)');
 
     // Şimdi başka bir sahneye GEÇİŞ (Konular → Sahne #2) — stale preview sızmamalı.
     await confirmS03Intro(s.page);
@@ -1149,6 +1152,198 @@ addTest('D12) başlangıç silueti akışı boyunca konsolda/pageerror\'da hata 
     await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
     await s.page.waitForTimeout(150);
     ensure(s.consoleErrors.length === 0, `hata bulundu: ${s.consoleErrors.join(' | ')}`);
+  } finally { await s.close(); }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   BÖLÜM E — Sahne #3 taş siluetinin GERÇEK görsel ölçümü (v0.13)
+   Bölüm D, yalnız `getMovePreviewState()` iç state'ini doğruluyordu —
+   canlı kullanıcı testi bunun görsel BAŞARIYI kanıtlamadığını gösterdi
+   (state vardı ama ekranda "küçük soluk nokta" gibi algılanıyordu).
+   Bu blok GERÇEK canvas piksellerini `getImageData` ile örnekleyerek
+   ghost'un görünür çapını/kontrastını gerçek taşla karşılaştırır — yalnız
+   kaynak metnini veya state'i okuyarak GEÇTİ SAYMAZ.
+   ══════════════════════════════════════════════════════════════════ */
+
+/** Canvas'tan (cx+dx, cy+dy) CSS-piksel konumundaki RGBA'yı okur — devicePixelRatio'yu hesaba katar. */
+async function canvasPixelAt(page, cx, cy, dx = 0, dy = 0) {
+  return page.evaluate(({ x, y }) => {
+    const canvas = document.getElementById('ls-canvas');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const d = ctx.getImageData(Math.round(x * dpr), Math.round(y * dpr), 1, 1).data;
+    return { r: d[0], g: d[1], b: d[2], a: d[3] };
+  }, { x: cx + dx, y: cy + dy });
+}
+function pixelLuminance(px) { return 0.2126 * px.r + 0.7152 * px.g + 0.0722 * px.b; }
+/** (4,4) kesişiminin GÜVENİLİR ekran ofseti — bu test dosyasındaki TÜM diğer
+    testlerde (C3-C22, D1-D12) merkez hamle için kullanılan AYNI sabit ofset. */
+function boardCenterXY(box) { return { cx: Math.round(box.width / 2), cy: Math.round(box.height / 2 - 8) }; }
+
+/** (cx,cy) etrafında yatay bir tarama yaparak, `boardLum`dan (temiz board
+    luminance referansı) THRESH'ten fazla sapan piksellerin dx aralığından
+    görünür disk yarıçapını (CSS px) tahmin eder. */
+async function measureVisibleDiscRadius(page, cx, cy, boardLum, thresh = 15) {
+  let minDx = null, maxDx = null;
+  for (let dx = -60; dx <= 60; dx += 2) {
+    const px = await canvasPixelAt(page, cx, cy, dx, 0);
+    if (Math.abs(pixelLuminance(px) - boardLum) > thresh) {
+      if (minDx === null) minDx = dx;
+      maxDx = dx;
+    }
+  }
+  return minDx !== null ? (maxDx - minDx) / 2 : 0;
+}
+
+addTest('E1) Sahne #3 MOUNT anında (intro tick ONAYLANMADAN) preview state zaten (4,4) VE gerçek move/liberty/completion event\'i SIFIR', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    ensure(await s.page.locator('#s03-intro').isVisible(), 'intro durumunda olmalı (tick henüz basılmadı)');
+    const preview = await getMovePreview(s.page);
+    ensure(preview && preview.row === 4 && preview.col === 4 && preview.color === 'black', `mount anında (tick öncesi) preview (4,4) siyah olmalı, bulunan: ${JSON.stringify(preview)}`);
+    const events = eventsFor(await getEventLog(s.page), S03_ID).filter(e => ['scene_move_played', 'scene_liberties_shown', 'scene_completion_unlocked', 'scene_completed'].includes(e.type));
+    ensure(events.length === 0, `mount anında hamle/liberty/completion event'i olmamalı, bulunan: ${JSON.stringify(events.map(e => e.type))}`);
+  } finally { await s.close(); }
+});
+
+addTest('E2) Mount anında (tick öncesi) canvas\'ta GERÇEKTEN görünür ghost var — piksel örneklemesiyle board arka planından belirgin sapma ölçülüyor', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const { cx, cy } = boardCenterXY(box);
+    const cleanBoard = await canvasPixelAt(s.page, cx, cy, -14, -14);
+    const boardLum = pixelLuminance(cleanBoard);
+    const ghostCenter = await canvasPixelAt(s.page, cx, cy, 0, 0);
+    const contrastDelta = Math.abs(pixelLuminance(ghostCenter) - boardLum);
+    ensure(contrastDelta > 15, `mount anında ghost merkez pikseli board'dan AYIRT EDİLEMİYOR (luminance farkı=${contrastDelta.toFixed(1)}, en az 15 beklenir) — "küçük soluk nokta" regresyonu`);
+    const radius = await measureVisibleDiscRadius(s.page, cx, cy, boardLum);
+    ensure(radius >= 15, `mount anında ghost'un görünür yarıçapı çok küçük (${radius}px, en az 15px beklenir — küçük bir nokta değil, taş boyutunda bir disk olmalı)`);
+  } finally { await s.close(); }
+});
+
+addTest('E3) Ghost çapı/gerçek taş çapı oranı %90-100 aralığında; gerçek taş ghost\'tan BELİRGİN ölçüde daha opak (yüksek kontrastlı) ama aynı temel boyutta', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const { cx, cy } = boardCenterXY(box);
+    const cleanBoard = await canvasPixelAt(s.page, cx, cy, -14, -14);
+    const boardLum = pixelLuminance(cleanBoard);
+
+    await confirmS03Intro(s.page);
+    const ghostRadius = await measureVisibleDiscRadius(s.page, cx, cy, boardLum);
+    const ghostDx14 = await canvasPixelAt(s.page, cx, cy, -14, 0);
+
+    await s.page.mouse.click(box.x + cx, box.y + cy);
+    await s.page.waitForTimeout(300);
+    const realRadius = await measureVisibleDiscRadius(s.page, cx, cy, boardLum);
+    const realDx14 = await canvasPixelAt(s.page, cx, cy, -14, 0);
+
+    ensure(realRadius > 0, `gerçek taş yarıçapı ölçülemedi (${realRadius}px)`);
+    const ratio = (ghostRadius / realRadius) * 100;
+    ensure(ratio >= 90 && ratio <= 115, `ghost/gerçek taş çap oranı %90-100 civarında olmalı (küçük ölçüm toleransıyla ≤115), bulunan: %${ratio.toFixed(1)} (ghost=${ghostRadius}px, real=${realRadius}px)`);
+
+    // Gerçek taş, ghost'tan BELİRGİN ölçüde daha kontrastlı (daha opak) olmalı —
+    // "gerçek taş ghost'tan daha opak fakat aynı temel boyutta" (bkz. görev talimatı).
+    const contrastGhost = Math.hypot(ghostDx14.r - cleanBoard.r, ghostDx14.g - cleanBoard.g, ghostDx14.b - cleanBoard.b);
+    const contrastReal = Math.hypot(realDx14.r - cleanBoard.r, realDx14.g - cleanBoard.g, realDx14.b - cleanBoard.b);
+    ensure(contrastReal > contrastGhost * 1.5, `gerçek taş ghost'tan belirgin ölçüde daha opak/kontrastlı olmalı (gerçek=${contrastReal.toFixed(1)}, ghost=${contrastGhost.toFixed(1)})`);
+    ensure(contrastGhost > 20, `ghost hâlâ board'dan yeterince ayırt edilebilir olmalı (kontrast=${contrastGhost.toFixed(1)})`);
+  } finally { await s.close(); }
+});
+
+addTest('E4) Intro onay geçişinin başı/ortası/sonunda ghost AYNI koordinatta görünür kalıyor; board bounding box <1px sabit', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    const boxBefore = await s.page.locator('#ls-canvas').boundingBox();
+    const { cx, cy } = boardCenterXY(boxBefore);
+    const cleanBoard = await canvasPixelAt(s.page, cx, cy, -14, -14);
+    const boardLum = pixelLuminance(cleanBoard);
+
+    // KARE 1 — tick ÖNCESİ (intro).
+    const r1 = await measureVisibleDiscRadius(s.page, cx, cy, boardLum);
+    ensure(r1 > 10, `geçiş öncesi (intro) ghost görünür değil (yarıçap=${r1}px)`);
+
+    // KARE 2 — geçiş ORTASI (CSS transition ~200ms, JS setTimeout 220ms —
+    // 60ms noktası kesinlikle geçiş sürerken).
+    await s.page.click('#s03-confirm');
+    await s.page.waitForTimeout(60);
+    const boxMid = await s.page.locator('#ls-canvas').boundingBox();
+    const r2 = await measureVisibleDiscRadius(s.page, cx, cy, boardLum);
+    ensure(r2 > 10, `geçiş ORTASINDA ghost'un görünür piksel alanı sıfıra düşmüş (yarıçap=${r2}px) — bir kareliğine bile kaybolmamalı`);
+
+    // KARE 3 — geçiş TAMAMLANDI.
+    await s.page.waitForTimeout(400);
+    const boxAfter = await s.page.locator('#ls-canvas').boundingBox();
+    const r3 = await measureVisibleDiscRadius(s.page, cx, cy, boardLum);
+    ensure(r3 > 10, `geçiş sonrası ghost görünür değil (yarıçap=${r3}px)`);
+    ensure(await s.page.locator('#s03-play').isVisible(), 'geçiş sonrası uygulama satırı (yönlendirme metni) açık olmalı');
+    const statusText = (await s.page.locator('#s03-status').textContent())?.trim();
+    ensure(statusText === 'Tahtada istediğin boş kesişime siyah bir taş yerleştir.', `geçiş sonrası doğru yönlendirme metni görünmeli, bulunan: "${statusText}"`);
+
+    // board bounding box üç karede de <1px farkla sabit.
+    for (const [label, b] of [['mid', boxMid], ['after', boxAfter]]) {
+      ensure(Math.abs(b.x - boxBefore.x) < 1 && Math.abs(b.y - boxBefore.y) < 1 && Math.abs(b.width - boxBefore.width) < 1 && Math.abs(b.height - boxBefore.height) < 1,
+        `board bounding box (${label}) geçiş öncesine göre <1px sabit değil: önce=${JSON.stringify(boxBefore)} ${label}=${JSON.stringify(b)}`);
+    }
+  } finally { await s.close(); }
+});
+
+addTest('E5) hızlı çift tick yalnız BİR intro→uygulama geçişi üretiyor (state/event tekrarı yok)', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    // Playwright'ın locator.click() actionability beklemesi (visible+enabled)
+    // ikinci tıklamayı SONSUZA dek bekletir — buton kendi handler'ı içinde
+    // SENKRON olarak disabled edildiği için native tarayıcı da zaten ikinci
+    // tıklamayı yok sayar. Gerçek "hızlı çift tık" kullanıcı senaryosunu
+    // (Playwright'ın actionability kontrolüne TAKILMADAN) simüle etmek için
+    // ham ekran koordinatında İKİ fiziksel mouse.click() kullanılır.
+    const btnBox = await s.page.locator('#s03-confirm').boundingBox();
+    await s.page.mouse.click(btnBox.x + btnBox.width / 2, btnBox.y + btnBox.height / 2);
+    await s.page.mouse.click(btnBox.x + btnBox.width / 2, btnBox.y + btnBox.height / 2);
+    await s.page.waitForTimeout(450);
+    const events = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_intro_confirmed');
+    ensure(events.length === 1, `scene_intro_confirmed TAM BİR KEZ üretilmeli, bulunan: ${events.length}`);
+    ensure(await s.page.locator('#s03-play').isVisible(), 'uygulama satırı açık olmalı');
+    const preview = await getMovePreview(s.page);
+    ensure(preview && preview.row === 4 && preview.col === 4, `çift tick sonrası preview hâlâ tutarlı (4,4), bulunan: ${JSON.stringify(preview)}`);
+  } finally { await s.close(); }
+});
+
+addTest('E6) reduced-motion: ghost mount anında AYNI şekilde görünür, geçiş anında değişir, işlevsel son durum aynı', async () => {
+  const s = await openScenesPage({ reducedMotion: 'reduce', query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const { cx, cy } = boardCenterXY(box);
+    const cleanBoard = await canvasPixelAt(s.page, cx, cy, -14, -14);
+    const boardLum = pixelLuminance(cleanBoard);
+    const r1 = await measureVisibleDiscRadius(s.page, cx, cy, boardLum);
+    ensure(r1 > 10, `reduced-motion'da mount anında ghost görünmüyor (yarıçap=${r1}px)`);
+
+    await s.page.click('#s03-confirm');
+    await s.page.waitForTimeout(100); // transition:none — anında tamamlanmalı
+    ensure(await s.page.locator('#s03-play').isVisible(), 'reduced-motion\'da geçiş anında tamamlanmalı');
+    const preview = await getMovePreview(s.page);
+    ensure(preview && preview.row === 4 && preview.col === 4, `reduced-motion sonrası preview tutarlı (4,4), bulunan: ${JSON.stringify(preview)}`);
+    const r2 = await measureVisibleDiscRadius(s.page, cx, cy, boardLum);
+    ensure(r2 > 10, `reduced-motion geçişi sonrası ghost görünmüyor (yarıçap=${r2}px)`);
+  } finally { await s.close(); }
+});
+
+addTest('E7) ghost aktifken sade hover-noktası AYRICA çizilmiyor (kaynak-düzeyi geçit + görsel QA ile teyit edilmiş çakışma önleme)', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    const adapterSrc = await s.page.evaluate(async () => {
+      const mod = await import('/adapters/sceneBoardAdapter.js');
+      return mod.createSceneBoardAdapter.toString();
+    });
+    ensure(/hoverPoint\s*&&\s*!movePreview/.test(adapterSrc), 'drawHoverPoint çağrısı !movePreview ile korunmalı (ghost aktifken sade hover noktası ayrıca çizilmemeli)');
   } finally { await s.close(); }
 });
 

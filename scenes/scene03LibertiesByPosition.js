@@ -54,6 +54,27 @@
  * Bu başlangıç silueti YALNIZ bu sahneye özgüdür — adapters/
  * sceneBoardAdapter.js hiçbir sahneye otomatik varsayılan taş GÖSTERMEZ,
  * yalnız "girdi az önce açıldı" sinyalini iletir (bkz. adaptör v0.12 notu).
+ *
+ * v0.13 — CANLI kullanıcı testinde ortaya çıkan iki gerçek sorun düzeltildi
+ * (bkz. görev talimatı — v0.12'nin "state var" testleri görsel başarıyı
+ * KANITLAMAMIŞTI):
+ *   1) Kontrast: `adapters/sceneBoardAdapter.js`'in ghost alpha'sı (0.30)
+ *      bu tahtanın sıcak/açık ahşap rengine karşı ÖLÇÜLDÜĞÜNDE (piksel
+ *      örneklemesiyle) gerçek taşa göre ÇOK düşük kontrast üretiyordu —
+ *      geometri/yarıçap zaten DOĞRUYDU (~%103 oranında), sorun BOYUT değil
+ *      GÖRÜNÜRLÜK'tü. Alpha yükseltildi (bkz. adaptör dosyası).
+ *   2) Zamanlama: silüet önceden yalnız intro tick ONAYLANDIKTAN SONRA
+ *      (`doAdvance` içinde) kuruluyordu — intro aşamasında board tamamen
+ *      "çıplak" görünüyor, tick'e basınca silüet aniden BELİRİYORDU (bu da
+ *      "kesintisiz olmayan geçiş" hissi yaratıyordu). Artık `mount()`'un
+ *      SONUNDA, INTRO durumundayken bile (input hâlâ kapalı, hover/tap
+ *      abonelikleri henüz KURULMAMIŞ) silüet doğrudan kurulur — Sahne #3'ün
+ *      İLK karesinden itibaren, anlatımın doğal bir parçası olarak. `doAdvance`
+ *      aynı değeri yeniden set eder (idempotent, görsel fark YARATMAZ) —
+ *      YALNIZ geçiş boyunca kesintisiz aynı konumda kaldığının garantisi
+ *      için. Input INTRO'da kapalı olduğundan (`setInputEnabled(false)`),
+ *      siluete tıklamak `handleClick`'in kendi girdi-kilidi sayesinde HİÇBİR
+ *      zaman gerçek hamle üretmez — ayrı bir koruma GEREKMEZ.
  */
 
 import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './boardZones.js';
@@ -259,7 +280,12 @@ export const scene03LibertiesByPosition = {
     context.boardAdapter.focus('center');
     context.boardAdapter.setInputEnabled(false);
     context.boardAdapter.clearLiberties();
-    context.boardAdapter.clearMovePreview();
+    // Başlangıç silueti — Sahne #3'ün İLK karesinden itibaren, tick henüz
+    // ONAYLANMADAN görünür (bkz. dosya başı v0.13 notu). Input hâlâ kapalı
+    // (yukarıda setInputEnabled(false)) ve hover/tap abonelikleri henüz
+    // kurulmadığı için (aşağıda doAdvance() içinde) siluete tıklamak veya
+    // pointer hareket ettirmek İNTRO aşamasında HİÇBİR şeyi değiştiremez.
+    context.boardAdapter.setMovePreview({ row: DEFAULT_PREVIEW.row, col: DEFAULT_PREVIEW.col, color: 'black' });
 
     let confirming = false;
     on(els.confirmBtn, 'click', () => {
@@ -275,10 +301,10 @@ export const scene03LibertiesByPosition = {
         context.boardAdapter.setInputEnabled(true);
         unsubscribeTap = context.boardAdapter.onIntersectionTap(hit => handleTap(context, hit));
         unsubscribeHover = context.boardAdapter.onIntersectionHover(hit => handleHover(context, hit));
-        // Kök neden düzeltmesi: kullanıcı fareyi HİÇ oynatmasa bile board
-        // etkileşime açılır açılmaz varsayılan merkez silueti hemen
-        // görünür olmalı — önceden yalnız gerçek bir pointermove/hover
-        // geldiğinde (yukarıdaki handleHover üzerinden) kuruluyordu.
+        // Silüet mount()'tan beri zaten (4,4)'te görünürdü (bkz. v0.13 notu)
+        // — burada AYNI değeri yeniden set etmek yalnız GEÇİŞ boyunca
+        // kesintisiz aynı konumda kaldığını garanti eden idempotent bir
+        // tekrar teyittir, görsel fark YARATMAZ (kaybolup yeniden çizilmez).
         context.boardAdapter.setMovePreview({ row: DEFAULT_PREVIEW.row, col: DEFAULT_PREVIEW.col, color: 'black' });
         render();
       };
