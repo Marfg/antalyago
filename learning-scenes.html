@@ -51,6 +51,7 @@ import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.
 import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js';
 import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js';
 import { EventLog } from './core/eventLog.js';
+import { transitionSceneSwap } from './scenes/sceneTransition.js';
 
 /* ── Event log — ogren-3d.html/teacher-studio.html İLE AYNI anahtar ────
    Sahne event'leri Teacher Studio'nun MEVCUT Event Log panelinde
@@ -149,9 +150,21 @@ document.getElementById('ls-error-reload').addEventListener('click', () => {
    Board üzerine açılan kalıcı bir panel DEĞİL — #ls-narration'ın İÇİNDE
    #ls-scene-host'un yerini geçici olarak alır (aynı sabit yükseklik
    bütçesi, board bounding box'ı ASLA değişmez). Tamamlanan konular
-   seçilince replay modunda başlatılır; henüz açılmamış konular disabled. */
+   seçilince replay modunda başlatılır; henüz açılmamış konular disabled.
+   v0.14 — girdi kilidi artık boardAdapter.suspendInteraction()/
+   resumeInteraction() ile açık bir anlık-görüntü modeliyle yönetilir
+   (bkz. adaptör dosya başı notu) — eski setInputEnabled(bool) tabanlı
+   "önce neydi hatırla" yaklaşımı, Sahne #3'ün INTRO'da (henüz hover
+   aboneliği kurulmadan) doğrudan kurduğu başlangıç silüetini panel
+   açılışında koşulsuz siliyor ve panel kapanışında GERİ GETİRMİYORDU
+   (kök neden: setInputEnabled(false) girdi zaten kapalıyken bile
+   movePreview'ı koşulsuz temizliyordu). Snapshot'ın hangi SAHNEYE ait
+   olduğu da kaydedilir — panel açıkken sahne DEĞİŞMİŞSE (bu akışta
+   şu an mümkün değil ama savunma amaçlı) eski snapshot ASLA
+   uygulanmaz. */
 let topicsOpenerEl = null;
-let inputEnabledBeforeTopics = false;
+let interactionSnapshot = null;
+let interactionSnapshotSceneId = null;
 function renderTopicsList() {
   const completed = sceneProgressAdapter.load().completedSceneIds;
   const activeId = runtime.getActiveSceneId();
@@ -174,8 +187,14 @@ function renderTopicsList() {
     if (!isLocked) {
       btn.addEventListener('click', () => {
         closeTopicsList();
-        if (isDone && !isActive) runtime.start(scene.id, { mode: 'replay' });
-        else runtime.start(scene.id);
+        // Konular listesinden yapılan seçim de ORTAK crossfade geçişini
+        // kullanır (bkz. scenes/sceneTransition.js, scenes/
+        // topicEndControls.js'in "Sonraki konu"/"Bu konuyu tekrar et"
+        // ile AYNI yardımcı) — tutarlı, kesintisiz bir sahne değişimi.
+        transitionSceneSwap(sceneHost, () => {
+          if (isDone && !isActive) runtime.start(scene.id, { mode: 'replay' });
+          else runtime.start(scene.id);
+        });
       });
     }
     li.appendChild(btn);
@@ -184,12 +203,13 @@ function renderTopicsList() {
 }
 function openTopicsList() {
   topicsOpenerEl = document.activeElement;
-  // Board input'u (ve dolayısıyla ghost preview'ı) GEÇİCİ olarak kapat —
+  // Board input'unu (ve mevcut ghost preview'ı) GEÇİCİ olarak askıya al —
   // panel açıkken pointer hâlâ canvas üzerindeyse hamle/silüet YANLIŞLIKLA
-  // tetiklenmemeli (bkz. görev talimatı Bölüm B — "Konular listesi
-  // açıldığında" ghost'un temizlenmesi gereken durumlardan biri).
-  inputEnabledBeforeTopics = boardAdapter.isInputEnabled();
-  boardAdapter.setInputEnabled(false);
+  // tetiklenmemeli (bkz. görev talimatı — "Konular listesi açıldığında"
+  // ghost'un kilitlenmesi gereken durumlardan biri). Salt-okunur snapshot,
+  // HANGİ sahnenin aktif olduğuyla birlikte saklanır (bkz. yukarıki not).
+  interactionSnapshotSceneId = runtime.getActiveSceneId();
+  interactionSnapshot = boardAdapter.suspendInteraction();
   renderTopicsList();
   sceneHost.hidden = true;
   topicsPanel.hidden = false;
@@ -201,9 +221,15 @@ function closeTopicsList() {
   topicsPanel.hidden = true;
   sceneHost.hidden = false;
   document.removeEventListener('keydown', onTopicsKeydown);
-  // Girdi durumu, panel açılmadan ÖNCEKİ sahne durumuna geri döner —
-  // sahne kendi state'ine göre zaten doğru kararı vermiş olmalı.
-  boardAdapter.setInputEnabled(inputEnabledBeforeTopics);
+  // Yalnız panel açıldığından beri AYNI sahne hâlâ aktifse snapshot geri
+  // yüklenir — sahne değişmişse (bu akışta panel her zaman runtime.start()
+  // ÖNCESİNDE kapatıldığı için şu an oluşamaz, ama açık bir güvenlik
+  // sınırıdır) eski snapshot KESİNLİKLE uygulanmaz.
+  if (interactionSnapshotSceneId === runtime.getActiveSceneId()) {
+    boardAdapter.resumeInteraction(interactionSnapshot);
+  }
+  interactionSnapshot = null;
+  interactionSnapshotSceneId = null;
   (topicsOpenerEl instanceof HTMLElement ? topicsOpenerEl : topicsOpenBtn).focus();
   topicsOpenerEl = null;
 }

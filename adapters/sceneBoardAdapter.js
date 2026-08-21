@@ -34,6 +34,8 @@
  *                                      // abone olan onIntersectionHover handler'larına `null` bildirilir (bkz. Konular
  *                                      // paneli kapanışı) — hangi görselin gösterileceğine adaptör KARAR VERMEZ,
  *                                      // yalnız "girdi az önce açıldı, henüz güvenilir bir hover konumu yok" bilgisini iletir.
+ *   const snap = board.suspendInteraction();     // girdiyi/preview'ı KİLİTLER, salt-okunur bir anlık görüntü döner (bkz. v0.14)
+ *   board.resumeInteraction(snap);               // yalnız AYNI çağıranın snapshot'ı ile — girdi/preview'ı OLDUĞU gibi geri yükler
  *   const off = board.onIntersectionTap(({row,col}) => {...});   // off() ile abone iptali
  *   const offH = board.onIntersectionHover(hitOrNull => {...});  // pointer hareket/dokunuşunda; board dışında/kilitliyken null
  *   board.destroy();                   // RAF/resize/click listener'ı + tüm durumu temizler
@@ -78,6 +80,27 @@
  * silüetin YALNIZ hangi sahne durumunda gösterileceği kararı hâlâ sahneye
  * özgüdür (bkz. scenes/scene03LibertiesByPosition.js v0.13 notu) — bu
  * dosya yalnız ÇİZİM kalitesini iyileştirdi, YAŞAM DÖNGÜSÜ kararı taşımadı.
+ *
+ * v0.14 — kök neden düzeltmesi: Konular paneli INTRO aşamasında açılıp
+ * kapanınca başlangıç silueti geri GELMİYORDU. Neden: `setInputEnabled(false)`
+ * girdi ZATEN kapalıyken (INTRO'da input hiç açılmamıştır) bile TEKRAR
+ * çağrıldığında `movePreview`'ı KOŞULSUZ temizliyordu; panel kapanınca da
+ * (INTRO'da hâlâ true'ya geçilmediği için) `notifyHover` yeniden-bildirimi
+ * TETİKLENMİYORDU — çünkü sahnenin `handleHover`'ı henüz ABONE bile
+ * OLMAMIŞTI (abonelik yalnız intro tick onayından SONRA kurulur). Genel
+ * `setInputEnabled` semantiği (reset/destroy/sahne geçişlerinde preview'i
+ * KESİN temizleme) BİLEREK değiştirilmedi — onun yerine Konular paneli için
+ * AYRI, açık bir `suspendInteraction()`/`resumeInteraction(snapshot)` çifti
+ * eklendi (bkz. altta): panel açılırken GÜNCEL `{inputEnabled, movePreview}`
+ * salt-okunur olarak SNAPSHOT'lanır ve girdi/preview KİLİTLENİR; panel
+ * kapanınca çağıran (learning-scenes.html) BU snapshot'ı — yalnız panel
+ * açıldığından beri AYNI sahne hâlâ aktifse — OLDUĞU GİBİ geri yükler.
+ * Bu, sahnenin İÇ state machine'ini (INTRO/AWAITING_FIRST_MOVE/
+ * SHOWING_EXAMPLE) hiç BİLMEDEN üç durumu da doğru ele alır: INTRO'da
+ * movePreview zaten (4,4)'tü → snapshot AYNI (4,4)'ü geri getirir; ilk
+ * hamleden ÖNCE hover ile başka bir noktadaysa → o nokta geri gelir; ilk
+ * hamleden SONRA movePreview zaten null'dı (gerçek taş yerleşince
+ * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
 import { CAM } from '../core/curriculum.js';
@@ -605,6 +628,51 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       }
     },
     isInputEnabled() { return inputEnabled; },
+
+    /**
+     * Board etkileşimini GEÇİCİ olarak askıya alır (ör. Konular paneli
+     * açılışı) ve salt-okunur bir anlık görüntü döner — YALNIZ çağıranın
+     * SAKLAYIP `resumeInteraction()`'a geri vermesi için (bkz. dosya başı
+     * v0.14 notu). `setInputEnabled(false)`'ten farkı: genel girdi-kilidi
+     * semantiğine (reset/destroy/sahne geçişi davranışına) DOKUNMAZ, yalnız
+     * bu ÇAĞRI ÇİFTİNE özgü ayrı bir askıya-alma/geri-yükleme sözleşmesidir.
+     * @returns {{inputEnabled:boolean, movePreview:{row:number,col:number,color:string}|null}}
+     */
+    suspendInteraction() {
+      const snapshot = {
+        inputEnabled,
+        movePreview: movePreview ? { row: movePreview.gz, col: movePreview.gx, color: movePreview.color } : null,
+      };
+      inputEnabled = false;
+      movePreview = null;
+      hoverPoint = null;
+      return snapshot;
+    },
+
+    /**
+     * `suspendInteraction()`'ın döndürdüğü snapshot'ı OLDUĞU GİBİ geri
+     * yükler — girdi kapalıysa `movePreview` sentezlenmez (kapalı kalır);
+     * snapshot'taki `movePreview` (varsa) — `inputEnabled`den BAĞIMSIZ
+     * olarak — AYNEN geri gelir: INTRO'da girdi zaten KAPALIYKEN bile
+     * merkez silüet meşru biçimde gösteriliyordu (bkz. scenes/
+     * scene03LibertiesByPosition.js mount()), bu yüzden restore KARARI
+     * `inputEnabled`e ŞARTLI OLAMAZ — snapshot NE YAKALANDIYSA O geri
+     * gelir. movePreview snapshot'ta zaten null'sa (ör. ilk hamle
+     * yapılmıştı) zorla bir şey OLUŞTURULMAZ. Snapshot geçersiz/eksikse
+     * (ör. çağıran zaten sahne değiştiğini fark edip resumeInteraction'ı
+     * hiç çağırmamalıydı) güvenle no-op'tur.
+     * @param {{inputEnabled:boolean, movePreview:object|null}|null|undefined} snapshot
+     */
+    resumeInteraction(snapshot) {
+      if (!snapshot) return;
+      inputEnabled = !!snapshot.inputEnabled;
+      movePreview = snapshot.movePreview
+        ? { gx: snapshot.movePreview.col, gz: snapshot.movePreview.row, color: snapshot.movePreview.color }
+        : null;
+      // hoverPoint bilerek geri YÜKLENMEZ — panel açıkken imleç GERÇEKTEN
+      // hareket etmiş olabilir; bir sonraki GERÇEK pointermove kendi
+      // güncel konumunu zaten kurar (bkz. handleMove).
+    },
 
     /**
      * @param {(hit:{row:number,col:number}) => void} handler

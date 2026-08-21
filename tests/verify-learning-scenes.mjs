@@ -1348,6 +1348,397 @@ addTest('E7) ghost aktifken sade hover-noktası AYRICA çizilmiyor (kaynak-düze
 });
 
 /* ══════════════════════════════════════════════════════════════════
+   BÖLÜM F — v0.14: Konular/ghost yaşam döngüsü + sahne geçiş mimarisi
+   Canlı doğrulamada bulunan iki gerçek regresyon:
+   (A) Sahne #3 INTRO sırasında Konular paneli açılıp kapanınca merkez
+       ghost'un geri GELMEMESİ — kök neden: setInputEnabled(false) girdi
+       ZATEN kapalıyken bile movePreview'ı koşulsuz temizliyordu (bkz.
+       adapters/sceneBoardAdapter.js suspendInteraction/resumeInteraction).
+   (B) Sahne #2 → Sahne #3 geçişinde anlatım içeriğinin ~44px sıçraması
+       (bkz. scenes/sceneTransition.js — ORTAK crossfade katmanı).
+   ══════════════════════════════════════════════════════════════════ */
+
+function bboxMaxDiff(a, b) {
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.width - b.width), Math.abs(a.height - b.height));
+}
+
+addTest('F1) Sahne #3 intro açılışında ghost (4,4) görünür (tick ONAYLANMADAN)', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    const preview = await getMovePreview(s.page);
+    ensure(preview && preview.row === 4 && preview.col === 4, `intro açılışında ghost (4,4) olmalı, bulunan: ${JSON.stringify(preview)}`);
+  } finally { await s.close(); }
+});
+
+addTest('F2) Intro sırasında Konular paneli açılınca board click hamle üretmez', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const before = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played').length;
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(100);
+    const after = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played').length;
+    ensure(after === before, 'panel açıkken (intro sırasında) board click hamle üretmemeli');
+    const preview = await getMovePreview(s.page);
+    ensure(preview === null, `panel açıkken ghost kilitli (null) olmalı, bulunan: ${JSON.stringify(preview)}`);
+  } finally { await s.close(); }
+});
+
+addTest('F3) Panel kapanınca (intro, ilk hamle yok) ghost yeniden (4,4) görünür', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(150);
+    const preview = await getMovePreview(s.page);
+    ensure(preview && preview.row === 4 && preview.col === 4, `*** kritik regresyon *** panel kapanınca ghost (4,4) geri gelmeli, bulunan: ${JSON.stringify(preview)}`);
+    ensure(await s.page.locator('#s03-intro').isVisible(), 'hâlâ intro durumunda (onaylanmamış)');
+  } finally { await s.close(); }
+});
+
+addTest('F4) Intro + Konular aç/kapat süreci move/liberty/completion event\'i üretmez', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(150);
+    const events = eventsFor(await getEventLog(s.page), S03_ID).filter(e => ['scene_move_played', 'scene_liberties_shown', 'scene_completion_unlocked', 'scene_completed'].includes(e.type));
+    ensure(events.length === 0, `intro+panel süreci hiçbir hamle/liberty/completion event'i üretmemeli, bulunan: ${JSON.stringify(events.map(e => e.type))}`);
+  } finally { await s.close(); }
+});
+
+addTest('F5) Intro onaylandı, ilk hamleden ÖNCE panel aç/kapat input+ghost\'u doğru geri getirir', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3AndIntro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    // Pointer'ı farklı bir noktaya taşı — ghost oraya gitsin.
+    await s.page.mouse.move(box.x + box.width / 2 - 50, box.y + box.height / 2 - 40);
+    await s.page.waitForTimeout(120);
+    const previewBefore = await getMovePreview(s.page);
+    ensure(previewBefore && !(previewBefore.row === 4 && previewBefore.col === 4), `panel öncesi ghost hover noktasında olmalı, bulunan: ${JSON.stringify(previewBefore)}`);
+
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    ensure((await getMovePreview(s.page)) === null, 'panel açıkken ghost null olmalı');
+    const beforeMove = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played').length;
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(100);
+    const afterMove = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played').length;
+    ensure(afterMove === beforeMove, 'panel açıkken (post-tick) board click hamle üretmemeli');
+
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(150);
+    const previewAfter = await getMovePreview(s.page);
+    ensure(previewAfter && previewAfter.row === previewBefore.row && previewAfter.col === previewBefore.col, `panel kapanınca AYNI ghost konumu geri gelmeli, önce=${JSON.stringify(previewBefore)} sonra=${JSON.stringify(previewAfter)}`);
+    ensure(await s.page.locator('#s03-next').isDisabled(), 'ilk hamle hâlâ yapılmadı, devam kontrolü disabled kalmalı');
+  } finally { await s.close(); }
+});
+
+addTest('F6) İlk hamleden SONRA panel aç/kapat merkezde sahte ghost üretmez, gerçek örnek/nefes bozulmaz', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3AndIntro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(200);
+    const statusBefore = (await s.page.locator('#s03-status').textContent())?.trim();
+    ensure(!(await s.page.locator('#s03-next').isDisabled()), 'ilk hamleden sonra devam kontrolü aktif olmalı (ön koşul)');
+
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(150);
+
+    const preview = await getMovePreview(s.page);
+    ensure(preview === null, `ilk hamleden sonra panel aç/kapat merkezde sahte ghost OLUŞTURMAMALI, bulunan: ${JSON.stringify(preview)}`);
+    const statusAfter = (await s.page.locator('#s03-status').textContent())?.trim();
+    ensure(statusAfter === statusBefore, `gerçek örnek/nefes metni panel aç/kapattan ETKİLENMEMELİ: önce="${statusBefore}" sonra="${statusAfter}"`);
+    ensure(!(await s.page.locator('#s03-next').isDisabled()), 'devam kontrolü hâlâ aktif kalmalı');
+  } finally { await s.close(); }
+});
+
+addTest('F7) Replay sonrası AYNI intro+Konular yaşam döngüsü çalışır', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3AndIntro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(200);
+    await s.page.click('#s03-next');
+    await s.page.waitForTimeout(500); // crossfade + topicEnd mount
+    await s.page.click('.ls-topic-end [data-action="replay"]');
+    await s.page.waitForTimeout(500); // crossfade + yeniden mount
+
+    ensure(await s.page.locator('#s03-intro').isVisible(), 'replay sonrası intro açık olmalı');
+    const previewAfterReplay = await getMovePreview(s.page);
+    ensure(previewAfterReplay && previewAfterReplay.row === 4 && previewAfterReplay.col === 4, `replay sonrası başlangıç ghost (4,4): ${JSON.stringify(previewAfterReplay)}`);
+
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(150);
+    const previewAfterPanel = await getMovePreview(s.page);
+    ensure(previewAfterPanel && previewAfterPanel.row === 4 && previewAfterPanel.col === 4, `replay sonrası panel aç/kapat da AYNI yaşam döngüsünü izlemeli: ${JSON.stringify(previewAfterPanel)}`);
+  } finally { await s.close(); }
+});
+
+addTest('F8) Reset/unmount/destroy (sahne geçişi) stale preview bırakmaz', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    ensure(!!(await getMovePreview(s.page)), 'başlangıç ghost kurulu olmalı (ön koşul)');
+    // Konular → Sahne #1'e geç (tamamlanmış, replay) — GERÇEK unmount+mount.
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    await s.page.locator('.ls-topic-item').nth(0).click();
+    await s.page.waitForTimeout(500); // crossfade + mount
+    ensure(await s.page.locator('#s01-intro').isVisible(), 'Sahne #1 açıldı');
+    const previewAfterSwitch = await getMovePreview(s.page);
+    ensure(previewAfterSwitch === null, `başka sahneye geçince stale preview kalmamalı, bulunan: ${JSON.stringify(previewAfterSwitch)}`);
+  } finally { await s.close(); }
+});
+
+addTest('F9) Sahne #2\'nin "beyaz düşünüyor" input-kilidi Konular paneliyle bozulmaz', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene2(s.page);
+    await confirmS02Step(s.page, 0);
+    await confirmS02Step(s.page, 1);
+    await confirmS02Step(s.page, 2);
+    // Siyah bir hamle oyna — beyaz "düşünürken" input kilitlenir (whiteMoveDelayMs=0 ile ANINDA çözülür).
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const before = eventsFor(await getEventLog(s.page), S02_ID).filter(e => e.type === 'scene_move_played').length;
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 6);
+    await s.page.waitForTimeout(120); // whiteMoveDelayMs=0 → beyaz hemen oynar, input tekrar açılır
+    const afterFirstPair = eventsFor(await getEventLog(s.page), S02_ID).filter(e => e.type === 'scene_move_played').length;
+    ensure(afterFirstPair >= before + 1, 'ilk siyah hamle kaydedildi (ön koşul)');
+
+    // Konular panelini aç/kapat — Sahne #2'nin kendi input state'i (artık açık) BOZULMAMALI.
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(150);
+
+    // İkinci siyah hamleyi oynamayı dene — input hâlâ normal çalışmalı.
+    const beforeSecond = eventsFor(await getEventLog(s.page), S02_ID).filter(e => e.type === 'scene_move_played' && e.payload.color === 'black').length;
+    const placed = await playOneBlackMoveScene2(s.page);
+    ensure(placed, 'Konular paneli sonrası Sahne #2 girdi kilidi normal çalışıyor (ikinci siyah hamle oynanabildi)');
+  } finally { await s.close(); }
+});
+
+addTest('F10) Sahne #2 konu-sonu → Sahne #3 intro geçişinde 6 kontrol noktası (öncesi/başı/ortası/sonu/cleanup+100ms/cleanup+500ms) arasında scene-host bbox <1px sabit', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene2(s.page);
+    const ok = await playScene2ToCompletion(s.page);
+    ensure(ok, 'Sahne #2 tamamlanamadı (ön koşul)');
+    await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
+
+    // KRİTİK: bir önceki sürüm yalnız "geçiş ortası" (JS height-lock
+    // AKTİFKEN) ve "400ms sonra" (kilit ZATEN kalkmış, yeni içeriğe
+    // OTURMUŞ) ölçüyordu — kilidin KALKTIĞI ANI (cleanup sınırı) HİÇ
+    // örneklemiyordu, bu yüzden geç sıçrama testten KAÇTI. Artık altı
+    // ayrı zaman noktası — geçişten 100ms ÖNCESİ dahil — örnekleniyor.
+    const t_before100 = await s.page.locator('#ls-scene-host').boundingBox();
+    const boardBefore = await s.page.locator('#ls-canvas').boundingBox();
+    const narrBefore = await s.page.locator('#ls-narration').boundingBox();
+    await s.page.waitForTimeout(100);
+    const t_start = await s.page.locator('#ls-scene-host').boundingBox();
+
+    await s.page.click('.ls-topic-end [data-action="advance"]');
+    await s.page.waitForTimeout(80); // geçiş ORTASI (fade-out ~90ms sürer)
+    const t_mid = await s.page.locator('#ls-scene-host').boundingBox();
+    await s.page.waitForTimeout(150); // geçiş SONU (toplam ~230ms — fade-out+swap+fade-in bitmiş olmalı)
+    const t_end = await s.page.locator('#ls-scene-host').boundingBox();
+    await s.page.waitForTimeout(100); // cleanup'tan 100ms sonra
+    const t_cleanup100 = await s.page.locator('#ls-scene-host').boundingBox();
+    await s.page.waitForTimeout(400); // cleanup'tan 500ms sonra (toplam)
+    const t_cleanup500 = await s.page.locator('#ls-scene-host').boundingBox();
+    const boardAfter = await s.page.locator('#ls-canvas').boundingBox();
+    const narrAfter = await s.page.locator('#ls-narration').boundingBox();
+
+    const points = { before100: t_before100, start: t_start, mid: t_mid, end: t_end, cleanup100: t_cleanup100, cleanup500: t_cleanup500 };
+    let maxDiff = 0, worstLabel = null;
+    for (const [label, b] of Object.entries(points)) {
+      const d = bboxMaxDiff(t_before100, b);
+      if (d > maxDiff) { maxDiff = d; worstLabel = label; }
+    }
+    ensure(maxDiff < 1, `*** kritik regresyon *** 6 kontrol noktası arası scene-host bbox max fark <1px olmalı (bulunan: ${maxDiff.toFixed(3)}px, en kötü nokta: ${worstLabel}, tüm ölçümler: ${JSON.stringify(points)})`);
+    ensure(bboxMaxDiff(boardBefore, boardAfter) < 1, `board bbox <1px sabit olmalı (fark=${bboxMaxDiff(boardBefore, boardAfter).toFixed(3)}px)`);
+    ensure(bboxMaxDiff(narrBefore, narrAfter) < 1, `narration dış kutu <1px sabit olmalı (fark=${bboxMaxDiff(narrBefore, narrAfter).toFixed(3)}px)`);
+    ensure(await s.page.locator('#s03-intro').isVisible(), 'Sahne #3 intro açık');
+  } finally { await s.close(); }
+});
+
+addTest('F10b) Aynı 6-noktalı ölçüm masaüstü/tablet/mobilde de <1px sabit (mobilde konu-sonu iki düğmesi tek satırda kalır)', async () => {
+  for (const viewport of [VIEWPORTS.desktop, VIEWPORTS.tablet, VIEWPORTS.mobile]) {
+    const s = await openScenesPage({ viewport, query: FAST_QUERY });
+    try {
+      await advanceToScene2(s.page);
+      const ok = await playScene2ToCompletion(s.page);
+      ensure(ok, `${viewport.width}px: Sahne #2 tamamlanamadı`);
+      await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
+      const hostBefore = await s.page.locator('#ls-scene-host').boundingBox();
+      await s.page.click('.ls-topic-end [data-action="advance"]');
+      await s.page.waitForTimeout(80);
+      const hostMid = await s.page.locator('#ls-scene-host').boundingBox();
+      await s.page.waitForTimeout(400);
+      const hostAfter = await s.page.locator('#ls-scene-host').boundingBox();
+      ensure(bboxMaxDiff(hostBefore, hostMid) < 1 && bboxMaxDiff(hostBefore, hostAfter) < 1,
+        `${viewport.width}px: scene-host bbox <1px sabit olmalı (mid fark=${bboxMaxDiff(hostBefore, hostMid).toFixed(2)}px, sonrası fark=${bboxMaxDiff(hostBefore, hostAfter).toFixed(2)}px)`);
+      const noOverflow = await s.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+      ensure(noOverflow, `${viewport.width}px: yatay taşma var`);
+      const boardBox = await s.page.locator('#ls-board-region').boundingBox();
+      const narrationBox = await s.page.locator('#ls-narration').boundingBox();
+      ensure(!boxesIntersect(boardBox, narrationBox), `${viewport.width}px: board/narration kesişiyor`);
+    } finally { await s.close(); }
+  }
+});
+
+addTest('F11) Uzun yapay açıklama metni kesilmiyor, yatay taşma oluşturmuyor (min-height taşmaya İZİN VERİR, kırpmaz)', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene2(s.page);
+    const ok = await playScene2ToCompletion(s.page);
+    ensure(ok, 'Sahne #2 tamamlanamadı (ön koşul)');
+    await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
+    const longText = 'Bu, min-height bütçesini kasıtlı olarak aşan, gerçekçi olmayan derecede UZUN bir yapay açıklama metnidir — amacı içerik gerçekten taştığında hiçbir kelimenin görsel olarak kesilmediğini ve yatay bir taşmaya yol açmadığını doğrulamaktır. Metin burada birkaç satıra yayılacak kadar uzun tutulmuştur.';
+    await s.page.evaluate((txt) => {
+      const el = document.querySelector('.ls-topic-end-summary');
+      if (el) el.textContent = txt;
+    }, longText);
+    await s.page.waitForTimeout(50);
+    const noHOverflow = await s.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+    ensure(noHOverflow, 'uzun metin yatay taşma oluşturmamalı');
+    const renderedText = await s.page.locator('.ls-topic-end-summary').textContent();
+    ensure(renderedText === longText, `metin İÇERİK olarak KESİLMEMELİ (DOM'da tam metin bulunmalı), bulunan uzunluk: ${renderedText?.length}`);
+    const el = await s.page.locator('.ls-topic-end-summary').boundingBox();
+    const host = await s.page.locator('#ls-scene-host').boundingBox();
+    ensure(el.x >= host.x - 1 && el.x + el.width <= host.x + host.width + 1, 'uzun metin scene-host genişliğini AŞMAMALI (dikeyde büyümeli, yatayda değil)');
+  } finally { await s.close(); }
+});
+
+addTest('F12) Geçiş sırasında klon YOK — duplicate id oluşmaz, aria-hidden sarmalayıcı+buton imzası bulunmaz, outgoing/incoming aynı anda aktif olmaz', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene2(s.page);
+    const ok = await playScene2ToCompletion(s.page);
+    ensure(ok, 'Sahne #2 tamamlanamadı (ön koşul)');
+    await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
+    await s.page.click('.ls-topic-end [data-action="advance"]');
+    await s.page.waitForTimeout(45); // fade-out ORTASI — GERÇEK eski içerik hâlâ DOM'da, henüz swap olmadı
+
+    const duplicateIds = await s.page.evaluate(() => {
+      const ids = Array.from(document.querySelectorAll('[id]')).map(el => el.id);
+      return ids.length !== new Set(ids).size;
+    });
+    ensure(!duplicateIds, 'fade-out sırasında bile yinelenen id OLUŞMAMALI (klon yok)');
+
+    const cloneSignature = await s.page.evaluate(() => document.querySelectorAll('#ls-scene-host [aria-hidden="true"] button').length);
+    ensure(cloneSignature === 0, `klon imzası (aria-hidden sarmalayıcı içinde buton) YOK olmalı, bulunan: ${cloneSignature}`);
+
+    await s.page.waitForTimeout(300); // swap+fade-in bitmiş olmalı
+    const oldButtonGone = await s.page.locator('.ls-topic-end [data-action="advance"]').count();
+    ensure(oldButtonGone === 0, 'swap sonrası eski "Sonraki konu" butonu DOM\'dan TAMAMEN kaldırılmış olmalı (klon KALINTISI yok)');
+    const introVisible = await s.page.locator('#s03-intro').count();
+    ensure(introVisible === 1, 'yalnız GERÇEK incoming içerik DOM\'da — eski/yeni aynı anda erişilebilir DEĞİL');
+  } finally { await s.close(); }
+});
+
+addTest('F13) Hızlı çift tıklama (Sahne #2 → #3) yalnız TEK sahne geçişi ve TEK swapFn çağrısı üretir', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene2(s.page);
+    const ok = await playScene2ToCompletion(s.page);
+    ensure(ok, 'Sahne #2 tamamlanamadı (ön koşul)');
+    await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
+    const btnBox = await s.page.locator('.ls-topic-end [data-action="advance"]').boundingBox();
+    await s.page.mouse.click(btnBox.x + btnBox.width / 2, btnBox.y + btnBox.height / 2);
+    await s.page.mouse.click(btnBox.x + btnBox.width / 2, btnBox.y + btnBox.height / 2);
+    await s.page.waitForTimeout(500);
+
+    const events = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_started');
+    ensure(events.length === 1, `Sahne #3 yalnız TEK KEZ başlatılmalı (swapFn TEK kez çağrılmış olmalı), bulunan: ${events.length}`);
+    ensure(await s.page.locator('#s03-intro').isVisible(), 'Sahne #3 intro açık');
+  } finally { await s.close(); }
+});
+
+addTest('F14) Sahne #3 ghost\'u incoming GÖRÜNÜR OLMAYA başladığı anda (fade-in başlangıcında) hazırdır', async () => {
+  const s = await openScenesPage({ query: `${PREVIEW_QUERY}` });
+  try {
+    await advanceToScene2(s.page);
+    const ok = await playScene2ToCompletion(s.page);
+    ensure(ok, 'Sahne #2 tamamlanamadı (ön koşul)');
+    await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
+    await s.page.click('.ls-topic-end [data-action="advance"]');
+    await s.page.waitForTimeout(140); // fade-out(90ms) kesin BİTMİŞ (zamanlayıcı toleransı payıyla), swap+fade-in BAŞLAMIŞ olmalı
+    const preview = await getMovePreview(s.page);
+    ensure(preview && preview.row === 4 && preview.col === 4, `Sahne #3'ün içeriği görünmeye başlar başlamaz ghost'u hazır olmalı: ${JSON.stringify(preview)}`);
+  } finally { await s.close(); }
+});
+
+addTest('F15) Reduced-motion: Sahne #2 → #3 geçişi ANINDA tamamlanır, aynı son durum oluşur', async () => {
+  const s = await openScenesPage({ reducedMotion: 'reduce', query: `${PREVIEW_QUERY}` });
+  try {
+    await advanceToScene2(s.page);
+    const ok = await playScene2ToCompletion(s.page);
+    ensure(ok, 'Sahne #2 tamamlanamadı (ön koşul)');
+    await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
+    await s.page.click('.ls-topic-end [data-action="advance"]');
+    await s.page.waitForTimeout(80); // reduced-motion → animasyonsuz, kısa bekleme yeterli
+    ensure(await s.page.locator('#s03-intro').isVisible(), 'reduced-motion\'da Sahne #3 intro AYNI son duruma anında ulaşmalı');
+    const preview = await getMovePreview(s.page);
+    ensure(preview && preview.row === 4 && preview.col === 4, `reduced-motion\'da da başlangıç ghost (4,4) olmalı: ${JSON.stringify(preview)}`);
+  } finally { await s.close(); }
+});
+
+addTest('F17) Geçiş sonunda klavye odağı Sahne #3\'ün anlamlı ilk kontrolüne (#s03-confirm) taşınır', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene2(s.page);
+    const ok = await playScene2ToCompletion(s.page);
+    ensure(ok, 'Sahne #2 tamamlanamadı (ön koşul)');
+    await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
+    await s.page.click('.ls-topic-end [data-action="advance"]');
+    await s.page.waitForTimeout(500); // geçiş tamamlanana kadar bekle
+    const focusedId = await s.page.evaluate(() => document.activeElement?.id ?? null);
+    ensure(focusedId === 's03-confirm', `geçiş sonunda odak Sahne #3'ün ilk kontrolüne (#s03-confirm) taşınmalı, bulunan: "${focusedId}"`);
+  } finally { await s.close(); }
+});
+
+addTest('F18) v0.14 akışı (intro+panel+geçiş) boyunca konsolda/pageerror\'da hata yok', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene2(s.page);
+    const ok = await playScene2ToCompletion(s.page);
+    ensure(ok, 'Sahne #2 tamamlanamadı (ön koşul)');
+    await clickTopicEndAdvance(s.page);
+    ensure(await s.page.locator('#s03-intro').isVisible(), 'Sahne #3 intro açık');
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(150);
+    await s.page.click('#s03-confirm');
+    await s.page.waitForTimeout(400);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(200);
+    await s.page.click('#s03-next');
+    await s.page.waitForTimeout(500);
+    ensure(s.consoleErrors.length === 0, `hata bulundu: ${s.consoleErrors.join(' | ')}`);
+  } finally { await s.close(); }
+});
+
+/* ══════════════════════════════════════════════════════════════════
    BÖLÜM C (Runtime) — mount hatası kurtarma
    ══════════════════════════════════════════════════════════════════ */
 

@@ -28,7 +28,18 @@
  * DOM'suz test EDİLEMEZ (gerçek buton/click gerektirir) — bu yüzden proje
  * kuralına göre yalnız Playwright ile test edilir (bkz. tests/verify-
  * learning-scenes.mjs), scene modülleri gibi.
+ *
+ * v0.14 — "Sonraki konu"/"Bu konuyu tekrar et" artık GERÇEK sahne
+ * geçişini (context.advanceToNext()/replayActive()) doğrudan senkron
+ * çağırmak yerine scenes/sceneTransition.js'in ORTAK crossfade
+ * yardımcısıyla SARAR — bkz. o dosyanın başlık notu (kök neden: sahneler
+ * arası ANLIK DOM değişimi, anlatım alanının içerik yüksekliğinde
+ * belirgin bir sıçrama yaratıyordu). `core/sceneRuntime.js`'e VEYA
+ * sahne modüllerine (scene01/02/03) HİÇ dokunulmadı — geçiş tamamen bu
+ * ORTAK katmanda, `context.container`'ı sarmalayarak uygulanır.
  */
+
+import { transitionSceneSwap } from './sceneTransition.js';
 
 /**
  * @param {object} context — sahnenin mount context'i (markComplete/
@@ -64,7 +75,7 @@ export function mountTopicEndControls(context, { summaryText }) {
     navigated = true;
     replayBtn.disabled = true;
     advanceBtn.disabled = true;
-    context.replayActive();
+    transitionSceneSwap(context.container, () => context.replayActive());
   }
   function onAdvanceClick() {
     if (!context.hasNextScene) { context.openTopicsList?.(); return; }
@@ -72,7 +83,7 @@ export function mountTopicEndControls(context, { summaryText }) {
     navigated = true;
     replayBtn.disabled = true;
     advanceBtn.disabled = true;
-    context.advanceToNext();
+    transitionSceneSwap(context.container, () => context.advanceToNext());
   }
   replayBtn.addEventListener('click', onReplayClick);
   advanceBtn.addEventListener('click', onAdvanceClick);

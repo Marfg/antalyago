@@ -73,7 +73,33 @@ body {
   text-align: center;
   background: var(--glass); backdrop-filter: blur(16px);
 }
-#ls-scene-host { width: 100%; max-width: 620px; margin: 0 auto; }
+/* v0.15 — kök neden düzeltmesi (bkz. görev talimatı): #ls-scene-host'un
+   yüksekliği ÖNCEDEN salt içeriğe göre (auto) belirleniyordu — bir sahne
+   diğerinden daha kısa/uzun bir satır kurduğunda (ör. Sahne #2'nin
+   konu-sonu satırı ~84px → Sahne #3'ün intro satırı ~40px) bu kutu
+   SIÇRARDI. Geçici bir JS height-lock (yalnız geçiş SIRASINDA) bu
+   sıçramayı GİZLEMİYOR, yalnız cleanup ANINA ERTELİYORDU — kilit
+   kaldırılınca aynı sıçrama şimdi GEÇ oluşuyordu. Gerçek çözüm KALICI:
+   #ls-scene-host, #ls-narration'ın (padding çıkarılmış) SABİT içerik
+   alanını `min-height` ile HER ZAMAN doldurur — hangi sahne/adım içeride
+   olursa olsun DIŞ kutu artık İÇERİĞE göre asla küçülmez. Normal (taşmayan)
+   içerikte scene-host'un GERÇEK yüksekliği bu min-height'ta SABİTLENMİŞ
+   olur (auto'ya asla düşmez) — bu yüzden scenes/sceneTransition.js'in
+   ARTIK bir JS height-lock/release döngüsüne İHTİYACI yok. İçerik genuinely
+   bu bütçeyi AŞARSA (ör. çok uzun metin) `min-height` KIRPMAZ — kutu doğal
+   olarak büyür, #ls-narration'ın kendi `overflow-y:auto`'su devreye girer
+   (bkz. yukarıki not). */
+#ls-scene-host {
+  width: 100%; max-width: 620px; margin: 0 auto;
+  min-height: calc(var(--narration-h) - 1rem);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+/* learning-scenes.html Konular paneli açıkken `sceneHost.hidden = true`
+   yapar — ID seçicili `display:flex` kuralı (yukarıda) tarayıcının
+   varsayılan `[hidden]{display:none}` UA kuralından (öznitelik seçici,
+   daha DÜŞÜK özgüllük) DAHA YÜKSEK özgüllüğe sahip olduğu için bu kural
+   OLMADAN `hidden` özniteliği artık görmezden gelinirdi. */
+#ls-scene-host[hidden] { display: none; }
 
 /* ── Konular paneli — board üzerine AÇILAN kalıcı bir yan panel DEĞİL;
    #ls-narration'ın İÇİNDE #ls-scene-host'un yerini GEÇİCİ olarak alır
@@ -229,6 +255,17 @@ body {
 /* ── Konu sonu satırı (Sahne #1/#2/#3 ORTAK — bkz. scenes/topicEndControls.js) ── */
 .ls-topic-end-summary { flex-basis: 100%; text-align: center; }
 .ls-topic-end-actions { display: inline-flex; gap: .5rem; flex-wrap: wrap; justify-content: center; }
+/* v0.15 — bu İKİ düğme (Bu konuyu tekrar et / Sonraki konu), aşağıdaki
+   genel `.ls-strip-btn{width:100%}` mobil kuralı yüzünden ≤480px'te ALT
+   ALTA yığılıyordu — bu da konu-sonu satırının yalnız mobilde ~25px daha
+   uzun olmasına (ölçüldü) ve Sahne #3'e geçişte scene-host'un min-height
+   tabanına GERİ SIÇRAMASINA yol açıyordu. İki düğme bu genişlikte YAN
+   YANA rahatça sığıyor (~260px gerekli / ~330px mevcut) — genel kuralı
+   (tek düğmeli satırlar İÇİN dokunma gerekli değil) DEĞİŞTİRMEK yerine
+   YALNIZ bu satıra özel, dar bir istisna tanımlanır. */
+@media (max-width: 480px) {
+  .ls-topic-end-actions .ls-strip-btn { width: auto; flex: 1 1 auto; }
+}
 
 /* Kart geçişi — açılış/kapanış İÇİN opsiyonel, opacity/transform ile. */
 .ls-strip-fade { transition: opacity .2s ease, transform .2s ease; }
