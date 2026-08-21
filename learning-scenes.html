@@ -7,16 +7,20 @@
 <link rel="stylesheet" href="styles/learning-scenes.css" />
 </head>
 <body>
-<!-- Board ve bilgi alanı AYRI layout bölgeleridir — bilgi alanı canvas
-     üzerine position:absolute ile bindirilmiyor, gerçek bir yan/alt
-     bölge olarak akışa katılıyor (bkz. styles/learning-scenes.css). -->
+<!-- v0.9 — Board ve anlatım şeridi TEK bir dikey eksende (#ls-stage):
+     board üstte, anlatım şeridi hemen altında, İKİSİ DE aynı genişlik
+     bütçesini paylaşır. Ayrı bir yan/alt "panel" YOK; şerit canvas'ın
+     üzerine position:absolute ile de BİNDİRİLMİYOR — akışın normal bir
+     parçası (bkz. styles/learning-scenes.css). -->
 <div id="ls-layout">
-  <div id="ls-board-region">
-    <canvas id="ls-canvas" aria-hidden="true"></canvas>
-  </div>
-  <div id="ls-info-region">
-    <!-- Sahne modülleri kendi UI'larını buraya kurar (context.container) -->
-    <div id="ls-scene-host" aria-live="polite"></div>
+  <div id="ls-stage">
+    <div id="ls-board-region">
+      <canvas id="ls-canvas" aria-hidden="true"></canvas>
+    </div>
+    <div id="ls-narration">
+      <!-- Sahne modülleri kendi UI'larını buraya kurar (context.container) -->
+      <div id="ls-scene-host" aria-live="polite"></div>
+    </div>
   </div>
 </div>
 
@@ -41,6 +45,7 @@ import { createSceneRuntime } from './core/sceneRuntime.js';
 import { createSceneRegistry } from './scenes/sceneRegistry.js';
 import { scene01BoardIntro } from './scenes/scene01BoardIntro.js';
 import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js';
 import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js';
 import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js';
 import { EventLog } from './core/eventLog.js';
@@ -70,20 +75,27 @@ const canvas = document.getElementById('ls-canvas');
 const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
 const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19 });
 
-const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections]);
+const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition]);
 
 const sceneHost = document.getElementById('ls-scene-host');
 const finalEl = document.getElementById('ls-final');
 const errorEl = document.getElementById('ls-error');
 
-/* Test-only hook: ?whiteMoveDelayMs=N Sahne #2'nin beyaz cevap gecikmesini
-   ezer — YALNIZ turn-loop testlerinin gerçek zamanlı 450–700ms beklemeler
-   yüzünden yavaşlamaması/deterministik bir kilit penceresi test edebilmesi
-   için (bkz. görev talimatı). Üretim davranışını DEĞİŞTİRMEZ: parametre
-   yoksa context.whiteMoveDelayMs verilmez, scene02TurnsAndIntersections.js
-   kendi varsayılanını (450–700ms aralığının ortası) kullanır. */
-const whiteMoveDelayParam = new URLSearchParams(location.search).get('whiteMoveDelayMs');
-const whiteMoveDelayOverride = whiteMoveDelayParam != null && Number.isFinite(Number(whiteMoveDelayParam)) ? Number(whiteMoveDelayParam) : null;
+/* Test-only hook: ?whiteMoveDelayMs=N (Sahne #2) / ?centerLibertyDisplayMs=N
+   & ?whiteCornerDelayMs=N (Sahne #3) gerçek zamanlı 450–700ms beklemeleri
+   ezer — YALNIZ turn-loop testlerinin yavaşlamaması/deterministik bir
+   kilit penceresi test edebilmesi için (bkz. görev talimatı). Üretim
+   davranışını DEĞİŞTİRMEZ: parametre yoksa hiçbiri context'e verilmez,
+   sahne modülleri kendi varsayılanlarını (450–700ms aralığı) kullanır. */
+const searchParams = new URLSearchParams(location.search);
+function numOverride(name) {
+  const raw = searchParams.get(name);
+  return raw != null && Number.isFinite(Number(raw)) ? Number(raw) : null;
+}
+const whiteMoveDelayOverride = numOverride('whiteMoveDelayMs');
+const centerLibertyDisplayOverride = numOverride('centerLibertyDisplayMs');
+const whiteCornerDelayOverride = numOverride('whiteCornerDelayMs');
+const transitionDelayOverride = numOverride('transitionDelayMs');
 const runtime = createSceneRuntime({
   registry,
   progressAdapter: sceneProgressAdapter,
@@ -92,6 +104,9 @@ const runtime = createSceneRuntime({
     container: sceneHost,
     boardAdapter,
     ...(whiteMoveDelayOverride != null ? { whiteMoveDelayMs: whiteMoveDelayOverride } : {}),
+    ...(centerLibertyDisplayOverride != null ? { centerLibertyDisplayMs: centerLibertyDisplayOverride } : {}),
+    ...(whiteCornerDelayOverride != null ? { whiteCornerDelayMs: whiteCornerDelayOverride } : {}),
+    ...(transitionDelayOverride != null ? { transitionDelayMs: transitionDelayOverride } : {}),
   }),
 });
 

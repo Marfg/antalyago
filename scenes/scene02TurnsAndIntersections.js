@@ -6,6 +6,16 @@
  * kesişim noktalarına konur, (3) ilk hamleyi siyah yapar. Sahne sonunda
  * tahtada 3 siyah + 3 beyaz = 6 gerçek, kural-doğrulanmış taş vardır.
  *
+ * v0.9 — kesişim "rehber" (yeşil neon nokta) sistemi BİLEREK KALDIRILDI
+ * (bkz. görev talimatı Bölüm B, adapters/sceneBoardAdapter.js dosya başı
+ * notu): kullanıcı kesişimleri artık doğal tahta çizgileri, adaptörün
+ * ince tek-noktalı pointer hover geri bildirimi ve taşın gerçek yerleşme
+ * davranışıyla öğrenir. `scene_guides_shown`/`scene_guides_cleared`
+ * event'leri ve ilgili state ARTIK ÜRETİLMEZ.
+ *
+ * DOM'u ORTAK anlatım şeridi ilkelleriyle (ls-strip-row, ls-tick — bkz.
+ * styles/learning-scenes.css) kurar — ayrı bir sağ panel YOK.
+ *
  * scene01BoardIntro.js İLE AYNI desen: `core/sceneRuntime.js`'in
  * {id,version,title,curriculumRef,mount,unmount,canComplete,complete}
  * sözleşmesini uygular; kendi (oturumluk) durumunu modül-seviyesi
@@ -39,7 +49,7 @@ const INFO_STEPS = [
     ariaLabel: '1. adımı onayla',
   },
   {
-    text: 'Taşlar karelerin İÇİNE değil, çizgilerin KESİŞTİĞİ noktalara konur. Boş kesişim noktaları şimdi işaretlendi.',
+    text: 'Taşlar karelerin İÇİNE değil, çizgilerin KESİŞTİĞİ noktalara konur.',
     ariaLabel: '2. adımı onayla',
   },
   {
@@ -57,8 +67,6 @@ function escapeHtml(str) {
 // Yalnız bu modülün kendi bellek-içi (oturumluk) durumu — mount() her
 // zaman sıfırlar, unmount() temizler.
 let step = 0; // 0..3 — kaç bilgi adımı onaylandı
-let guidesShown = false;
-let guidesClearedForever = false;
 let blackMoves = 0;
 let whiteMoves = 0;
 let turn = null; // 'black' | 'white' | null
@@ -71,8 +79,6 @@ let clearScheduledTimeoutFn = clearTimeout;
 
 function resetState() {
   step = 0;
-  guidesShown = false;
-  guidesClearedForever = false;
   blackMoves = 0;
   whiteMoves = 0;
   turn = null;
@@ -90,33 +96,20 @@ function render() {
 function updateTurnUI() {
   if (!els) return;
   els.dotsEl.innerHTML = Array.from({ length: TOTAL_PAIRS })
-    .map((_, i) => `<span class="s01-dot${i < whiteMoves ? ' done' : ''}"></span>`)
+    .map((_, i) => `<span class="ls-strip-dot${i < whiteMoves ? ' done' : ''}"></span>`)
     .join('');
 
   if (sequenceDone) {
-    els.turnEl.textContent = '';
-    els.continueWrap.hidden = false;
+    els.turnEl.textContent = 'Altı taş sırayla yerleştirildi.';
+    els.turnEl.classList.add('success');
+    els.continueBtn.hidden = false;
     return;
   }
-  els.continueWrap.hidden = true;
-  if (turn === 'black') els.turnEl.textContent = 'Sıra sende — bir kesişim noktasına dokun.';
+  els.turnEl.classList.remove('success');
+  els.continueBtn.hidden = true;
+  if (turn === 'black') els.turnEl.textContent = 'Sıra sende — Siyah';
   else if (turn === 'white') els.turnEl.textContent = 'Beyaz düşünüyor…';
   else els.turnEl.textContent = '';
-}
-
-function showGuides(context) {
-  if (guidesClearedForever) return;
-  const points = context.boardAdapter.getEmptyIntersections();
-  context.boardAdapter.setIntersectionGuides(points);
-  guidesShown = true;
-  context.emit('scene_guides_shown', {});
-}
-
-function clearGuidesForever(context) {
-  if (!guidesShown || guidesClearedForever) return;
-  context.boardAdapter.clearIntersectionGuides();
-  guidesClearedForever = true;
-  context.emit('scene_guides_cleared', {});
 }
 
 function scheduleWhiteMove(context) {
@@ -161,14 +154,12 @@ function playWhiteMove(context) {
 
 function handleTap(context, { row, col }) {
   if (turn !== 'black' || sequenceDone) return;
-  if (!context.boardAdapter.isLegalMove({ row, col, color: 'black' })) return; // yasal değil/dolu/dışarı — hamle sayılmaz, rehberler değişmez
+  if (!context.boardAdapter.isLegalMove({ row, col, color: 'black' })) return; // yasal değil/dolu/dışarı — hamle sayılmaz
   const result = context.boardAdapter.playMove({ row, col, color: 'black' });
   if (!result.ok) return;
 
   blackMoves += 1;
   context.emit('scene_move_played', { moveNumber: blackMoves + whiteMoves, color: 'black', row, col });
-
-  clearGuidesForever(context); // ilk yasal hamleden sonra SONSUZA KADAR
 
   turn = 'white';
   context.boardAdapter.setInputEnabled(false);
@@ -177,7 +168,7 @@ function handleTap(context, { row, col }) {
 }
 
 function startPlay(context) {
-  els.playWrap.hidden = false;
+  els.playRow.hidden = false;
   turn = 'black';
   context.boardAdapter.setInputEnabled(true);
   unsubscribeTap = context.boardAdapter.onIntersectionTap(hit => handleTap(context, hit));
@@ -186,30 +177,25 @@ function startPlay(context) {
 
 function buildDom(context) {
   const root = document.createElement('div');
-  root.className = 's01-root s02-root';
+  root.className = 'ls-strip-root';
   root.innerHTML = `
-    <div class="s02-steps" id="s02-steps">
+    <div class="ls-strip-steps" id="s02-steps">
       ${INFO_STEPS.map((s, i) => `
-        <div class="s01-intro s02-step" id="s02-step-${i}" ${i > 0 ? 'hidden' : ''}>
-          <div class="s01-intro-card">
-            <p>${escapeHtml(s.text)}</p>
-            <span class="s01-tick-wrap">
-              <button type="button" class="s01-tick" data-confirm="${i}" aria-label="${escapeHtml(s.ariaLabel)}">
-                <svg class="s01-tick-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
-              </button>
-              <span class="s01-tick-tip" aria-hidden="true">Onayla</span>
-            </span>
-          </div>
+        <div class="ls-strip-row ls-strip-fade" id="s02-step-${i}" ${i > 0 ? 'hidden' : ''}>
+          <p class="ls-strip-text">${escapeHtml(s.text)}</p>
+          <span class="ls-tick-wrap">
+            <button type="button" class="ls-tick" data-confirm="${i}" aria-label="${escapeHtml(s.ariaLabel)}">
+              <svg class="ls-tick-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+            </button>
+            <span class="ls-tick-tip" aria-hidden="true">Onayla</span>
+          </span>
         </div>
       `).join('')}
     </div>
-    <div class="s02-play" id="s02-play" hidden>
-      <div class="s02-turn" id="s02-turn" role="status" aria-live="polite"></div>
-      <div class="s02-dots s01-dots" id="s02-dots" aria-hidden="true"></div>
-      <div class="s02-continue-wrap" id="s02-continue-wrap" hidden>
-        <p class="s01-continue-reason success" id="s02-continue-reason">Altı taş sırayla yerleştirildi.</p>
-        <button type="button" class="s01-continue-btn" id="s02-continue">Devam et</button>
-      </div>
+    <div class="ls-strip-row" id="s02-play" hidden>
+      <span class="ls-strip-status" id="s02-turn" role="status" aria-live="polite"></span>
+      <div class="ls-strip-dots" id="s02-dots" aria-hidden="true"></div>
+      <button type="button" class="ls-strip-btn" id="s02-continue" hidden>Devam et</button>
     </div>
   `;
   context.container.appendChild(root);
@@ -218,10 +204,9 @@ function buildDom(context) {
     root,
     stepEls: INFO_STEPS.map((_, i) => root.querySelector(`#s02-step-${i}`)),
     confirmBtns: Array.from(root.querySelectorAll('[data-confirm]')),
-    playWrap: root.querySelector('#s02-play'),
+    playRow: root.querySelector('#s02-play'),
     turnEl: root.querySelector('#s02-turn'),
     dotsEl: root.querySelector('#s02-dots'),
-    continueWrap: root.querySelector('#s02-continue-wrap'),
     continueBtn: root.querySelector('#s02-continue'),
   };
 }
@@ -247,7 +232,7 @@ export const scene02TurnsAndIntersections = {
     context.boardAdapter.reset();
     context.boardAdapter.focus('center');
     context.boardAdapter.setInputEnabled(false);
-    context.boardAdapter.clearIntersectionGuides();
+    context.boardAdapter.clearLiberties();
 
     let confirmingStep = null;
     els.confirmBtns.forEach((btn, i) => {
@@ -255,25 +240,24 @@ export const scene02TurnsAndIntersections = {
         if (confirmingStep !== null || step !== i) return;
         confirmingStep = i;
         btn.disabled = true;
-        btn.classList.add('s01-confirmed');
+        btn.classList.add('ls-confirmed');
 
         const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const doAdvance = () => {
           confirmingStep = null;
           step = i + 1;
           context.emit('scene_info_step_confirmed', { step });
-          if (i === 1) showGuides(context);
           if (i === 2) startPlay(context);
           render();
         };
         if (reduceMotion) { doAdvance(); return; }
-        els.stepEls[i].classList.add('s01-closing');
+        els.stepEls[i].classList.add('ls-closing');
         setTimeout(doAdvance, 220);
       });
     });
 
     on(els.continueBtn, 'click', () => {
-      if (els.continueBtn.disabled) return;
+      if (els.continueBtn.hidden) return;
       const result = context.requestComplete();
       if (result?.advance?.done) {
         context.container.dispatchEvent(new CustomEvent('scene:all-complete', { bubbles: true }));

@@ -5,6 +5,14 @@
  * karşılaştığı ilk sahne: tek cümlelik bilgi kartı + üç gerçek tahta
  * boyutunun (9×9/13×13/19×19) keşfi.
  *
+ * v0.9 — DOM'u ORTAK anlatım şeridi ilkelleriyle (ls-strip-row, ls-tick,
+ * ls-pill, ls-strip-btn — bkz. styles/learning-scenes.css) kurar; artık
+ * ayrı bir sağ/sol "bilgi paneli" YOK, board'un hemen altındaki tek
+ * dikey şeritte gösterilir (bkz. görev talimatı Bölüm A). Boyut açıklama
+ * kutuları (.s01-desc) BİLİNÇLİ olarak KALDIRILDI — kompakt, sabit
+ * yükseklikli şeritte pill üzerindeki kısa alt-etiket (Başlangıç/Orta/
+ * Standart) pedagojik özeti zaten taşıyor.
+ *
  * Bu modül core/sceneRuntime.js'in {id,version,title,curriculumRef,mount,
  * unmount,canComplete,complete} sözleşmesini uygular. `boardSizesSeen` ve
  * `introConfirmed` BİLİNÇLİ olarak yalnız bu modülün kendi (oturumluk)
@@ -19,24 +27,8 @@
 
 const BOARD_SIZES = [9, 13, 19];
 const SIZE_LABELS = { 9: 'Başlangıç', 13: 'Orta', 19: 'Standart' };
-const SIZE_DESCS = {
-  9: 'Daha az kesişim, daha hızlı oyun. Temel kuralları ve yakın mücadeleyi öğrenmek için ideal.',
-  13: 'Alan genişler, kararlar çoğalır. Yerel mücadele ile tahta geneli arasında geçiş başlar.',
-  19: 'Profesyonel standart tahta. Tam strateji derinliği ve uzun oyunlar için.',
-};
 const INTRO_TEXT = "Go, 19×19'luk bir tahta üzerinde oynanan iki kişilik bir strateji oyunudur.";
 const DEFAULT_SIZE = 19;
-
-function gridIconSvg(size) {
-  const n = size === 9 ? 4 : size === 13 ? 5 : 7;
-  const w = 22, step = w / (n - 1);
-  let lines = '';
-  for (let i = 0; i < n; i++) {
-    const p = (i * step).toFixed(1);
-    lines += `<line x1="${p}" y1="0" x2="${p}" y2="${w}"/><line x1="0" y1="${p}" x2="${w}" y2="${p}"/>`;
-  }
-  return `<svg class="s01-grid" width="22" height="22" viewBox="0 0 ${w} ${w}" aria-hidden="true"><g stroke="currentColor" stroke-width=".7" opacity=".6">${lines}</g></svg>`;
-}
 
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -49,35 +41,33 @@ let introConfirmed = false;
 let els = null; // mount sırasında doldurulan DOM referansları
 let cleanupFns = [];
 
-function render(context) {
+function render() {
   if (!els) return;
   const seenCount = boardSizesSeen.size;
   const allSeen = seenCount >= BOARD_SIZES.length;
 
-  els.introCard.hidden = introConfirmed;
-  els.exploreWrap.hidden = !introConfirmed;
+  els.introRow.hidden = introConfirmed;
+  els.exploreRow.hidden = !introConfirmed;
 
-  els.dotsEl.innerHTML = BOARD_SIZES.map(s => `<span class="s01-dot${boardSizesSeen.has(s) ? ' done' : ''}"></span>`).join('');
-  els.progressText.textContent = `${seenCount}/${BOARD_SIZES.length} tahta keşfedildi`;
+  els.dotsEl.innerHTML = BOARD_SIZES.map(s => `<span class="ls-strip-dot${boardSizesSeen.has(s) ? ' done' : ''}"></span>`).join('');
 
   const nextUnseen = BOARD_SIZES.find(s => !boardSizesSeen.has(s));
-  els.cards.forEach(btn => {
+  els.pills.forEach(btn => {
     const size = Number(btn.dataset.size);
     btn.classList.toggle('seen', boardSizesSeen.has(size));
     btn.classList.toggle('next-hint', nextUnseen != null && size === nextUnseen && !boardSizesSeen.has(size));
   });
 
   if (allSeen) {
-    els.reasonEl.textContent = 'Tahtaları tanıdın.';
-    els.reasonEl.classList.add('success');
+    els.statusEl.textContent = 'Tahtaları tanıdın.';
+    els.statusEl.classList.add('success');
+    els.progressText.textContent = '';
     els.continueBtn.disabled = false;
     els.continueBtn.removeAttribute('aria-disabled');
   } else {
-    const remaining = BOARD_SIZES.length - seenCount;
-    els.reasonEl.textContent = remaining === BOARD_SIZES.length
-      ? 'Devam etmek için üç tahta boyutunu da keşfet.'
-      : `Devam etmek için ${remaining} tahta boyutu daha keşfet.`;
-    els.reasonEl.classList.remove('success');
+    els.statusEl.textContent = 'Üç tahta boyutunu da keşfet.';
+    els.statusEl.classList.remove('success');
+    els.progressText.textContent = `${seenCount}/${BOARD_SIZES.length}`;
     els.continueBtn.disabled = true;
     els.continueBtn.setAttribute('aria-disabled', 'true');
   }
@@ -91,17 +81,16 @@ function selectSize(context, size) {
   context.boardAdapter.reset();
   context.boardAdapter.focus(size === 19 ? 'board19' : 'overview');
 
-  els.cards.forEach(btn => {
+  els.pills.forEach(btn => {
     const active = Number(btn.dataset.size) === size;
     btn.classList.toggle('active', active);
     btn.setAttribute('aria-pressed', String(active));
   });
-  els.descEl.textContent = SIZE_DESCS[size];
 
   if (!wasSeen) {
     context.emit('scene_board_size_viewed', { boardSize: size });
   }
-  render(context);
+  render();
   if (!wasSeen && boardSizesSeen.size === BOARD_SIZES.length) {
     context.emit('scene_completion_unlocked', {});
   }
@@ -109,58 +98,49 @@ function selectSize(context, size) {
 
 function buildDom(context) {
   const root = document.createElement('div');
-  root.className = 's01-root';
+  root.className = 'ls-strip-root';
   root.innerHTML = `
-    <div class="s01-intro" id="s01-intro">
-      <div class="s01-intro-card">
-        <p id="s01-intro-text"></p>
-        <span class="s01-tick-wrap">
-          <button type="button" class="s01-tick" id="s01-confirm" aria-label="Bilgiyi onayla">
-            <svg class="s01-tick-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
-          </button>
-          <span class="s01-tick-tip" aria-hidden="true">Onayla</span>
-        </span>
-      </div>
+    <div class="ls-strip-row ls-strip-fade" id="s01-intro">
+      <p class="ls-strip-text" id="s01-intro-text"></p>
+      <span class="ls-tick-wrap">
+        <button type="button" class="ls-tick" id="s01-confirm" aria-label="Bilgiyi onayla">
+          <svg class="ls-tick-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        </button>
+        <span class="ls-tick-tip" aria-hidden="true">Onayla</span>
+      </span>
     </div>
-    <div class="s01-explore" id="s01-explore" hidden>
-      <div class="s01-label">Üç tahta boyutunu da keşfet.</div>
-      <div class="s01-cards" role="group" aria-label="Tahta boyutu seç"></div>
-      <div class="s01-desc" id="s01-desc"></div>
-      <div class="s01-progress" role="status" aria-live="polite">
-        <span class="s01-dots" id="s01-dots"></span>
-        <span class="s01-progress-text" id="s01-progress-text"></span>
-      </div>
-      <div class="s01-continue-wrap">
-        <p class="s01-continue-reason" id="s01-continue-reason"></p>
-        <button type="button" class="s01-continue-btn" id="s01-continue" disabled aria-describedby="s01-continue-reason">Devam et</button>
-      </div>
+    <div class="ls-strip-row" id="s01-explore" hidden>
+      <span class="ls-strip-status" id="s01-status"></span>
+      <span class="ls-strip-caption" id="s01-progress-text"></span>
+      <div class="ls-pills" id="s01-pills" role="group" aria-label="Tahta boyutu seç"></div>
+      <div class="ls-strip-dots" id="s01-dots" aria-hidden="true"></div>
+      <button type="button" class="ls-strip-btn" id="s01-continue" disabled aria-describedby="s01-status">Devam et</button>
     </div>
   `;
   context.container.appendChild(root);
 
-  const cardsWrap = root.querySelector('.s01-cards');
-  const cardButtons = BOARD_SIZES.map(size => {
+  const pillsWrap = root.querySelector('#s01-pills');
+  const pillButtons = BOARD_SIZES.map(size => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 's01-card';
+    btn.className = 'ls-pill';
     btn.dataset.size = String(size);
     btn.setAttribute('aria-pressed', 'false');
-    btn.innerHTML = `${size}×${size}${gridIconSvg(size)}<span class="s01-sub">${escapeHtml(SIZE_LABELS[size])}</span><span class="s01-check" aria-hidden="true">✓</span>`;
-    cardsWrap.appendChild(btn);
+    btn.innerHTML = `${size}×${size}<span class="ls-pill-sub">${escapeHtml(SIZE_LABELS[size])}</span><span class="ls-pill-check" aria-hidden="true">✓</span>`;
+    pillsWrap.appendChild(btn);
     return btn;
   });
 
   return {
     root,
-    introCard: root.querySelector('#s01-intro'),
+    introRow: root.querySelector('#s01-intro'),
     introText: root.querySelector('#s01-intro-text'),
     confirmBtn: root.querySelector('#s01-confirm'),
-    exploreWrap: root.querySelector('#s01-explore'),
-    cards: cardButtons,
-    descEl: root.querySelector('#s01-desc'),
-    dotsEl: root.querySelector('#s01-dots'),
+    exploreRow: root.querySelector('#s01-explore'),
+    pills: pillButtons,
+    statusEl: root.querySelector('#s01-status'),
     progressText: root.querySelector('#s01-progress-text'),
-    reasonEl: root.querySelector('#s01-continue-reason'),
+    dotsEl: root.querySelector('#s01-dots'),
     continueBtn: root.querySelector('#s01-continue'),
   };
 }
@@ -189,12 +169,11 @@ export const scene01BoardIntro = {
     context.boardAdapter.setSize(DEFAULT_SIZE);
     context.boardAdapter.reset();
     context.boardAdapter.focus('board19');
-    els.cards.forEach(btn => {
+    els.pills.forEach(btn => {
       const active = Number(btn.dataset.size) === DEFAULT_SIZE;
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-pressed', String(active));
     });
-    els.descEl.textContent = SIZE_DESCS[DEFAULT_SIZE];
 
     let confirming = false;
     on(els.confirmBtn, 'click', () => {
@@ -206,25 +185,25 @@ export const scene01BoardIntro = {
       els.confirmBtn.disabled = true;
       // Tick'in kendi kısa tamamlanma geri bildirimi (renk/ikon vurgusu) —
       // kartın kapanma geçişiyle EŞ ZAMANLI başlar.
-      els.confirmBtn.classList.add('s01-confirmed');
+      els.confirmBtn.classList.add('ls-confirmed');
 
       const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const doConfirm = () => {
         introConfirmed = true;
         context.emit('scene_intro_confirmed', {});
-        // Kart kapanır kapanmaz kullanıcı zaten varsayılan (19×19) tahtayı
+        // Satır kapanır kapanmaz kullanıcı zaten varsayılan (19×19) tahtayı
         // görüyor — bunu otomatik "görüldü" say (tıklama BEKLENMEZ).
         selectSize(context, DEFAULT_SIZE);
-        render(context);
-        const firstCard = els.cards.find(b => b.classList.contains('active')) || els.cards[0];
-        if (firstCard) firstCard.focus();
+        render();
+        const firstPill = els.pills.find(b => b.classList.contains('active')) || els.pills[0];
+        if (firstPill) firstPill.focus();
       };
       if (reduceMotion) { doConfirm(); return; }
-      els.introCard.classList.add('s01-closing');
+      els.introRow.classList.add('ls-closing');
       setTimeout(doConfirm, 220);
     });
 
-    els.cards.forEach(btn => {
+    els.pills.forEach(btn => {
       on(btn, 'click', () => selectSize(context, Number(btn.dataset.size)));
     });
 
@@ -239,7 +218,7 @@ export const scene01BoardIntro = {
       }
     });
 
-    render(context);
+    render();
   },
 
   unmount() {

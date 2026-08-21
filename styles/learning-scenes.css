@@ -1,19 +1,26 @@
 /**
  * styles/learning-scenes.css
  *
- * Yeni sahne tabanlı öğrenme kabuğunun stil dosyası. ogren-3d.html'in
+ * v0.9 — Sahne tabanlı öğrenme kabuğunun stil dosyası. ogren-3d.html'in
  * bespoke koyu/altın renk paletiyle (--gold/--dark/--glass/--gborder)
- * TUTARLI ama kopyası DEĞİL — yalnız bu sayfanın ihtiyacı olan minimal
- * sahne yüzeyi için yazıldı.
+ * TUTARLI ama kopyası DEĞİL.
  *
- * Layout ilkesi: board ve bilgi alanı AYRI bölgelerdir (#ls-board-region /
- * #ls-info-region), flex ile bölünür. Bilgi alanı canvas'ın üzerine
- * position:absolute/fixed ile BİNDİRİLMEZ — masaüstünde board'un
- * YANINDA sabit genişlikli bir sütun, dar viewport'ta board'un ALTINDA
- * kalan-alanı-dolduran bir bölge olarak akışa katılır. Bilgi alanı
- * kendi içeriği (intro kartı ↔ keşif paneli) değiştiğinde board
- * bölgesinin boyutu ASLA değişmez (bkz. #ls-board-region'ın sabit
- * flex-basis'i) — bu yüzden kart açılıp kapanırken board zıplamaz.
+ * Layout ilkesi (v0.9'da BAŞTAN YAZILDI — bkz. görev talimatı Bölüm A):
+ * artık sağda/solda AYRI bir "bilgi paneli" YOK. Tahta (#ls-board-region)
+ * ve anlatım şeridi (#ls-narration) TEK bir dikey eksende (#ls-stage),
+ * board ÜSTTE / anlatım ALTTA, İKİSİ DE AYNI genişlik bütçesini paylaşır
+ * — bu yüzden ayrıca "hizalama" hesaplamaya gerek yok, ikisi zaten aynı
+ * konteynerin çocukları. Bu TEK dikey model masaüstü/tablet/mobil
+ * FARKETMEKSİZİN aynıdır (eski satır↔sütun media-query geçişi kaldırıldı).
+ *
+ * Yerleşim kararlılığı: #ls-narration'ın DIŞ yüksekliği (--narration-h)
+ * SABİT bir clamp() formülüdür — sahne/adım içeriği DEĞİŞSE BİLE bu
+ * yükseklik ASLA değişmez (yalnız İÇERİK kendi içinde yeniden akar).
+ * Bu sayede #ls-board-region (flex:1, kalan alanı doldurur) hiçbir bilgi
+ * geçişinde büyüyüp küçülmez — board'un bounding box'ı sabit kalır.
+ * "Aktif oyun sırasında daha kompakt" ifadesi İÇERİĞİN (yazı boyutu,
+ * satır sayısı) daha yalın olması anlamındadır — DIŞ kutunun kendisi
+ * asla yeniden boyutlanmaz.
  */
 
 :root {
@@ -25,6 +32,7 @@
   --text: #e8e4de;
   --muted: rgba(232, 228, 222, .5);
   --green: #3ecf80;
+  --narration-h: clamp(96px, 15vh, 130px);
 }
 
 * { box-sizing: border-box; }
@@ -37,24 +45,35 @@ body {
 /* ── Layout iskeleti ──────────────────────────────────────────────── */
 #ls-layout {
   position: fixed; inset: 0;
-  display: flex; flex-direction: row;
+  display: flex; flex-direction: column; align-items: center;
+}
+#ls-stage {
+  display: flex; flex-direction: column;
+  width: 100%; height: 100%;
+  max-width: min(960px, 94vw);
+  margin: 0 auto;
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
 }
 #ls-board-region {
-  flex: 1 1 auto; min-width: 0; position: relative;
+  flex: 1 1 auto; min-height: 0; min-width: 0; position: relative;
   display: flex; align-items: center; justify-content: center;
 }
 #ls-canvas { width: 100%; height: 100%; display: block; }
 
-#ls-info-region {
-  flex: 0 0 clamp(320px, 30vw, 420px);
-  min-width: 0;
-  display: flex; flex-direction: column; justify-content: center;
-  padding: 1.4rem 1.6rem;
+/* ── Anlatım şeridi — tahtanın HEMEN ALTINDA, aynı genişlik bütçesinde.
+   Ayrı bir panel/kutu görünümü YOK: sert kenarlık, dikey/yatay ayırıcı
+   çizgi veya dekoratif divider KULLANILMAZ. Ayrım yalnız boşluk,
+   tipografi ve çok hafif bir yüzey-tonu farkıyla sağlanır. ── */
+#ls-narration {
+  flex: 0 0 var(--narration-h);
+  height: var(--narration-h);
+  display: flex; align-items: center; justify-content: center;
+  padding: .5rem 1.1rem;
   overflow-y: auto;
-  /* Board'dan AYRIŞMA çizgiyle değil, yalnız bu ince yüzey-tonu
-     farkı ve boşlukla sağlanır — bkz. dosya başı layout notu. */
+  text-align: center;
   background: var(--glass); backdrop-filter: blur(16px);
 }
+#ls-scene-host { width: 100%; max-width: 620px; margin: 0 auto; }
 
 #ls-topbar {
   position: fixed; top: 0; left: 0; z-index: 20;
@@ -67,117 +86,119 @@ body {
 }
 #ls-topbar a:hover { border-color: var(--gold); }
 
-.s01-root { width: 100%; display: flex; flex-direction: column; gap: .9rem; }
+/* ══════════════════════════════════════════════════════════════════
+   ORTAK ŞERİT İLKELLERİ (.ls-strip-*) — Sahne #1/#2/#3 bunları paylaşır.
+   ══════════════════════════════════════════════════════════════════ */
+.ls-strip-root { width: 100%; display: flex; flex-direction: column; gap: .4rem; }
 
-/* ── Onboarding bilgi kartı — artık normal akışta, canvas üzerine
-   bindirilmiyor. Board'la görsel rekabete girmesin diye sade/ikincil. ── */
-.s01-intro { width: 100%; }
-.s01-intro[hidden] { display: none; }
-.s01-intro-card {
-  background: rgba(255, 255, 255, .03);
-  border: 1px solid var(--gborder); border-radius: 12px;
-  padding: 1rem 1.1rem;
-  display: flex; flex-direction: column; gap: .8rem; align-items: flex-end;
-  opacity: 1; transform: translateY(0) scale(1);
-  transition: opacity .22s ease, transform .22s ease;
+/* Tek satırlık, ortalanmış, sarabilen bir akış satırı. */
+.ls-strip-row {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: .5rem .7rem; width: 100%;
 }
-.s01-intro.s01-closing .s01-intro-card { opacity: 0; transform: translateY(-6px) scale(.97); }
-.s01-intro-card p { margin: 0; align-self: flex-start; font-size: .86rem; line-height: 1.6; color: var(--text); }
-@media (prefers-reduced-motion: reduce) {
-  .s01-intro-card, .s01-intro.s01-closing .s01-intro-card { transition: none; }
+.ls-strip-row[hidden] { display: none; }
+
+.ls-strip-text {
+  margin: 0; font-size: .84rem; line-height: 1.45; color: var(--text);
+}
+.ls-strip-status {
+  font-size: .82rem; font-weight: 600; color: var(--text); line-height: 1.4;
+}
+.ls-strip-status.success { color: var(--green); }
+.ls-strip-caption {
+  font-size: .72rem; color: var(--muted); line-height: 1.4;
 }
 
 /* ── Tick onay kontrolü — metin düğmesi DEĞİL, dairesel bir ikon
-   düğmesi. Erişilebilir adı aria-label ile taşınır (görünür metin
-   YOK); hover/focus'ta küçük bir "Onayla" ipucu belirir. ── */
-.s01-tick-wrap { position: relative; display: inline-flex; }
-.s01-tick {
-  width: 44px; height: 44px; border-radius: 50%;
+   düğmesi. Erişilebilir adı aria-label ile taşınır; hover/focus'ta
+   küçük bir "Onayla" ipucu belirir. ── */
+.ls-tick-wrap { position: relative; display: inline-flex; flex: 0 0 auto; }
+.ls-tick {
+  width: 40px; height: 40px; border-radius: 50%;
   border: 1px solid var(--gborder); background: rgba(200, 168, 75, .08);
   color: var(--gold); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: background .16s ease, border-color .16s ease, transform .16s ease;
   padding: 0;
 }
-.s01-tick:hover { border-color: var(--gold); background: rgba(200, 168, 75, .16); }
-.s01-tick-icon { width: 20px; height: 20px; }
-.s01-tick-icon path {
+.ls-tick:hover { border-color: var(--gold); background: rgba(200, 168, 75, .16); }
+.ls-tick-icon { width: 18px; height: 18px; }
+.ls-tick-icon path {
   fill: none; stroke: currentColor; stroke-width: 2.4;
   stroke-linecap: round; stroke-linejoin: round;
-  stroke-dasharray: 20; stroke-dashoffset: 0;
 }
-.s01-tick.s01-confirmed {
+.ls-tick.ls-confirmed {
   border-color: var(--green); background: rgba(62, 207, 128, .16); color: var(--green);
   transform: scale(1.08);
 }
-.s01-tick-tip {
-  position: absolute; top: 50%; right: calc(100% + 8px); transform: translateY(-50%) translateX(4px);
+.ls-tick-tip {
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
   background: var(--glass); border: 1px solid var(--gborder); border-radius: 6px;
   padding: .25rem .55rem; font-size: .68rem; color: var(--text); white-space: nowrap;
   opacity: 0; pointer-events: none; transition: opacity .14s ease, transform .14s ease;
 }
-.s01-tick:hover + .s01-tick-tip,
-.s01-tick:focus-visible + .s01-tick-tip {
-  opacity: 1; transform: translateY(-50%) translateX(0);
+.ls-tick:hover + .ls-tick-tip,
+.ls-tick:focus-visible + .ls-tick-tip {
+  opacity: 1; transform: translateX(-50%) translateY(0);
 }
-.s01-tick:focus-visible, .s01-card:focus-visible, .s01-continue-btn:focus-visible {
+.ls-tick:focus-visible, .ls-pill:focus-visible, .ls-strip-btn:focus-visible, .ls-choice:focus-visible {
   outline: 2px solid var(--gold2); outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .s01-tick { transition: none; }
-  .s01-tick.s01-confirmed { transform: none; }
-  .s01-tick-tip { transition: none; }
+  .ls-tick, .ls-tick.ls-confirmed, .ls-tick-tip { transition: none; transform: none; }
 }
 
-/* ── Keşif paneli — aynı bilgi bölgesinde, intro kartının yerini alır ── */
-.s01-explore { width: 100%; display: flex; flex-direction: column; gap: .65rem; }
-.s01-explore[hidden] { display: none; }
-.s01-label { font-size: .82rem; font-weight: 600; color: var(--text); }
-.s01-cards { display: flex; gap: .5rem; }
-.s01-card {
-  flex: 1; padding: .6rem .3rem; border: 1px solid var(--gborder); border-radius: 8px;
-  background: transparent; color: var(--muted); font-size: .74rem; font-weight: 600;
-  cursor: pointer; text-align: center; transition: all .18s;
-  font-family: inherit; line-height: 1.5; position: relative; min-height: 44px;
+/* ── Kompakt boyut/seçim pilleri (Sahne #1 tahta boyutu seçimi) ── */
+.ls-pills { display: inline-flex; gap: .4rem; flex: 0 0 auto; }
+.ls-pill {
+  padding: .4rem .65rem; border: 1px solid var(--gborder); border-radius: 8px;
+  background: transparent; color: var(--muted); font-size: .72rem; font-weight: 600;
+  cursor: pointer; text-align: center; transition: all .16s;
+  font-family: inherit; position: relative; min-height: 40px; min-width: 44px;
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: .1rem;
 }
-.s01-card:hover { border-color: var(--gold); color: var(--text); }
-.s01-card.active { background: rgba(200, 168, 75, .14); border-color: var(--gold); color: var(--gold); box-shadow: 0 0 10px rgba(200, 168, 75, .15); }
-.s01-card.next-hint:not(.active) { border-color: rgba(200, 168, 75, .45); }
-.s01-sub { display: block; font-size: .62rem; font-weight: 400; opacity: .75; }
-.s01-grid { display: block; margin: .2rem auto .1rem; opacity: .55; }
-.s01-check { position: absolute; top: 3px; right: 4px; font-size: .62rem; color: var(--green); opacity: 0; transform: scale(.6); transition: opacity .18s, transform .18s; }
-.s01-card.seen .s01-check { opacity: 1; transform: scale(1); }
+.ls-pill:hover { border-color: var(--gold); color: var(--text); }
+.ls-pill.active { background: rgba(200, 168, 75, .14); border-color: var(--gold); color: var(--gold); }
+.ls-pill-sub { display: block; font-size: .58rem; font-weight: 400; opacity: .8; }
+.ls-pill-check { font-size: .6rem; color: var(--green); opacity: 0; transform: scale(.6); transition: opacity .16s, transform .16s; }
+.ls-pill.seen .ls-pill-check { opacity: 1; transform: scale(1); }
 @media (prefers-reduced-motion: reduce) {
-  .s01-card, .s01-check { transition: none; }
+  .ls-pill, .ls-pill-check { transition: none; }
 }
-.s01-desc {
-  font-size: .74rem; color: var(--muted); line-height: 1.55; padding: .35rem .55rem;
-  background: rgba(200, 168, 75, .05); border-radius: 4px; border-left: 2px solid var(--gborder);
-}
-.s01-progress { display: flex; align-items: center; gap: .5rem; font-size: .72rem; color: var(--muted); }
-.s01-dots { display: inline-flex; gap: .3rem; }
-.s01-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gborder); transition: background .18s; }
-.s01-dot.done { background: var(--green); }
-.s01-continue-wrap { display: flex; flex-direction: column; gap: .35rem; }
-.s01-continue-reason { margin: 0; font-size: .68rem; color: var(--muted); line-height: 1.4; }
-.s01-continue-reason.success { color: var(--green); font-weight: 600; }
-.s01-continue-btn {
-  align-self: flex-start; padding: .55rem 1.2rem; border-radius: 8px; min-height: 44px;
-  border: 1px solid var(--gborder); background: rgba(200, 168, 75, .1); color: var(--muted);
-  font-size: .8rem; font-weight: 700; cursor: pointer; transition: all .18s; font-family: inherit;
-}
-.s01-continue-btn:disabled { cursor: default; opacity: .5; }
-.s01-continue-btn:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--dark); }
-.s01-continue-btn:not(:disabled):hover { filter: brightness(1.08); }
 
-/* ── Sahne #2 — sıra/ilerleme paneli. Adım kartları .s01-intro/.s01-intro-card
-   İLE AYNI stilleri paylaşır (bkz. scenes/scene02TurnsAndIntersections.js
-   buildDom); burada yalnız kart dizisinin bittiği yerde başlayan sade
-   oyun-durumu satırı için ek kurallar var. Board üzerine BİNDİRİLMEZ. ── */
-.s02-play { display: flex; flex-direction: column; gap: .7rem; width: 100%; }
-.s02-play[hidden] { display: none; }
-.s02-turn { min-height: 1.2em; font-size: .82rem; color: var(--text); }
-.s02-continue-wrap { display: flex; flex-direction: column; gap: .35rem; }
+.ls-strip-dots { display: inline-flex; gap: .3rem; flex: 0 0 auto; }
+.ls-strip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gborder); transition: background .18s; }
+.ls-strip-dot.done { background: var(--green); }
+@media (prefers-reduced-motion: reduce) { .ls-strip-dot { transition: none; } }
+
+.ls-strip-btn {
+  flex: 0 0 auto; padding: .5rem 1.1rem; border-radius: 8px; min-height: 40px;
+  border: 1px solid var(--gborder); background: rgba(200, 168, 75, .1); color: var(--muted);
+  font-size: .78rem; font-weight: 700; cursor: pointer; transition: all .18s; font-family: inherit;
+}
+.ls-strip-btn:disabled { cursor: default; opacity: .5; }
+.ls-strip-btn:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--dark); }
+.ls-strip-btn:not(:disabled):hover { filter: brightness(1.08); }
+@media (prefers-reduced-motion: reduce) { .ls-strip-btn { transition: none; } }
+
+/* ── Karşılaştırma sorusu seçenekleri (Sahne #3) ── */
+.ls-choices { display: inline-flex; gap: .5rem; flex-wrap: wrap; justify-content: center; }
+.ls-choice {
+  padding: .5rem .9rem; border-radius: 8px; min-height: 40px;
+  border: 1px solid var(--gborder); background: transparent; color: var(--text);
+  font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: all .16s;
+}
+.ls-choice:hover { border-color: var(--gold); }
+.ls-choice:disabled { cursor: default; opacity: .55; }
+@media (prefers-reduced-motion: reduce) { .ls-choice { transition: none; } }
+
+/* Kart geçişi — açılış/kapanış İÇİN opsiyonel, opacity/transform ile. */
+.ls-strip-fade { transition: opacity .2s ease, transform .2s ease; }
+.ls-strip-fade.ls-closing { opacity: 0; transform: translateY(-4px); }
+@media (prefers-reduced-motion: reduce) {
+  .ls-strip-fade, .ls-strip-fade.ls-closing { transition: none; }
+}
 
 /* ── Sahne bitti / sıradaki sahne hazırlanıyor ── */
 #ls-final {
@@ -199,22 +220,7 @@ body {
 #ls-error.show { display: flex; }
 #ls-error p { color: var(--muted); font-size: .85rem; max-width: 360px; }
 
-/* ── Dar viewport (tablet/mobil): board üstte SABİT yükseklikte,
-   bilgi alanı altta kalan-alanı-doldurur. Board'un yüksekliği
-   #ls-info-region'daki içerik DEĞİŞTİĞİNDE bile SABİT kalır — bu
-   yüzden kart açılıp kapanırken board zıplamaz. Eşik (768px) mevcut
-   styles/learning-ui.css'in tablet kırılımıyla TUTARLI — cihaz
-   modeline göre değil, düzenin iki sütuna rahatça sığıp sığmadığına
-   göre seçildi. ── */
-@media (max-width: 768px) {
-  #ls-layout { flex-direction: column; }
-  #ls-board-region { flex: 0 0 52vh; }
-  #ls-info-region {
-    flex: 1 1 auto;
-    padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
-    justify-content: flex-start;
-  }
-  .s01-continue-btn { width: 100%; align-self: stretch; }
-  .s01-tick-tip { top: calc(100% + 8px); right: auto; left: 50%; transform: translateX(-50%) translateY(-4px); }
-  .s01-tick:hover + .s01-tick-tip, .s01-tick:focus-visible + .s01-tick-tip { transform: translateX(-50%) translateY(0); }
+@media (max-width: 480px) {
+  .ls-strip-btn { width: 100%; }
+  .ls-pill { min-width: 40px; padding: .35rem .5rem; }
 }

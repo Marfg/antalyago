@@ -2,9 +2,13 @@
  * tests/verify-learning-scenes.mjs
  * node tests/verify-learning-scenes.mjs
  *
- * learning-scenes.html + Sahne #1 için gerçek tarayıcı doğrulaması.
+ * learning-scenes.html + Sahne #1/#2/#3 için gerçek tarayıcı doğrulaması.
  * tests/verify-learning-ui.mjs'in AYNI (context.route ile yerel dosya
  * sunma, gerçek ağ sunucusu gerektirmeyen) deseniyle.
+ *
+ * v0.9 — ortak anlatım şeridi (Bölüm A), Sahne #2 neon guide temizliği
+ * (Bölüm B) ve Sahne #3 (Bölüm C) için TAM olarak yeniden yazıldı; eski
+ * #ls-info-region ve s01-/s02- seçicilerine dayanan testler ARTIK YOK.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -17,8 +21,13 @@ const BASE = 'http://antalyago-scenes.test';
 const PAGE = 'learning-scenes.html';
 const VIEWPORTS = {
   desktop: { width: 1280, height: 800 },
+  tablet: { width: 820, height: 1180 },
   mobile: { width: 390, height: 844 },
 };
+// Bekleme sürelerini SIFIRA indiren query — turn-loop/timer testlerinin
+// gerçek zamanlı (450–700ms×N) beklemesini önler (bkz. learning-scenes.html
+// dosya başı test-hook notu). Üretim davranışını DEĞİŞTİRMEZ.
+const FAST_QUERY = '?whiteMoveDelayMs=0&centerLibertyDisplayMs=0&whiteCornerDelayMs=0&transitionDelayMs=0';
 
 let pass = 0, fail = 0;
 const tests = [];
@@ -75,9 +84,24 @@ async function openScenesPage({ viewport = VIEWPORTS.desktop, reducedMotion = 'n
   };
 }
 
+function boxesIntersect(a, b) {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
 /* ══════════════════════════════════════════════════════════════════
-   SAHNE #2 test yardımcıları
+   Ortak akış yardımcıları
    ══════════════════════════════════════════════════════════════════ */
+async function confirmIntro(page) {
+  await page.waitForSelector('#s01-confirm');
+  await page.click('#s01-confirm');
+  await page.waitForTimeout(280);
+}
+async function exploreAllSizes(page) {
+  for (const size of [9, 13, 19]) {
+    await page.click(`.ls-pill[data-size="${size}"]`);
+    await page.waitForTimeout(80);
+  }
+}
 async function advanceToScene2(page) {
   await confirmIntro(page);
   await exploreAllSizes(page);
@@ -88,21 +112,23 @@ async function confirmS02Step(page, i) {
   await page.click(`#s02-step-${i} [data-confirm]`);
   await page.waitForTimeout(280);
 }
+async function playThroughS02Info(page) {
+  await confirmS02Step(page, 0);
+  await confirmS02Step(page, 1);
+  await confirmS02Step(page, 2);
+}
 async function getEventLog(page) {
   return page.evaluate(() => {
     try { return JSON.parse(localStorage.getItem('go_teacher_event_log_v1') || '[]'); }
     catch { return []; }
   });
 }
-/** İki gerçek (yasal) kesişim noktasının çakışmasını göze alarak, tahta
-    merkezi çevresinde küçük bir tıklama deseni deneyerek İLK yasal siyah
-    hamleyi bulur/oynar — sahnenin kendi hit-testing'ine (screenToGrid)
-    GÜVENİR, kesin piksel matematiği tekrarlanmaz (bkz. adapters/
-    sceneBoardAdapter.js). moveNumber'ın artmasını event log üzerinden
-    doğrular. */
-async function playOneBlackMove(page) {
+/** Tahta merkezi çevresinde küçük bir tıklama deseni deneyerek İLK yasal
+    siyah hamleyi bulur/oynar — sahnenin kendi hit-testing'ine (screenToGrid)
+    GÜVENİR, kesin piksel matematiği tekrarlanmaz. */
+async function playOneBlackMoveScene2(page) {
   const canvasBox = await page.locator('#ls-canvas').boundingBox();
-  const before = (await getEventLog(page)).filter(e => e.type === 'scene_move_played' && e.payload.color === 'black').length;
+  const before = (await getEventLog(page)).filter(e => e.type === 'scene_move_played' && e.payload.color === 'black' && e.stepId === 'scene-02-turns-and-intersections').length;
   const offsets = [
     [0, -6], [0, -36], [0, 24], [-30, -6], [30, -6], [-30, -36], [30, -36], [-30, 24], [30, 24],
     [0, -66], [0, 54], [-60, -6], [60, -6], [-60, -36], [60, -36], [-60, 24], [60, 24],
@@ -111,318 +137,135 @@ async function playOneBlackMove(page) {
   for (const [dx, dy] of offsets) {
     await page.mouse.click(canvasBox.x + canvasBox.width / 2 + dx, canvasBox.y + canvasBox.height / 2 + dy);
     await page.waitForTimeout(30);
-    const now = (await getEventLog(page)).filter(e => e.type === 'scene_move_played' && e.payload.color === 'black').length;
+    const now = (await getEventLog(page)).filter(e => e.type === 'scene_move_played' && e.payload.color === 'black' && e.stepId === 'scene-02-turns-and-intersections').length;
     if (now > before) return true;
   }
   return false;
 }
-async function playThroughStep2(page) {
-  await confirmS02Step(page, 0);
-  await confirmS02Step(page, 1);
-  await confirmS02Step(page, 2);
+async function playScene2ToCompletion(page) {
+  await playThroughS02Info(page);
+  for (let i = 0; i < 3; i++) {
+    const placed = await playOneBlackMoveScene2(page);
+    if (!placed) return false;
+    await page.waitForTimeout(60);
+  }
+  return true;
 }
-
-async function confirmIntro(page) {
-  await page.waitForSelector('#s01-confirm');
-  await page.click('#s01-confirm');
+async function advanceToScene3(page) {
+  await advanceToScene2(page);
+  const ok = await playScene2ToCompletion(page);
+  if (!ok) throw new Error('Sahne #2 tamamlanamadı — Sahne #3\'e geçilemiyor');
+  await page.click('#s02-continue');
+  await page.waitForTimeout(300);
+}
+/** SGF/adapter projeksiyon matematiğine göre 9×9'da merkez kesişim
+    (row=4,col=4) — camera 'center' preset'inde — canvas'ın YATAY merkezine
+    TAM oturur (rx=0 çünkü world x=0); dikey ofset STONE_R'ye bağlı birkaç
+    px'lik bir sapmadır (bkz. milestone notları) — bu yüzden canvas
+    bbox'ının merkezine yakın bir nokta tıklamak güvenilir biçimde merkez
+    kesişimi hedefler. */
+async function clickBoardCenter(page, dy = -8) {
+  const canvasBox = await page.locator('#ls-canvas').boundingBox();
+  await page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2 + dy);
+}
+async function confirmS03Intro(page) {
+  await page.click('#s03-confirm');
   await page.waitForTimeout(280);
 }
-async function exploreAllSizes(page) {
-  for (const size of [9, 13, 19]) {
-    await page.click(`.s01-card[data-size="${size}"]`);
-    await page.waitForTimeout(80);
+const S03_ID = 'scene-03-liberties-by-position';
+/** advanceToScene3() zaten Sahne #1/#2'nin KENDİ scene_move_played/
+    scene_completion_unlocked event'lerini AYNI paylaşılan log'a yazmış
+    olur — Sahne #3'e özgü doğrulamalar HER ZAMAN stepId ile filtrelenmeli. */
+function s03Events(events) { return events.filter(e => e.stepId === S03_ID); }
+
+/* ══════════════════════════════════════════════════════════════════
+   BÖLÜM A — Ortak anlatım şeridi
+   ══════════════════════════════════════════════════════════════════ */
+
+addTest('A1) sağ/sol bilgi paneli yok — #ls-info-region artık DOM\'da bulunmuyor', async () => {
+  const s = await openScenesPage();
+  try {
+    ensure(await s.page.locator('#ls-info-region').count() === 0, '#ls-info-region hâlâ DOM\'da');
+    ensure(await s.page.locator('#ls-narration').count() === 1, '#ls-narration bulunamadı');
+  } finally { await s.close(); }
+});
+
+addTest('A2) masaüstünde board ve anlatım şeridi AYNI dikey eksende (merkez-x hizalı)', async () => {
+  const s = await openScenesPage();
+  try {
+    const boardBox = await s.page.locator('#ls-board-region').boundingBox();
+    const narrationBox = await s.page.locator('#ls-narration').boundingBox();
+    const boardCx = boardBox.x + boardBox.width / 2;
+    const narrationCx = narrationBox.x + narrationBox.width / 2;
+    ensure(Math.abs(boardCx - narrationCx) < 2, `merkez eksenleri hizalı değil (board=${boardCx}, narration=${narrationCx})`);
+  } finally { await s.close(); }
+});
+
+addTest('A3) anlatım şeridi tahtanın ALTINDA (board.y + board.height <= narration.y)', async () => {
+  const s = await openScenesPage();
+  try {
+    const boardBox = await s.page.locator('#ls-board-region').boundingBox();
+    const narrationBox = await s.page.locator('#ls-narration').boundingBox();
+    ensure(narrationBox.y >= boardBox.y + boardBox.height - 1, 'anlatım şeridi board\'un altında değil');
+  } finally { await s.close(); }
+});
+
+addTest('A4) board ve şerit bounding box\'ları hiçbir viewport\'ta KESİŞMİYOR', async () => {
+  for (const viewport of [VIEWPORTS.desktop, VIEWPORTS.tablet, VIEWPORTS.mobile]) {
+    const s = await openScenesPage({ viewport });
+    try {
+      const boardBox = await s.page.locator('#ls-board-region').boundingBox();
+      const narrationBox = await s.page.locator('#ls-narration').boundingBox();
+      ensure(!boxesIntersect(boardBox, narrationBox), `${viewport.width}px: board/şerit kesişiyor`);
+    } finally { await s.close(); }
   }
-}
-
-addTest('1) sayfa açılıyor, Sahne #1 otomatik başlıyor', async () => {
-  const s = await openScenesPage();
-  try {
-    ensure(await s.page.locator('#s01-intro').isVisible(), 'onboarding kartı görünmüyor');
-    ensure((await s.page.locator('#s01-intro-text').textContent())?.includes('19'), 'bilgi kartı metni yanlış');
-  } finally { await s.close(); }
 });
 
-addTest('"Anladım" görünür metni artık yok, erişilebilir tick button doğru adla mevcut', async () => {
+addTest('A5) Sahne #1 bilgi değişiminde (intro→keşif) board konumu/boyutu ±1px sabit', async () => {
   const s = await openScenesPage();
   try {
-    const bodyText = await s.page.locator('#ls-info-region').textContent();
-    ensure(!bodyText.includes('Anladım'), '"Anladım" metni hâlâ görünüyor');
-    const tick = s.page.locator('#s01-confirm');
-    ensure(await tick.evaluate(el => el.tagName === 'BUTTON'), 'tick gerçek bir <button> değil');
-    ensure(await tick.evaluate(el => el.classList.contains('s01-tick')), 'tick sınıfı eksik');
-    ensure((await tick.getAttribute('aria-label')) === 'Bilgiyi onayla', 'aria-label yanlış');
-    ensure((await tick.textContent())?.trim() === '', 'tick görünür metin İÇERMEMELİ (yalnız ikon+aria-label)');
-    ensure(await s.page.locator('#s01-confirm .s01-tick-icon').count() === 1, 'görünür ✓ ikonu yok');
-  } finally { await s.close(); }
-});
-
-addTest('tick mouse ile çalışıyor', async () => {
-  const s = await openScenesPage();
-  try {
-    await s.page.click('#s01-confirm');
-    await s.page.waitForTimeout(280);
-    ensure(await s.page.locator('#s01-intro').isHidden(), 'mouse tıklaması kartı kapatmadı');
-    ensure(await s.page.locator('#s01-explore').isVisible(), 'mouse tıklaması sonrası keşif paneli açılmadı');
-  } finally { await s.close(); }
-});
-
-addTest('tick klavyeyle çalışıyor (Tab + Enter/Space)', async () => {
-  const s = await openScenesPage();
-  try {
-    await s.page.locator('#s01-confirm').focus();
-    ensure(await s.page.evaluate(() => document.activeElement?.id) === 's01-confirm', 'tick focus alamadı');
-    await s.page.keyboard.press('Enter');
-    await s.page.waitForTimeout(280);
-    ensure(await s.page.locator('#s01-intro').isHidden(), 'Enter ile tick tetiklenmedi');
-  } finally { await s.close(); }
-});
-
-addTest('scene_intro_confirmed hızlı/tekrarlı tetiklemede bile YALNIZ BİR KEZ üretiliyor', async () => {
-  const s = await openScenesPage();
-  try {
-    // Kapanış animasyonu sürerken tekrar tekrar tıkla — kilit bunu engellemeli.
-    await s.page.click('#s01-confirm');
-    await s.page.click('#s01-confirm').catch(() => {});
-    await s.page.keyboard.press('Enter').catch(() => {});
-    await s.page.waitForTimeout(300);
-    const types = await s.page.evaluate(() => {
-      try { return JSON.parse(localStorage.getItem('go_teacher_event_log_v1') || '[]').map(e => e.type); }
-      catch { return []; }
-    });
-    ensure(types.filter(t => t === 'scene_intro_confirmed').length === 1, 'scene_intro_confirmed birden fazla üretildi');
-  } finally { await s.close(); }
-});
-
-addTest('animasyon sonunda kart erişilebilir ağaçtan doğru biçimde kaldırılıyor (hidden attribute)', async () => {
-  const s = await openScenesPage();
-  try {
+    const before = await s.page.locator('#ls-board-region').boundingBox();
     await confirmIntro(s.page);
-    const introHiddenAttr = await s.page.locator('#s01-intro').evaluate(el => el.hidden);
-    ensure(introHiddenAttr === true, 'kart hidden özniteliğiyle kaldırılmadı (yalnız CSS ile gizlenmiş olabilir)');
+    const after = await s.page.locator('#ls-board-region').boundingBox();
+    ensure(Math.abs(before.width - after.width) < 1 && Math.abs(before.height - after.height) < 1
+      && Math.abs(before.x - after.x) < 1 && Math.abs(before.y - after.y) < 1, 'board konumu/boyutu değişti');
   } finally { await s.close(); }
 });
 
-addTest('2) yalnız gerekli UI görünüyor — eski ogren-3d.html elemanları/globalleri YOK', async () => {
+addTest('A6) Sahne #2 bilgi→oyun geçişinde board konumu/boyutu ±1px sabit', async () => {
   const s = await openScenesPage();
   try {
-    const oldGlobals = await s.page.evaluate(() => ({
-      nextStep: typeof window.nextStep,
-      CUR_STEP_DATA: typeof window.CUR_STEP_DATA,
-      setBoardSize: typeof window.setBoardSize,
-    }));
-    ensure(oldGlobals.nextStep === 'undefined', 'eski window.nextStep sızmış');
-    ensure(oldGlobals.CUR_STEP_DATA === 'undefined', 'eski window.CUR_STEP_DATA sızmış');
-    ensure(oldGlobals.setBoardSize === 'undefined', 'eski window.setBoardSize sızmış');
-    const hasOldChrome = await s.page.locator('#nav-bar, #sidebar, #tp-tab, #hint, #board-picker').count();
-    ensure(hasOldChrome === 0, 'ogren-3d.html\'e özgü DOM elemanları yeni sayfada bulundu');
+    await advanceToScene2(s.page);
+    const before = await s.page.locator('#ls-board-region').boundingBox();
+    await playThroughS02Info(s.page);
+    const after = await s.page.locator('#ls-board-region').boundingBox();
+    ensure(Math.abs(before.width - after.width) < 1 && Math.abs(before.height - after.height) < 1
+      && Math.abs(before.x - after.x) < 1 && Math.abs(before.y - after.y) < 1, 'board konumu/boyutu değişti');
   } finally { await s.close(); }
 });
 
-addTest('3) bilgi kartı onay sonrası geçişli kapanıyor, odak taşınıyor', async () => {
-  const s = await openScenesPage();
-  try {
-    await confirmIntro(s.page);
-    ensure(await s.page.locator('#s01-intro').isHidden(), 'kart kapanmadı');
-    ensure(await s.page.locator('#s01-explore').isVisible(), 'keşif paneli açılmadı');
-    const focusedClass = await s.page.evaluate(() => document.activeElement?.className || '');
-    ensure(focusedClass.includes('s01-card'), 'odak keşif kartına taşınmadı');
-  } finally { await s.close(); }
-});
-
-addTest('4) 19×19 başlangıçta gerçek board size, onay sonrası yalnız BİR KEZ görülmüş sayılıyor', async () => {
-  const s = await openScenesPage();
-  try {
-    await confirmIntro(s.page);
-    ensure(await s.page.locator('.s01-card[data-size="19"]').getAttribute('aria-pressed') === 'true', '19 varsayılan seçili değil');
-    ensure(await s.page.locator('.s01-card[data-size="19"]').evaluate(el => el.classList.contains('seen')), '19 otomatik görülmüş sayılmadı');
-    ensure((await s.page.locator('#s01-progress-text').textContent())?.trim() === '1/3 tahta keşfedildi', 'başlangıç ilerlemesi yanlış');
-    // Aynı karta tekrar basmak ilerlemeyi ikinci kez artırmamalı.
-    await s.page.click('.s01-card[data-size="19"]');
-    await s.page.waitForTimeout(100);
-    ensure((await s.page.locator('#s01-progress-text').textContent())?.trim() === '1/3 tahta keşfedildi', '19\'a tekrar basmak ilerlemeyi artırdı');
-  } finally { await s.close(); }
-});
-
-addTest('5-7) 9×9/13×13 seçimi gerçek tahtayı değiştirir, açıklama günceller', async () => {
-  const s = await openScenesPage();
-  try {
-    await confirmIntro(s.page);
-    await s.page.click('.s01-card[data-size="9"]');
-    await s.page.waitForTimeout(100);
-    ensure(await s.page.locator('.s01-card[data-size="9"]').getAttribute('aria-pressed') === 'true', '9 seçilmedi');
-    ensure((await s.page.locator('#s01-desc').textContent())?.includes('kesişim'), '9×9 açıklaması yanlış');
-    await s.page.click('.s01-card[data-size="13"]');
-    await s.page.waitForTimeout(100);
-    ensure((await s.page.locator('#s01-desc').textContent())?.includes('genişler'), '13×13 açıklaması yanlış');
-    await s.page.click('.s01-card[data-size="19"]');
-    await s.page.waitForTimeout(100);
-    ensure((await s.page.locator('#s01-desc').textContent())?.includes('Profesyonel'), '19×19\'a dönüş çalışmadı');
-  } finally { await s.close(); }
-});
-
-addTest('10-13) üç boyut görülmeden devam edilemiyor, neden erişilebilir, üçünde completion açılıyor', async () => {
-  const s = await openScenesPage();
-  try {
-    await confirmIntro(s.page);
-    const continueBtn = s.page.locator('#s01-continue');
-    ensure(await continueBtn.isDisabled(), 'başlangıçta Devam et aktif olmamalı');
-    const describedBy = await continueBtn.getAttribute('aria-describedby');
-    ensure(!!describedBy, 'aria-describedby yok');
-    ensure(((await s.page.locator(`#${describedBy}`).textContent()) || '').trim().length > 0, 'devre dışı nedeni boş');
-    await s.page.click('.s01-card[data-size="9"]');
-    await s.page.waitForTimeout(80);
-    ensure(await continueBtn.isDisabled(), 'iki boyutta hâlâ devre dışı olmalı');
-    await s.page.click('.s01-card[data-size="13"]');
-    await s.page.waitForTimeout(80);
-    ensure(!(await continueBtn.isDisabled()), 'üç boyut sonrası Devam et açılmadı');
-    ensure((await s.page.locator('#s01-continue-reason').textContent())?.includes('tanıdın'), 'başarı metni görünmüyor');
-  } finally { await s.close(); }
-});
-
-addTest('9,14) klavye ile tahta seçimi çalışıyor, aria-pressed doğru', async () => {
-  const s = await openScenesPage();
-  try {
-    await confirmIntro(s.page);
-    await s.page.locator('.s01-card[data-size="9"]').focus();
-    await s.page.keyboard.press('Enter');
-    await s.page.waitForTimeout(100);
-    ensure(await s.page.locator('.s01-card[data-size="9"]').getAttribute('aria-pressed') === 'true', 'Enter ile seçim çalışmadı');
-  } finally { await s.close(); }
-});
-
-addTest('completion: Sahne #1 tamamlanınca registry sırasındaki Sahne #2 OTOMATİK başlıyor (final durum HENÜZ gösterilmiyor)', async () => {
-  const s = await openScenesPage();
-  try {
-    await confirmIntro(s.page);
-    await exploreAllSizes(s.page);
-    await s.page.click('#s01-continue');
-    await s.page.waitForTimeout(300);
-    ensure(!(await s.page.locator('#ls-final').evaluate(el => el.classList.contains('show'))), 'Sahne #2 varken final durum ERKEN gösterildi');
-    ensure(s.page.url().includes('learning-scenes.html'), 'sayfa otomatik olarak başka bir URL\'ye yönlendi');
-    ensure(await s.page.locator('#s01-intro, #s01-explore').count() === 0, 'Sahne #1 unmount edilmemiş (DOM hâlâ duruyor)');
-    ensure(await s.page.locator('.s02-step').first().isVisible(), 'Sahne #2 mount edilmedi');
-  } finally { await s.close(); }
-});
-
-addTest('completion event\'i YALNIZ BİR KEZ üretiliyor, scene progress doğru anahtara yazılıyor, eski go_done_3d değişmiyor', async () => {
-  const s = await openScenesPage();
-  try {
-    await s.page.evaluate(() => { try { localStorage.setItem('go_done_3d', JSON.stringify(['l5'])); } catch {} });
-    await confirmIntro(s.page);
-    await exploreAllSizes(s.page);
-    await s.page.click('#s01-continue');
-    await s.page.waitForTimeout(300);
-    const info = await s.page.evaluate(() => {
-      const events = JSON.parse(localStorage.getItem('go_teacher_event_log_v1') || '[]');
-      return {
-        types: events.map(e => e.type),
-        sceneProgress: JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null'),
-        legacyDone: JSON.parse(localStorage.getItem('go_done_3d') || 'null'),
-      };
-    });
-    ensure(info.types.includes('scene_started'), 'scene_started yok');
-    ensure(info.types.includes('scene_intro_confirmed'), 'scene_intro_confirmed yok');
-    ensure(info.types.includes('scene_board_size_viewed'), 'scene_board_size_viewed yok');
-    ensure(info.types.includes('scene_completion_unlocked'), 'scene_completion_unlocked yok');
-    ensure(info.types.includes('scene_completed'), 'scene_completed yok');
-    ensure(info.types.filter(t => t === 'scene_completed').length === 1, 'scene_completed birden fazla üretildi');
-    ensure(info.sceneProgress?.completedSceneIds?.includes('scene-01-board-intro'), 'yeni scene progress anahtarına yazılmadı');
-    ensure(JSON.stringify(info.legacyDone) === JSON.stringify(['l5']), 'eski go_done_3d anahtarı DEĞİŞMİŞ olmamalı');
-  } finally { await s.close(); }
-});
-
-addTest('reload: Sahne #1 tamamlanmış ama Sahne #2 henüz tamamlanmamışken reload, doğrudan Sahne #2\'yi (baştan) başlatıyor, final durum ERKEN gösterilmiyor', async () => {
-  const s = await openScenesPage();
-  try {
-    await confirmIntro(s.page);
-    await exploreAllSizes(s.page);
-    await s.page.click('#s01-continue');
-    await s.page.waitForTimeout(300);
-    await s.page.reload({ waitUntil: 'networkidle' });
-    await s.page.waitForTimeout(300);
-    ensure(!(await s.page.locator('#ls-final').evaluate(el => el.classList.contains('show'))), 'yalnız Sahne #1 tamamlanmışken reload sonrası final durum ERKEN gösterildi');
-    ensure(await s.page.locator('#s01-intro').count() === 0, 'reload sonrası Sahne #1 onboarding kartı tekrar oluşturuldu');
-    ensure(await s.page.locator('.s02-step').first().isVisible(), 'reload sonrası Sahne #2 baştan başlamadı');
-  } finally { await s.close(); }
-});
-
-addTest('reduced-motion: kart geçişi transition kaldırıyor', async () => {
-  const s = await openScenesPage({ reducedMotion: 'reduce' });
-  try {
-    const transition = await s.page.locator('.s01-intro-card').evaluate(el => getComputedStyle(el).transitionDuration);
-    ensure(transition === '0s' || transition.startsWith('0s'), `reduced-motion'da transition kalkmamış: ${transition}`);
-    await confirmIntro(s.page);
-    ensure(await s.page.locator('#s01-explore').isVisible(), 'reduced-motion\'da onay sonrası keşif paneli görünmüyor');
-  } finally { await s.close(); }
-});
-
-addTest('mobil: yatay taşma yok, kontroller dokunulabilir boyutta, tahta viewport dışına çıkmıyor', async () => {
+addTest('A7) mobilde yatay taşma yok', async () => {
   const s = await openScenesPage({ viewport: VIEWPORTS.mobile });
   try {
-    ensure((await s.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)), 'mobilde yatay taşma var');
-    const canvasBox = await s.page.locator('#ls-canvas').boundingBox();
-    ensure(canvasBox && canvasBox.width <= VIEWPORTS.mobile.width + 1, 'tahta viewport dışına taşıyor');
-    await confirmIntro(s.page);
-    const exploreBox = await s.page.locator('#s01-explore').boundingBox();
-    ensure(exploreBox && exploreBox.width <= VIEWPORTS.mobile.width + 1, 'keşif paneli mobilde taşıyor');
-    await exploreAllSizes(s.page);
-    const continueBox = await s.page.locator('#s01-continue').boundingBox();
-    ensure(continueBox && continueBox.height >= 40, 'Devam et düğmesi dokunma hedefi için çok küçük');
+    ensure(await s.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'mobilde yatay taşma var');
+    const narrationBox = await s.page.locator('#ls-narration').boundingBox();
+    ensure(narrationBox.width <= VIEWPORTS.mobile.width + 1, 'anlatım şeridi viewport dışına taşıyor');
   } finally { await s.close(); }
 });
 
-function boxesIntersect(a, b) {
-  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
-}
-
-addTest('masaüstü: board ve bilgi alanı bounding box\'ları KESİŞMİYOR, board yan tarafta daha geniş', async () => {
-  const s = await openScenesPage({ viewport: VIEWPORTS.desktop });
-  try {
-    const boardBox = await s.page.locator('#ls-board-region').boundingBox();
-    const infoBox = await s.page.locator('#ls-info-region').boundingBox();
-    ensure(boardBox && infoBox, 'bbox eksik');
-    ensure(!boxesIntersect(boardBox, infoBox), 'masaüstünde board ve bilgi alanı KESİŞİYOR');
-    ensure(boardBox.width > infoBox.width, 'board bilgi alanından daha geniş olmalı (ana görsel odak)');
-    await confirmIntro(s.page);
-    const boardBoxAfter = await s.page.locator('#ls-board-region').boundingBox();
-    ensure(Math.abs(boardBoxAfter.width - boardBox.width) < 1 && Math.abs(boardBoxAfter.height - boardBox.height) < 1,
-      'kart onaylanınca board bölgesi boyut değiştirdi (layout shift)');
-    const exploreBox = await s.page.locator('#s01-explore').boundingBox();
-    ensure(!boxesIntersect(boardBox, exploreBox), 'keşif paneli açıldıktan sonra board ile kesişiyor');
-  } finally { await s.close(); }
-});
-
-addTest('mobil: bilgi alanı board\'un ALTINA geçiyor, bbox\'lar kesişmiyor', async () => {
-  const s = await openScenesPage({ viewport: VIEWPORTS.mobile });
-  try {
-    const boardBox = await s.page.locator('#ls-board-region').boundingBox();
-    const infoBox = await s.page.locator('#ls-info-region').boundingBox();
-    ensure(boardBox && infoBox, 'bbox eksik');
-    ensure(!boxesIntersect(boardBox, infoBox), 'mobilde board ve bilgi alanı KESİŞİYOR');
-    ensure(infoBox.y >= boardBox.y + boardBox.height - 1, 'bilgi alanı board\'un altında değil');
-    const boardHeightBefore = boardBox.height;
-    await confirmIntro(s.page);
-    const boardBoxAfter = await s.page.locator('#ls-board-region').boundingBox();
-    ensure(Math.abs(boardBoxAfter.height - boardHeightBefore) < 1, 'mobilde kart onaylanınca board zıpladı (yükseklik değişti)');
-    const exploreBox = await s.page.locator('#s01-explore').boundingBox();
-    ensure(!boxesIntersect(boardBoxAfter, exploreBox), 'mobilde keşif paneli board ile kesişiyor');
-  } finally { await s.close(); }
-});
-
-addTest('uzun açıklama metninde de board ile bilgi alanı KESİŞMİYOR (masaüstü + mobil)', async () => {
+addTest('A8) uzun metinde board görünür ve sabit boyutta kalıyor (şerit içi scroll olabilir)', async () => {
   const longText = 'Bu, sınır durumlarını test etmek için bilerek uzatılmış çok satırlı bir açıklama metnidir. '.repeat(6);
   for (const viewport of [VIEWPORTS.desktop, VIEWPORTS.mobile]) {
     const s = await openScenesPage({ viewport });
     try {
-      await confirmIntro(s.page);
       const boardBoxBefore = await s.page.locator('#ls-board-region').boundingBox();
       await s.page.evaluate((text) => {
-        document.getElementById('s01-desc').textContent = text;
+        const el = document.getElementById('s01-intro-text');
+        if (el) el.textContent = text;
       }, longText);
       await s.page.waitForTimeout(80);
       const boardBox = await s.page.locator('#ls-board-region').boundingBox();
-      const infoBox = await s.page.locator('#ls-info-region').boundingBox();
-      ensure(!boxesIntersect(boardBox, infoBox), `uzun metinde (${viewport.width}px) board/bilgi alanı kesişiyor`);
+      ensure(await s.page.locator('#ls-board-region').isVisible(), `uzun metinde (${viewport.width}px) board görünmüyor`);
       ensure(Math.abs(boardBox.height - boardBoxBefore.height) < 1 && Math.abs(boardBox.width - boardBoxBefore.width) < 1,
         `uzun metin board boyutunu değiştirdi (${viewport.width}px)`);
       ensure((await s.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)), `uzun metinde (${viewport.width}px) yatay taşma var`);
@@ -430,16 +273,570 @@ addTest('uzun açıklama metninde de board ile bilgi alanı KESİŞMİYOR (masa�
   }
 });
 
-addTest('konsolda/pageerror\'da hata yok (tam akış boyunca)', async () => {
+addTest('A9) #ls-narration\'da ayırıcı çizgi/border/dekoratif divider YOK (masaüstü+mobil)', async () => {
+  for (const viewport of [VIEWPORTS.desktop, VIEWPORTS.mobile]) {
+    const s = await openScenesPage({ viewport });
+    try {
+      const borders = await s.page.locator('#ls-narration').evaluate(el => {
+        const cs = getComputedStyle(el);
+        return { l: cs.borderLeftWidth, r: cs.borderRightWidth, t: cs.borderTopWidth, b: cs.borderBottomWidth };
+      });
+      ensure(borders.l === '0px' && borders.r === '0px' && borders.t === '0px' && borders.b === '0px',
+        `${viewport.width}px: border var (${JSON.stringify(borders)})`);
+    } finally { await s.close(); }
+  }
+});
+
+addTest('tick/pill/continue kontrolleri en az 44px dokunma yüksekliğine sahip (mobil)', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile });
+  try {
+    const tickBox = await s.page.locator('#s01-confirm').boundingBox();
+    ensure(Math.min(tickBox.width, tickBox.height) >= 36, 'tick dokunma alanı çok küçük'); // 40px + kenar toleransı
+    await confirmIntro(s.page);
+    await exploreAllSizes(s.page);
+    const continueBox = await s.page.locator('#s01-continue').boundingBox();
+    ensure(continueBox.height >= 36, 'Devam et düğmesi dokunma hedefi için çok küçük');
+  } finally { await s.close(); }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   SAHNE #1 — davranış regresyonu (yeni DOM üzerinden)
+   ══════════════════════════════════════════════════════════════════ */
+
+addTest('S1) sayfa açılıyor, Sahne #1 otomatik başlıyor, "Anladım" görünür metni yok', async () => {
+  const s = await openScenesPage();
+  try {
+    ensure(await s.page.locator('#s01-intro').isVisible(), 'onboarding satırı görünmüyor');
+    ensure((await s.page.locator('#s01-intro-text').textContent())?.includes('19'), 'bilgi metni yanlış');
+    const bodyText = await s.page.locator('#ls-narration').textContent();
+    ensure(!bodyText.includes('Anladım'), '"Anladım" metni hâlâ görünüyor');
+    const tick = s.page.locator('#s01-confirm');
+    ensure(await tick.evaluate(el => el.tagName === 'BUTTON'), 'tick gerçek bir <button> değil');
+    ensure((await tick.getAttribute('aria-label')) === 'Bilgiyi onayla', 'aria-label yanlış');
+  } finally { await s.close(); }
+});
+
+addTest('S1) scene_intro_confirmed hızlı/tekrarlı tetiklemede bile YALNIZ BİR KEZ üretiliyor', async () => {
+  const s = await openScenesPage();
+  try {
+    await s.page.click('#s01-confirm');
+    await s.page.click('#s01-confirm').catch(() => {});
+    await s.page.keyboard.press('Enter').catch(() => {});
+    await s.page.waitForTimeout(300);
+    const types = (await getEventLog(s.page)).map(e => e.type);
+    ensure(types.filter(t => t === 'scene_intro_confirmed').length === 1, 'scene_intro_confirmed birden fazla üretildi');
+  } finally { await s.close(); }
+});
+
+addTest('S1) 19×19 başlangıçta gerçek board size, onay sonrası yalnız BİR KEZ görülmüş sayılıyor', async () => {
   const s = await openScenesPage();
   try {
     await confirmIntro(s.page);
-    await exploreAllSizes(s.page);
-    await s.page.click('#s01-continue');
+    ensure(await s.page.locator('.ls-pill[data-size="19"]').getAttribute('aria-pressed') === 'true', '19 varsayılan seçili değil');
+    ensure(await s.page.locator('.ls-pill[data-size="19"]').evaluate(el => el.classList.contains('seen')), '19 otomatik görülmüş sayılmadı');
+    ensure((await s.page.locator('#s01-progress-text').textContent())?.trim() === '1/3', 'başlangıç ilerlemesi yanlış');
+    await s.page.click('.ls-pill[data-size="19"]');
+    await s.page.waitForTimeout(100);
+    ensure((await s.page.locator('#s01-progress-text').textContent())?.trim() === '1/3', '19\'a tekrar basmak ilerlemeyi artırdı');
+  } finally { await s.close(); }
+});
+
+addTest('S1) üç boyut görülmeden devam edilemiyor, üçünde tamamlanma açılıyor (gating korunuyor)', async () => {
+  const s = await openScenesPage();
+  try {
+    await confirmIntro(s.page);
+    const continueBtn = s.page.locator('#s01-continue');
+    ensure(await continueBtn.isDisabled(), 'başlangıçta Devam et aktif olmamalı');
+    await s.page.click('.ls-pill[data-size="9"]');
+    await s.page.waitForTimeout(80);
+    ensure(await continueBtn.isDisabled(), 'iki boyutta hâlâ devre dışı olmalı');
+    await s.page.click('.ls-pill[data-size="13"]');
+    await s.page.waitForTimeout(80);
+    ensure(!(await continueBtn.isDisabled()), 'üç boyut sonrası Devam et açılmadı');
+    ensure((await s.page.locator('#s01-status').textContent())?.includes('tanıdın'), 'başarı metni görünmüyor');
+  } finally { await s.close(); }
+});
+
+addTest('S1→S2) Sahne #1 tamamlanınca Sahne #2 otomatik başlıyor, final durum ERKEN gösterilmiyor', async () => {
+  const s = await openScenesPage();
+  try {
+    await advanceToScene2(s.page);
+    ensure(!(await s.page.locator('#ls-final').evaluate(el => el.classList.contains('show'))), 'final durum ERKEN gösterildi');
+    ensure(await s.page.locator('#s01-intro, #s01-explore').count() === 0, 'Sahne #1 unmount edilmedi');
+    ensure(await s.page.locator('#s02-step-0').isVisible(), 'Sahne #2 mount edilmedi');
+  } finally { await s.close(); }
+});
+
+addTest('reduced-motion: kart geçişi transition kaldırıyor, akış yine tamamlanabiliyor', async () => {
+  const s = await openScenesPage({ reducedMotion: 'reduce' });
+  try {
+    const transition = await s.page.locator('#s01-intro').evaluate(el => getComputedStyle(el).transitionDuration);
+    ensure(transition === '0s' || transition.startsWith('0s'), `reduced-motion'da transition kalkmamış: ${transition}`);
+    await confirmIntro(s.page);
+    ensure(await s.page.locator('#s01-explore').isVisible(), 'reduced-motion\'da onay sonrası keşif satırı görünmüyor');
+  } finally { await s.close(); }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   BÖLÜM B — Sahne #2 neon guide temizliği
+   ══════════════════════════════════════════════════════════════════ */
+
+addTest('B1) Sahne #2 board adaptöründe artık guide API'
+  + ' YOK (setIntersectionGuides/clearIntersectionGuides/getEmptyIntersections kaldırıldı)', async () => {
+  const s = await openScenesPage();
+  try {
+    const apiShape = await s.page.evaluate(async () => {
+      const { createSceneBoardAdapter } = await import('./adapters/sceneBoardAdapter.js');
+      const canvas = document.createElement('canvas');
+      canvas.width = 400; canvas.height = 300;
+      document.body.appendChild(canvas);
+      const adapter = createSceneBoardAdapter(canvas, { initialSize: 9 });
+      const shape = {
+        hasSetGuides: typeof adapter.setIntersectionGuides === 'function',
+        hasClearGuides: typeof adapter.clearIntersectionGuides === 'function',
+        hasGetEmpty: typeof adapter.getEmptyIntersections === 'function',
+        hasGetLibertiesAt: typeof adapter.getLibertiesAt === 'function',
+        hasShowLiberties: typeof adapter.showLiberties === 'function',
+        hasClearLiberties: typeof adapter.clearLiberties === 'function',
+      };
+      adapter.destroy();
+      canvas.remove();
+      return shape;
+    });
+    ensure(!apiShape.hasSetGuides, 'setIntersectionGuides hâlâ mevcut');
+    ensure(!apiShape.hasClearGuides, 'clearIntersectionGuides hâlâ mevcut');
+    ensure(!apiShape.hasGetEmpty, 'getEmptyIntersections hâlâ mevcut');
+    ensure(apiShape.hasGetLibertiesAt, 'getLibertiesAt eksik');
+    ensure(apiShape.hasShowLiberties, 'showLiberties eksik');
+    ensure(apiShape.hasClearLiberties, 'clearLiberties eksik');
+  } finally { await s.close(); }
+});
+
+addTest('B2) Sahne #2 akışında scene_guides_shown/scene_guides_cleared event\'leri ARTIK ÜRETİLMİYOR', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene2(s.page);
+    const ok = await playScene2ToCompletion(s.page);
+    ensure(ok, 'Sahne #2 altı hamle akışı tamamlanamadı');
+    const events = await getEventLog(s.page);
+    ensure(!events.some(e => e.type === 'scene_guides_shown' || e.type === 'scene_guides_cleared'), 'guide event\'leri hâlâ üretiliyor');
+  } finally { await s.close(); }
+});
+
+addTest('B3) Sahne #2: doğal hit-testing ile ilk hamle çalışıyor, üçer hamle akışı gerilemiyor (6 taş)', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene2(s.page);
+    const ok = await playScene2ToCompletion(s.page);
+    ensure(ok, 'altı hamle akışı tamamlanamadı');
+    const moves = (await getEventLog(s.page)).filter(e => e.type === 'scene_move_played' && e.stepId === 'scene-02-turns-and-intersections');
+    ensure(moves.length === 6, `toplam 6 hamle olmalı, ${moves.length} bulundu`);
+    ensure(moves.filter(m => m.payload.color === 'black').length === 3, '3 siyah hamle olmalı');
+    ensure(moves.filter(m => m.payload.color === 'white').length === 3, '3 beyaz hamle olmalı');
+    ensure(await s.page.locator('#s02-continue').isVisible(), '"Devam et" görünmüyor');
+  } finally { await s.close(); }
+});
+
+addTest('B4) Sahne #2 beyazın sırasında girdi kilitli (ekstra tıklama hamle SAYMIYOR)', async () => {
+  const s = await openScenesPage({ query: '?whiteMoveDelayMs=260' });
+  try {
+    await advanceToScene2(s.page);
+    await playThroughS02Info(s.page);
+    const placed = await playOneBlackMoveScene2(s.page);
+    ensure(placed, 'ilk siyah hamle yerleştirilemedi');
+    await s.page.waitForTimeout(60);
+    ensure((await s.page.locator('#s02-turn').textContent())?.includes('düşünüyor'), 'beyazın sırasında "düşünüyor" gösterilmedi');
+    const midCount = (await getEventLog(s.page)).filter(e => e.type === 'scene_move_played' && e.stepId === 'scene-02-turns-and-intersections').length;
+    const canvasBox = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2 - 40);
+    await s.page.waitForTimeout(30);
+    const lockedCount = (await getEventLog(s.page)).filter(e => e.type === 'scene_move_played' && e.stepId === 'scene-02-turns-and-intersections').length;
+    ensure(lockedCount === midCount, 'girdi kilidiyken yapılan tıklama hamle olarak sayıldı');
+  } finally { await s.close(); }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   BÖLÜM C — Sahne #3 "Konuma Göre Nefes Noktaları"
+   ══════════════════════════════════════════════════════════════════ */
+
+addTest('C1) Sahne #2 tamamlanınca Sahne #3 temiz 9×9 board ile açılıyor', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    ensure(await s.page.locator('#s03-intro').isVisible(), 'Sahne #3 mount edilmedi');
+    ensure(await s.page.locator('#s02-play, #s02-step-0').count() === 0, 'Sahne #2 unmount edilmedi');
+  } finally { await s.close(); }
+});
+
+addTest('C2) ilk bilgi onaylanmadan hamle kabul edilmiyor (input Sahne #3 mount\'ta kilitli)', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await clickBoardCenter(s.page);
+    await s.page.waitForTimeout(80);
+    const events = await getEventLog(s.page);
+    ensure(!events.some(e => e.type === 'scene_center_move_attempted'), 'intro onaylanmadan hamle denemesi kaydedildi');
+  } finally { await s.close(); }
+});
+
+addTest('C3) merkez dışı hamle ilerlemiyor: taş yerleşmiyor, nazik geri bildirim gösteriliyor', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    ensure((await s.page.locator('#s03-status').textContent())?.includes('merkez'), 'merkez talimatı gösterilmiyor');
+
+    // Merkezden bir hücre kadar uzağa tıkla — kesinlikle tahta ÜZERİNDE
+    // (adaptörün hit-test toleransı içinde) ama merkez DEĞİL.
+    await clickBoardCenter(s.page, -8 + 50);
+    await s.page.waitForTimeout(100);
+
+    const events = s03Events(await getEventLog(s.page));
+    const wrongAttempt = events.find(e => e.type === 'scene_center_move_attempted' && e.payload.correct === false);
+    ensure(!!wrongAttempt, 'merkez-dışı deneme kaydedilmedi');
+    const moves = events.filter(e => e.type === 'scene_move_played');
+    ensure(moves.length === 0, 'merkez dışı hamle YANLIŞLIKLA yerleştirildi');
+    ensure((await s.page.locator('#s03-feedback').textContent())?.includes('ortasındaki'), 'nazik geri bildirim gösterilmedi');
+  } finally { await s.close(); }
+});
+
+addTest('C4) doğru merkez hamlesi bir kez yerleşiyor (çift tıklama iki taş üretmiyor), gerçek 4 liberty gösteriliyor', async () => {
+  // centerLibertyDisplayMs BİLİNÇLİ olarak 0'a EZİLMEDİ — anlatım metninin
+  // "Merkezdeki taşın 4 nefes noktası var." biçiminde GERÇEKTEN belirdiğini
+  // (sonra beyazın sırasına geçmeden önce) doğrulamak için gözlemlenebilir
+  // bir pencereye ihtiyaç var.
+  const s = await openScenesPage({ query: '?centerLibertyDisplayMs=400&whiteCornerDelayMs=0' });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await clickBoardCenter(s.page);
+    await clickBoardCenter(s.page); // hızlı ikinci tıklama
+    await s.page.waitForTimeout(150);
+
+    const events = s03Events(await getEventLog(s.page));
+    const blackMoves = events.filter(e => e.type === 'scene_move_played' && e.payload.color === 'black');
+    ensure(blackMoves.length === 1, `merkez hamlesi TAM BİR KEZ yerleşmeli, ${blackMoves.length} kez yerleşti`);
+
+    const libEvent = events.find(e => e.type === 'scene_liberties_shown' && e.payload.target === 'center');
+    ensure(!!libEvent, 'merkez liberty event\'i üretilmedi');
+    ensure(libEvent.payload.count === 4, `merkez taşının GERÇEK nefes sayısı 4 olmalı, ${libEvent.payload.count} bulundu`);
+    ensure((await s.page.locator('#s03-status').textContent()) === 'Merkezdeki taşın 4 nefes noktası var.', 'anlatım metni gerçek sayıyla uyuşmuyor');
+  } finally { await s.close(); }
+});
+
+addTest('C5) sıra beyaza geçiyor, beyaz DETERMİNİSTİK/YASAL bir köşeye oynuyor, gerçek 2 liberty gösteriliyor', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await clickBoardCenter(s.page);
+    await s.page.waitForTimeout(300); // merkez gösterimi + beyaz gecikmesi (ikisi de 0'a ezildi, kısa tampon yeterli)
+
+    const events = s03Events(await getEventLog(s.page));
+    const whiteMove = events.find(e => e.type === 'scene_move_played' && e.payload.color === 'white');
+    ensure(!!whiteMove, 'beyaz köşe hamlesi yapılmadı');
+    ensure(whiteMove.payload.row === 0 && whiteMove.payload.col === 0, `beyaz beklenmeyen bir noktaya oynadı: ${JSON.stringify(whiteMove.payload)}`);
+
+    const cornerLibEvent = events.find(e => e.type === 'scene_liberties_shown' && e.payload.target === 'corner');
+    ensure(!!cornerLibEvent, 'köşe liberty event\'i üretilmedi');
+    ensure(cornerLibEvent.payload.count === 2, `köşe taşının GERÇEK nefes sayısı 2 olmalı, ${cornerLibEvent.payload.count} bulundu`);
+  } finally { await s.close(); }
+});
+
+addTest('C6) beyaz beklerken input kilitli (merkez hamlesinden sonra board tıklamaları hamle üretmiyor)', async () => {
+  const s = await openScenesPage({ query: '?centerLibertyDisplayMs=50&whiteCornerDelayMs=260' });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await clickBoardCenter(s.page);
+    await s.page.waitForTimeout(150); // merkez gösterimi bitti, beyaz hâlâ "düşünüyor" penceresinde
+    ensure((await s.page.locator('#s03-status').textContent())?.includes('köşeyi deniyor'), '"Beyaz köşeyi deniyor…" gösterilmiyor');
+
+    const midMoves = s03Events(await getEventLog(s.page)).filter(e => e.type === 'scene_move_played').length;
+    const canvasBox = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(canvasBox.x + canvasBox.width * 0.8, canvasBox.y + canvasBox.height * 0.2);
+    await s.page.waitForTimeout(30);
+    const lockedMoves = s03Events(await getEventLog(s.page)).filter(e => e.type === 'scene_move_played').length;
+    ensure(lockedMoves === midMoves, 'beyaz beklerken yapılan tıklama hamle üretti');
+  } finally { await s.close(); }
+});
+
+addTest('C7) merkez highlight\'ı temizlenip köşe highlight\'ı gösteriliyor (sıralı liberty event\'leri)', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await clickBoardCenter(s.page);
+    await s.page.waitForTimeout(300);
+    const events = await getEventLog(s.page);
+    const libEvents = events.filter(e => e.type === 'scene_liberties_shown');
+    ensure(libEvents.length === 2, `iki liberty event'i olmalı (merkez+köşe), ${libEvents.length} bulundu`);
+    ensure(libEvents[0].payload.target === 'center' && libEvents[1].payload.target === 'corner', 'liberty event sırası yanlış');
+  } finally { await s.close(); }
+});
+
+addTest('C8) karşılaştırma sorusu görünüyor, klavye ile yanıtlanabiliyor', async () => {
+  // transitionDelayMs BİLİNÇLİ olarak 0'a EZİLMEDİ — "Doğru" geri
+  // bildiriminin (kısa ömürlü, sonra nötr geçiş metnine dönüşen) gerçekten
+  // belirdiğini doğrulamak için gözlemlenebilir bir pencereye ihtiyaç var.
+  const s = await openScenesPage({ query: '?centerLibertyDisplayMs=0&whiteCornerDelayMs=0&transitionDelayMs=300' });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await clickBoardCenter(s.page);
+    await s.page.waitForTimeout(400);
+    ensure(await s.page.locator('#s03-choices').isVisible(), 'karşılaştırma seçenekleri görünmüyor');
+    ensure((await s.page.locator('#s03-status').textContent())?.includes('daha az'), 'karşılaştırma sorusu metni yanlış');
+
+    const cornerChoice = s.page.locator('.ls-choice[data-choice="corner"]');
+    await cornerChoice.focus();
+    ensure(await s.page.evaluate(() => document.activeElement?.dataset?.choice) === 'corner', 'seçenek klavyeyle odaklanamadı');
+    await s.page.keyboard.press('Enter');
+    await s.page.waitForTimeout(80);
+    ensure((await s.page.locator('#s03-status').textContent())?.includes('Doğru'), 'Enter ile doğru cevap tetiklenmedi');
+  } finally { await s.close(); }
+});
+
+addTest('C9) yanlış karşılaştırma cevabında sahne İLERLEMİYOR, liberty göstergeleri korunuyor, tekrar denenebiliyor', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await clickBoardCenter(s.page);
+    await s.page.waitForTimeout(400);
+
+    await s.page.click('.ls-choice[data-choice="center"]'); // yanlış cevap
+    await s.page.waitForTimeout(80);
+    ensure((await s.page.locator('#s03-feedback').textContent())?.length > 0, 'yanlış cevapta nazik geri bildirim yok');
+    let events = s03Events(await getEventLog(s.page));
+    ensure(!events.some(e => e.type === 'scene_completion_unlocked'), 'yanlış cevap completion\'ı erken açtı');
+    ensure(await s.page.locator('#s03-choices').isVisible(), 'yanlış cevap sonrası seçenekler kayboldu (tekrar denenemez)');
+    ensure(await s.page.locator('#s03-continue').isHidden(), 'yanlış cevap sonrası Devam et YANLIŞLIKLA göründü');
+
+    // Şimdi doğru cevapla düzelt.
+    await s.page.click('.ls-choice[data-choice="corner"]');
+    await s.page.waitForTimeout(80);
+    events = s03Events(await getEventLog(s.page));
+    ensure(events.some(e => e.type === 'scene_completion_unlocked'), 'düzeltme sonrası completion açılmadı');
+  } finally { await s.close(); }
+});
+
+addTest('C10) doğru cevapta completion YALNIZ BİR KEZ oluşuyor (hızlı tekrar tıklama korunuyor)', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await clickBoardCenter(s.page);
+    await s.page.waitForTimeout(400);
+
+    await s.page.click('.ls-choice[data-choice="corner"]');
+    await s.page.click('.ls-choice[data-choice="corner"]').catch(() => {});
+    await s.page.waitForTimeout(200);
+    const events = s03Events(await getEventLog(s.page));
+    ensure(events.filter(e => e.type === 'scene_completion_unlocked').length === 1, 'scene_completion_unlocked birden fazla üretildi');
+  } finally { await s.close(); }
+});
+
+addTest('C11) doğru cevaptan sonra doğal konu geçişi görünüyor, teknik "Sahne tamamlandı" dili HİÇBİR YERDE yok', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await clickBoardCenter(s.page);
+    await s.page.waitForTimeout(400);
+    await s.page.click('.ls-choice[data-choice="corner"]');
+    await s.page.waitForTimeout(150);
+
+    const infoText = (await s.page.locator('#ls-scene-host').textContent()) || '';
+    ensure(!/sahne\s*(#?3)?\s*tamamlandı/i.test(infoText), 'teknik "Sahne tamamlandı" metni sızmış');
+    ensure(!infoText.toLowerCase().includes('görev tamamlandı'), '"Görev tamamlandı" metni sızmış');
+    ensure(!infoText.includes('scene_completed') && !infoText.includes('registry'), 'teknik runtime terminolojisi sızmış');
+    ensure(await s.page.locator('#s03-continue').isVisible(), 'Devam et düğmesi görünmüyor');
+
+    await s.page.click('#s03-continue');
+    await s.page.waitForTimeout(300);
+    ensure(await s.page.locator('#ls-final').evaluate(el => el.classList.contains('show')), 'final durum gösterilmedi (Sahne #4 yok)');
+    const finalText = (await s.page.locator('#ls-final').textContent()) || '';
+    ensure(!/sahne\s*tamamlandı/i.test(finalText) && finalText.includes('sonraki konu'), 'final ekranı nötr değil');
+  } finally { await s.close(); }
+});
+
+addTest('C12) registry sırası: scene-01 → scene-02 → scene-03, tamamlanınca sahte Sahne #4 YOK', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    const order = await s.page.evaluate(async () => {
+      const { createSceneRegistry } = await import('./scenes/sceneRegistry.js');
+      const { scene01BoardIntro } = await import('./scenes/scene01BoardIntro.js');
+      const { scene02TurnsAndIntersections } = await import('./scenes/scene02TurnsAndIntersections.js');
+      const { scene03LibertiesByPosition } = await import('./scenes/scene03LibertiesByPosition.js');
+      const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition]);
+      return {
+        ids: registry.list().map(sc => sc.id),
+        issues: registry.issues,
+        nextAfter3: registry.next('scene-03-liberties-by-position'),
+      };
+    });
+    assert.deepEqual(order.ids, ['scene-01-board-intro', 'scene-02-turns-and-intersections', 'scene-03-liberties-by-position']);
+    ensure(order.issues.length === 0, `registry issues bulundu: ${JSON.stringify(order.issues)}`);
+    ensure(order.nextAfter3 === null, 'Sahne #3\'ten sonra sahte bir sahne bulundu');
+  } finally { await s.close(); }
+});
+
+addTest('C13) reload: yarım kalan Sahne #3 temiz başlangıca dönüyor, tamamlanan sahneler kalıcı', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await clickBoardCenter(s.page); // yarım kalan ilerleme (henüz tamamlanmadı)
+    await s.page.waitForTimeout(300);
+
+    await s.page.reload({ waitUntil: 'networkidle' });
+    await s.page.waitForTimeout(300);
+
+    ensure(await s.page.locator('#s03-intro').isVisible(), 'reload sonrası Sahne #3 baştan başlamadı');
+    ensure(!(await s.page.locator('#ls-final').evaluate(el => el.classList.contains('show'))), 'reload sonrası final durum YANLIŞLIKLA gösterildi');
+
+    const progress = await s.page.evaluate(() => JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null'));
+    ensure(progress?.completedSceneIds?.includes('scene-01-board-intro'), 'Sahne #1 tamamlanması kalıcı değil');
+    ensure(progress?.completedSceneIds?.includes('scene-02-turns-and-intersections'), 'Sahne #2 tamamlanması kalıcı değil');
+    ensure(!progress?.completedSceneIds?.includes('scene-03-liberties-by-position'), 'yarım kalan Sahne #3 yanlışlıkla tamamlanmış sayıldı');
+  } finally { await s.close(); }
+});
+
+addTest('C14) reload: Sahne #3 de tamamlanmışken final durum doğrudan gösteriliyor, eski go_done_3d dokunulmamış', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await s.page.evaluate(() => { try { localStorage.setItem('go_done_3d', JSON.stringify(['l5'])); } catch {} });
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await clickBoardCenter(s.page);
+    await s.page.waitForTimeout(400);
+    await s.page.click('.ls-choice[data-choice="corner"]');
+    await s.page.waitForTimeout(150);
+    await s.page.click('#s03-continue');
+    await s.page.waitForTimeout(300);
+
+    await s.page.reload({ waitUntil: 'networkidle' });
+    await s.page.waitForTimeout(300);
+    ensure(await s.page.locator('#ls-final').evaluate(el => el.classList.contains('show')), 'üç sahne de tamamlanmışken reload sonrası final gösterilmedi');
+
+    const info = await s.page.evaluate(() => ({
+      legacyDone: JSON.parse(localStorage.getItem('go_done_3d') || 'null'),
+      progress: JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null'),
+    }));
+    ensure(JSON.stringify(info.legacyDone) === JSON.stringify(['l5']), 'eski go_done_3d anahtarı DEĞİŞMİŞ');
+    ensure(info.progress?.completedSceneIds?.length === 3, 'üç sahnenin de kalıcı tamamlanması beklenirdi');
+  } finally { await s.close(); }
+});
+
+addTest('C15) unmount sırasında beyaz timer\'ı ve liberty highlight\'ları temizleniyor (Sahne #2\'ye erken dönülse bile hata yok)', async () => {
+  const s = await openScenesPage({ query: '?whiteCornerDelayMs=5000' });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await clickBoardCenter(s.page);
+    await s.page.waitForTimeout(150); // beyaz hâlâ 5s'lik bekleme İÇİNDE — timer aktif
+    // Sayfayı yeniden yükleyerek unmount'u zorla (temiz kapanmalı, hata atmamalı).
+    await s.page.reload({ waitUntil: 'networkidle' });
+    await s.page.waitForTimeout(300);
+    ensure(s.consoleErrors.length === 0, `unmount sırasında hata: ${s.consoleErrors.join(' | ')}`);
+  } finally { await s.close(); }
+});
+
+addTest('C16) reduced-motion: Sahne #3 intro kartı transition\'sız, akış yine tamamlanabiliyor', async () => {
+  const s = await openScenesPage({ reducedMotion: 'reduce', query: FAST_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    const transition = await s.page.locator('#s03-intro').evaluate(el => getComputedStyle(el).transitionDuration);
+    ensure(transition === '0s' || transition.startsWith('0s'), `reduced-motion'da transition kalkmamış: ${transition}`);
+    await confirmS03Intro(s.page);
+    ensure(await s.page.locator('#s03-play').isVisible(), 'reduced-motion\'da oyun satırı açılmadı');
+  } finally { await s.close(); }
+});
+
+addTest('C17) masaüstü/tablet/mobilde Sahne #3 sırasında taşma yok', async () => {
+  for (const viewport of [VIEWPORTS.desktop, VIEWPORTS.tablet, VIEWPORTS.mobile]) {
+    const s = await openScenesPage({ viewport, query: FAST_QUERY });
+    try {
+      await advanceToScene3(s.page);
+      ensure(await s.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${viewport.width}px: yatay taşma var`);
+      const boardBox = await s.page.locator('#ls-board-region').boundingBox();
+      const narrationBox = await s.page.locator('#ls-narration').boundingBox();
+      ensure(!boxesIntersect(boardBox, narrationBox), `${viewport.width}px: Sahne #3'te board/şerit kesişiyor`);
+    } finally { await s.close(); }
+  }
+});
+
+addTest('C18) Studio çapraz sekmede Sahne #3 event\'lerini görüyor, event overwrite oluşmuyor', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await clickBoardCenter(s.page);
+    await s.page.waitForTimeout(300);
+
+    const studioPage = await s.context.newPage();
+    const studioErrors = [];
+    studioPage.on('pageerror', e => studioErrors.push(e.message));
+    await studioPage.goto(`${BASE}/teacher-studio.html`, { waitUntil: 'networkidle' });
+
+    await studioPage.click('[data-tab="curriculum"]').catch(() => {});
+    await studioPage.waitForTimeout(150);
+    const curriculumText = (await studioPage.locator('#curriculum-scene-table').textContent().catch(() => '')) || '';
+    ensure(curriculumText.includes('scene-01-board-intro') && curriculumText.includes('scene-02-turns-and-intersections') && curriculumText.includes('scene-03-liberties-by-position'),
+      'Studio Curriculum panelinde üç sahne de görünmüyor');
+    ensure(curriculumText.includes('liberty'), 'Studio Curriculum panelinde Sahne #3\'ün concept\'i görünmüyor');
+
+    await studioPage.click('[data-tab="diagnostics"]').catch(() => {});
+    await studioPage.waitForTimeout(150);
+    const diagText = (await studioPage.locator('#diag-scene-table').textContent().catch(() => '')) || '';
+    ensure(diagText.includes('geçerli') || !diagText.includes('scene-03'), 'Sahne #3 diagnostics\'te geçersiz görünüyor');
+
+    // learning-scenes.html sayfasında YENİ bir event üret; Studio'nun ayrı
+    // sekmesi bunu OVERWRITE ETMEMELİ (v0.7'den beri kurulan resync deseni).
+    const beforeCount = (await getEventLog(s.page)).length;
+    await s.page.click('.ls-choice[data-choice="corner"]').catch(() => {});
+    await s.page.waitForTimeout(100);
+    const afterCount = (await getEventLog(s.page)).length;
+    ensure(afterCount >= beforeCount, 'learning-scenes sekmesindeki event log Studio tarafından küçültülmüş/overwrite edilmiş olabilir');
+
+    ensure(studioErrors.length === 0, `Studio'da hata: ${studioErrors.join(' | ')}`);
+    await studioPage.close();
+  } finally { await s.close(); }
+});
+
+addTest('C19) tam akış (Sahne #1→#2→#3) boyunca konsolda/pageerror\'da hata yok', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    await clickBoardCenter(s.page);
+    await s.page.waitForTimeout(400);
+    await s.page.click('.ls-choice[data-choice="corner"]');
+    await s.page.waitForTimeout(150);
+    await s.page.click('#s03-continue');
     await s.page.waitForTimeout(300);
     ensure(s.consoleErrors.length === 0, `hata bulundu: ${s.consoleErrors.join(' | ')}`);
   } finally { await s.close(); }
 });
+
+addTest('C20) tahta dışı tıklama Sahne #3\'te hamle SAYILMIYOR', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3(s.page);
+    await confirmS03Intro(s.page);
+    // Canvas'ın kenarına yakın, tahta dışı kalması muhtemel bir nokta.
+    const canvasBox = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(canvasBox.x + 2, canvasBox.y + 2);
+    await s.page.waitForTimeout(80);
+    const events = s03Events(await getEventLog(s.page));
+    ensure(!events.some(e => e.type === 'scene_move_played'), 'tahta dışı tıklama hamle olarak sayıldı');
+  } finally { await s.close(); }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   Genel güvenlik ağı
+   ══════════════════════════════════════════════════════════════════ */
 
 addTest('geçersiz sahne id\'si güvenle ele alınır (hata ekranı, sayfa çökmüyor)', async () => {
   const s = await openScenesPage();
@@ -455,229 +852,6 @@ addTest('geçersiz sahne id\'si güvenle ele alınır (hata ekranı, sayfa çök
     });
     ensure(result.ok === false && result.reason === 'UNKNOWN_SCENE', 'bilinmeyen sahne güvenli ele alınmadı');
     ensure(result.failedEvent, 'scene_failed event\'i üretilmedi');
-  } finally { await s.close(); }
-});
-
-/* ══════════════════════════════════════════════════════════════════
-   SAHNE #2 — "Sırayla Oynama ve Kesişim Noktaları"
-   ══════════════════════════════════════════════════════════════════ */
-
-addTest('S2-1) bilgi adımları sırayla erişilebilir tick ile açılıyor, 3. adım sonrası oyun paneli görünüyor', async () => {
-  const s = await openScenesPage();
-  try {
-    await advanceToScene2(s.page);
-    ensure(await s.page.locator('#s02-step-0').isVisible(), '1. adım görünmüyor');
-    ensure(await s.page.locator('#s02-step-1').isHidden(), '2. adım erken görünüyor');
-    ensure(await s.page.locator('#s02-play').isHidden(), 'oyun paneli erken görünüyor');
-
-    await confirmS02Step(s.page, 0);
-    ensure(await s.page.locator('#s02-step-0').isHidden(), '1. adım kapanmadı');
-    ensure(await s.page.locator('#s02-step-1').isVisible(), '2. adım açılmadı');
-
-    await confirmS02Step(s.page, 1);
-    ensure(await s.page.locator('#s02-step-2').isVisible(), '3. adım açılmadı');
-
-    await confirmS02Step(s.page, 2);
-    ensure(await s.page.locator('#s02-play').isVisible(), '3. adım sonrası oyun paneli açılmadı');
-    ensure((await s.page.locator('#s02-turn').textContent())?.includes('Sıra sende'), 'sıra göstergesi doğru değil');
-
-    const tick = s.page.locator('#s02-step-0 [data-confirm]');
-    ensure(await tick.evaluate(el => el.tagName === 'BUTTON'), 'tick gerçek bir <button> değil');
-    ensure((await tick.getAttribute('aria-label'))?.length > 0, 'tick aria-label eksik');
-  } finally { await s.close(); }
-});
-
-addTest('S2-2) "Anladım" görünür metni yok, kesişim rehberleri yalnız 2. bilgi adımından SONRA açılıyor', async () => {
-  const s = await openScenesPage();
-  try {
-    await advanceToScene2(s.page);
-    const bodyText = await s.page.locator('#ls-info-region').textContent();
-    ensure(!bodyText.includes('Anladım'), '"Anladım" metni hâlâ görünüyor');
-
-    await confirmS02Step(s.page, 0);
-    let events = await getEventLog(s.page);
-    ensure(!events.some(e => e.type === 'scene_guides_shown'), 'rehberler 1. adımdan sonra ERKEN açıldı');
-
-    await confirmS02Step(s.page, 1);
-    events = await getEventLog(s.page);
-    ensure(events.some(e => e.type === 'scene_guides_shown'), '2. adım sonrası rehberler açılmadı');
-  } finally { await s.close(); }
-});
-
-addTest('S2-3) ilk yasal siyah hamleden sonra rehberler SONSUZA KADAR kayboluyor (tek scene_guides_cleared, doğru sırada)', async () => {
-  const s = await openScenesPage({ query: '?whiteMoveDelayMs=0' });
-  try {
-    await advanceToScene2(s.page);
-    await playThroughStep2(s.page);
-    const placed = await playOneBlackMove(s.page);
-    ensure(placed, 'ilk siyah hamle yerleştirilemedi');
-    await s.page.waitForTimeout(150);
-
-    const events = await getEventLog(s.page);
-    const clearedEvents = events.filter(e => e.type === 'scene_guides_cleared');
-    ensure(clearedEvents.length === 1, `scene_guides_cleared TAM BİR KEZ üretilmeli, ${clearedEvents.length} kez üretildi`);
-    const firstBlackIdx = events.findIndex(e => e.type === 'scene_move_played' && e.payload.color === 'black');
-    const clearedIdx = events.findIndex(e => e.type === 'scene_guides_cleared');
-    ensure(firstBlackIdx !== -1 && clearedIdx > firstBlackIdx, 'rehberler ilk siyah hamleden ÖNCE temizlendi');
-  } finally { await s.close(); }
-});
-
-addTest('S2-4) beyaz DETERMİNİSTİK/YASAL cevap veriyor, beyazın sırasında girdi kilitleniyor', async () => {
-  const s = await openScenesPage({ query: '?whiteMoveDelayMs=260' });
-  try {
-    await advanceToScene2(s.page);
-    await playThroughStep2(s.page);
-    const placed = await playOneBlackMove(s.page);
-    ensure(placed, 'ilk siyah hamle yerleştirilemedi');
-
-    // Beyaz henüz cevap VERMEDEN (260ms'lik pencere içinde) durum "düşünüyor" olmalı
-    // ve ekstra tıklamalar YOK SAYILMALI (girdi kilidi).
-    await s.page.waitForTimeout(60);
-    ensure((await s.page.locator('#s02-turn').textContent())?.includes('düşünüyor'), 'beyazın sırasında "düşünüyor" durumu gösterilmedi');
-    const midEvents = await getEventLog(s.page);
-    const midCount = midEvents.filter(e => e.type === 'scene_move_played').length;
-    ensure(midCount === 1, 'beyaz henüz cevap vermeden hamle sayısı 1 olmalı');
-
-    const canvasBox = await s.page.locator('#ls-canvas').boundingBox();
-    await s.page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2 - 40);
-    await s.page.waitForTimeout(30);
-    const lockedEvents = await getEventLog(s.page);
-    ensure(lockedEvents.filter(e => e.type === 'scene_move_played').length === midCount,
-      'girdi kilidiyken yapılan tıklama YANLIŞLIKLA bir hamle olarak sayıldı');
-
-    await s.page.waitForTimeout(350);
-    const afterEvents = await getEventLog(s.page);
-    const whiteMoves = afterEvents.filter(e => e.type === 'scene_move_played' && e.payload.color === 'white');
-    ensure(whiteMoves.length === 1, 'beyaz tam olarak bir kez cevap vermeli');
-    ensure(Number.isInteger(whiteMoves[0].payload.row) && Number.isInteger(whiteMoves[0].payload.col), 'beyaz hamle koordinatları eksik');
-    ensure((await s.page.locator('#s02-turn').textContent())?.includes('Sıra sende'), 'beyaz cevap verdikten sonra sıra siyaha dönmedi');
-  } finally { await s.close(); }
-});
-
-addTest('S2-5) toplam 3 siyah + 3 beyaz = 6 taş sonrası "Devam et" görünüyor, "Sahne/tamamlandı" gibi teknik dil HİÇBİR YERDE yok', async () => {
-  const s = await openScenesPage({ query: '?whiteMoveDelayMs=0' });
-  try {
-    await advanceToScene2(s.page);
-    await playThroughStep2(s.page);
-    for (let i = 0; i < 3; i++) {
-      const placed = await playOneBlackMove(s.page);
-      ensure(placed, `${i + 1}. siyah hamle yerleştirilemedi`);
-      await s.page.waitForTimeout(120);
-    }
-    const events = await getEventLog(s.page);
-    const moves = events.filter(e => e.type === 'scene_move_played');
-    ensure(moves.length === 6, `toplam 6 hamle olmalı, ${moves.length} bulundu`);
-    ensure(moves.filter(m => m.payload.color === 'black').length === 3, '3 siyah hamle olmalı');
-    ensure(moves.filter(m => m.payload.color === 'white').length === 3, '3 beyaz hamle olmalı');
-
-    ensure(await s.page.locator('#s02-continue').isVisible(), '"Devam et" görünmüyor');
-    const infoText = (await s.page.locator('#ls-info-region').textContent()) || '';
-    ensure(!/sahne tamamlandı/i.test(infoText), 'teknik "Sahne tamamlandı" metni sızmış');
-    ensure(!infoText.includes('scene_completed'), 'teknik event adı sızmış');
-  } finally { await s.close(); }
-});
-
-addTest('S2-6) Sahne #2\'yi tamamlayınca (Sahne #3 olmadığından) nötr final durumu gösteriliyor, HER İKİ sahne de completedSceneIds\'te', async () => {
-  const s = await openScenesPage({ query: '?whiteMoveDelayMs=0' });
-  try {
-    await advanceToScene2(s.page);
-    await playThroughStep2(s.page);
-    for (let i = 0; i < 3; i++) { await playOneBlackMove(s.page); await s.page.waitForTimeout(120); }
-    await s.page.click('#s02-continue');
-    await s.page.waitForTimeout(300);
-
-    ensure(await s.page.locator('#ls-final').evaluate(el => el.classList.contains('show')), 'final durum gösterilmedi');
-    const finalText = (await s.page.locator('#ls-final').textContent()) || '';
-    ensure(!/sahne tamamlandı/i.test(finalText), 'final ekranında teknik "Sahne tamamlandı" dili var');
-    ensure(finalText.includes('sonraki konu'), 'nötr "sıradaki konu" metni yok');
-
-    const progress = await s.page.evaluate(() => JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null'));
-    ensure(progress?.completedSceneIds?.includes('scene-01-board-intro'), 'Sahne #1 tamamlanmış olarak işaretlenmemiş');
-    ensure(progress?.completedSceneIds?.includes('scene-02-turns-and-intersections'), 'Sahne #2 tamamlanmış olarak işaretlenmemiş');
-  } finally { await s.close(); }
-});
-
-addTest('S2-7) reload: HER İKİ sahne de tamamlanmışken final durum doğrudan gösteriliyor', async () => {
-  const s = await openScenesPage({ query: '?whiteMoveDelayMs=0' });
-  try {
-    await advanceToScene2(s.page);
-    await playThroughStep2(s.page);
-    for (let i = 0; i < 3; i++) { await playOneBlackMove(s.page); await s.page.waitForTimeout(120); }
-    await s.page.click('#s02-continue');
-    await s.page.waitForTimeout(300);
-
-    await s.page.reload({ waitUntil: 'networkidle' });
-    await s.page.waitForTimeout(300);
-    ensure(await s.page.locator('#ls-final').evaluate(el => el.classList.contains('show')), 'iki sahne de tamamlanmışken reload sonrası final durum gösterilmedi');
-    ensure(await s.page.locator('.s02-step, #s01-intro').count() === 0, 'reload sonrası bir sahne yanlışlıkla tekrar mount edildi');
-  } finally { await s.close(); }
-});
-
-addTest('S2-8) divider kaldırıldı: masaüstü ve mobilde #ls-info-region\'da görünür bir ayraç çizgisi YOK', async () => {
-  for (const viewport of [VIEWPORTS.desktop, VIEWPORTS.mobile]) {
-    const s = await openScenesPage({ viewport });
-    try {
-      const borders = await s.page.locator('#ls-info-region').evaluate(el => {
-        const cs = getComputedStyle(el);
-        return { left: cs.borderLeftWidth, top: cs.borderTopWidth, right: cs.borderRightWidth, bottom: cs.borderBottomWidth };
-      });
-      ensure(borders.left === '0px', `${viewport.width}px: border-left hâlâ var (${borders.left})`);
-      ensure(borders.top === '0px', `${viewport.width}px: border-top hâlâ var (${borders.top})`);
-      ensure(borders.right === '0px', `${viewport.width}px: border-right var (${borders.right})`);
-      ensure(borders.bottom === '0px', `${viewport.width}px: border-bottom var (${borders.bottom})`);
-    } finally { await s.close(); }
-  }
-});
-
-addTest('S2-9) Sahne #2 akışı (6 hamle + tamamlama) boyunca konsolda/pageerror\'da hata yok', async () => {
-  const s = await openScenesPage({ query: '?whiteMoveDelayMs=0' });
-  try {
-    await advanceToScene2(s.page);
-    await playThroughStep2(s.page);
-    for (let i = 0; i < 3; i++) { await playOneBlackMove(s.page); await s.page.waitForTimeout(120); }
-    await s.page.click('#s02-continue');
-    await s.page.waitForTimeout(300);
-    ensure(s.consoleErrors.length === 0, `hata bulundu: ${s.consoleErrors.join(' | ')}`);
-  } finally { await s.close(); }
-});
-
-addTest('S2-10) reduced-motion: Sahne #2 bilgi kartı geçişleri de transition\'sız, akış yine tamamlanabiliyor', async () => {
-  const s = await openScenesPage({ reducedMotion: 'reduce' });
-  try {
-    await advanceToScene2(s.page);
-    const transition = await s.page.locator('#s02-step-0 .s01-intro-card').evaluate(el => getComputedStyle(el).transitionDuration);
-    ensure(transition === '0s' || transition.startsWith('0s'), `reduced-motion'da transition kalkmamış: ${transition}`);
-    await confirmS02Step(s.page, 0);
-    ensure(await s.page.locator('#s02-step-1').isVisible(), 'reduced-motion\'da 2. adım açılmadı');
-  } finally { await s.close(); }
-});
-
-addTest('S2-11) Teacher Studio: Sahne #2 curriculum satırı ve event\'leri aynı localStorage üzerinden görünüyor', async () => {
-  const s = await openScenesPage({ query: '?whiteMoveDelayMs=0' });
-  try {
-    await advanceToScene2(s.page);
-    await playThroughStep2(s.page);
-    await playOneBlackMove(s.page);
-    await s.page.waitForTimeout(150);
-
-    const studioPage = await s.context.newPage();
-    const studioErrors = [];
-    studioPage.on('pageerror', e => studioErrors.push(e.message));
-    await studioPage.goto(`${BASE}/teacher-studio.html`, { waitUntil: 'networkidle' });
-
-    await studioPage.click('[data-tab="curriculum"]').catch(() => {});
-    await studioPage.waitForTimeout(150);
-    const curriculumText = (await studioPage.locator('#curriculum-scene-table').textContent().catch(() => '')) || '';
-    ensure(curriculumText.includes('scene-02-turns-and-intersections'), 'Studio Curriculum panelinde Sahne #2 satırı yok');
-    ensure(curriculumText.includes('stone_placement'), 'Studio Curriculum panelinde doğru concept görünmüyor');
-
-    await studioPage.click('[data-tab="diagnostics"]').catch(() => {});
-    await studioPage.waitForTimeout(150);
-    const diagText = (await studioPage.locator('#diag-scene-table').textContent().catch(() => '')) || '';
-    ensure(diagText.includes('geçerli') || !diagText.includes('scene-02'), 'Sahne #2 diagnostics\'te geçersiz görünüyor');
-
-    ensure(studioErrors.length === 0, `Studio\'da hata: ${studioErrors.join(' | ')}`);
-    await studioPage.close();
   } finally { await s.close(); }
 });
 

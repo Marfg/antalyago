@@ -17,28 +17,35 @@
  *
  *   const board = createSceneBoardAdapter(canvasEl);
  *   board.setSize(19);                 // gerçek tahta boyutunu değiştirir + yeniden çizer
- *   board.reset();                     // taşları/rehberleri temizler, deterministik BoardState'i sıfırlar
+ *   board.reset();                     // taşları/vurguları temizler, deterministik BoardState'i sıfırlar
  *   board.focus('board19');            // adlandırılmış bir kamera preset'ine geçer
  *   board.getSize();                   // 9 | 13 | 19
  *   board.isLegalMove({row,col,color});// core/ruleEngine.js ÜZERİNDEN gerçek yasallık
  *   board.playMove({row,col,color});   // yasalsa gerçek BoardState + görsel taşı günceller
- *   board.getEmptyIntersections();     // [{row,col}] — o an boş noktalar
- *   board.setIntersectionGuides(pts);  // küçük yeşil noktaları çizer
- *   board.clearIntersectionGuides();
+ *   board.getLibertiesAt({row,col});   // [{row,col}] — core/ruleEngine.js ÜZERİNDEN gerçek nefes noktaları
+ *   board.showLiberties(points);       // ince, nötr nefes halkalarını çizer (bkz. drawLibertyRing)
+ *   board.clearLiberties();
  *   board.setInputEnabled(bool);       // false iken onIntersectionTap ASLA tetiklenmez
  *   const off = board.onIntersectionTap(({row,col}) => {...}); // off() ile abone iptali
  *   board.destroy();                   // RAF/resize/click listener'ı + tüm durumu temizler
  *
- * ogren-3d.html'in lesson-specific overlay'leri (liberty/marker/ghost/
- * mini-question/pedagoji vurguları) BİLEREK taşınmadı — yalnız Sahne
- * #1/#2'nin ihtiyacı olan asgari, genel amaçlı çizim ilkelleri (boş
- * tahta, taş, kesişim rehberi) eklendi. Büyük/riskli bir tam renderer
- * taşıması yapılmadı (bkz. görev talimatı).
+ * v0.9 — kesişim "rehber" (neon nokta) sistemi BİLEREK KALDIRILDI (bkz.
+ * görev talimatı, Bölüm B): kullanıcı kesişimleri doğal tahta çizgileri,
+ * ince tek-noktalı pointer hover geri bildirimi (bkz. hoverPoint) ve
+ * taşın gerçek yerleşme davranışıyla öğrenir. Yerine pedagojik, YALNIZ
+ * BİLGİLENDİRİCİ bir "nefes noktası" vurgu sistemi eklendi (getLibertiesAt/
+ * showLiberties/clearLiberties) — bu, oynanabilir bir hedef rehberi
+ * DEĞİLDİR, yalnız seçili bir taşın gerçek komşu boş noktalarını gösterir.
+ *
+ * ogren-3d.html'in lesson-specific overlay'leri (marker/ghost/mini-question
+ * pedagoji vurguları) BİLEREK taşınmadı — yalnız Sahne #1/#2/#3'ün
+ * ihtiyacı olan asgari, genel amaçlı çizim ilkelleri eklendi. Büyük/riskli
+ * bir tam renderer taşıması yapılmadı (bkz. görev talimatı).
  */
 
 import { CAM } from '../core/curriculum.js';
 import { BoardState } from '../core/boardState.js';
-import { isValidMove, applyMove } from '../core/ruleEngine.js';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -95,7 +102,11 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // animasyonu için `t` 0→1 ilerler; ogren-3d.html'deki particle/ghost
   // sistemleri BİLEREK taşınmadı, yalnız sade bir ölçek-içi geçiş var).
   let visualStones = [];
-  let guidePoints = []; // [{gx,gz}]
+  // Pedagojik nefes-noktası vurgusu — [{gx,gz,t}], `t` 0→1 sakin bir
+  // fade-in için ilerler (bkz. drawLibertyRing). Oynanabilir bir hedef
+  // rehberi DEĞİLDİR, yalnız seçili taşın gerçek komşu boş noktalarını
+  // gösterir (bkz. getLibertiesAt/showLiberties/clearLiberties).
+  let libertyPoints = [];
   let inputEnabled = false;
   const tapHandlers = new Set();
   const reduceMotion = typeof window !== 'undefined' && window.matchMedia
@@ -224,18 +235,37 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     ctx.restore();
   }
 
-  /** Kesişim rehberi — küçük yeşil neon nokta. Taş DEĞİL, çok düşük opacity. */
-  function drawGuide(gx, gz, hovered) {
+  /**
+   * Pedagojik nefes-noktası halkası — ince, küçük, içi boş, nötr sıcak
+   * kehribar tonunda. Yeşil neon DEĞİL, glow YOK, sürekli pulse YOK.
+   * `t` yalnız İLK gösterimde 0→1 ilerler (sakin, tek seferlik fade-in);
+   * bir kez tam görünür olduktan sonra STATİK kalır.
+   */
+  function drawLibertyRing(gx, gz, t) {
     const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
     const Y = -BOARD_H / 2 - .3;
     const p = project(wx, Y, wz);
-    const r = Math.max(1.6, 2.4 * p.scale) * (hovered ? 1.35 : 1);
+    const e = reduceMotion ? 1 : easeInOutCubic(Math.min(1, t));
+    const r = Math.max(3, CELL * 0.15) * p.scale * (0.7 + 0.3 * e);
     ctx.save();
-    ctx.shadowColor = 'rgba(62,207,128,.85)';
-    ctx.shadowBlur = hovered ? 6 : 3.5;
-    ctx.beginPath(); ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(62,207,128,${hovered ? .95 : .68})`;
-    ctx.fill();
+    ctx.globalAlpha = 0.82 * e;
+    ctx.strokeStyle = 'rgba(224,192,120,0.95)';
+    ctx.lineWidth = Math.max(1.1, r * 0.14);
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+
+  /** Tek noktalı, çok sade pointer hover geri bildirimi — kesişimlerin
+      TÜMÜNÜ işaretlemez, yalnız imlecin en yakın olduğu kesişimi. */
+  function drawHoverPoint(gx, gz) {
+    const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
+    const Y = -BOARD_H / 2 - .3;
+    const p = project(wx, Y, wz);
+    const r = Math.max(2.2, CELL * 0.09) * p.scale;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(232,228,222,.55)';
+    ctx.lineWidth = Math.max(1, r * 0.22);
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
   }
 
@@ -245,7 +275,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
     drawBoard();
     drawGrid();
-    for (const g of guidePoints) drawGuide(g.gx, g.gz, g.gx === hoverGuide?.gx && g.gz === hoverGuide?.gz);
+    if (inputEnabled && hoverPoint) drawHoverPoint(hoverPoint.gx, hoverPoint.gz);
+    for (const l of libertyPoints) drawLibertyRing(l.gx, l.gz, l.t);
     const sorted = [...visualStones].sort((a, b) => project(-HALF + a.gx * CELL, 0, -HALF + a.gz * CELL).z - project(-HALF + b.gx * CELL, 0, -HALF + b.gz * CELL).z);
     for (const s of sorted) {
       const scale = reduceMotion ? 1 : easeInOutCubic(Math.min(1, s.t));
@@ -256,6 +287,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   let rafId = null;
   let lastFrameMs = 0;
   const STONE_ANIM_DUR = 0.16;
+  const LIBERTY_FADE_DUR = 0.25;
   function loop(nowMs) {
     const dt = lastFrameMs ? Math.min(0.05, (nowMs - lastFrameMs) / 1000) : 1 / 60;
     lastFrameMs = nowMs;
@@ -268,6 +300,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     }
     if (!reduceMotion) {
       for (const s of visualStones) if (s.t < 1) s.t = Math.min(1, s.t + dt / STONE_ANIM_DUR);
+      for (const l of libertyPoints) if (l.t < 1) l.t = Math.min(1, l.t + dt / LIBERTY_FADE_DUR);
     }
     render();
     rafId = requestAnimationFrame(loop);
@@ -290,7 +323,10 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     const hitMult = isMobile ? 0.72 : 0.55;
     return bestD < CELL * hitMult * bestSc ? best : null;
   }
-  let hoverGuide = null;
+  // Sade tek-nokta pointer hover — yalnız girdi AÇIKKEN, yalnız imlecin
+  // en yakın olduğu TEK kesişim (bkz. drawHoverPoint). "Rehber" listesi
+  // YOK — kullanıcı her kesişime doğal olarak hover edebilir.
+  let hoverPoint = null;
   function pointerXY(evt) {
     const rect = canvas.getBoundingClientRect();
     const clientX = evt.touches?.[0]?.clientX ?? evt.clientX;
@@ -298,10 +334,9 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     return { mx: clientX - rect.left, my: clientY - rect.top };
   }
   function handleMove(evt) {
-    if (!guidePoints.length) { hoverGuide = null; return; }
+    if (!inputEnabled) { hoverPoint = null; return; }
     const { mx, my } = pointerXY(evt);
-    const hit = screenToGrid(mx, my);
-    hoverGuide = hit && guidePoints.some(g => g.gx === hit.gx && g.gz === hit.gz) ? hit : null;
+    hoverPoint = screenToGrid(mx, my);
   }
   function handleClick(evt) {
     if (!inputEnabled) return;
@@ -319,14 +354,14 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       SIZE = n; CELL = sizeToCell(n); HALF = (SIZE - 1) * CELL / 2; STONE_R = CELL * (20 / 48);
       boardSt = new BoardState(SIZE);
       visualStones = [];
-      guidePoints = [];
-      hoverGuide = null;
+      libertyPoints = [];
+      hoverPoint = null;
     },
     reset() {
       boardSt.reset(SIZE);
       visualStones = [];
-      guidePoints = [];
-      hoverGuide = null;
+      libertyPoints = [];
+      hoverPoint = null;
     },
     focus(presetName) {
       const preset = CAM_PRESETS[presetName] || CAM_PRESETS.overview;
@@ -364,24 +399,30 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       return { ok: true, captured: captured.map(c => ({ row: c.y, col: c.x })) };
     },
 
-    /** @returns {Array<{row:number,col:number}>} o an boş olan tüm kesişimler. */
-    getEmptyIntersections() {
-      const points = [];
-      for (let row = 0; row < SIZE; row++) {
-        for (let col = 0; col < SIZE; col++) {
-          if (boardSt.isEmpty(col, row)) points.push({ row, col });
-        }
-      }
-      return points;
+    /**
+     * (row,col) noktasındaki taşın GERÇEK nefes noktalarını
+     * core/ruleEngine.js (getGroup/getLiberties) üzerinden hesaplar.
+     * Sahne modülleri bu hesabı ASLA kendi tekrarlamaz/sabit sayı
+     * varsaymaz — her zaman bu API'den gerçek sonucu okur.
+     * @param {{row:number,col:number}} point
+     * @returns {Array<{row:number,col:number}>}
+     */
+    getLibertiesAt({ row, col }) {
+      const group = getGroup(boardSt, col, row);
+      if (!group.size) return [];
+      const libs = getLiberties(boardSt, group);
+      return [...libs].map(key => {
+        const [x, y] = key.split(',').map(Number);
+        return { row: y, col: x };
+      });
     },
 
-    /** @param {Array<{row:number,col:number}>} points */
-    setIntersectionGuides(points) {
-      guidePoints = (points || []).map(p => ({ gx: p.col, gz: p.row }));
+    /** @param {Array<{row:number,col:number}>} points — pedagojik nefes-noktası halkaları çizer. */
+    showLiberties(points) {
+      libertyPoints = (points || []).map(p => ({ gx: p.col, gz: p.row, t: reduceMotion ? 1 : 0 }));
     },
-    clearIntersectionGuides() {
-      guidePoints = [];
-      hoverGuide = null;
+    clearLiberties() {
+      libertyPoints = [];
     },
 
     /** false iken onIntersectionTap abonelerine ASLA ulaşılmaz (girdi kilidi). */
@@ -403,7 +444,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       canvas.removeEventListener('click', handleClick);
       canvas.removeEventListener('pointermove', handleMove);
       tapHandlers.clear();
-      guidePoints = [];
+      libertyPoints = [];
       visualStones = [];
     },
   };
