@@ -22,25 +22,29 @@
  *   board.getSize();                   // 9 | 13 | 19
  *   board.isLegalMove({row,col,color});// core/ruleEngine.js ÜZERİNDEN gerçek yasallık
  *   board.playMove({row,col,color});   // yasalsa gerçek BoardState + görsel taşı günceller
+ *   board.replaceExampleStone({row,col,color}); // tahtayı temiz TEK-TAŞLI bir örneğe döndürüp yeni taşı yerleştirir
  *   board.getLibertiesAt({row,col});   // [{row,col}] — core/ruleEngine.js ÜZERİNDEN gerçek nefes noktaları
- *   board.showLiberties(points);       // ince, nötr nefes halkalarını çizer (bkz. drawLibertyRing)
+ *   board.showLiberties(points);       // turkuaz "nefes ışığı" işaretlerini çizer (bkz. drawLibertyMark)
  *   board.clearLiberties();
- *   board.setInputEnabled(bool);       // false iken onIntersectionTap ASLA tetiklenmez
- *   const off = board.onIntersectionTap(({row,col}) => {...}); // off() ile abone iptali
+ *   board.setMovePreview({row,col,color}); // yasal boş kesişimde yarı saydam taş silueti + ince turkuaz halka
+ *   board.clearMovePreview();
+ *   board.setInputEnabled(bool);       // false iken onIntersectionTap/onIntersectionHover ASLA tetiklenmez; preview'ı da temizler
+ *   const off = board.onIntersectionTap(({row,col}) => {...});   // off() ile abone iptali
+ *   const offH = board.onIntersectionHover(hitOrNull => {...});  // pointer hareket/dokunuşunda; board dışında/kilitliyken null
  *   board.destroy();                   // RAF/resize/click listener'ı + tüm durumu temizler
  *
- * v0.9 — kesişim "rehber" (neon nokta) sistemi BİLEREK KALDIRILDI (bkz.
- * görev talimatı, Bölüm B): kullanıcı kesişimleri doğal tahta çizgileri,
- * ince tek-noktalı pointer hover geri bildirimi (bkz. hoverPoint) ve
- * taşın gerçek yerleşme davranışıyla öğrenir. Yerine pedagojik, YALNIZ
- * BİLGİLENDİRİCİ bir "nefes noktası" vurgu sistemi eklendi (getLibertiesAt/
- * showLiberties/clearLiberties) — bu, oynanabilir bir hedef rehberi
- * DEĞİLDİR, yalnız seçili bir taşın gerçek komşu boş noktalarını gösterir.
+ * v0.9 — kesişim "rehber" (neon nokta) sistemi BİLEREK KALDIRILDI: kullanıcı
+ * kesişimleri doğal tahta çizgileri, pointer hover/ghost geri bildirimi ve
+ * taşın gerçek yerleşme davranışıyla öğrenir.
  *
- * ogren-3d.html'in lesson-specific overlay'leri (marker/ghost/mini-question
- * pedagoji vurguları) BİLEREK taşınmadı — yalnız Sahne #1/#2/#3'ün
- * ihtiyacı olan asgari, genel amaçlı çizim ilkelleri eklendi. Büyük/riskli
- * bir tam renderer taşıması yapılmadı (bkz. görev talimatı).
+ * v0.11 — nefes vurgusu eski `ogren-3d.html`'in `drawPedagogyHighlights3D()`
+ * ("firuze artı") görsel diline getirildi (bkz. drawLibertyMark) — kehribar
+ * halka KALDIRILDI. Hamle öncesi taş silueti (ghost preview) eklendi;
+ * geometri/teknik eski `ogren-3d.html`'in `drawStone(...,alpha,...)` (yarı
+ * saydam taş) ve ghost-ring çizim tekniklerinden ADAPTE edildi (bkz. görev
+ * talimatı, Bölüm A/B — tam kaynak referansları dosya içinde ilgili
+ * fonksiyonların üstünde belirtilmiştir). Renk/pulse'suz statik sunum bu
+ * projenin kendi tercihidir; eski dosyadaki sürekli pulse BİLEREK alınmadı.
  */
 
 import { CAM } from '../core/curriculum.js';
@@ -103,12 +107,17 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // sistemleri BİLEREK taşınmadı, yalnız sade bir ölçek-içi geçiş var).
   let visualStones = [];
   // Pedagojik nefes-noktası vurgusu — [{gx,gz,t}], `t` 0→1 sakin bir
-  // fade-in için ilerler (bkz. drawLibertyRing). Oynanabilir bir hedef
+  // fade-in için ilerler (bkz. drawLibertyMark). Oynanabilir bir hedef
   // rehberi DEĞİLDİR, yalnız seçili taşın gerçek komşu boş noktalarını
   // gösterir (bkz. getLibertiesAt/showLiberties/clearLiberties).
   let libertyPoints = [];
+  // Hamle öncesi taş silueti — {gx,gz,color}|null. Board State'e ASLA
+  // yazılmaz, yalnız görsel bir önizlemedir (bkz. setMovePreview/
+  // clearMovePreview/drawMovePreview).
+  let movePreview = null;
   let inputEnabled = false;
   const tapHandlers = new Set();
+  const hoverHandlers = new Set();
   const reduceMotion = typeof window !== 'undefined' && window.matchMedia
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false;
@@ -206,16 +215,19 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   /** Taş yüzeyinin oturduğu dünya-Y (board üstü) — ogren-3d.html'deki AYNI sabit. */
   function stoneSurfaceY() { return -(BOARD_H / 2) - STONE_R * ASPECT_3D - 1; }
 
-  // Sade, boyut-agnostik taş çizimi — ogren-3d.html'in tam gradient/gölge
-  // detayları (particle, ghost, highlight) BİLEREK taşınmadı; Sahne #1/#2
-  // yalnız "burada bir taş var" göstermeye ihtiyaç duyuyor.
-  function drawStone(gx, gz, color, scale) {
+  // Sade, boyut-agnostik taş çizimi — ogren-3d.html'in tam particle/highlight
+  // detayları BİLEREK taşınmadı, ama gradient/gölge YAPISI aynı. `alpha`
+  // parametresi ogren-3d.html'in `drawStone(wx,wy,wz,color,alpha,mul)`
+  // tekniğiyle AYNI — ghost/preview taşı (bkz. drawMovePreview) GERÇEK taş
+  // koduyla PAYLAŞIR, ikinci bir "siluet çizici" YAZILMADI.
+  function drawStone(gx, gz, color, scale, alpha) {
     const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
     const p = project(wx, stoneSurfaceY(), wz);
     const { rx, ry } = stoneRadii(p, scale ?? 1);
     if (rx < 2) return;
     const isB = color === 'black';
     ctx.save();
+    if (alpha !== undefined) ctx.globalAlpha = alpha;
     const ps = project(wx, -BOARD_H / 2 - .5, wz);
     const sg = ctx.createRadialGradient(ps.sx + rx * .1, ps.sy + ry * .12, 0, ps.sx + rx * .1, ps.sy + ry * .12, rx);
     sg.addColorStop(0, 'rgba(0,0,0,.38)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
@@ -236,22 +248,61 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   }
 
   /**
-   * Pedagojik nefes-noktası halkası — ince, küçük, içi boş, nötr sıcak
-   * kehribar tonunda. Yeşil neon DEĞİL, glow YOK, sürekli pulse YOK.
-   * `t` yalnız İLK gösterimde 0→1 ilerler (sakin, tek seferlik fade-in);
-   * bir kez tam görünür olduktan sonra STATİK kalır.
+   * Pedagojik nefes-noktası işareti — eski `ogren-3d.html`'in
+   * `drawPedagogyHighlights3D()` ("firuze artı") fonksiyonundan ADAPTE
+   * edildi: kısa turkuaz/cyan ışık kolları (yatay+dikey) + küçük merkez
+   * noktası. Kol uzunluğu DÜNYA uzayında sabit (`CELL*0.22`) tutulup HER
+   * kol ucu ayrı ayrı `project()`lenir — bu, eski koddaki AYNI perspektif-
+   * doğru teknik (yalnız ekran-uzayında ölçeklemek yerine). Büyük bir `+`
+   * karakteri DEĞİL: kısa, ince ışık parçaları. Eski koddaki SÜREKLİ
+   * sinüs pulse'u BİLİNÇLİ olarak alınmadı (bkz. görev talimatı) — `t`
+   * yalnız İLK gösterimde 0→1 ilerleyen, tek seferlik sakin bir fade-in;
+   * tam görünür olduktan sonra STATİK kalır.
    */
-  function drawLibertyRing(gx, gz, t) {
+  function drawLibertyMark(gx, gz, t) {
     const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
     const Y = -BOARD_H / 2 - .3;
     const p = project(wx, Y, wz);
+    if (p.scale < 0.12) return;
     const e = reduceMotion ? 1 : easeInOutCubic(Math.min(1, t));
-    const r = Math.max(3, CELL * 0.15) * p.scale * (0.7 + 0.3 * e);
+    const arm = CELL * 0.22; // dünya-uzayında sabit kol uzunluğu (ogren-3d.html ile AYNI oran)
+    const alpha = 0.78 * e;
     ctx.save();
-    ctx.globalAlpha = 0.82 * e;
-    ctx.strokeStyle = 'rgba(224,192,120,0.95)';
-    ctx.lineWidth = Math.max(1.1, r * 0.14);
-    ctx.beginPath(); ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = `rgba(91,210,195,${alpha.toFixed(2)})`;
+    ctx.lineWidth = Math.max(1.3, 2.1 * p.scale);
+    ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(91,210,195,.55)';
+    ctx.shadowBlur = 2.5 * p.scale; // hafif glow — büyük bloom DEĞİL
+    const pL = project(wx - arm, Y, wz), pR = project(wx + arm, Y, wz);
+    ctx.beginPath(); ctx.moveTo(pL.sx, pL.sy); ctx.lineTo(pR.sx, pR.sy); ctx.stroke();
+    const pU = project(wx, Y, wz - arm), pD = project(wx, Y, wz + arm);
+    ctx.beginPath(); ctx.moveTo(pU.sx, pU.sy); ctx.lineTo(pD.sx, pD.sy); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, Math.max(1.1, 1.8 * p.scale), 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(91,210,195,${Math.min(1, alpha + .12).toFixed(2)})`;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /**
+   * Hamle öncesi taş silueti (ghost preview) — GERÇEK taş çizimini
+   * (drawStone, yarı saydam alpha ile — ogren-3d.html'in düşük-alpha
+   * `drawStone(...,.22,...)` ghost tekniği) ince turkuaz/cyan bir çevre
+   * halkasıyla birleştirir (halka geometrisi ogren-3d.html'in ghost-ring
+   * çizim TEKNİĞİNden adapte edildi, renk turkuaza çevrildi, pulse
+   * KALDIRILDI — bkz. görev talimatı). Büyük glow/pulse YOK.
+   */
+  function drawMovePreview(gx, gz, color) {
+    drawStone(gx, gz, color, 1, 0.30);
+    const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
+    const p = project(wx, stoneSurfaceY(), wz);
+    const { rx, ry } = stoneRadii(p, 1.1);
+    if (rx < 2) return;
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = 'rgb(91,210,195)';
+    ctx.lineWidth = Math.max(1, rx * 0.05);
+    ctx.beginPath(); ctx.ellipse(p.sx, p.sy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
   }
 
@@ -275,8 +326,11 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
     drawBoard();
     drawGrid();
-    if (inputEnabled && hoverPoint) drawHoverPoint(hoverPoint.gx, hoverPoint.gz);
-    for (const l of libertyPoints) drawLibertyRing(l.gx, l.gz, l.t);
+    // movePreview aktifken sade hover noktası GÖSTERİLMEZ — aynı kesişimde
+    // iki farklı işaret üst üste binmesin diye (bkz. drawMovePreview).
+    if (inputEnabled && hoverPoint && !movePreview) drawHoverPoint(hoverPoint.gx, hoverPoint.gz);
+    for (const l of libertyPoints) drawLibertyMark(l.gx, l.gz, l.t);
+    if (movePreview) drawMovePreview(movePreview.gx, movePreview.gz, movePreview.color);
     const sorted = [...visualStones].sort((a, b) => project(-HALF + a.gx * CELL, 0, -HALF + a.gz * CELL).z - project(-HALF + b.gx * CELL, 0, -HALF + b.gz * CELL).z);
     for (const s of sorted) {
       const scale = reduceMotion ? 1 : easeInOutCubic(Math.min(1, s.t));
@@ -325,7 +379,10 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   }
   // Sade tek-nokta pointer hover — yalnız girdi AÇIKKEN, yalnız imlecin
   // en yakın olduğu TEK kesişim (bkz. drawHoverPoint). "Rehber" listesi
-  // YOK — kullanıcı her kesişime doğal olarak hover edebilir.
+  // YOK — kullanıcı her kesişime doğal olarak hover edebilir. Aynı hit
+  // bilgisi onIntersectionHover() abonelerine de iletilir — sahne modülü
+  // BUNUN üzerinden setMovePreview/clearMovePreview çağırır (adaptör
+  // dışına canvas/hit-testing SIZDIRILMAZ, bkz. dosya başı sözleşme).
   let hoverPoint = null;
   function pointerXY(evt) {
     const rect = canvas.getBoundingClientRect();
@@ -333,10 +390,15 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     const clientY = evt.touches?.[0]?.clientY ?? evt.clientY;
     return { mx: clientX - rect.left, my: clientY - rect.top };
   }
+  function notifyHover(hit) {
+    const payload = hit ? { row: hit.gz, col: hit.gx } : null;
+    for (const handler of hoverHandlers) handler(payload);
+  }
   function handleMove(evt) {
-    if (!inputEnabled) { hoverPoint = null; return; }
+    if (!inputEnabled) { hoverPoint = null; notifyHover(null); return; }
     const { mx, my } = pointerXY(evt);
     hoverPoint = screenToGrid(mx, my);
+    notifyHover(hoverPoint);
   }
   function handleClick(evt) {
     if (!inputEnabled) return;
@@ -347,6 +409,11 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   }
   canvas.addEventListener('click', handleClick);
   canvas.addEventListener('pointermove', handleMove);
+  // Touch cihazlarda kalıcı hover YOK — pointerdown, dokunuş anında BİR
+  // KARELİK kısa bir önizleme üretir (ogren-3d.html'in touchstart→ghostGrid
+  // deseniyle AYNI ruh); ardından gelen 'click' AYNI etkileşimde hamleyi
+  // commit eder — ikinci bir dokunuş İSTENMEZ (bkz. görev talimatı Bölüm B).
+  canvas.addEventListener('pointerdown', handleMove);
 
   return {
     setSize(n) {
@@ -355,12 +422,14 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       boardSt = new BoardState(SIZE);
       visualStones = [];
       libertyPoints = [];
+      movePreview = null;
       hoverPoint = null;
     },
     reset() {
       boardSt.reset(SIZE);
       visualStones = [];
       libertyPoints = [];
+      movePreview = null;
       hoverPoint = null;
     },
     focus(presetName) {
@@ -400,6 +469,29 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     },
 
     /**
+     * Tahtayı temiz, TEK TAŞLI bir pedagojik "örnek" durumuna döndürür ve
+     * yeni taşı yerleştirir — Sahne #3'ün "her seçim bağımsız bir örnektir,
+     * önceki taş gerçek Go'da HAREKET ETTİRİLMİYOR" modeli için (bkz. görev
+     * talimatı Bölüm C/D). Yasallık HER ZAMAN taze/boş bir tahtaya karşı
+     * kontrol edilir (core/ruleEngine.js). Başarısızsa (pratikte yalnız
+     * tahta-dışı savunma durumu) ÖNCEKİ geçerli örnek DOKUNULMADAN kalır —
+     * hiçbir shared state yasallık kontrolünden ÖNCE mutate edilmez.
+     * @param {{row:number,col:number,color:'black'|'white'}} move
+     * @returns {{ok:boolean, reason?:string}}
+     */
+    replaceExampleStone({ row, col, color }) {
+      const freshBoard = new BoardState(SIZE);
+      const check = isValidMove(freshBoard, col, row, color);
+      if (!check.valid) return { ok: false, reason: check.reason };
+      const { newState } = applyMove(freshBoard, col, row, color);
+      boardSt = newState;
+      visualStones = [{ gx: col, gz: row, color, t: reduceMotion ? 1 : 0 }];
+      libertyPoints = [];
+      movePreview = null;
+      return { ok: true };
+    },
+
+    /**
      * (row,col) noktasındaki taşın GERÇEK nefes noktalarını
      * core/ruleEngine.js (getGroup/getLiberties) üzerinden hesaplar.
      * Sahne modülleri bu hesabı ASLA kendi tekrarlamaz/sabit sayı
@@ -417,7 +509,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       });
     },
 
-    /** @param {Array<{row:number,col:number}>} points — pedagojik nefes-noktası halkaları çizer. */
+    /** @param {Array<{row:number,col:number}>} points — pedagojik nefes-noktası işaretlerini çizer. */
     showLiberties(points) {
       libertyPoints = (points || []).map(p => ({ gx: p.col, gz: p.row, t: reduceMotion ? 1 : 0 }));
     },
@@ -425,8 +517,25 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       libertyPoints = [];
     },
 
-    /** false iken onIntersectionTap abonelerine ASLA ulaşılmaz (girdi kilidi). */
-    setInputEnabled(enabled) { inputEnabled = !!enabled; },
+    /**
+     * Hamle öncesi taş silueti (ghost preview) — BoardState'e ASLA
+     * dokunmaz, yalnız görsel. Dolu/tahta-dışı bir noktada göstermek
+     * ÇAĞIRANIN sorumluluğudur (sahne modülü isLegalMove ile önce
+     * kontrol eder, bkz. scenes/scene03LibertiesByPosition.js).
+     * @param {{row:number,col:number,color:'black'|'white'}} point
+     */
+    setMovePreview({ row, col, color }) {
+      movePreview = { gx: col, gz: row, color };
+    },
+    clearMovePreview() {
+      movePreview = null;
+    },
+
+    /** false iken onIntersectionTap/onIntersectionHover abonelerine ASLA ulaşılmaz (girdi kilidi) — preview'ı da temizler. */
+    setInputEnabled(enabled) {
+      inputEnabled = !!enabled;
+      if (!inputEnabled) movePreview = null;
+    },
     isInputEnabled() { return inputEnabled; },
 
     /**
@@ -438,13 +547,29 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       return () => tapHandlers.delete(handler);
     },
 
+    /**
+     * Pointer/dokunuş en yakın kesişime her yaklaştığında (girdi açıkken)
+     * `{row,col}`, board dışına çıkınca veya girdi kilitliyken `null` ile
+     * çağrılır. Sahne modülleri BUNU setMovePreview/clearMovePreview'a
+     * bağlar — adaptör canvas/hit-testing'i SIZDIRMAZ.
+     * @param {(hit:{row:number,col:number}|null) => void} handler
+     * @returns {() => void} abonelikten çıkma fonksiyonu
+     */
+    onIntersectionHover(handler) {
+      hoverHandlers.add(handler);
+      return () => hoverHandlers.delete(handler);
+    },
+
     destroy() {
       if (rafId != null) cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
       canvas.removeEventListener('click', handleClick);
       canvas.removeEventListener('pointermove', handleMove);
+      canvas.removeEventListener('pointerdown', handleMove);
       tapHandlers.clear();
+      hoverHandlers.clear();
       libertyPoints = [];
+      movePreview = null;
       visualStones = [];
     },
   };

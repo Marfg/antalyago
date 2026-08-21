@@ -141,6 +141,7 @@ document.getElementById('ls-error-reload').addEventListener('click', () => {
    bütçesi, board bounding box'ı ASLA değişmez). Tamamlanan konular
    seçilince replay modunda başlatılır; henüz açılmamış konular disabled. */
 let topicsOpenerEl = null;
+let inputEnabledBeforeTopics = false;
 function renderTopicsList() {
   const completed = sceneProgressAdapter.load().completedSceneIds;
   const activeId = runtime.getActiveSceneId();
@@ -173,6 +174,12 @@ function renderTopicsList() {
 }
 function openTopicsList() {
   topicsOpenerEl = document.activeElement;
+  // Board input'u (ve dolayısıyla ghost preview'ı) GEÇİCİ olarak kapat —
+  // panel açıkken pointer hâlâ canvas üzerindeyse hamle/silüet YANLIŞLIKLA
+  // tetiklenmemeli (bkz. görev talimatı Bölüm B — "Konular listesi
+  // açıldığında" ghost'un temizlenmesi gereken durumlardan biri).
+  inputEnabledBeforeTopics = boardAdapter.isInputEnabled();
+  boardAdapter.setInputEnabled(false);
   renderTopicsList();
   sceneHost.hidden = true;
   topicsPanel.hidden = false;
@@ -184,6 +191,9 @@ function closeTopicsList() {
   topicsPanel.hidden = true;
   sceneHost.hidden = false;
   document.removeEventListener('keydown', onTopicsKeydown);
+  // Girdi durumu, panel açılmadan ÖNCEKİ sahne durumuna geri döner —
+  // sahne kendi state'ine göre zaten doğru kararı vermiş olmalı.
+  boardAdapter.setInputEnabled(inputEnabledBeforeTopics);
   (topicsOpenerEl instanceof HTMLElement ? topicsOpenerEl : topicsOpenBtn).focus();
   topicsOpenerEl = null;
 }

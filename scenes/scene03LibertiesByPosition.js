@@ -3,30 +3,39 @@
  *
  * Konu #3 — "Taşların Nefesi". Kullanıcı SERBESTÇE keşfeder: boş 9×9
  * tahtada istediği herhangi bir kesişime siyah taş koyar, RuleEngine'in
- * hesapladığı GERÇEK nefes sayısını görür (köşe→2, kenar→3, iç→4),
- * "Başka bir noktayı dene" ile sınırsız kez tekrar dener. Grup/bağlantı/
- * capture/atari veya yatay-dikey taş bağlantısı konusuna GİRİLMEZ.
+ * hesapladığı GERÇEK nefes sayısını görür (köşe→2, kenar→3, iç→4).
+ * Grup/bağlantı/capture/atari veya yatay-dikey taş bağlantısı konusuna
+ * GİRİLMEZ.
  *
- * v0.10 — TAMAMEN YENİDEN YAZILDI (bkz. görev talimatı Bölüm B): eski
- * "yalnız merkez hamlesi → deterministik beyaz köşe hamlesi → merkez/köşe
- * karşılaştırma sorusu" akışı KALDIRILDI. Artık beyaz taş, corner-move
- * policy'si, karşılaştırma sorusu ve bunlara özgü event'ler YOK. Kullanıcı
- * yalnız KENDİ seçtiği konumları inceler; pedagojik hedef, en az İKİ
- * FARKLI bölge türünde (köşe/kenar/iç) geçerli bir taş yerleştirmektir —
- * merkeze veya belirli bir sıraya ZORLANMAZ.
+ * v0.11 — Bölüm C düzeltmesi (bkz. görev talimatı): eski "iki farklı
+ * bölge görülmeden devam AÇILMAZ + ayrı 'Başka bir noktayı dene' düğmesi
+ * ZORUNLU" akışı KALDIRILDI. Artık:
+ *   - İlk yasal hamle TEK BAŞINA pedagojik hedefi karşılar (completion
+ *     yalnız bir kez işaretlenir, "Sonraki konu" hemen aktif olur).
+ *   - Board input İLK hamleden sonra da AÇIK kalır — kullanıcı doğrudan
+ *     başka bir kesişime tıklayarak YENİ bir örnek seçebilir (ayrı bir
+ *     "dene" düğmesine basmadan). Her yeni seçim `replaceExampleStone`
+ *     ile tahtayı temiz tek-taşlı bir örneğe döndürür (bkz. adapters/
+ *     sceneBoardAdapter.js) — önceki taşı gerçek Go'da HAREKET ETTİRMEZ,
+ *     bağımsız bir yeni pedagojik örnek olarak ele alınır.
+ *   - Hamle öncesi, pointer yasal bir boş kesişime yaklaştığında ince,
+ *     yarı saydam bir "taş silueti" (ghost preview) gösterilir (bkz.
+ *     boardAdapter.setMovePreview/clearMovePreview).
  *
  * Bölge sınıflandırması scenes/boardZones.js'in saf classifyBoardZone()'u
- * ile yapılır — YALNIZ pedagojik etiket/keşif takibi için; GERÇEK nefes
- * sayısı HER ZAMAN adapters/sceneBoardAdapter.js'in getLibertiesAt()
- * (core/ruleEngine.js) sonucudur, asla sabit metinden türetilmez.
+ * ile yapılır — YALNIZ pedagojik etiket/dinamik geri bildirim için;
+ * GERÇEK nefes sayısı HER ZAMAN adapters/sceneBoardAdapter.js'in
+ * getLibertiesAt() (core/ruleEngine.js) sonucudur, asla sabit metinden
+ * türetilmez veya completion gating'i için kullanılmaz.
  *
- * Yeşil neon "rehber" sistemi GERİ GETİRİLMEDİ — kullanıcı kesişimleri
- * doğal tahta çizgileri ve taşın gerçek yerleşme davranışıyla bulur.
- * Nefes vurguları (ince, içi boş, kehribar tonlu halkalar) YALNIZ
- * kullanıcının SEÇTİĞİ taş için gösterilir, "oynanabilir hedef" DEĞİLDİR.
+ * Nefes vurguları artık eski `ogren-3d.html` referansıyla AYNI görsel
+ * dili kullanır (turkuaz/cyan kısa ışık kolları — bkz. adapters/
+ * sceneBoardAdapter.js drawLibertyMark) — kehribar halka KALDIRILDI.
  *
- * Konu sonu (en az iki farklı bölge görüldüğünde) ORTAK
- * scenes/topicEndControls.js kullanır (bkz. görev talimatı Bölüm A).
+ * Konu sonu ORTAK scenes/topicEndControls.js kullanır (bkz. görev
+ * talimatı Bölüm A) — yalnız kullanıcı "Sonraki konu"ya BASINCA mount
+ * edilir; ilk hamleden hemen sonra DEĞİL (kullanıcı isterse durmadan
+ * başka konumları incelemeye devam edebilsin diye).
  */
 
 import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './boardZones.js';
@@ -34,44 +43,43 @@ import { mountTopicEndControls } from './topicEndControls.js';
 
 const STATE = {
   INTRO: 'intro',
-  AWAITING_MOVE: 'awaiting_move',
-  SHOWING_RESULT: 'showing_result', // "ready_for_retry_or_continue" ile aynı an — ek zamanlayıcı yok
+  AWAITING_FIRST_MOVE: 'awaiting_first_move',
+  SHOWING_EXAMPLE: 'showing_example', // en az bir örnek yerleşti; board YİNE DE tıklamaya açık
 };
 
 const INTRO_TEXT = 'Bir taşın yatay ve dikey komşu boş noktalarına nefes noktası denir.';
 const MOVE_INSTRUCTION = 'Tahtada istediğin boş kesişime siyah bir taş yerleştir.';
+const SECONDARY_HINT = 'İstersen başka bir kesişimi de deneyebilirsin.';
+const CONTINUE_DISABLED_HINT = 'Devam etmek için tahtada bir kesişime taş yerleştir.';
 const ZONE_SUBJECT = { corner: 'Köşedeki', edge: 'Kenardaki', interior: 'Tahtanın içindeki' };
-const ZONE_ACCUSATIVE = { corner: 'köşeyi', edge: 'kenarı', interior: 'tahtanın içini' };
-const REQUIRED_DISTINCT_ZONES = 2;
 const SUMMARY_TEXT = 'Taşın konumu, sahip olduğu nefes sayısını değiştirir.';
 
 function resultText(zone, count) {
   return `${ZONE_SUBJECT[zone]} taşın ${count} nefes noktası var.`;
 }
-function suggestUnseenZone(zonesSeen) {
-  const unseen = ['corner', 'edge', 'interior'].filter(z => !zonesSeen.has(z));
-  if (unseen.length === 0 || unseen.length === 3) return '';
-  return `Bir de ${unseen.map(z => ZONE_ACCUSATIVE[z]).join(' veya ')} deneyebilirsin.`;
-}
 
 // Yalnız bu modülün kendi bellek-içi (oturumluk) durumu — mount() her
 // zaman sıfırlar, unmount() temizler.
 let state = STATE.INTRO;
-let zonesSeen = new Set();
+let hasPlacedFirst = false;
 let unlockedEmitted = false;
+let exampleNumber = 0;
 let topicEnded = false;
 let topicEnd = null;
 let els = null;
 let cleanupFns = [];
 let unsubscribeTap = null;
+let unsubscribeHover = null;
 
 function resetState() {
   state = STATE.INTRO;
-  zonesSeen = new Set();
+  hasPlacedFirst = false;
   unlockedEmitted = false;
+  exampleNumber = 0;
   topicEnded = false;
   topicEnd = null;
   unsubscribeTap = null;
+  unsubscribeHover = null;
 }
 
 function render() {
@@ -80,31 +88,49 @@ function render() {
   els.playRow.hidden = state === STATE.INTRO || topicEnded;
   if (topicEnded) return;
 
-  els.retryBtn.hidden = state !== STATE.SHOWING_RESULT;
-  els.nextBtn.hidden = state !== STATE.SHOWING_RESULT;
-  if (state === STATE.SHOWING_RESULT) {
-    els.nextBtn.disabled = zonesSeen.size < REQUIRED_DISTINCT_ZONES;
-  }
+  els.nextBtn.disabled = !hasPlacedFirst;
+  els.continueHint.hidden = hasPlacedFirst;
 
-  if (state === STATE.AWAITING_MOVE) {
+  if (state === STATE.AWAITING_FIRST_MOVE) {
     els.statusEl.textContent = MOVE_INSTRUCTION;
     els.captionEl.textContent = '';
   }
 }
 
+function unsubscribeBoardListeners() {
+  if (unsubscribeTap) { unsubscribeTap(); unsubscribeTap = null; }
+  if (unsubscribeHover) { unsubscribeHover(); unsubscribeHover = null; }
+}
+
+function handleHover(context, hit) {
+  if (topicEnded || state === STATE.INTRO || !hit) {
+    context.boardAdapter.clearMovePreview();
+    return;
+  }
+  if (!context.boardAdapter.isLegalMove({ row: hit.row, col: hit.col, color: 'black' })) {
+    context.boardAdapter.clearMovePreview();
+    return;
+  }
+  context.boardAdapter.setMovePreview({ row: hit.row, col: hit.col, color: 'black' });
+}
+
 function handleTap(context, { row, col }) {
-  if (state !== STATE.AWAITING_MOVE) return;
-  if (!context.boardAdapter.isLegalMove({ row, col, color: 'black' })) return; // dolu/tahta dışı — hamle sayılmaz
-  const result = context.boardAdapter.playMove({ row, col, color: 'black' });
+  if (topicEnded || state === STATE.INTRO) return;
+
+  // Her örnek BAĞIMSIZDIR (önceki taşı gerçek Go'da hareket ettirmiyoruz) —
+  // replaceExampleStone tahtayı temiz tek-taşlı bir örneğe döndürüp yeni
+  // hamleyi GERÇEK RuleEngine ile doğrular; başarısızsa (pratikte yalnız
+  // tahta-dışı savunma durumu) hiçbir şey değişmez.
+  const result = context.boardAdapter.replaceExampleStone({ row, col, color: 'black' });
   if (!result.ok) return;
 
+  exampleNumber += 1;
   const size = context.boardAdapter.getSize();
   const zone = classifyBoardZone({ row, col, size });
-  context.emit('scene_move_played', { row, col, zone });
-
-  // Girdi, sonuç gösterilirken GEÇİCİ olarak kilitlenir — yeni bir taş
-  // ancak "Başka bir noktayı dene" ile yeniden mümkün olur.
-  context.boardAdapter.setInputEnabled(false);
+  context.emit('scene_move_played', { row, col, zone, exampleNumber });
+  if (exampleNumber > 1) {
+    context.emit('scene_position_example_changed', { row, col, zone, exampleNumber });
+  }
 
   const libs = context.boardAdapter.getLibertiesAt({ row, col });
   const count = libs.length;
@@ -116,34 +142,27 @@ function handleTap(context, { row, col }) {
     console.warn('[scene-03-liberties-by-position] beklenmeyen nefes sayısı', { zone, expected: EXPECTED_LIBERTY_COUNT_BY_ZONE[zone], actual: count, row, col });
   }
   context.boardAdapter.showLiberties(libs);
-  context.emit('scene_liberties_shown', { row, col, zone, libertyCount: count });
-
-  zonesSeen.add(zone);
-  if (zonesSeen.size >= REQUIRED_DISTINCT_ZONES && !unlockedEmitted) {
-    unlockedEmitted = true;
-    context.emit('scene_completion_unlocked', {});
-  }
+  context.emit('scene_liberties_shown', { row, col, zone, libertyCount: count, exampleNumber });
 
   els.statusEl.textContent = resultText(zone, count);
-  els.captionEl.textContent = zonesSeen.size < REQUIRED_DISTINCT_ZONES ? suggestUnseenZone(zonesSeen) : '';
-  state = STATE.SHOWING_RESULT;
-  render();
-}
+  els.captionEl.textContent = SECONDARY_HINT;
 
-function retry(context) {
-  if (state !== STATE.SHOWING_RESULT) return;
-  context.boardAdapter.reset(); // taşı + liberty halkalarını temizler
-  context.emit('scene_position_retry_started', {});
-  context.boardAdapter.setInputEnabled(true);
-  state = STATE.AWAITING_MOVE;
+  if (!hasPlacedFirst) {
+    hasPlacedFirst = true;
+    if (!unlockedEmitted) {
+      unlockedEmitted = true;
+      context.emit('scene_completion_unlocked', {});
+    }
+  }
+  state = STATE.SHOWING_EXAMPLE;
   render();
 }
 
 function goToNextTopic(context) {
-  if (state !== STATE.SHOWING_RESULT || zonesSeen.size < REQUIRED_DISTINCT_ZONES || topicEnded) return;
+  if (!hasPlacedFirst || topicEnded) return;
   topicEnded = true;
-  context.boardAdapter.setInputEnabled(false);
-  if (unsubscribeTap) { unsubscribeTap(); unsubscribeTap = null; }
+  context.boardAdapter.setInputEnabled(false); // preview'ı da temizler (bkz. adaptör)
+  unsubscribeBoardListeners();
   topicEnd = mountTopicEndControls(context, { summaryText: SUMMARY_TEXT });
   render();
 }
@@ -164,8 +183,8 @@ function buildDom(context) {
     <div class="ls-strip-row" id="s03-play" hidden>
       <span class="ls-strip-status" id="s03-status" role="status" aria-live="polite"></span>
       <span class="ls-strip-caption" id="s03-caption"></span>
-      <button type="button" class="ls-strip-btn ls-strip-btn--ghost" id="s03-retry" hidden>Başka bir noktayı dene</button>
-      <button type="button" class="ls-strip-btn" id="s03-next" hidden disabled>Sonraki konu</button>
+      <button type="button" class="ls-strip-btn" id="s03-next" disabled aria-describedby="s03-continue-hint">Sonraki konu</button>
+      <span class="ls-strip-caption" id="s03-continue-hint">${CONTINUE_DISABLED_HINT}</span>
     </div>
   `;
   context.container.appendChild(root);
@@ -177,8 +196,8 @@ function buildDom(context) {
     playRow: root.querySelector('#s03-play'),
     statusEl: root.querySelector('#s03-status'),
     captionEl: root.querySelector('#s03-caption'),
-    retryBtn: root.querySelector('#s03-retry'),
     nextBtn: root.querySelector('#s03-next'),
+    continueHint: root.querySelector('#s03-continue-hint'),
   };
 }
 
@@ -205,6 +224,7 @@ export const scene03LibertiesByPosition = {
     context.boardAdapter.focus('center');
     context.boardAdapter.setInputEnabled(false);
     context.boardAdapter.clearLiberties();
+    context.boardAdapter.clearMovePreview();
 
     let confirming = false;
     on(els.confirmBtn, 'click', () => {
@@ -216,9 +236,10 @@ export const scene03LibertiesByPosition = {
       const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const doAdvance = () => {
         context.emit('scene_intro_confirmed', {});
-        state = STATE.AWAITING_MOVE;
+        state = STATE.AWAITING_FIRST_MOVE;
         context.boardAdapter.setInputEnabled(true);
         unsubscribeTap = context.boardAdapter.onIntersectionTap(hit => handleTap(context, hit));
+        unsubscribeHover = context.boardAdapter.onIntersectionHover(hit => handleHover(context, hit));
         render();
       };
       if (reduceMotion) { doAdvance(); return; }
@@ -226,7 +247,6 @@ export const scene03LibertiesByPosition = {
       setTimeout(doAdvance, 220);
     });
 
-    on(els.retryBtn, 'click', () => retry(context));
     on(els.nextBtn, 'click', () => goToNextTopic(context));
 
     render();
@@ -235,7 +255,7 @@ export const scene03LibertiesByPosition = {
   unmount() {
     cleanupFns.forEach(fn => fn());
     cleanupFns = [];
-    if (unsubscribeTap) { unsubscribeTap(); unsubscribeTap = null; }
+    unsubscribeBoardListeners();
     topicEnd?.destroy();
     topicEnd = null;
     els?.root?.remove();
@@ -244,7 +264,7 @@ export const scene03LibertiesByPosition = {
   },
 
   canComplete() {
-    return zonesSeen.size >= REQUIRED_DISTINCT_ZONES;
+    return hasPlacedFirst;
   },
 
   complete() {

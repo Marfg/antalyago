@@ -12,6 +12,14 @@
  *            karşılaştırması ve beyaz hamlesi KALDIRILDI)
  *   Bölüm C: mount hatası kurtarma ("Yeniden yükle")
  * Eski merkez/köşe-karşılaştırma testleri ARTIK YOK.
+ *
+ * v0.11 — Sahne #3'ün C-bloğu (C1-C22) yeniden yazıldı: eski "iki farklı
+ * bölge görülmeden devam AÇILMAZ + ayrı 'Başka bir noktayı dene' düğmesi
+ * ZORUNLU" akışı test EDİLMİYOR artık — bunun yerine İLK yasal hamlenin
+ * TEK BAŞINA "Sonraki konu"yu açtığı, board input'unun hamleden SONRA da
+ * açık kaldığı ve doğrudan farklı bir kesişime tıklamanın yeni bir örnek
+ * ürettiği kesintisiz keşif akışı doğrulanıyor (bkz. scenes/
+ * scene03LibertiesByPosition.js ve adapters/sceneBoardAdapter.js).
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -66,13 +74,13 @@ async function launchChromium() {
   }
 }
 
-async function openScenesPage({ viewport = VIEWPORTS.desktop, reducedMotion = 'no-preference', query = '' } = {}) {
+async function openScenesPage({ viewport = VIEWPORTS.desktop, reducedMotion = 'no-preference', query = '', hasTouch } = {}) {
   const browser = await launchChromium();
   // Not: burada localStorage temizleyen bir addInitScript EKLEMİYORUZ —
   // context.addInitScript her navigasyonda (reload dahil) tekrar çalışır
   // ve bir testin reload() ile doğrulamaya çalıştığı persistence'ı
   // silerdi. Zaten TAZE bir context zaten BOŞ storage ile başlar.
-  const context = await browser.newContext({ viewport, reducedMotion });
+  const context = await browser.newContext({ viewport, reducedMotion, ...(hasTouch !== undefined ? { hasTouch } : {}) });
   await context.route(`${BASE}/**`, async route => {
     const url = new URL(route.request().url());
     const pathname = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
@@ -183,7 +191,10 @@ async function advanceToScene3(page) {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   Sahne #3 akış yardımcıları — serbest nefes keşfi
+   Sahne #3 akış yardımcıları — serbest nefes keşfi (v0.11)
+   Not: ayrı bir "Başka bir noktayı dene" düğmesi ARTIK YOK — board her
+   zaman açık, DOĞRUDAN farklı bir kesişime tıklamak yeni bir örnek
+   üretir (bkz. adapters/sceneBoardAdapter.js replaceExampleStone).
    ══════════════════════════════════════════════════════════════════ */
 async function confirmS03Intro(page) {
   await page.waitForSelector('#s03-confirm');
@@ -193,16 +204,11 @@ async function confirmS03Intro(page) {
 /** Yoğun bir ızgara (kesin köşe/kenar/iç koordinatları BİLİNMEDEN) canvas
     üzerinde deneyerek istenen `targetZone` türünde bir hamleyi bulur/oynar.
     Bulamazsa (veya zone önemsizse targetZone=null) İLK yasal hamleyi kabul
-    eder. Her deneme öncesi, önceki SONUÇ ekrandaysa "Başka bir noktayı
-    dene" ile tahtayı sıfırlar. */
+    eder. Board input her zaman açık olduğundan, aralarında düğmeye
+    basmaya GEREK YOK — her tıklama doğrudan yeni bir örnek dener. */
 async function playScene3Move(page, targetZone = null, maxAttempts = 100) {
   const box = await page.locator('#ls-canvas').boundingBox();
   for (let i = 0; i < maxAttempts; i++) {
-    const retryVisible = await page.locator('#s03-retry').isVisible().catch(() => false);
-    if (retryVisible) {
-      await page.click('#s03-retry');
-      await page.waitForTimeout(15);
-    }
     const fx = 0.08 + (i % 10) * 0.088;
     const fy = 0.08 + (Math.floor(i / 10) % 10) * 0.088;
     const before = eventsFor(await getEventLog(page), S03_ID).filter(e => e.type === 'scene_liberties_shown').length;
@@ -212,9 +218,8 @@ async function playScene3Move(page, targetZone = null, maxAttempts = 100) {
     if (libEvents.length > before) {
       const last = libEvents[libEvents.length - 1];
       if (!targetZone || last.payload.zone === targetZone) return last;
-      // Yanlış zone bulundu — bir sonraki denemeden önce tekrar dene.
-      await page.click('#s03-retry').catch(() => {});
-      await page.waitForTimeout(15);
+      // Yanlış bölge bulundu — bir sonraki deneme DOĞRUDAN başka bir
+      // noktaya tıklar, bu otomatik olarak yeni bir örnek üretir.
     }
   }
   return null;
@@ -535,6 +540,14 @@ addTest('B3) Sahne #2 akışında hiçbir guide event\'i üretilmiyor', async ()
    BÖLÜM C — Sahne #3 "Taşların Nefesi" — SERBEST nefes keşfi
    ══════════════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════════════════
+   BÖLÜM C — Sahne #3 v0.11: kesintisiz nefes keşfi
+   İki farklı bölge şartı ve ayrı "Başka bir noktayı dene" düğmesi
+   KALDIRILDI. İlk yasal hamle TEK BAŞINA "Sonraki konu"yu açar; board
+   input hep açık kalır ve doğrudan yeni bir kesişime tıklamak yeni bir
+   örnek üretir (bkz. görev talimatı Bölüm C).
+   ══════════════════════════════════════════════════════════════════ */
+
 addTest('C1) Sahne #2 tamamlanınca Sahne #3 temiz 9×9 board ile açılıyor, intro tick çalışıyor', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
@@ -559,7 +572,7 @@ addTest('C2) intro onaylanmadan hamle kabul edilmiyor', async () => {
   } finally { await s.close(); }
 });
 
-addTest('C3) köşe hamlesi GERÇEK 2 liberty gösteriyor', async () => {
+addTest('C3) köşe hamlesi GERÇEK 2 liberty gösteriyor, devam kontrolü hemen aktif olur', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
     await advanceToScene3AndIntro(s.page);
@@ -568,10 +581,11 @@ addTest('C3) köşe hamlesi GERÇEK 2 liberty gösteriyor', async () => {
     ensure(result.payload.libertyCount === 2, `köşe GERÇEK liberty sayısı 2 olmalı, ${result.payload.libertyCount} bulundu`);
     const statusText = (await s.page.locator('#s03-status').textContent())?.trim();
     ensure(statusText === 'Köşedeki taşın 2 nefes noktası var.', `anlatım metni yanlış: "${statusText}"`);
+    ensure(!(await s.page.locator('#s03-next').isDisabled()), 'ilk hamle (köşe) sonrası "Sonraki konu" hâlâ kilitli');
   } finally { await s.close(); }
 });
 
-addTest('C4) kenar hamlesi GERÇEK 3 liberty gösteriyor', async () => {
+addTest('C4) kenar hamlesi GERÇEK 3 liberty gösteriyor, devam kontrolü hemen aktif olur', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
     await advanceToScene3AndIntro(s.page);
@@ -580,10 +594,11 @@ addTest('C4) kenar hamlesi GERÇEK 3 liberty gösteriyor', async () => {
     ensure(result.payload.libertyCount === 3, `kenar GERÇEK liberty sayısı 3 olmalı, ${result.payload.libertyCount} bulundu`);
     const statusText = (await s.page.locator('#s03-status').textContent())?.trim();
     ensure(statusText === 'Kenardaki taşın 3 nefes noktası var.', `anlatım metni yanlış: "${statusText}"`);
+    ensure(!(await s.page.locator('#s03-next').isDisabled()), 'ilk hamle (kenar) sonrası "Sonraki konu" hâlâ kilitli');
   } finally { await s.close(); }
 });
 
-addTest('C5) iç bölge hamlesi GERÇEK 4 liberty gösteriyor — MERKEZ ZORUNLULUĞU yok', async () => {
+addTest('C5) iç bölge hamlesi GERÇEK 4 liberty gösteriyor — MERKEZ ZORUNLULUĞU yok, devam kontrolü hemen aktif olur', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
     await advanceToScene3AndIntro(s.page);
@@ -594,6 +609,7 @@ addTest('C5) iç bölge hamlesi GERÇEK 4 liberty gösteriyor — MERKEZ ZORUNLU
     ensure(statusText === 'Tahtanın içindeki taşın 4 nefes noktası var.', `anlatım metni yanlış: "${statusText}"`);
     // Bu ilk hamlenin TAM merkez (4,4) olması ŞART DEĞİL — iç bölgedeki HERHANGİ bir nokta kabul edilmeli.
     ensure(!(result.payload.row === 4 && result.payload.col === 4) || true, 'yalnız gerçek merkez kabul ediliyor OLABİLİR (bilgi amaçlı, başarısız etmez)');
+    ensure(!(await s.page.locator('#s03-next').isDisabled()), 'ilk hamle (iç bölge) sonrası "Sonraki konu" hâlâ kilitli');
   } finally { await s.close(); }
 });
 
@@ -609,7 +625,7 @@ addTest('C6) tahta dışı tıklama hamle olarak SAYILMIYOR', async () => {
   } finally { await s.close(); }
 });
 
-addTest('C7) hızlı çift tıklama iki taş üretmiyor (yalnız TEK scene_move_played)', async () => {
+addTest('C7) aynı noktaya hızlı çift tıklama İKİ AYRI örnek üretir (hata/çökme yok, sonuç metni tutarlı kalır)', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
     await advanceToScene3AndIntro(s.page);
@@ -618,86 +634,118 @@ addTest('C7) hızlı çift tıklama iki taş üretmiyor (yalnız TEK scene_move_
     await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
     await s.page.waitForTimeout(100);
     const moves = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played');
-    ensure(moves.length === 1, `tam bir hamle olmalı, ${moves.length} bulundu`);
+    ensure(moves.length === 2, `aynı noktaya iki tıklama iki bağımsız örnek üretmeli, ${moves.length} bulundu`);
+    ensure(moves[0].payload.zone === moves[1].payload.zone, 'aynı nokta farklı bölge üretti — beklenmedik');
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror hatası: ${s.consoleErrors.join(' | ')}`);
   } finally { await s.close(); }
 });
 
-addTest('C8) "Başka bir noktayı dene" board\'u ve liberty halkalarını temizler, yeniden hamle mümkün olur', async () => {
+addTest('C8) ilk hamleden ÖNCE devam kontrolü disabled + açıklama görünür; hamleden SONRA disabled kalkar, açıklama gizlenir', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3AndIntro(s.page);
+    ensure(await s.page.locator('#s03-next').isDisabled(), 'ilk hamleden önce devam kontrolü disabled OLMALI');
+    ensure(await s.page.locator('#s03-continue-hint').isVisible(), 'disabled açıklaması görünmüyor');
+    const hintText = (await s.page.locator('#s03-continue-hint').textContent())?.trim();
+    ensure(hintText === 'Devam etmek için tahtada bir kesişime taş yerleştir.', `açıklama metni yanlış: "${hintText}"`);
+    const describedBy = await s.page.locator('#s03-next').getAttribute('aria-describedby');
+    ensure(describedBy === 's03-continue-hint', 'aria-describedby doğru bağlanmamış');
+
+    await playScene3Move(s.page);
+    ensure(!(await s.page.locator('#s03-next').isDisabled()), 'ilk yasal hamleden SONRA devam kontrolü hâlâ disabled');
+    ensure(await s.page.locator('#s03-continue-hint').isHidden(), 'ilk hamleden SONRA disabled açıklaması hâlâ görünüyor');
+  } finally { await s.close(); }
+});
+
+addTest('C9) "Başka bir noktayı dene" düğmesi DOM\'da YOK — doğrudan farklı bir kesişime tıklamak yeni bir örnek üretir', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
     await advanceToScene3AndIntro(s.page);
     const first = await playScene3Move(s.page);
     ensure(!!first, 'ilk hamle bulunamadı');
-    ensure(await s.page.locator('#s03-retry').isVisible(), '"Başka bir noktayı dene" görünmüyor');
+    ensure(await s.page.locator('#s03-retry').count() === 0, '"Başka bir noktayı dene" düğmesi hâlâ DOM\'da');
 
-    await s.page.click('#s03-retry');
-    await s.page.waitForTimeout(80);
-    const events = eventsFor(await getEventLog(s.page), S03_ID);
-    ensure(events.some(e => e.type === 'scene_position_retry_started'), 'retry event\'i üretilmedi');
-    const instruction = (await s.page.locator('#s03-status').textContent())?.trim();
-    ensure(instruction === 'Tahtada istediğin boş kesişime siyah bir taş yerleştir.', 'retry sonrası talimat metnine dönülmedi');
-
-    const second = await playScene3Move(s.page);
-    ensure(!!second, 'retry sonrası ikinci hamle yapılamadı');
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const before = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played').length;
+    await s.page.mouse.click(box.x + box.width / 2 - 50, box.y + box.height / 2 - 40);
+    await s.page.waitForTimeout(100);
+    const after = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played').length;
+    ensure(after === before + 1, `doğrudan tıklama yeni bir örnek üretmedi (önce ${before}, sonra ${after})`);
+    const caption = (await s.page.locator('#s03-caption').textContent())?.trim();
+    ensure(caption === 'İstersen başka bir kesişimi de deneyebilirsin.', `ikincil metin yanlış: "${caption}"`);
   } finally { await s.close(); }
 });
 
-addTest('C9) retry daha önce görülen bölge kümesini KORUR — aynı bölgeyi tekrar denemek yeni sayılmaz', async () => {
+addTest('C10) exampleNumber sırayla artıyor, scene_position_example_changed YALNIZ 2. ve sonraki örneklerde üretiliyor', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
     await advanceToScene3AndIntro(s.page);
-    // playScene3Move'un hedef-dışı zone'larda BİLE gerçek hamle oynayıp
-    // zonesSeen'i "kirletme" riskini önlemek için — burada TEK, kesin
-    // (tahta merkezi → world (0,0,0) → HER kamera yaw'ında canvas'ın TAM
-    // yatay merkezine oturur) bir nokta kullanılıyor, "hedef bulunana
-    // kadar dene" arama YOK.
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(80);
+    let events = eventsFor(await getEventLog(s.page), S03_ID);
+    const move1 = events.find(e => e.type === 'scene_move_played');
+    ensure(move1?.payload.exampleNumber === 1, `ilk örnek exampleNumber=1 olmalı, bulunan: ${move1?.payload.exampleNumber}`);
+    ensure(!events.some(e => e.type === 'scene_position_example_changed'), 'İLK örnekte scene_position_example_changed üretilmemeli');
+
+    await s.page.mouse.click(box.x + box.width / 2 - 50, box.y + box.height / 2 - 40);
+    await s.page.waitForTimeout(80);
+    events = eventsFor(await getEventLog(s.page), S03_ID);
+    const moves = events.filter(e => e.type === 'scene_move_played');
+    ensure(moves.length === 2 && moves[1].payload.exampleNumber === 2, `ikinci örnek exampleNumber=2 olmalı, bulunan: ${JSON.stringify(moves.map(m => m.payload.exampleNumber))}`);
+    const changed = events.filter(e => e.type === 'scene_position_example_changed');
+    ensure(changed.length === 1 && changed[0].payload.exampleNumber === 2, 'scene_position_example_changed 2. örnekte TAM BİR KEZ üretilmedi');
+  } finally { await s.close(); }
+});
+
+addTest('C11) art arda birçok (çoğu BİTİŞİK) konum seçimi — HER örnek kendi bölgesinin GERÇEK beklenen nefes sayısını gösterir', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3AndIntro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const expectedByZone = { corner: 2, edge: 3, interior: 4 };
+    for (let i = 0; i < 12; i++) {
+      const fx = 0.1 + (i % 4) * 0.22;
+      const fy = 0.1 + (Math.floor(i / 4) % 4) * 0.22;
+      await s.page.mouse.click(box.x + box.width * fx, box.y + box.height * fy);
+      await s.page.waitForTimeout(20);
+    }
+    const shown = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_liberties_shown');
+    ensure(shown.length > 0, 'hiç scene_liberties_shown üretilmedi');
+    for (const e of shown) {
+      ensure(e.payload.libertyCount === expectedByZone[e.payload.zone],
+        `${e.payload.zone} örneği için beklenen ${expectedByZone[e.payload.zone]}, bulunan ${e.payload.libertyCount} (row=${e.payload.row}, col=${e.payload.col}) — önceki örnek taşı tahtada KALMIŞ olabilir`);
+    }
+  } finally { await s.close(); }
+});
+
+addTest('C12) aynı bölge türünü tekrar seçmek gating\'i etkilemiyor — "Sonraki konu" zaten aktif kalır (iki-bölge kuralı YOK)', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3AndIntro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
     async function clickBoardCenter() {
-      const box = await s.page.locator('#ls-canvas').boundingBox();
       const before = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_liberties_shown').length;
       await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
       await s.page.waitForTimeout(60);
       const events = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_liberties_shown');
       return events.length > before ? events[events.length - 1] : null;
     }
-
     const first = await clickBoardCenter();
     ensure(!!first && first.payload.zone === 'interior', `ilk (merkez) hamle iç bölge olmalı, bulunan: ${JSON.stringify(first?.payload)}`);
-    ensure(await s.page.locator('#s03-next').isDisabled(), 'tek bölge sonrası "Sonraki konu" açık olmamalı');
+    ensure(!(await s.page.locator('#s03-next').isDisabled()), 'TEK bölge sonrası "Sonraki konu" hâlâ kilitli — eski iki-bölge kuralı sızmış olabilir');
 
-    await s.page.click('#s03-retry');
-    await s.page.waitForTimeout(60);
-    const second = await clickBoardCenter(); // AYNI (merkez) nokta — aynı bölge türü
+    const second = await clickBoardCenter(); // AYNI (merkez) nokta — aynı bölge türü, doğrudan yeniden tıklama
     ensure(!!second && second.payload.zone === 'interior', 'ikinci merkez hamlesi de iç bölge olmalı');
-    ensure(await s.page.locator('#s03-next').isDisabled(), 'aynı bölge türü YENİ bölge olarak sayıldı — "Sonraki konu" yanlışlıkla açıldı');
+    ensure(!(await s.page.locator('#s03-next').isDisabled()), 'aynı bölgeyi tekrar seçmek "Sonraki konu"yu yanlışlıkla kilitledi');
   } finally { await s.close(); }
 });
 
-addTest('C10) iki FARKLI bölge görülünce "Sonraki konu" açılıyor, sınırsız retry mümkün', async () => {
-  const s = await openScenesPage({ query: FAST_QUERY });
-  try {
-    await advanceToScene3AndIntro(s.page);
-    const interior = await playScene3Move(s.page, 'interior');
-    ensure(!!interior, 'iç bölge hamlesi bulunamadı');
-    const corner = await playScene3Move(s.page, 'corner');
-    ensure(!!corner, 'köşe hamlesi bulunamadı');
-
-    ensure(!(await s.page.locator('#s03-next').isDisabled()), 'iki farklı bölge sonrası "Sonraki konu" hâlâ kilitli');
-
-    // Sınırsız retry — üçüncü bir deneme de mümkün olmalı.
-    await s.page.click('#s03-retry');
-    await s.page.waitForTimeout(60);
-    const third = await playScene3Move(s.page);
-    ensure(!!third, 'üçüncü (sınırsız) deneme yapılamadı');
-  } finally { await s.close(); }
-});
-
-addTest('C11) "Sonraki konu" tıklanınca konu sonu satırı açılır (son konu → "Konular"), teknik dil YOK', async () => {
+addTest('C13) "Sonraki konu" tıklanınca konu sonu satırı açılır (son konu → "Konular"), teknik dil YOK, completion TAM BİR KEZ', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
     await advanceToScene3AndIntro(s.page);
     await playScene3Move(s.page, 'interior');
-    await s.page.click('#s03-retry'); await s.page.waitForTimeout(40);
-    await playScene3Move(s.page, 'corner');
 
     await s.page.click('#s03-next');
     await s.page.waitForTimeout(150);
@@ -711,36 +759,41 @@ addTest('C11) "Sonraki konu" tıklanınca konu sonu satırı açılır (son konu
     ensure(!/sahne\s*tamamlandı|scene.?completed|registry/i.test(infoText), 'teknik dil sızmış');
 
     const events = await getEventLog(s.page);
-    ensure(events.some(e => e.type === 'scene_completed' && e.stepId === S03_ID), 'scene_completed üretilmedi');
+    ensure(events.filter(e => e.type === 'scene_completed' && e.stepId === S03_ID).length === 1, 'scene_completed TAM BİR KEZ üretilmedi');
+    const progress = await s.page.evaluate(() => JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null'));
+    ensure(progress?.completedSceneIds?.filter(id => id === S03_ID).length === 1, 'completedSceneIds S3\'ü tekrarlıyor veya içermiyor');
   } finally { await s.close(); }
 });
 
-addTest('C12) beyaz hamlesi/karşılaştırma sorusu ARTIK YOK — ilgili DOM/event\'ler hiç üretilmiyor', async () => {
+addTest('C14) eski iki-bölge/retry akışı ARTIK YOK — ilgili DOM/metin/event\'ler hiç üretilmiyor', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
     await advanceToScene3AndIntro(s.page);
     await playScene3Move(s.page, 'interior');
-    await s.page.click('#s03-retry'); await s.page.waitForTimeout(40);
     await playScene3Move(s.page, 'corner');
     await s.page.click('#s03-next');
     await s.page.waitForTimeout(150);
 
+    ensure(await s.page.locator('#s03-retry').count() === 0, '"Başka bir noktayı dene" düğmesi hâlâ DOM\'da');
     ensure(await s.page.locator('#s03-choices, .ls-choice').count() === 0, 'karşılaştırma seçenekleri hâlâ DOM\'da');
+    const bodyText = await s.page.locator('#ls-scene-host').innerText().catch(() => '');
+    ensure(!/farklı bölgeyi daha dene|1\s*\/\s*2/i.test(bodyText), 'eski iki-bölge metni hâlâ görünüyor');
     const events = eventsFor(await getEventLog(s.page), S03_ID);
     ensure(events.filter(e => e.payload.color === 'white').length === 0, 'beyaz hamle event\'i üretildi');
-    ensure(!events.some(e => e.type === 'scene_comparison_answered' || e.type === 'scene_center_move_attempted'), 'eski karşılaştırma/merkez event\'leri hâlâ üretiliyor');
+    ensure(!events.some(e => ['scene_comparison_answered', 'scene_center_move_attempted', 'scene_position_retry_started'].includes(e.type)), 'eski karşılaştırma/merkez/retry event\'leri hâlâ üretiliyor');
   } finally { await s.close(); }
 });
 
-addTest('C13) reload: yarım kalan Sahne #3 keşfi temiz başlangıca dönüyor, tamamlanan konular kalıcı', async () => {
+addTest('C15) reload: ilk hamleden sonra ama "Sonraki konu"ya basmadan → temiz başlangıca döner, S3 completedSceneIds\'te YOK', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
     await advanceToScene3AndIntro(s.page);
-    await playScene3Move(s.page); // yalnız BİR bölge görüldü — tamamlanmadı
+    await playScene3Move(s.page); // ilk hamle yapıldı ama "Sonraki konu" TIKLANMADI
 
     await s.page.reload({ waitUntil: 'networkidle' });
     await s.page.waitForTimeout(300);
     ensure(await s.page.locator('#s03-intro').isVisible(), 'reload sonrası Sahne #3 baştan başlamadı');
+    ensure(await s.page.locator('#s03-next').isDisabled().catch(() => true), 'reload sonrası devam kontrolü hâlâ eski (tamamlanmış) durumda kalmış');
 
     const progress = await s.page.evaluate(() => JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null'));
     ensure(progress?.completedSceneIds?.includes(S01_ID) && progress.completedSceneIds.includes(S02_ID), 'önceki tamamlanmalar kalıcı değil');
@@ -748,7 +801,7 @@ addTest('C13) reload: yarım kalan Sahne #3 keşfi temiz başlangıca dönüyor,
   } finally { await s.close(); }
 });
 
-addTest('C14) reload: tüm konular tamamlanmışken SON konu REPLAY modunda açılır (teknik final ekranı YOK)', async () => {
+addTest('C16) reload: tüm konular tamamlanmışken SON konu REPLAY modunda açılır (teknik final ekranı YOK)', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
     await s.page.evaluate((ids) => {
@@ -765,7 +818,7 @@ addTest('C14) reload: tüm konular tamamlanmışken SON konu REPLAY modunda aç�
   } finally { await s.close(); }
 });
 
-addTest('C15) reduced-motion: Sahne #3 intro transition\'sız, akış yine tamamlanabiliyor', async () => {
+addTest('C17) reduced-motion: Sahne #3 intro transition\'sız, akış yine tamamlanabiliyor', async () => {
   const s = await openScenesPage({ reducedMotion: 'reduce', query: FAST_QUERY });
   try {
     await advanceToScene3(s.page);
@@ -776,7 +829,7 @@ addTest('C15) reduced-motion: Sahne #3 intro transition\'sız, akış yine tamam
   } finally { await s.close(); }
 });
 
-addTest('C16) masaüstü/tablet/mobilde Sahne #3 sırasında taşma yok', async () => {
+addTest('C18) masaüstü/tablet/mobilde Sahne #3 sırasında taşma yok', async () => {
   for (const viewport of [VIEWPORTS.desktop, VIEWPORTS.tablet, VIEWPORTS.mobile]) {
     const s = await openScenesPage({ viewport, query: FAST_QUERY });
     try {
@@ -789,12 +842,53 @@ addTest('C16) masaüstü/tablet/mobilde Sahne #3 sırasında taşma yok', async 
   }
 });
 
-addTest('C17) tam akış (Sahne #1→#2→#3) boyunca konsolda/pageerror\'da hata yok', async () => {
+addTest('C19) dokunmatik: gerçek tek dokunuş (touchstart→pointerdown önizleme→click commit) TEK etkileşimde hamleyi yerleştirir', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, query: FAST_QUERY, hasTouch: true });
+  try {
+    await advanceToScene3AndIntro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const before = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played').length;
+    // page.touchscreen.tap gerçek touchstart/touchend üretir (tarayıcı
+    // ardından uyumluluk için pointerdown+click sentezler) — adaptörün
+    // canvas'a bağladığı pointerdown (önizleme) ve click (commit)
+    // dinleyicilerini AYNI üretim kod yolundan, TEK dokunuşta tetikler.
+    await s.page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(120);
+    const after = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played').length;
+    ensure(after === before + 1, `tek dokunuşla hamle yerleşmedi (önce ${before}, sonra ${after})`);
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror hatası: ${s.consoleErrors.join(' | ')}`);
+  } finally { await s.close(); }
+});
+
+addTest('C20) Konular paneli açıkken board input kilitlenir (hamle üretilmez), kapanınca eski duruma döner', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene3AndIntro(s.page);
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const before = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played').length;
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(100);
+    const duringOpen = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played').length;
+    ensure(duringOpen === before, 'Konular paneli açıkken canvas tıklaması hamle üretti — input yanlış kilitli');
+
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(100);
+    ensure(await s.page.locator('#ls-topics-panel').isHidden(), 'panel kapanmadı');
+
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 - 8);
+    await s.page.waitForTimeout(100);
+    const afterClose = eventsFor(await getEventLog(s.page), S03_ID).filter(e => e.type === 'scene_move_played').length;
+    ensure(afterClose === before + 1, 'panel kapandıktan sonra board input eski durumuna dönmedi');
+  } finally { await s.close(); }
+});
+
+addTest('C21) tam akış (Sahne #1→#2→#3) boyunca konsolda/pageerror\'da hata yok', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
     await advanceToScene3AndIntro(s.page);
     await playScene3Move(s.page, 'interior');
-    await s.page.click('#s03-retry'); await s.page.waitForTimeout(40);
     await playScene3Move(s.page, 'edge');
     await s.page.click('#s03-next');
     await s.page.waitForTimeout(150);
@@ -804,7 +898,7 @@ addTest('C17) tam akış (Sahne #1→#2→#3) boyunca konsolda/pageerror\'da hat
   } finally { await s.close(); }
 });
 
-addTest('C18) Studio çapraz sekmede Sahne #3 event\'lerini (zone/libertyCount) görüyor, event overwrite oluşmuyor', async () => {
+addTest('C22) Studio çapraz sekmede Sahne #3 event\'lerini (zone/libertyCount) görüyor, cyan işaret/eski amber halka kalıntısı yok, event overwrite oluşmuyor', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
     await advanceToScene3AndIntro(s.page);
@@ -824,10 +918,10 @@ addTest('C18) Studio çapraz sekmede Sahne #3 event\'lerini (zone/libertyCount) 
     await studioPage.waitForTimeout(150);
     const diagText = (await studioPage.locator('#diag-scene-table').textContent().catch(() => '')) || '';
     ensure(diagText.includes('geçerli') || !diagText.includes(S03_ID), 'Sahne #3 diagnostics\'te geçersiz görünüyor');
+    ensure(!/AMBER|LEGACY_AMBER_RING/i.test(diagText), 'diagnostics eski amber halka kalıntısı bildiriyor');
+    ensure(!/MISSING_CYAN|MISSING_MOVE_PREVIEW/i.test(diagText), 'diagnostics cyan işaret/preview API eksikliği bildiriyor');
 
     const beforeCount = eventsFor(await getEventLog(s.page), S03_ID).length;
-    await s.page.click('#s03-retry').catch(() => {});
-    await s.page.waitForTimeout(80);
     await playScene3Move(s.page).catch(() => {});
     const afterCount = eventsFor(await getEventLog(s.page), S03_ID).length;
     ensure(afterCount >= beforeCount, 'event log Studio tarafından küçültülmüş olabilir (overwrite riski)');

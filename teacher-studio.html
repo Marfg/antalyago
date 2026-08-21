@@ -234,8 +234,9 @@ import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.
 import { validateCandidateOrder } from './scenes/turnPolicy.js';
 import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js';
 import { BoardState } from './core/boardState.js';
-import { getGroup, getLiberties } from './core/ruleEngine.js';
+import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js';
 import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js';
 
 /* v0.9 — Sahne tabanlı öğrenme deneyimi (learning-scenes.html) yalnız
    İZLENİR: Studio sahne modüllerini asla mount ETMEZ (DOM'a dokunmaz),
@@ -790,6 +791,41 @@ function renderSceneDiagnostics() {
     const expected = EXPECTED_LIBERTY_COUNT_BY_ZONE[zone];
     if (libCount !== expected) {
       rows.push(`<tr><td>${scene03LibertiesByPosition.id}</td><td>UNEXPECTED_LIBERTY_COUNT:(${point.row},${point.col}) zone=${zone} expected=${expected} actual=${libCount}</td></tr>`);
+    }
+  }
+
+  // Sahne #3 GERÇEKTEN her yasal 9×9 kesişimini kabul ediyor mu — boş
+  // tahtada TÜM 81 nokta için core/ruleEngine.js'in isValidMove()'u
+  // (BoardState mount edilmeden, saf) true dönmeli. Bir nokta false
+  // dönerse "herhangi bir kesişime taş koyabilme" vaadi bozulmuş demektir.
+  {
+    const emptyBoard = new BoardState(size);
+    let illegalCount = 0;
+    for (let row = 0; row < size; row++) {
+      for (let col = 0; col < size; col++) {
+        if (!isValidMove(emptyBoard, col, row, 'black').valid) illegalCount++;
+      }
+    }
+    if (illegalCount > 0) {
+      rows.push(`<tr><td>${scene03LibertiesByPosition.id}</td><td>UNEXPECTED_ILLEGAL_POINTS_ON_EMPTY_BOARD:${illegalCount}</td></tr>`);
+    }
+  }
+
+  // v0.11 — Nefes işareti GERÇEKTEN turkuaz/cyan mi, eski kehribar halka
+  // renderer'ı kalıntısı var mı? — adapters/sceneBoardAdapter.js'in
+  // KENDİSİ mount EDİLMEDEN, yalnız fabrika fonksiyonunun kaynak metni
+  // (`.toString()`) statik olarak incelenir — tests/sceneRuntime.test.js'in
+  // "go_done_3d" kaynak-metni kontrolüyle AYNI, kanıtlanmış desen.
+  {
+    const adapterSrc = createSceneBoardAdapter.toString();
+    if (!adapterSrc.includes('91,210,195')) {
+      rows.push(`<tr><td>${scene03LibertiesByPosition.id}</td><td>MISSING_CYAN_LIBERTY_MARKER_STYLE</td></tr>`);
+    }
+    if (adapterSrc.includes('224,192,120') || adapterSrc.includes('drawLibertyRing')) {
+      rows.push(`<tr><td>${scene03LibertiesByPosition.id}</td><td>LEGACY_AMBER_RING_RENDERER_STILL_PRESENT</td></tr>`);
+    }
+    if (!adapterSrc.includes('setMovePreview') || !adapterSrc.includes('clearMovePreview')) {
+      rows.push(`<tr><td>${scene03LibertiesByPosition.id}</td><td>MISSING_MOVE_PREVIEW_API</td></tr>`);
     }
   }
 
