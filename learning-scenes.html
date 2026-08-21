@@ -20,24 +20,26 @@
     <div id="ls-narration">
       <!-- Sahne modülleri kendi UI'larını buraya kurar (context.container) -->
       <div id="ls-scene-host" aria-live="polite"></div>
+      <!-- v0.10 — "Konular" paneli: #ls-scene-host'un YERİNİ GEÇİCİ olarak
+           alır (aynı sabit yükseklikte) — board üzerine açılan kalıcı bir
+           panel DEĞİL (bkz. görev talimatı Bölüm A). -->
+      <div id="ls-topics-panel" role="region" aria-label="Konular" hidden>
+        <div class="ls-topics-header">Konular</div>
+        <ul class="ls-topics-list" id="ls-topics-list"></ul>
+      </div>
     </div>
   </div>
 </div>
 
 <div id="ls-topbar">
   <a href="index.html">← Ana</a>
-</div>
-
-<!-- Nötr, sahne-bağımsız geçiş metni — HERHANGİ bir sahne son kayıtlı
-     sahneyse burada biter. "Sahne/tamamlandı" gibi teknik dil KULLANILMAZ
-     (bkz. scene02TurnsAndIntersections.js dosya başı notu). -->
-<div id="ls-final" role="status">
-  <h2>Bir sonraki konu yakında burada devam edecek.</h2>
+  <button type="button" class="ls-topbar-btn" id="ls-topics-open">Konular</button>
 </div>
 
 <div id="ls-error" role="alert">
   <h2>Sahne yüklenemedi</h2>
   <p id="ls-error-text"></p>
+  <button type="button" class="ls-strip-btn" id="ls-error-reload">Yeniden yükle</button>
 </div>
 
 <script type="module">
@@ -77,25 +79,37 @@ const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19
 
 const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition]);
 
-const sceneHost = document.getElementById('ls-scene-host');
-const finalEl = document.getElementById('ls-final');
-const errorEl = document.getElementById('ls-error');
-
-/* Test-only hook: ?whiteMoveDelayMs=N (Sahne #2) / ?centerLibertyDisplayMs=N
-   & ?whiteCornerDelayMs=N (Sahne #3) gerçek zamanlı 450–700ms beklemeleri
-   ezer — YALNIZ turn-loop testlerinin yavaşlamaması/deterministik bir
-   kilit penceresi test edebilmesi için (bkz. görev talimatı). Üretim
-   davranışını DEĞİŞTİRMEZ: parametre yoksa hiçbiri context'e verilmez,
-   sahne modülleri kendi varsayılanlarını (450–700ms aralığı) kullanır. */
 const searchParams = new URLSearchParams(location.search);
-function numOverride(name) {
-  const raw = searchParams.get(name);
-  return raw != null && Number.isFinite(Number(raw)) ? Number(raw) : null;
+
+/* Test-only hook: ?forceMountError=<sceneId> o TEK sahnenin mount()'unu
+   kasıtlı olarak fırlatan bir sürümle DEĞİŞTİRİR — YALNIZ Bölüm C'nin
+   "mount hatası → #ls-error + Yeniden yükle" kurtarma UI'ını gerçek
+   sayfada, hiçbir üretim modülünü değiştirmeden test edebilmek için.
+   Parametre yoksa registry.get() DOKUNULMADAN üretim davranışını korur. */
+const forceMountErrorSceneId = searchParams.get('forceMountError');
+if (forceMountErrorSceneId) {
+  const originalGet = registry.get;
+  registry.get = (id) => {
+    const scene = originalGet(id);
+    if (!scene || id !== forceMountErrorSceneId) return scene;
+    return { ...scene, mount() { throw new Error('Simulated mount error (test hook)'); } };
+  };
 }
-const whiteMoveDelayOverride = numOverride('whiteMoveDelayMs');
-const centerLibertyDisplayOverride = numOverride('centerLibertyDisplayMs');
-const whiteCornerDelayOverride = numOverride('whiteCornerDelayMs');
-const transitionDelayOverride = numOverride('transitionDelayMs');
+
+const sceneHost = document.getElementById('ls-scene-host');
+const errorEl = document.getElementById('ls-error');
+const topicsPanel = document.getElementById('ls-topics-panel');
+const topicsList = document.getElementById('ls-topics-list');
+const topicsOpenBtn = document.getElementById('ls-topics-open');
+
+/* Test-only hook: ?whiteMoveDelayMs=N Sahne #2'nin beyaz cevap gecikmesini
+   ezer — YALNIZ turn-loop testlerinin gerçek zamanlı 450–700ms beklemeler
+   yüzünden yavaşlamaması için (bkz. görev talimatı). Üretim davranışını
+   DEĞİŞTİRMEZ: parametre yoksa context.whiteMoveDelayMs verilmez,
+   scene02TurnsAndIntersections.js kendi varsayılanını kullanır. */
+const whiteMoveDelayParam = searchParams.get('whiteMoveDelayMs');
+const whiteMoveDelayOverride = whiteMoveDelayParam != null && Number.isFinite(Number(whiteMoveDelayParam)) ? Number(whiteMoveDelayParam) : null;
+
 const runtime = createSceneRuntime({
   registry,
   progressAdapter: sceneProgressAdapter,
@@ -103,44 +117,102 @@ const runtime = createSceneRuntime({
   contextExtras: () => ({
     container: sceneHost,
     boardAdapter,
+    openTopicsList,
     ...(whiteMoveDelayOverride != null ? { whiteMoveDelayMs: whiteMoveDelayOverride } : {}),
-    ...(centerLibertyDisplayOverride != null ? { centerLibertyDisplayMs: centerLibertyDisplayOverride } : {}),
-    ...(whiteCornerDelayOverride != null ? { whiteCornerDelayMs: whiteCornerDelayOverride } : {}),
-    ...(transitionDelayOverride != null ? { transitionDelayMs: transitionDelayOverride } : {}),
   }),
 });
 
-function showFinalState() {
-  errorEl.classList.remove('show');
-  finalEl.classList.add('show');
-}
-function showErrorState(message) {
-  finalEl.classList.remove('show');
+function showErrorState(sceneId, reason) {
+  const message = reason === 'UNKNOWN_SCENE'
+    ? 'Bu konu şu anda bulunamadı.'
+    : 'Bu konu şu anda başlatılamıyor. Sayfayı yeniden yüklemeyi deneyebilirsin.';
   document.getElementById('ls-error-text').textContent = message;
   errorEl.classList.add('show');
 }
+document.getElementById('ls-error-reload').addEventListener('click', () => {
+  // Sade bir sayfa yenilemesi — localStorage'a HİÇ dokunmaz, bu yüzden
+  // hem yeni hem eski progress GÜVENLE korunur (bkz. görev talimatı Bölüm C).
+  location.reload();
+});
+
+/* ── Konular paneli ──────────────────────────────────────────────────
+   Board üzerine açılan kalıcı bir panel DEĞİL — #ls-narration'ın İÇİNDE
+   #ls-scene-host'un yerini geçici olarak alır (aynı sabit yükseklik
+   bütçesi, board bounding box'ı ASLA değişmez). Tamamlanan konular
+   seçilince replay modunda başlatılır; henüz açılmamış konular disabled. */
+let topicsOpenerEl = null;
+function renderTopicsList() {
+  const completed = sceneProgressAdapter.load().completedSceneIds;
+  const activeId = runtime.getActiveSceneId();
+  const firstIncomplete = registry.list().find(scene => !completed.includes(scene.id));
+  topicsList.innerHTML = '';
+  registry.list().forEach(scene => {
+    const isDone = completed.includes(scene.id);
+    const isActive = scene.id === activeId;
+    const isLocked = !isDone && !isActive && scene.id !== firstIncomplete?.id;
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ls-topic-item';
+    btn.disabled = isLocked;
+    if (isActive) btn.setAttribute('aria-current', 'true');
+    const mark = isDone ? '✓' : isActive ? '●' : '○';
+    const markClass = isDone ? 'done' : isActive ? 'active' : '';
+    btn.innerHTML = `<span class="ls-topic-mark ${markClass}" aria-hidden="true">${mark}</span><span class="ls-topic-title"></span>`;
+    btn.querySelector('.ls-topic-title').textContent = scene.title;
+    if (!isLocked) {
+      btn.addEventListener('click', () => {
+        closeTopicsList();
+        if (isDone && !isActive) runtime.start(scene.id, { mode: 'replay' });
+        else runtime.start(scene.id);
+      });
+    }
+    li.appendChild(btn);
+    topicsList.appendChild(li);
+  });
+}
+function openTopicsList() {
+  topicsOpenerEl = document.activeElement;
+  renderTopicsList();
+  sceneHost.hidden = true;
+  topicsPanel.hidden = false;
+  document.addEventListener('keydown', onTopicsKeydown);
+  const firstEnabled = topicsList.querySelector('.ls-topic-item:not(:disabled)');
+  firstEnabled?.focus();
+}
+function closeTopicsList() {
+  topicsPanel.hidden = true;
+  sceneHost.hidden = false;
+  document.removeEventListener('keydown', onTopicsKeydown);
+  (topicsOpenerEl instanceof HTMLElement ? topicsOpenerEl : topicsOpenBtn).focus();
+  topicsOpenerEl = null;
+}
+function onTopicsKeydown(evt) {
+  if (evt.key === 'Escape') { evt.preventDefault(); closeTopicsList(); }
+}
+topicsOpenBtn.addEventListener('click', () => {
+  if (!topicsPanel.hidden) { closeTopicsList(); return; }
+  openTopicsList();
+});
 
 /* ── Bootstrap ──────────────────────────────────────────────────────
    ogren-3d.html'in "ilk TAMAMLANMAMIŞ dersi aç" yaklaşımıyla AYNI ruh:
    registry sırasında ilerleyip henüz completedSceneIds'te OLMAYAN ilk
-   sahneyi başlatır. Hepsi tamamlanmışsa (kayıtlı son sahne dahil) tekrar
-   oynatmak yerine doğrudan nötr "sıradaki konu" durumu gösterilir. */
+   konuyu başlatır. Hepsi tamamlanmışsa (v0.10 — bkz. görev talimatı
+   Bölüm A) teknik bir "final" ekranı YERİNE, kayıtlı SON konu replay
+   modunda açılır — kullanıcı onu tekrar tamamlayıp kendi özet+[Konular]
+   kontrolüne ulaşabilir veya topbar'daki "Konular" ile istediği konuya
+   gidebilir. */
 function boot() {
-  if (!registry.size) { showErrorState('Kayıtlı bir sahne bulunamadı.'); return; }
+  if (!registry.size) { showErrorState(null, 'NO_SCENES'); return; }
   const progress = sceneProgressAdapter.load();
   const nextIncomplete = registry.list().find(scene => !progress.completedSceneIds.includes(scene.id));
+  const target = nextIncomplete ?? registry.list()[registry.list().length - 1];
+  const mode = nextIncomplete ? 'normal' : 'replay';
 
-  if (!nextIncomplete) { showFinalState(); return; }
-
-  const result = runtime.start(nextIncomplete.id);
-  if (!result.ok) { showErrorState('Bu sahne şu anda başlatılamıyor.'); return; }
+  const result = runtime.start(target.id, { mode });
+  if (!result.ok) { showErrorState(target.id, result.reason); return; }
 }
-
-/* Sahne modülü "sıradaki sahne yok" bilgisini bir DOM event'iyle iletir
-   (context.requestComplete()'in dönüşünden — bkz. scene01BoardIntro.js) —
-   bu sayfa bunu dinleyip final durumu gösterir; kendisi hiçbir zaman
-   ogren-3d.html'e otomatik YÖNLENDİRMEZ. */
-sceneHost.addEventListener('scene:all-complete', () => showFinalState());
 
 boot();
 </script>

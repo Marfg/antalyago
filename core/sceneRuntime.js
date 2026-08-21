@@ -15,6 +15,18 @@
  * Sahne kimliğinin (`id`) müfredat lesson/step indeksine SIKI bağımlılığı
  * YOKTUR — `curriculumRef` yalnız pedagojik bir referanstır (bkz.
  * scenes/sceneRegistry.js, scenes/scene01BoardIntro.js).
+ *
+ * v0.10 — Replay sözleşmesi eklendi (bkz. görev talimatı Bölüm A):
+ *   runtime.start(sceneId, { mode: 'replay' })  — aynı/başka bir sahneyi
+ *     TEMİZ biçimde (gerçek unmount + gerçek yeniden mount) yeniden başlatır.
+ *   runtime.replayActive()                      — aktif sahneyi replay eder.
+ * Replay GENEL bir runtime yeteneğidir — hiçbir sahne kendi özel "reload"
+ * fonksiyonunu icat ETMEZ. `mode` context'e ve HER `context.emit()`
+ * payload'ına otomatik eklenir ('normal'|'replay'), böylece analitik
+ * normal/replay akışını event payload'ından ayırt edebilir. Replay,
+ * completedSceneIds'e ASLA dokunmaz — yalnız progressAdapter.setActive()
+ * çağrılır (mevcut davranışla aynı), completion kaydı SİLİNMEZ/tekrar
+ * eklenmez (sceneProgressAdapter.markCompleted zaten idempotent).
  */
 
 /**
@@ -35,28 +47,46 @@ export function createSceneRuntime({ registry, progressAdapter = null, emitEvent
   let mounted = false;
   let completed = false;
 
-  function buildContext(scene) {
+  function buildContext(scene, mode) {
     const extras = typeof contextExtras === 'function' ? (contextExtras(scene) || {}) : contextExtras;
+    // registry SIRASINDAKİ bir sonraki sahne var mı — sahne modüllerinin
+    // "Sonraki konu" / "Konular" ayrımını YAPMASI için (bkz. scenes/
+    // topicEndControls.js). Registry statik olduğu için mount anında BİR
+    // KEZ hesaplanması yeterli.
+    const hasNextScene = registry.next(scene.id) != null;
     return {
       ...extras,
       sceneId: scene.id,
       sceneVersion: scene.version,
       curriculumRef: scene.curriculumRef,
+      mode,
+      hasNextScene,
       /**
        * Sahne kendi ANLAMLI event'lerini (ör. scene_intro_confirmed,
        * scene_board_size_viewed, scene_completion_unlocked) bununla üretir.
-       * sceneId/sceneVersion/curriculumRef payload'a OTOMATİK eklenir —
-       * her sahne bunu kendi başına tekrarlamak zorunda kalmaz.
+       * sceneId/sceneVersion/mode payload'a OTOMATİK eklenir — her sahne
+       * bunu kendi başına tekrarlamak zorunda kalmaz.
        */
       emit(type, payload = {}) {
         emitEvent({
           type,
           lessonId: scene.curriculumRef?.lessonId ?? null,
           stepId: scene.id,
-          payload: { sceneId: scene.id, sceneVersion: scene.version, ...payload },
+          payload: { sceneId: scene.id, sceneVersion: scene.version, mode, ...payload },
         });
       },
       requestComplete() { return runtime.completeAndAdvance(); },
+      /** Sahnenin pedagojik hedefi karşılandığı ANDA çağrılır — completion'ı
+          KALICI olarak işaretler (advance ETMEZ). Zaten tamamlanmışsa
+          güvenli no-op (bkz. runtime.complete()). */
+      markComplete() { return runtime.complete(); },
+      /** "Sonraki konu" eylemi — YALNIZ registry sırasındaki bir sonraki
+          sahneye geçer, completion'a dokunmaz (o zaten markComplete()
+          ile önceden işaretlenmiş olmalı). */
+      advanceToNext() { return runtime.advance(); },
+      /** Aktif sahneyi TEMİZ biçimde (gerçek unmount+mount) replay modunda
+          yeniden başlatır — bkz. runtime.replayActive(). */
+      replayActive() { return runtime.replayActive(); },
     };
   }
 
@@ -76,33 +106,47 @@ export function createSceneRuntime({ registry, progressAdapter = null, emitEvent
 
   const runtime = {
     /**
-     * Bir sahneyi kaydeder/başlatır. Aynı sahne zaten mount'luysa NO-OP
-     * döner (tekrar mount ETMEZ) — "Scene mount yalnız bir kez çalışıyor"
-     * sözleşmesi. Bilinmeyen bir id veya mount() içinde atılan bir hata
-     * güvenle `scene_failed` üretir, runtime'ı ÇÖKERTMEZ.
+     * Bir sahneyi kaydeder/başlatır. Aynı sahne zaten mount'luysa VE
+     * mode:'normal' ise NO-OP döner (tekrar mount ETMEZ) — "Scene mount
+     * yalnız bir kez çalışıyor" sözleşmesi. mode:'replay' bu kısayolu
+     * BİLEREK atlar — aktif sahne olsa bile GERÇEK bir unmount+yeniden
+     * mount döngüsü çalışır (bkz. dosya başı v0.10 notu).
+     *
+     * Bilinmeyen bir id veya mount() içinde atılan bir hata güvenle
+     * `scene_failed` üretir, runtime'ı ÇÖKERTMEZ — mount hatası ayrıca
+     * `console.error` ile sahne id'si ve gerçek exception'la loglanır
+     * (bkz. görev talimatı Bölüm C — önbellekte kalmış eski modül
+     * sürümleriyle karşılaşıldığında teşhisi kolaylaştırmak için).
+     *
+     * @param {string} sceneId
+     * @param {{mode?: 'normal'|'replay'}} [options]
      */
-    start(sceneId) {
-      if (activeScene?.id === sceneId && mounted) {
+    start(sceneId, { mode = 'normal' } = {}) {
+      if (activeScene?.id === sceneId && mounted && mode === 'normal') {
         return { ok: true, alreadyMounted: true, scene: activeScene, context: activeContext };
       }
       unmountActive();
       const scene = registry.get(sceneId);
       if (!scene) {
-        emitEvent({ type: 'scene_failed', lessonId: null, stepId: sceneId, payload: { sceneId, reason: 'UNKNOWN_SCENE' } });
+        emitEvent({ type: 'scene_failed', lessonId: null, stepId: sceneId, payload: { sceneId, reason: 'UNKNOWN_SCENE', mode } });
         return { ok: false, reason: 'UNKNOWN_SCENE' };
       }
-      const context = buildContext(scene);
-      let mountError = null;
-      const mountOk = safeCall(() => { scene.mount(context); return true; }, false) === true;
-      if (!mountOk) mountError = 'MOUNT_ERROR';
+      const context = buildContext(scene, mode);
+      let mountException = null;
+      const mountOk = (() => {
+        try { scene.mount(context); return true; }
+        catch (e) { mountException = e; return false; }
+      })();
       if (!mountOk) {
+        // eslint-disable-next-line no-console
+        console.error(`[sceneRuntime] Sahne mount hatası: ${scene.id}`, mountException);
         emitEvent({
           type: 'scene_failed',
           lessonId: scene.curriculumRef?.lessonId ?? null,
           stepId: scene.id,
-          payload: { sceneId: scene.id, reason: mountError },
+          payload: { sceneId: scene.id, reason: 'MOUNT_ERROR', mode },
         });
-        return { ok: false, reason: mountError };
+        return { ok: false, reason: 'MOUNT_ERROR' };
       }
       activeScene = scene;
       activeContext = context;
@@ -110,7 +154,8 @@ export function createSceneRuntime({ registry, progressAdapter = null, emitEvent
       completed = false;
       progressAdapter?.setActive(scene.id);
       context.emit('scene_started');
-      return { ok: true, scene, context };
+      if (mode === 'replay') context.emit('scene_replay_started');
+      return { ok: true, scene, context, mode };
     },
 
     canComplete() {
@@ -158,6 +203,13 @@ export function createSceneRuntime({ registry, progressAdapter = null, emitEvent
       if (!result.ok) return result;
       const advanced = runtime.advance();
       return { ...result, advance: advanced };
+    },
+
+    /** Aktif sahneyi TEMİZ biçimde (unmount+mount) replay modunda yeniden
+        başlatır. Aktif sahne yoksa güvenli no-op döner. */
+    replayActive() {
+      if (!activeScene) return { ok: false, reason: 'NO_ACTIVE_SCENE' };
+      return runtime.start(activeScene.id, { mode: 'replay' });
     },
 
     getActiveSceneId() { return activeScene?.id ?? null; },

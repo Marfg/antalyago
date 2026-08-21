@@ -232,7 +232,7 @@ import { scene01BoardIntro } from './scenes/scene01BoardIntro.js';
 import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js';
 import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js';
 import { validateCandidateOrder } from './scenes/turnPolicy.js';
-import { validateCornerCandidateOrder } from './scenes/cornerMovePolicy.js';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js';
 import { BoardState } from './core/boardState.js';
 import { getGroup, getLiberties } from './core/ruleEngine.js';
 import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js';
@@ -472,15 +472,18 @@ function renderCurriculumScenes() {
   const table = document.getElementById('curriculum-scene-table');
   if (!table) return;
   const completed = sceneProgressAdapter.load().completedSceneIds;
+  // Konu başlıkları YALNIZ registry metadata'sından (scene.title) okunur —
+  // hiçbir yerde ikinci kez sabitlenmez (bkz. görev talimatı Bölüm A).
   const rows = sceneRegistry.list().map(scene => `
     <tr>
+      <td>${escapeHtml(scene.title)}</td>
       <td>${scene.id}</td>
       <td>${scene.curriculumRef?.lessonId ?? '—'}</td>
       <td>${scene.curriculumRef?.concept ?? '—'}</td>
       <td>v${scene.version}</td>
       <td>${completed.includes(scene.id) ? '<span class="pill ok">tamamlandı</span>' : '<span class="pill muted">—</span>'}</td>
     </tr>`).join('');
-  table.innerHTML = `<tr><th>Scene ID</th><th>Lesson</th><th>Concept</th><th>Version</th><th>Durum</th></tr>${rows || '<tr><td colspan="5" class="empty">Kayıtlı sahne yok.</td></tr>'}`;
+  table.innerHTML = `<tr><th>Konu Başlığı</th><th>Scene ID</th><th>Lesson</th><th>Concept</th><th>Version</th><th>Durum</th></tr>${rows || '<tr><td colspan="6" class="empty">Kayıtlı sahne yok.</td></tr>'}`;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -765,33 +768,29 @@ function renderSceneDiagnostics() {
     rows.push(`<tr><td>${scene02TurnsAndIntersections.id}</td><td>INVALID_WHITE_CANDIDATES:${candidateCheck.reasons.join('|')}</td></tr>`);
   }
 
-  // Sahne #3'ün deterministik beyaz köşe adayları gerçek 9×9 koordinat mı?
-  const cornerCheck = validateCornerCandidateOrder(9);
-  if (!cornerCheck.valid) {
-    rows.push(`<tr><td>${scene03LibertiesByPosition.id}</td><td>INVALID_CORNER_CANDIDATES:${cornerCheck.reasons.join('|')}</td></tr>`);
-  }
-
-  // Sahne #3'ün 9×9 merkez koordinatı geçerli mi, ve merkez/köşe taşlarının
-  // GERÇEK (core/ruleEngine.js üzerinden hesaplanan) nefes sayısı beklenen
-  // pedagojik değerlerle (4/2) uyumlu mu? — Studio sahneyi mount ETMEDEN,
-  // yalnız saf core modülleriyle bağımsızca doğrular.
+  // v0.10 — Sahne #3 artık serbest keşif: merkez/köşe-only kalıntısı YOK
+  // (cornerMovePolicy.js kaldırıldı). Bunun yerine: (a) her kullanıcıya
+  // dönük title dolu ve tekil mi (registry.issues zaten DUPLICATE_TITLE/
+  // MISSING_TITLE'ı raporlar — burada ikinci bir kontrol YAZILMADI), (b)
+  // Sahne #3'ün köşe/kenar/iç sınıflandırması ve GERÇEK (core/ruleEngine.js
+  // üzerinden hesaplanan) boş-board nefes sonuçları pedagojik beklentiyle
+  // (2/3/4) uyumlu mu — Studio sahneyi mount ETMEDEN, yalnız saf core
+  // modülleriyle bağımsızca doğrular.
   const size = 9;
-  const center = { row: Math.floor(size / 2), col: Math.floor(size / 2) };
-  if (!(center.row >= 0 && center.row < size && center.col >= 0 && center.col < size)) {
-    rows.push(`<tr><td>${scene03LibertiesByPosition.id}</td><td>INVALID_CENTER_COORDINATE</td></tr>`);
-  }
-  const centerBoard = new BoardState(size);
-  centerBoard.placeStone(center.col, center.row, 'black');
-  const centerLibCount = getLiberties(centerBoard, getGroup(centerBoard, center.col, center.row)).size;
-  if (centerLibCount !== 4) {
-    rows.push(`<tr><td>${scene03LibertiesByPosition.id}</td><td>UNEXPECTED_CENTER_LIBERTY_COUNT:${centerLibCount}</td></tr>`);
-  }
-  const corner = { row: 0, col: 0 };
-  const cornerBoard = new BoardState(size);
-  cornerBoard.placeStone(corner.col, corner.row, 'white');
-  const cornerLibCount = getLiberties(cornerBoard, getGroup(cornerBoard, corner.col, corner.row)).size;
-  if (cornerLibCount !== 2) {
-    rows.push(`<tr><td>${scene03LibertiesByPosition.id}</td><td>UNEXPECTED_CORNER_LIBERTY_COUNT:${cornerLibCount}</td></tr>`);
+  const SAMPLE_POINTS = [
+    { row: 0, col: 0 }, { row: 0, col: 8 }, { row: 8, col: 0 }, { row: 8, col: 8 }, // corner
+    { row: 0, col: 4 }, { row: 4, col: 0 }, { row: 8, col: 4 }, { row: 4, col: 8 }, // edge
+    { row: 4, col: 4 }, { row: 2, col: 6 }, // interior
+  ];
+  for (const point of SAMPLE_POINTS) {
+    const zone = classifyBoardZone({ ...point, size });
+    const board = new BoardState(size);
+    board.placeStone(point.col, point.row, 'black');
+    const libCount = getLiberties(board, getGroup(board, point.col, point.row)).size;
+    const expected = EXPECTED_LIBERTY_COUNT_BY_ZONE[zone];
+    if (libCount !== expected) {
+      rows.push(`<tr><td>${scene03LibertiesByPosition.id}</td><td>UNEXPECTED_LIBERTY_COUNT:(${point.row},${point.col}) zone=${zone} expected=${expected} actual=${libCount}</td></tr>`);
+    }
   }
 
   table.innerHTML = `<tr><th>Scene ID</th><th>Reasons</th></tr>${rows.join('') || '<tr><td colspan="2" class="empty">Tüm sahneler geçerli ✓</td></tr>'}`;

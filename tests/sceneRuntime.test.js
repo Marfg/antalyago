@@ -247,5 +247,184 @@ test('contextExtras (board adapter / container gibi host verileri) context\'e bi
   equal(context.container, 'FAKE_DOM_NODE');
 });
 
+/* ══════════════════════════════════════════════════════════════════
+   v0.10 — Replay sözleşmesi (bkz. görev talimatı Bölüm A)
+   ══════════════════════════════════════════════════════════════════ */
+
+test('replay: aktif sahne replayActive() ile TEMİZ biçimde yeniden mount edilir', () => {
+  const scene = fakeScene('s1');
+  const registry = createSceneRegistry([scene]);
+  const runtime = createSceneRuntime({ registry, emitEvent: () => {} });
+  runtime.start('s1');
+  const result = runtime.replayActive();
+  equal(result.ok, true);
+  equal(result.mode, 'replay');
+  equal(runtime.getActiveSceneId(), 's1');
+});
+
+test('replay: unmount öncesi (replay tetiklenmeden önce) yalnız BİR KEZ çalışır', () => {
+  const scene = fakeScene('s1');
+  const registry = createSceneRegistry([scene]);
+  const runtime = createSceneRuntime({ registry, emitEvent: () => {} });
+  runtime.start('s1');
+  runtime.replayActive();
+  equal(scene.unmountCount, 1);
+});
+
+test('replay: mount yalnız BİR KEZ (replay başına) çalışır', () => {
+  const scene = fakeScene('s1');
+  const registry = createSceneRegistry([scene]);
+  const runtime = createSceneRuntime({ registry, emitEvent: () => {} });
+  runtime.start('s1');
+  runtime.replayActive();
+  equal(scene.mountCount, 2, 'ilk start() + bir replay = toplam 2 mount');
+});
+
+test('replay: completion kaydını (progressAdapter.markCompleted) SİLMEZ', () => {
+  const scene = fakeScene('s1');
+  const registry = createSceneRegistry([scene]);
+  const progressAdapter = fakeProgressAdapter();
+  const runtime = createSceneRuntime({ registry, emitEvent: () => {}, progressAdapter });
+  runtime.start('s1');
+  runtime.complete();
+  ok(progressAdapter.state.completedSceneIds.includes('s1'));
+  runtime.replayActive();
+  ok(progressAdapter.state.completedSceneIds.includes('s1'), 'replay sonrası completion hâlâ kalıcı olmalı');
+});
+
+test('replay: tamamlanmış sahne tekrar tamamlansa bile completedSceneIds\'e İKİNCİ KEZ eklenmez', () => {
+  const scene = fakeScene('s1');
+  const registry = createSceneRegistry([scene]);
+  const progressAdapter = fakeProgressAdapter();
+  const runtime = createSceneRuntime({ registry, emitEvent: () => {}, progressAdapter });
+  runtime.start('s1');
+  runtime.complete();
+  runtime.replayActive();
+  runtime.complete(); // replay sonrası tekrar tamamlama — completedSceneIds değişmemeli
+  equal(progressAdapter.state.completedSceneIds.filter(id => id === 's1').length, 1);
+});
+
+test('replay: start(id,{mode:"replay"}) TEK çağrıda tek scene_replay_started üretir (aynı tıklama iki event üretmez)', () => {
+  const scene = fakeScene('s1');
+  const registry = createSceneRegistry([scene]);
+  const { events, sink } = makeEventSink();
+  const runtime = createSceneRuntime({ registry, emitEvent: sink });
+  runtime.start('s1');
+  runtime.replayActive();
+  equal(events.filter(e => e.type === 'scene_replay_started').length, 1);
+});
+
+test('replay: timer/listener sızıntısı yok — unmount() her replay öncesi çağrılır (temizlik fırsatı verilir)', () => {
+  let unmountCalls = 0;
+  const scene = fakeScene('s1', { onUnmount: () => { unmountCalls++; } });
+  const registry = createSceneRegistry([scene]);
+  const runtime = createSceneRuntime({ registry, emitEvent: () => {} });
+  runtime.start('s1');
+  runtime.replayActive();
+  runtime.replayActive();
+  equal(unmountCalls, 2, 'her replayActive() çağrısından önce bir unmount olmalı');
+});
+
+test('replay sonrası registry sırasındaki bir sonraki sahneye normal biçimde geçilebiliyor', () => {
+  const s1 = fakeScene('s1');
+  const s2 = fakeScene('s2');
+  const registry = createSceneRegistry([s1, s2]);
+  const runtime = createSceneRuntime({ registry, emitEvent: () => {} });
+  runtime.start('s1');
+  runtime.complete();
+  runtime.replayActive();
+  runtime.complete();
+  runtime.advance();
+  equal(runtime.getActiveSceneId(), 's2');
+});
+
+test('replay: bilinmeyen sahne id\'si için start(id,{mode:"replay"}) güvenle UNKNOWN_SCENE döner, throw ETMEZ', () => {
+  const registry = createSceneRegistry([fakeScene('s1')]);
+  const { events, sink } = makeEventSink();
+  const runtime = createSceneRuntime({ registry, emitEvent: sink });
+  const result = runtime.start('yok-boyle-bir-sahne', { mode: 'replay' });
+  equal(result.ok, false);
+  equal(result.reason, 'UNKNOWN_SCENE');
+  ok(events.some(e => e.type === 'scene_failed'));
+});
+
+test('replay: aktif sahne yokken replayActive() güvenli NO_ACTIVE_SCENE döner', () => {
+  const registry = createSceneRegistry([fakeScene('s1')]);
+  const runtime = createSceneRuntime({ registry, emitEvent: () => {} });
+  const result = runtime.replayActive();
+  equal(result.ok, false);
+  equal(result.reason, 'NO_ACTIVE_SCENE');
+});
+
+test('context.mode: normal start\'ta "normal", replay start\'ta "replay" olur ve emit() payload\'ına otomatik eklenir', () => {
+  const scene = fakeScene('s1');
+  const registry = createSceneRegistry([scene]);
+  const { events, sink } = makeEventSink();
+  const runtime = createSceneRuntime({ registry, emitEvent: sink });
+  const started = runtime.start('s1');
+  equal(started.context.mode, 'normal');
+  started.context.emit('custom_event', {});
+  const replayed = runtime.replayActive();
+  equal(replayed.context.mode, 'replay');
+  replayed.context.emit('custom_event', {});
+  const customEvents = events.filter(e => e.type === 'custom_event');
+  equal(customEvents[0].payload.mode, 'normal');
+  equal(customEvents[1].payload.mode, 'replay');
+});
+
+test('context.hasNextScene: son sahnede false, sonraki sahnesi olan sahnede true', () => {
+  const s1 = fakeScene('s1');
+  const s2 = fakeScene('s2');
+  const registry = createSceneRegistry([s1, s2]);
+  const runtime = createSceneRuntime({ registry, emitEvent: () => {} });
+  const started1 = runtime.start('s1');
+  equal(started1.context.hasNextScene, true);
+  started1.context.markComplete();
+  const advanced = started1.context.advanceToNext();
+  equal(advanced.ok, true);
+  equal(runtime.getActiveSceneId(), 's2');
+  equal(activeContextHasNext(runtime, registry), false);
+});
+function activeContextHasNext(runtime, registry) {
+  // Yardımcı: aktif sahnenin context'ini yeniden yakalamak için no-op bir
+  // normal start() çağrısı (zaten mount'lu → context'i döner, mount()
+  // İKİNCİ KEZ çalışmaz).
+  const id = runtime.getActiveSceneId();
+  const result = runtime.start(id);
+  return result.context.hasNextScene;
+}
+
+test('context.markComplete()/advanceToNext() ayrı ayrı çağrılabilir (requestComplete\'in tek-adım kısayoluna ek olarak)', () => {
+  const s1 = fakeScene('s1');
+  const s2 = fakeScene('s2');
+  const registry = createSceneRegistry([s1, s2]);
+  const runtime = createSceneRuntime({ registry, emitEvent: () => {} });
+  const started = runtime.start('s1');
+  const completeResult = started.context.markComplete();
+  equal(completeResult.ok, true);
+  equal(runtime.getActiveSceneId(), 's1', 'markComplete() ADVANCE ETMEMELİ');
+  const advanceResult = started.context.advanceToNext();
+  equal(advanceResult.ok, true);
+  equal(runtime.getActiveSceneId(), 's2');
+});
+
+test('mount hatası console.error ile sahne id\'si ve gerçek exception ile loglanır', () => {
+  const originalError = console.error;
+  const calls = [];
+  console.error = (...args) => calls.push(args);
+  try {
+    const scene = fakeScene('s1', { onMount: () => { throw new Error('kasıtlı test hatası'); } });
+    const registry = createSceneRegistry([scene]);
+    const runtime = createSceneRuntime({ registry, emitEvent: () => {} });
+    runtime.start('s1');
+  } finally {
+    console.error = originalError;
+  }
+  ok(calls.length >= 1, 'console.error hiç çağrılmadı');
+  const loggedText = calls.map(c => c.join(' ')).join(' ');
+  ok(loggedText.includes('s1'), 'log sahne id\'sini içermiyor');
+  ok(calls.some(c => c.some(a => a instanceof Error && a.message === 'kasıtlı test hatası')), 'gerçek exception loglanmadı');
+});
+
 console.log(`\nToplam: ${passed + failed}  ✓ ${passed}  ✗ ${failed}`);
 if (failed) process.exit(1);

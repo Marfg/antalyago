@@ -75,6 +75,36 @@ body {
 }
 #ls-scene-host { width: 100%; max-width: 620px; margin: 0 auto; }
 
+/* ── Konular paneli — board üzerine AÇILAN kalıcı bir yan panel DEĞİL;
+   #ls-narration'ın İÇİNDE #ls-scene-host'un yerini GEÇİCİ olarak alır
+   (aynı sabit yükseklik bütçesi, board bounding box'ı ASLA değişmez).
+   Ayırıcı çizgi/sert panel dili YOK — bkz. görev talimatı Bölüm A. ── */
+#ls-topics-panel {
+  width: 100%; max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; gap: .4rem;
+  /* #ls-narration'ın align-items:center'ı, İÇERİĞİ kendi yüksekliğinden
+     UZUN bir çocuğu ORTALARDI — bu da üste (board'a doğru) taşmasına yol
+     açardı. align-self:flex-start bu çocuğu ÜSTTEN başlatır; taşma
+     yalnız AŞAĞIYA (ebeveynin overflow-y:auto'suyla kaydırılabilir) olur. */
+  align-self: flex-start;
+}
+#ls-topics-panel[hidden] { display: none; }
+.ls-topics-header { font-size: .78rem; font-weight: 700; color: var(--muted); text-align: center; }
+.ls-topics-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .3rem; }
+.ls-topic-item {
+  width: 100%; display: flex; align-items: center; gap: .6rem;
+  padding: .5rem .7rem; border-radius: 8px; min-height: 44px;
+  border: 1px solid var(--gborder); background: transparent; color: var(--text);
+  font-size: .8rem; font-weight: 600; cursor: pointer; font-family: inherit; text-align: left;
+  transition: all .16s;
+}
+.ls-topic-item:hover:not(:disabled) { border-color: var(--gold); background: rgba(200, 168, 75, .08); }
+.ls-topic-item:disabled { cursor: default; opacity: .45; }
+.ls-topic-item[aria-current="true"] { border-color: var(--gold); background: rgba(200, 168, 75, .12); }
+.ls-topic-mark { flex: 0 0 auto; width: 1.3em; text-align: center; font-size: .82rem; }
+.ls-topic-mark.done { color: var(--green); }
+.ls-topic-mark.active { color: var(--gold); }
+@media (prefers-reduced-motion: reduce) { .ls-topic-item { transition: none; } }
+
 #ls-topbar {
   position: fixed; top: 0; left: 0; z-index: 20;
   padding: .7rem 1rem;
@@ -85,6 +115,13 @@ body {
   padding: .4rem .8rem; font-size: .8rem; backdrop-filter: blur(10px);
 }
 #ls-topbar a:hover { border-color: var(--gold); }
+.ls-topbar-btn {
+  color: var(--text); text-decoration: none; font-family: inherit;
+  background: var(--glass); border: 1px solid var(--gborder); border-radius: 8px;
+  padding: .4rem .8rem; font-size: .8rem; backdrop-filter: blur(10px);
+  cursor: pointer; min-height: 36px;
+}
+.ls-topbar-btn:hover { border-color: var(--gold); }
 
 /* ══════════════════════════════════════════════════════════════════
    ORTAK ŞERİT İLKELLERİ (.ls-strip-*) — Sahne #1/#2/#3 bunları paylaşır.
@@ -141,7 +178,8 @@ body {
 .ls-tick:focus-visible + .ls-tick-tip {
   opacity: 1; transform: translateX(-50%) translateY(0);
 }
-.ls-tick:focus-visible, .ls-pill:focus-visible, .ls-strip-btn:focus-visible, .ls-choice:focus-visible {
+.ls-tick:focus-visible, .ls-pill:focus-visible, .ls-strip-btn:focus-visible,
+.ls-topic-item:focus-visible, .ls-topbar-btn:focus-visible {
   outline: 2px solid var(--gold2); outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -172,26 +210,25 @@ body {
 @media (prefers-reduced-motion: reduce) { .ls-strip-dot { transition: none; } }
 
 .ls-strip-btn {
-  flex: 0 0 auto; padding: .5rem 1.1rem; border-radius: 8px; min-height: 40px;
+  flex: 0 0 auto; padding: .55rem 1.1rem; border-radius: 8px; min-height: 44px;
   border: 1px solid var(--gborder); background: rgba(200, 168, 75, .1); color: var(--muted);
   font-size: .78rem; font-weight: 700; cursor: pointer; transition: all .18s; font-family: inherit;
 }
 .ls-strip-btn:disabled { cursor: default; opacity: .5; }
 .ls-strip-btn:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--dark); }
 .ls-strip-btn:not(:disabled):hover { filter: brightness(1.08); }
+/* Ghost varyant — "Bu konuyu tekrar et" / "Başka bir noktayı dene" gibi
+   İKİNCİL eylemler için; birincil (altın dolgulu) düğmeyle görsel
+   REKABETE girmesin diye şeffaf/nötr kalır, ASLA disabled görünmez. */
+.ls-strip-btn--ghost {
+  background: transparent; border-color: var(--gborder); color: var(--text);
+}
+.ls-strip-btn--ghost:hover { border-color: var(--gold); background: rgba(200, 168, 75, .08); }
 @media (prefers-reduced-motion: reduce) { .ls-strip-btn { transition: none; } }
 
-/* ── Karşılaştırma sorusu seçenekleri (Sahne #3) ── */
-.ls-choices { display: inline-flex; gap: .5rem; flex-wrap: wrap; justify-content: center; }
-.ls-choice {
-  padding: .5rem .9rem; border-radius: 8px; min-height: 40px;
-  border: 1px solid var(--gborder); background: transparent; color: var(--text);
-  font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit;
-  transition: all .16s;
-}
-.ls-choice:hover { border-color: var(--gold); }
-.ls-choice:disabled { cursor: default; opacity: .55; }
-@media (prefers-reduced-motion: reduce) { .ls-choice { transition: none; } }
+/* ── Konu sonu satırı (Sahne #1/#2/#3 ORTAK — bkz. scenes/topicEndControls.js) ── */
+.ls-topic-end-summary { flex-basis: 100%; text-align: center; }
+.ls-topic-end-actions { display: inline-flex; gap: .5rem; flex-wrap: wrap; justify-content: center; }
 
 /* Kart geçişi — açılış/kapanış İÇİN opsiyonel, opacity/transform ile. */
 .ls-strip-fade { transition: opacity .2s ease, transform .2s ease; }
@@ -200,25 +237,17 @@ body {
   .ls-strip-fade, .ls-strip-fade.ls-closing { transition: none; }
 }
 
-/* ── Sahne bitti / sıradaki sahne hazırlanıyor ── */
-#ls-final {
-  position: fixed; inset: 0; z-index: 40; display: none;
-  align-items: center; justify-content: center; text-align: center;
-  background: rgba(8, 8, 14, .92); backdrop-filter: blur(10px);
-  flex-direction: column; gap: .8rem; padding: 2rem;
-}
-#ls-final.show { display: flex; }
-#ls-final h2 { font-family: 'Noto Serif', serif; color: var(--gold); margin: 0; font-size: 1.3rem; }
-#ls-final p { color: var(--muted); margin: 0; max-width: 380px; font-size: .88rem; line-height: 1.6; }
-
-/* ── Hata / bilinmeyen sahne ── */
+/* ── Hata / bilinmeyen sahne / mount hatası kurtarma ──
+   v0.10 — #ls-final KALDIRILDI: boot() artık HER ZAMAN gerçek bir sahne
+   mount eder (tümü tamamlanmışsa son sahneyi replay modunda) — bu yüzden
+   ayrı bir "final" ekranına gerek kalmadı (bkz. görev talimatı Bölüm A). ── */
 #ls-error {
   position: fixed; inset: 0; z-index: 50; display: none;
   align-items: center; justify-content: center; text-align: center;
-  background: var(--dark); flex-direction: column; gap: .6rem; padding: 2rem;
+  background: var(--dark); flex-direction: column; gap: .8rem; padding: 2rem;
 }
 #ls-error.show { display: flex; }
-#ls-error p { color: var(--muted); font-size: .85rem; max-width: 360px; }
+#ls-error p { color: var(--muted); font-size: .85rem; max-width: 360px; margin: 0; }
 
 @media (max-width: 480px) {
   .ls-strip-btn { width: 100%; }

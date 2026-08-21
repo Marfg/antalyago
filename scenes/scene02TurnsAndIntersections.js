@@ -35,13 +35,15 @@
  * gerçek setTimeout/clearTimeout kullanılır — üretim davranışı DEĞİŞMEZ).
  *
  * Tamamlanma tamamen İÇSEL/teknik kalır: kullanıcıya HİÇBİR ZAMAN "Sahne
- * tamamlandı" veya eşdeğeri gösterilmez — altı taş yerleşince sade bir
- * "Devam et" eylemi (scene01BoardIntro.js'deki continueBtn İLE AYNI
- * idiyom) sunulur; sıradaki sahne yoksa host (learning-scenes.html) zaten
- * paylaşılan #ls-final ekranını nötr metinle gösterir.
+ * tamamlandı" veya eşdeğeri gösterilmez — altı taş yerleşince ORTAK
+ * scenes/topicEndControls.js (bkz. görev talimatı Bölüm A) kısa doğal bir
+ * özet + [Bu konuyu tekrar et]/[Sonraki konu] gösterir.
  */
 
 import { pickDeterministicWhiteMove } from './turnPolicy.js';
+import { mountTopicEndControls } from './topicEndControls.js';
+
+const SUMMARY_TEXT = "Go'da oyuncular sırayla taş yerleştirir.";
 
 const INFO_STEPS = [
   {
@@ -76,6 +78,8 @@ let cleanupFns = [];
 let unsubscribeTap = null;
 let whiteTimerId = null;
 let clearScheduledTimeoutFn = clearTimeout;
+let topicEnded = false;
+let topicEnd = null;
 
 function resetState() {
   step = 0;
@@ -86,6 +90,8 @@ function resetState() {
   unsubscribeTap = null;
   whiteTimerId = null;
   clearScheduledTimeoutFn = clearTimeout;
+  topicEnded = false;
+  topicEnd = null;
 }
 
 function render() {
@@ -93,20 +99,22 @@ function render() {
   els.stepEls.forEach((el, i) => { el.hidden = i !== step; });
 }
 
-function updateTurnUI() {
+function updateTurnUI(context) {
   if (!els) return;
   els.dotsEl.innerHTML = Array.from({ length: TOTAL_PAIRS })
     .map((_, i) => `<span class="ls-strip-dot${i < whiteMoves ? ' done' : ''}"></span>`)
     .join('');
 
   if (sequenceDone) {
-    els.turnEl.textContent = 'Altı taş sırayla yerleştirildi.';
-    els.turnEl.classList.add('success');
-    els.continueBtn.hidden = false;
+    if (!topicEnded) {
+      topicEnded = true;
+      els.turnEl.textContent = '';
+      context.emit('scene_completion_unlocked', {});
+      topicEnd = mountTopicEndControls(context, { summaryText: SUMMARY_TEXT });
+    }
     return;
   }
   els.turnEl.classList.remove('success');
-  els.continueBtn.hidden = true;
   if (turn === 'black') els.turnEl.textContent = 'Sıra sende — Siyah';
   else if (turn === 'white') els.turnEl.textContent = 'Beyaz düşünüyor…';
   else els.turnEl.textContent = '';
@@ -134,7 +142,7 @@ function playWhiteMove(context) {
     // aday bulunamazsa akışı KİLİTLEMEDEN siyaha geri ver.
     turn = 'black';
     context.boardAdapter.setInputEnabled(true);
-    updateTurnUI();
+    updateTurnUI(context);
     return;
   }
 
@@ -144,12 +152,11 @@ function playWhiteMove(context) {
   if (blackMoves >= TOTAL_PAIRS && whiteMoves >= TOTAL_PAIRS) {
     sequenceDone = true;
     turn = null;
-    context.emit('scene_completion_unlocked', {});
   } else {
     turn = 'black';
     context.boardAdapter.setInputEnabled(true);
   }
-  updateTurnUI();
+  updateTurnUI(context);
 }
 
 function handleTap(context, { row, col }) {
@@ -163,7 +170,7 @@ function handleTap(context, { row, col }) {
 
   turn = 'white';
   context.boardAdapter.setInputEnabled(false);
-  updateTurnUI();
+  updateTurnUI(context);
   scheduleWhiteMove(context);
 }
 
@@ -172,7 +179,7 @@ function startPlay(context) {
   turn = 'black';
   context.boardAdapter.setInputEnabled(true);
   unsubscribeTap = context.boardAdapter.onIntersectionTap(hit => handleTap(context, hit));
-  updateTurnUI();
+  updateTurnUI(context);
 }
 
 function buildDom(context) {
@@ -195,7 +202,6 @@ function buildDom(context) {
     <div class="ls-strip-row" id="s02-play" hidden>
       <span class="ls-strip-status" id="s02-turn" role="status" aria-live="polite"></span>
       <div class="ls-strip-dots" id="s02-dots" aria-hidden="true"></div>
-      <button type="button" class="ls-strip-btn" id="s02-continue" hidden>Devam et</button>
     </div>
   `;
   context.container.appendChild(root);
@@ -207,7 +213,6 @@ function buildDom(context) {
     playRow: root.querySelector('#s02-play'),
     turnEl: root.querySelector('#s02-turn'),
     dotsEl: root.querySelector('#s02-dots'),
-    continueBtn: root.querySelector('#s02-continue'),
   };
 }
 
@@ -219,7 +224,7 @@ function on(el, type, handler) {
 export const scene02TurnsAndIntersections = {
   id: 'scene-02-turns-and-intersections',
   version: 1,
-  title: 'Sırayla Oynama ve Kesişim Noktaları',
+  title: 'Sırayla Oyna',
   curriculumRef: { lessonId: 'l1', concept: 'stone_placement' },
 
   mount(context) {
@@ -256,14 +261,6 @@ export const scene02TurnsAndIntersections = {
       });
     });
 
-    on(els.continueBtn, 'click', () => {
-      if (els.continueBtn.hidden) return;
-      const result = context.requestComplete();
-      if (result?.advance?.done) {
-        context.container.dispatchEvent(new CustomEvent('scene:all-complete', { bubbles: true }));
-      }
-    });
-
     render();
   },
 
@@ -272,6 +269,8 @@ export const scene02TurnsAndIntersections = {
     cleanupFns = [];
     if (unsubscribeTap) { unsubscribeTap(); unsubscribeTap = null; }
     if (whiteTimerId != null) { clearScheduledTimeoutFn(whiteTimerId); whiteTimerId = null; }
+    topicEnd?.destroy();
+    topicEnd = null;
     els?.root?.remove();
     els = null;
     resetState();

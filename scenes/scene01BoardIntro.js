@@ -1,8 +1,8 @@
 /**
  * scenes/scene01BoardIntro.js
  *
- * Sahne #1 — "Tahtaları Tanı". Kullanıcının yeni öğrenme kabuğunda
- * karşılaştığı ilk sahne: tek cümlelik bilgi kartı + üç gerçek tahta
+ * Konu #1 — "Tahtayı Tanı". Kullanıcının yeni öğrenme kabuğunda
+ * karşılaştığı ilk konu: tek cümlelik bilgi kartı + üç gerçek tahta
  * boyutunun (9×9/13×13/19×19) keşfi.
  *
  * v0.9 — DOM'u ORTAK anlatım şeridi ilkelleriyle (ls-strip-row, ls-tick,
@@ -12,6 +12,12 @@
  * kutuları (.s01-desc) BİLİNÇLİ olarak KALDIRILDI — kompakt, sabit
  * yükseklikli şeritte pill üzerindeki kısa alt-etiket (Başlangıç/Orta/
  * Standart) pedagojik özeti zaten taşıyor.
+ *
+ * v0.10 — Konu sonu davranışı ORTAK scenes/topicEndControls.js'e taşındı
+ * (bkz. görev talimatı Bölüm A): üç boyut da görüldüğünde eski "Devam et"
+ * düğmesi yerine context.markComplete() + kısa doğal özet + [Bu konuyu
+ * tekrar et]/[Sonraki konu] gösterilir. `context.requestComplete()` ve
+ * `scene:all-complete` DOM event'i ARTIK KULLANILMIYOR.
  *
  * Bu modül core/sceneRuntime.js'in {id,version,title,curriculumRef,mount,
  * unmount,canComplete,complete} sözleşmesini uygular. `boardSizesSeen` ve
@@ -25,10 +31,13 @@
  * kimliklerine ASLA bağımlı değildir.
  */
 
+import { mountTopicEndControls } from './topicEndControls.js';
+
 const BOARD_SIZES = [9, 13, 19];
 const SIZE_LABELS = { 9: 'Başlangıç', 13: 'Orta', 19: 'Standart' };
 const INTRO_TEXT = "Go, 19×19'luk bir tahta üzerinde oynanan iki kişilik bir strateji oyunudur.";
 const DEFAULT_SIZE = 19;
+const SUMMARY_TEXT = 'Go tahtalarının farklı boyutlarını gördük.';
 
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -38,16 +47,27 @@ function escapeHtml(str) {
 // zaman sıfırlar, unmount() temizler.
 let boardSizesSeen = new Set();
 let introConfirmed = false;
+let topicEnded = false;
+let topicEnd = null;
 let els = null; // mount sırasında doldurulan DOM referansları
 let cleanupFns = [];
 
-function render() {
+function render(context) {
   if (!els) return;
   const seenCount = boardSizesSeen.size;
   const allSeen = seenCount >= BOARD_SIZES.length;
 
   els.introRow.hidden = introConfirmed;
-  els.exploreRow.hidden = !introConfirmed;
+  els.exploreRow.hidden = !introConfirmed || topicEnded;
+
+  if (allSeen && !topicEnded) {
+    topicEnded = true;
+    context.emit('scene_completion_unlocked', {});
+    topicEnd = mountTopicEndControls(context, { summaryText: SUMMARY_TEXT });
+    els.exploreRow.hidden = true;
+    return;
+  }
+  if (topicEnded) return;
 
   els.dotsEl.innerHTML = BOARD_SIZES.map(s => `<span class="ls-strip-dot${boardSizesSeen.has(s) ? ' done' : ''}"></span>`).join('');
 
@@ -58,19 +78,9 @@ function render() {
     btn.classList.toggle('next-hint', nextUnseen != null && size === nextUnseen && !boardSizesSeen.has(size));
   });
 
-  if (allSeen) {
-    els.statusEl.textContent = 'Tahtaları tanıdın.';
-    els.statusEl.classList.add('success');
-    els.progressText.textContent = '';
-    els.continueBtn.disabled = false;
-    els.continueBtn.removeAttribute('aria-disabled');
-  } else {
-    els.statusEl.textContent = 'Üç tahta boyutunu da keşfet.';
-    els.statusEl.classList.remove('success');
-    els.progressText.textContent = `${seenCount}/${BOARD_SIZES.length}`;
-    els.continueBtn.disabled = true;
-    els.continueBtn.setAttribute('aria-disabled', 'true');
-  }
+  els.statusEl.textContent = 'Üç tahta boyutunu da keşfet.';
+  els.statusEl.classList.remove('success');
+  els.progressText.textContent = `${seenCount}/${BOARD_SIZES.length}`;
 }
 
 function selectSize(context, size) {
@@ -90,10 +100,7 @@ function selectSize(context, size) {
   if (!wasSeen) {
     context.emit('scene_board_size_viewed', { boardSize: size });
   }
-  render();
-  if (!wasSeen && boardSizesSeen.size === BOARD_SIZES.length) {
-    context.emit('scene_completion_unlocked', {});
-  }
+  render(context);
 }
 
 function buildDom(context) {
@@ -114,7 +121,6 @@ function buildDom(context) {
       <span class="ls-strip-caption" id="s01-progress-text"></span>
       <div class="ls-pills" id="s01-pills" role="group" aria-label="Tahta boyutu seç"></div>
       <div class="ls-strip-dots" id="s01-dots" aria-hidden="true"></div>
-      <button type="button" class="ls-strip-btn" id="s01-continue" disabled aria-describedby="s01-status">Devam et</button>
     </div>
   `;
   context.container.appendChild(root);
@@ -141,7 +147,6 @@ function buildDom(context) {
     statusEl: root.querySelector('#s01-status'),
     progressText: root.querySelector('#s01-progress-text'),
     dotsEl: root.querySelector('#s01-dots'),
-    continueBtn: root.querySelector('#s01-continue'),
   };
 }
 
@@ -153,12 +158,14 @@ function on(el, type, handler) {
 export const scene01BoardIntro = {
   id: 'scene-01-board-intro',
   version: 1,
-  title: 'Tahtaları Tanı',
+  title: 'Tahtayı Tanı',
   curriculumRef: { lessonId: 'l1', concept: 'board' },
 
   mount(context) {
     boardSizesSeen = new Set();
     introConfirmed = false;
+    topicEnded = false;
+    topicEnd = null;
     cleanupFns = [];
     els = buildDom(context);
 
@@ -194,7 +201,7 @@ export const scene01BoardIntro = {
         // Satır kapanır kapanmaz kullanıcı zaten varsayılan (19×19) tahtayı
         // görüyor — bunu otomatik "görüldü" say (tıklama BEKLENMEZ).
         selectSize(context, DEFAULT_SIZE);
-        render();
+        render(context);
         const firstPill = els.pills.find(b => b.classList.contains('active')) || els.pills[0];
         if (firstPill) firstPill.focus();
       };
@@ -207,27 +214,19 @@ export const scene01BoardIntro = {
       on(btn, 'click', () => selectSize(context, Number(btn.dataset.size)));
     });
 
-    on(els.continueBtn, 'click', () => {
-      if (els.continueBtn.disabled) return;
-      const result = context.requestComplete();
-      // Host'a (learning-scenes.html) "sıradaki sahne yok" bilgisini bir
-      // DOM event'iyle iletiyoruz — bu modül host'un "sahne bitti" UI'ının
-      // ŞEKLİNİ bilmek zorunda kalmasın diye (ayrım korunuyor).
-      if (result?.advance?.done) {
-        context.container.dispatchEvent(new CustomEvent('scene:all-complete', { bubbles: true }));
-      }
-    });
-
-    render();
+    render(context);
   },
 
   unmount() {
     cleanupFns.forEach(fn => fn());
     cleanupFns = [];
+    topicEnd?.destroy();
+    topicEnd = null;
     els?.root?.remove();
     els = null;
     boardSizesSeen = new Set();
     introConfirmed = false;
+    topicEnded = false;
   },
 
   canComplete() {

@@ -74,6 +74,21 @@ export function createSceneRegistry(scenes = []) {
     }
   }
 
+  // Üçüncü geçiş: duplicate KULLANICIYA DÖNÜK title — `title` artık yalnız
+  // dahili bir etiket değil, "Konular" listesinde ve konu-sonu özetinde
+  // KULLANICIYA gösterilen tek metin (bkz. görev talimatı Bölüm A). İki
+  // sahne aynı title'ı taşırsa kullanıcı hangi konunun hangisi olduğunu
+  // ayırt edemez — Teacher Studio Diagnostics bunu doğrudan bu listeden okur.
+  const titleFirstSeenBy = new Map();
+  for (const id of order) {
+    const title = byId.get(id).title;
+    if (titleFirstSeenBy.has(title)) {
+      issues.push({ id, reasons: [`DUPLICATE_TITLE:${title}`] });
+    } else {
+      titleFirstSeenBy.set(title, id);
+    }
+  }
+
   return {
     get(id) { return byId.get(id) || null; },
     has(id) { return byId.has(id); },

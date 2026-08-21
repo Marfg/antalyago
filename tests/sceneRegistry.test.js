@@ -124,5 +124,32 @@ test('registry: list() kayıt sırasını korur', () => {
   equal(ids.join(','), 'z,a');
 });
 
+// ── v0.10: duplicate/boş title diagnostic (bkz. görev talimatı Bölüm A) ──
+
+test('registry: iki sahne AYNI kullanıcıya-dönük title\'ı taşırsa DUPLICATE_TITLE issue\'sı üretir', () => {
+  const reg = createSceneRegistry([
+    fakeScene({ id: 'a', title: 'Aynı Başlık' }),
+    fakeScene({ id: 'b', title: 'Aynı Başlık' }),
+  ]);
+  equal(reg.size, 2, 'her iki sahne de ŞEKİL olarak geçerli, kayda girmeli');
+  const dup = reg.issues.find(i => i.id === 'b' && i.reasons.some(r => r.startsWith('DUPLICATE_TITLE')));
+  ok(!!dup, 'duplicate title issue\'sı raporlanmadı');
+});
+
+test('registry: farklı title\'lı sahnelerde DUPLICATE_TITLE issue\'sı ÜRETİLMEZ', () => {
+  const reg = createSceneRegistry([
+    fakeScene({ id: 'a', title: 'Tahtayı Tanı' }),
+    fakeScene({ id: 'b', title: 'Sırayla Oyna' }),
+  ]);
+  ok(!reg.issues.some(i => i.reasons.some(r => r.startsWith('DUPLICATE_TITLE'))));
+});
+
+test('validateSceneDefinition: boş title MISSING_TITLE üretir (registry\'ye asla girmez)', () => {
+  const r = validateSceneDefinition(fakeScene({ title: '' }));
+  ok(r.reasons.includes('MISSING_TITLE'));
+  const reg = createSceneRegistry([fakeScene({ title: '' })]);
+  equal(reg.size, 0);
+});
+
 console.log(`\nToplam: ${passed + failed}  ✓ ${passed}  ✗ ${failed}`);
 if (failed) process.exit(1);

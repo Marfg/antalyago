@@ -1,219 +1,151 @@
 /**
  * scenes/scene03LibertiesByPosition.js
  *
- * Sahne #3 — "Konuma Göre Nefes Noktaları". Kullanıcı DENEYİMLEYEREK
- * öğrenir: bir taşın yatay/dikey komşu boş noktaları onun nefes
- * noktalarıdır ve tahtadaki KONUM bu sayıyı değiştirir — merkezde 4,
- * köşede 2. Grup/bağlantı/capture/atari veya yatay-dikey taş bağlantısı
- * konusuna GİRİLMEZ (bir sonraki sahnenin kapsamı).
+ * Konu #3 — "Taşların Nefesi". Kullanıcı SERBESTÇE keşfeder: boş 9×9
+ * tahtada istediği herhangi bir kesişime siyah taş koyar, RuleEngine'in
+ * hesapladığı GERÇEK nefes sayısını görür (köşe→2, kenar→3, iç→4),
+ * "Başka bir noktayı dene" ile sınırsız kez tekrar dener. Grup/bağlantı/
+ * capture/atari veya yatay-dikey taş bağlantısı konusuna GİRİLMEZ.
  *
- * core/curriculum.js'in l1 dersindeki KULLANICIYA GÖRÜNEN 3. ve 4.
- * adımlarını (0-index'te steps[2]: nefes noktası keşfi, steps[3]: köşe
- * taşının 2 nefesi) temel alır — ancak eski LessonEngine/CURRICULUM
- * veri yapısını KULLANMAZ, Scene Runtime mimarisinde bağımsız bir
- * deneyim olarak yeniden inşa eder (bkz. steps[4]'ün — beyaza bitişik
- * taş koyma — BİLİNÇLİ olarak bu sahneye dahil EDİLMEDİĞİ).
+ * v0.10 — TAMAMEN YENİDEN YAZILDI (bkz. görev talimatı Bölüm B): eski
+ * "yalnız merkez hamlesi → deterministik beyaz köşe hamlesi → merkez/köşe
+ * karşılaştırma sorusu" akışı KALDIRILDI. Artık beyaz taş, corner-move
+ * policy'si, karşılaştırma sorusu ve bunlara özgü event'ler YOK. Kullanıcı
+ * yalnız KENDİ seçtiği konumları inceler; pedagojik hedef, en az İKİ
+ * FARKLI bölge türünde (köşe/kenar/iç) geçerli bir taş yerleştirmektir —
+ * merkeze veya belirli bir sıraya ZORLANMAZ.
  *
- * scene01BoardIntro.js/scene02TurnsAndIntersections.js İLE AYNI desen:
- * {id,version,title,curriculumRef,mount,unmount,canComplete,complete}
- * sözleşmesini uygular, kendi (oturumluk) durumunu modül-seviyesi kapalı
- * değişkenlerde tutar — persistence YALNIZ scene COMPLETION'da olur.
+ * Bölge sınıflandırması scenes/boardZones.js'in saf classifyBoardZone()'u
+ * ile yapılır — YALNIZ pedagojik etiket/keşif takibi için; GERÇEK nefes
+ * sayısı HER ZAMAN adapters/sceneBoardAdapter.js'in getLibertiesAt()
+ * (core/ruleEngine.js) sonucudur, asla sabit metinden türetilmez.
  *
- * Beyazın köşe hamlesi Claude/LLM/proxy'ye BAĞLI DEĞİLDİR —
- * scenes/cornerMovePolicy.js'deki saf, deterministik
- * `pickDeterministicCornerMove()` kullanılır.
+ * Yeşil neon "rehber" sistemi GERİ GETİRİLMEDİ — kullanıcı kesişimleri
+ * doğal tahta çizgileri ve taşın gerçek yerleşme davranışıyla bulur.
+ * Nefes vurguları (ince, içi boş, kehribar tonlu halkalar) YALNIZ
+ * kullanıcının SEÇTİĞİ taş için gösterilir, "oynanabilir hedef" DEĞİLDİR.
  *
- * Nefes noktası vurguları (adapters/sceneBoardAdapter.js'in
- * getLibertiesAt/showLiberties/clearLiberties API'si) YALNIZ pedagojik
- * bilgilendirmedir — Sahne #2'den kaldırılan "rehber" (oynanabilir hedef
- * işareti) sistemiyle KARIŞTIRILMAMALI, o sistem GERİ GETİRİLMEDİ.
- *
- * Zamanlamalar (nefes gösterimi süresi, beyazın gecikmesi, geçiş
- * gecikmesi) testlerin gerçek zamanlı BEKLEMEMESİ için `context.
- * centerLibertyDisplayMs` / `context.whiteCornerDelayMs` /
- * `context.transitionDelayMs` / `context.scheduleTimeout` /
- * `context.clearScheduledTimeout` üzerinden enjekte edilebilir; hiçbiri
- * verilmezse üretim varsayılanları (450–700ms aralığı) kullanılır.
+ * Konu sonu (en az iki farklı bölge görüldüğünde) ORTAK
+ * scenes/topicEndControls.js kullanır (bkz. görev talimatı Bölüm A).
  */
 
-import { pickDeterministicCornerMove } from './cornerMovePolicy.js';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './boardZones.js';
+import { mountTopicEndControls } from './topicEndControls.js';
 
 const STATE = {
   INTRO: 'intro',
-  AWAITING_CENTER_MOVE: 'awaiting_center_move',
-  SHOWING_CENTER_LIBERTIES: 'showing_center_liberties',
-  WHITE_THINKING: 'white_thinking',
-  COMPARISON_QUESTION: 'comparison_question', // köşe nefesleri de bu state'te gösterilir
-  TRANSITION: 'transition',
+  AWAITING_MOVE: 'awaiting_move',
+  SHOWING_RESULT: 'showing_result', // "ready_for_retry_or_continue" ile aynı an — ek zamanlayıcı yok
 };
 
 const INTRO_TEXT = 'Bir taşın yatay ve dikey komşu boş noktalarına nefes noktası denir.';
-const CENTER_INSTRUCTION = 'Şimdi siyah taşı tahtanın merkezine yerleştir.';
-const CENTER_WRONG_FEEDBACK = 'Tahtanın tam ortasındaki kesişimi dene.';
-const WHITE_THINKING_TEXT = 'Beyaz köşeyi deniyor…';
-const COMPARISON_QUESTION_TEXT = 'Hangisinin nefes noktası daha az?';
-const COMPARISON_WRONG_FEEDBACK = 'Tahtanın kenarları taşın çevresindeki boş yönleri azaltır. Bir daha bak.';
-const COMPARISON_CORRECT_TEXT = 'Doğru. Köşede yalnızca iki nefes yönü vardır.';
-const TRANSITION_TEXT = 'Taşın tahtadaki yeri, sahip olduğu nefes sayısını değiştirir.';
+const MOVE_INSTRUCTION = 'Tahtada istediğin boş kesişime siyah bir taş yerleştir.';
+const ZONE_SUBJECT = { corner: 'Köşedeki', edge: 'Kenardaki', interior: 'Tahtanın içindeki' };
+const ZONE_ACCUSATIVE = { corner: 'köşeyi', edge: 'kenarı', interior: 'tahtanın içini' };
+const REQUIRED_DISTINCT_ZONES = 2;
+const SUMMARY_TEXT = 'Taşın konumu, sahip olduğu nefes sayısını değiştirir.';
 
-const CENTER_LIBERTY_DISPLAY_MS = 700;
-const DEFAULT_WHITE_CORNER_DELAY_MS = 550; // 450–700ms aralığının ortası
-const CORNER_LIBERTY_DISPLAY_MS = 250; // köşe halkaları görünür olsun diye kısa bir an, ardından soru
-const TRANSITION_DELAY_MS = 700;
-
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function resultText(zone, count) {
+  return `${ZONE_SUBJECT[zone]} taşın ${count} nefes noktası var.`;
+}
+function suggestUnseenZone(zonesSeen) {
+  const unseen = ['corner', 'edge', 'interior'].filter(z => !zonesSeen.has(z));
+  if (unseen.length === 0 || unseen.length === 3) return '';
+  return `Bir de ${unseen.map(z => ZONE_ACCUSATIVE[z]).join(' veya ')} deneyebilirsin.`;
 }
 
 // Yalnız bu modülün kendi bellek-içi (oturumluk) durumu — mount() her
 // zaman sıfırlar, unmount() temizler.
 let state = STATE.INTRO;
-let centerPoint = null;
-let cornerPoint = null;
-let feedbackText = '';
-let comparisonCorrect = false;
-let answering = false;
+let zonesSeen = new Set();
+let unlockedEmitted = false;
+let topicEnded = false;
+let topicEnd = null;
 let els = null;
 let cleanupFns = [];
 let unsubscribeTap = null;
-let pendingTimerId = null;
-let clearScheduledTimeoutFn = clearTimeout;
 
 function resetState() {
   state = STATE.INTRO;
-  centerPoint = null;
-  cornerPoint = null;
-  feedbackText = '';
-  comparisonCorrect = false;
-  answering = false;
+  zonesSeen = new Set();
+  unlockedEmitted = false;
+  topicEnded = false;
+  topicEnd = null;
   unsubscribeTap = null;
-  pendingTimerId = null;
-  clearScheduledTimeoutFn = clearTimeout;
-}
-
-function schedule(context, fn, ms) {
-  const scheduleFn = context.scheduleTimeout ?? ((f, d) => setTimeout(f, d));
-  clearScheduledTimeoutFn = context.clearScheduledTimeout ?? clearTimeout;
-  pendingTimerId = scheduleFn(() => { pendingTimerId = null; fn(); }, ms);
 }
 
 function render() {
   if (!els) return;
   els.introRow.hidden = state !== STATE.INTRO;
-  els.playRow.hidden = state === STATE.INTRO;
+  els.playRow.hidden = state === STATE.INTRO || topicEnded;
+  if (topicEnded) return;
 
-  els.choicesEl.hidden = !(state === STATE.COMPARISON_QUESTION && els.questionRevealed);
-  els.continueBtn.hidden = !(state === STATE.TRANSITION && comparisonCorrect && els.transitionRevealed);
-  els.statusEl.classList.toggle('success', state === STATE.TRANSITION);
-  els.feedbackEl.textContent = feedbackText;
+  els.retryBtn.hidden = state !== STATE.SHOWING_RESULT;
+  els.nextBtn.hidden = state !== STATE.SHOWING_RESULT;
+  if (state === STATE.SHOWING_RESULT) {
+    els.nextBtn.disabled = zonesSeen.size < REQUIRED_DISTINCT_ZONES;
+  }
 
-  switch (state) {
-    case STATE.AWAITING_CENTER_MOVE:
-      els.statusEl.textContent = CENTER_INSTRUCTION;
-      break;
-    case STATE.SHOWING_CENTER_LIBERTIES:
-      break; // statusEl metni updateAfterCenterLiberties() içinde gerçek sayıyla ayarlanır
-    case STATE.WHITE_THINKING:
-      els.statusEl.textContent = WHITE_THINKING_TEXT;
-      break;
-    case STATE.COMPARISON_QUESTION:
-      break; // statusEl metni updateAfterCornerLiberties() içinde gerçek sayıyla ayarlanır
-    case STATE.TRANSITION:
-      els.statusEl.textContent = els.transitionRevealed ? TRANSITION_TEXT : COMPARISON_CORRECT_TEXT;
-      break;
-    default:
-      break;
+  if (state === STATE.AWAITING_MOVE) {
+    els.statusEl.textContent = MOVE_INSTRUCTION;
+    els.captionEl.textContent = '';
   }
 }
 
 function handleTap(context, { row, col }) {
-  if (state !== STATE.AWAITING_CENTER_MOVE) return;
-  const isCenter = row === centerPoint.row && col === centerPoint.col;
-  context.emit('scene_center_move_attempted', { row, col, correct: isCenter });
-
-  if (!isCenter) {
-    feedbackText = CENTER_WRONG_FEEDBACK;
-    render();
-    return; // taş KALICI YERLEŞTİRİLMEZ, completion ilerlemez
-  }
-  if (!context.boardAdapter.isLegalMove({ row, col, color: 'black' })) return; // savunma amaçlı, pratikte hep yasal
+  if (state !== STATE.AWAITING_MOVE) return;
+  if (!context.boardAdapter.isLegalMove({ row, col, color: 'black' })) return; // dolu/tahta dışı — hamle sayılmaz
   const result = context.boardAdapter.playMove({ row, col, color: 'black' });
   if (!result.ok) return;
 
-  context.emit('scene_move_played', { moveNumber: 1, color: 'black', row, col });
-  feedbackText = '';
+  const size = context.boardAdapter.getSize();
+  const zone = classifyBoardZone({ row, col, size });
+  context.emit('scene_move_played', { row, col, zone });
+
+  // Girdi, sonuç gösterilirken GEÇİCİ olarak kilitlenir — yeni bir taş
+  // ancak "Başka bir noktayı dene" ile yeniden mümkün olur.
   context.boardAdapter.setInputEnabled(false);
-  if (unsubscribeTap) { unsubscribeTap(); unsubscribeTap = null; }
 
   const libs = context.boardAdapter.getLibertiesAt({ row, col });
+  const count = libs.length;
+  // Güvenlik ağı: sabit pedagojik beklentiyle gerçek sonuç UYUŞMAZSA asla
+  // sessizce yanlış bilgi gösterme — metin HER ZAMAN gerçek `count`'u
+  // kullanır, bu yalnız teşhis amaçlı bir konsol uyarısıdır.
+  if (EXPECTED_LIBERTY_COUNT_BY_ZONE[zone] !== count) {
+    // eslint-disable-next-line no-console
+    console.warn('[scene-03-liberties-by-position] beklenmeyen nefes sayısı', { zone, expected: EXPECTED_LIBERTY_COUNT_BY_ZONE[zone], actual: count, row, col });
+  }
   context.boardAdapter.showLiberties(libs);
-  context.emit('scene_liberties_shown', { target: 'center', row, col, count: libs.length });
-  els.statusEl.textContent = `Merkezdeki taşın ${libs.length} nefes noktası var.`;
-  state = STATE.SHOWING_CENTER_LIBERTIES;
-  render();
+  context.emit('scene_liberties_shown', { row, col, zone, libertyCount: count });
 
-  schedule(context, () => beginWhiteTurn(context), context.centerLibertyDisplayMs ?? CENTER_LIBERTY_DISPLAY_MS);
-}
-
-function beginWhiteTurn(context) {
-  state = STATE.WHITE_THINKING;
-  context.boardAdapter.focus('corner_tl');
-  render();
-  schedule(context, () => playWhiteCornerMove(context), context.whiteCornerDelayMs ?? DEFAULT_WHITE_CORNER_DELAY_MS);
-}
-
-function playWhiteCornerMove(context) {
-  const candidate = pickDeterministicCornerMove({
-    isLegalMove: (row, col) => context.boardAdapter.isLegalMove({ row, col, color: 'white' }),
-    size: context.boardAdapter.getSize(),
-  });
-  if (!candidate) return; // savunma amaçlı; bu sahnede (tek taşlı tahta) pratikte imkansız
-  const result = context.boardAdapter.playMove({ row: candidate.row, col: candidate.col, color: 'white' });
-  if (!result.ok) return;
-
-  cornerPoint = candidate;
-  context.emit('scene_move_played', { moveNumber: 2, color: 'white', row: candidate.row, col: candidate.col });
-
-  context.boardAdapter.clearLiberties(); // merkez taşının vurgusu artık kaldırılır
-  const libs = context.boardAdapter.getLibertiesAt({ row: candidate.row, col: candidate.col });
-  context.boardAdapter.showLiberties(libs);
-  context.emit('scene_liberties_shown', { target: 'corner', row: candidate.row, col: candidate.col, count: libs.length });
-
-  els.statusEl.textContent = `Köşedeki taşın yalnızca ${libs.length} nefes noktası var.`;
-  els.questionRevealed = false;
-  state = STATE.COMPARISON_QUESTION;
-  render();
-
-  schedule(context, () => {
-    els.statusEl.textContent = COMPARISON_QUESTION_TEXT;
-    els.questionRevealed = true;
-    render();
-  }, CORNER_LIBERTY_DISPLAY_MS);
-}
-
-function handleComparisonAnswer(context, choice) {
-  if (state !== STATE.COMPARISON_QUESTION || answering) return;
-  const correct = choice === 'corner';
-  context.emit('scene_comparison_answered', { correct, choice });
-
-  if (!correct) {
-    feedbackText = COMPARISON_WRONG_FEEDBACK;
-    render();
-    return; // scene İLERLEMEZ, nefes göstergeleri KORUNUR
+  zonesSeen.add(zone);
+  if (zonesSeen.size >= REQUIRED_DISTINCT_ZONES && !unlockedEmitted) {
+    unlockedEmitted = true;
+    context.emit('scene_completion_unlocked', {});
   }
 
-  answering = true;
-  feedbackText = '';
-  comparisonCorrect = true;
-  context.emit('scene_completion_unlocked', {});
-  state = STATE.TRANSITION;
-  els.transitionRevealed = false;
+  els.statusEl.textContent = resultText(zone, count);
+  els.captionEl.textContent = zonesSeen.size < REQUIRED_DISTINCT_ZONES ? suggestUnseenZone(zonesSeen) : '';
+  state = STATE.SHOWING_RESULT;
   render();
+}
 
-  schedule(context, () => {
-    els.transitionRevealed = true;
-    render();
-  }, context.transitionDelayMs ?? TRANSITION_DELAY_MS);
+function retry(context) {
+  if (state !== STATE.SHOWING_RESULT) return;
+  context.boardAdapter.reset(); // taşı + liberty halkalarını temizler
+  context.emit('scene_position_retry_started', {});
+  context.boardAdapter.setInputEnabled(true);
+  state = STATE.AWAITING_MOVE;
+  render();
+}
+
+function goToNextTopic(context) {
+  if (state !== STATE.SHOWING_RESULT || zonesSeen.size < REQUIRED_DISTINCT_ZONES || topicEnded) return;
+  topicEnded = true;
+  context.boardAdapter.setInputEnabled(false);
+  if (unsubscribeTap) { unsubscribeTap(); unsubscribeTap = null; }
+  topicEnd = mountTopicEndControls(context, { summaryText: SUMMARY_TEXT });
+  render();
 }
 
 function buildDom(context) {
@@ -221,7 +153,7 @@ function buildDom(context) {
   root.className = 'ls-strip-root';
   root.innerHTML = `
     <div class="ls-strip-row ls-strip-fade" id="s03-intro">
-      <p class="ls-strip-text">${escapeHtml(INTRO_TEXT)}</p>
+      <p class="ls-strip-text">${INTRO_TEXT}</p>
       <span class="ls-tick-wrap">
         <button type="button" class="ls-tick" id="s03-confirm" aria-label="Bilgiyi onayla">
           <svg class="ls-tick-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
@@ -231,28 +163,22 @@ function buildDom(context) {
     </div>
     <div class="ls-strip-row" id="s03-play" hidden>
       <span class="ls-strip-status" id="s03-status" role="status" aria-live="polite"></span>
-      <span class="ls-strip-caption" id="s03-feedback" role="status" aria-live="polite"></span>
-      <div class="ls-choices" id="s03-choices" hidden>
-        <button type="button" class="ls-choice" data-choice="center">Merkezdeki siyah taş</button>
-        <button type="button" class="ls-choice" data-choice="corner">Köşedeki beyaz taş</button>
-      </div>
-      <button type="button" class="ls-strip-btn" id="s03-continue" hidden>Devam et</button>
+      <span class="ls-strip-caption" id="s03-caption"></span>
+      <button type="button" class="ls-strip-btn ls-strip-btn--ghost" id="s03-retry" hidden>Başka bir noktayı dene</button>
+      <button type="button" class="ls-strip-btn" id="s03-next" hidden disabled>Sonraki konu</button>
     </div>
   `;
   context.container.appendChild(root);
 
   return {
     root,
-    transitionRevealed: false,
-    questionRevealed: false,
     introRow: root.querySelector('#s03-intro'),
     confirmBtn: root.querySelector('#s03-confirm'),
     playRow: root.querySelector('#s03-play'),
     statusEl: root.querySelector('#s03-status'),
-    feedbackEl: root.querySelector('#s03-feedback'),
-    choicesEl: root.querySelector('#s03-choices'),
-    choiceBtns: Array.from(root.querySelectorAll('.ls-choice')),
-    continueBtn: root.querySelector('#s03-continue'),
+    captionEl: root.querySelector('#s03-caption'),
+    retryBtn: root.querySelector('#s03-retry'),
+    nextBtn: root.querySelector('#s03-next'),
   };
 }
 
@@ -264,7 +190,7 @@ function on(el, type, handler) {
 export const scene03LibertiesByPosition = {
   id: 'scene-03-liberties-by-position',
   version: 1,
-  title: 'Konuma Göre Nefes Noktaları',
+  title: 'Taşların Nefesi',
   curriculumRef: { lessonId: 'l1', concept: 'liberty' },
 
   mount(context) {
@@ -280,11 +206,6 @@ export const scene03LibertiesByPosition = {
     context.boardAdapter.setInputEnabled(false);
     context.boardAdapter.clearLiberties();
 
-    // 9×9 için gerçek merkez koordinatı — board adaptörünün RAPORLADIĞI
-    // gerçek boyuttan türetilir, sahne modülünde sabit/canvas hesabı YOK.
-    const size = context.boardAdapter.getSize();
-    centerPoint = { row: Math.floor(size / 2), col: Math.floor(size / 2) };
-
     let confirming = false;
     on(els.confirmBtn, 'click', () => {
       if (confirming || state !== STATE.INTRO) return;
@@ -295,7 +216,7 @@ export const scene03LibertiesByPosition = {
       const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const doAdvance = () => {
         context.emit('scene_intro_confirmed', {});
-        state = STATE.AWAITING_CENTER_MOVE;
+        state = STATE.AWAITING_MOVE;
         context.boardAdapter.setInputEnabled(true);
         unsubscribeTap = context.boardAdapter.onIntersectionTap(hit => handleTap(context, hit));
         render();
@@ -305,17 +226,8 @@ export const scene03LibertiesByPosition = {
       setTimeout(doAdvance, 220);
     });
 
-    els.choiceBtns.forEach(btn => {
-      on(btn, 'click', () => handleComparisonAnswer(context, btn.dataset.choice));
-    });
-
-    on(els.continueBtn, 'click', () => {
-      if (els.continueBtn.hidden) return;
-      const result = context.requestComplete();
-      if (result?.advance?.done) {
-        context.container.dispatchEvent(new CustomEvent('scene:all-complete', { bubbles: true }));
-      }
-    });
+    on(els.retryBtn, 'click', () => retry(context));
+    on(els.nextBtn, 'click', () => goToNextTopic(context));
 
     render();
   },
@@ -324,14 +236,15 @@ export const scene03LibertiesByPosition = {
     cleanupFns.forEach(fn => fn());
     cleanupFns = [];
     if (unsubscribeTap) { unsubscribeTap(); unsubscribeTap = null; }
-    if (pendingTimerId != null) { clearScheduledTimeoutFn(pendingTimerId); pendingTimerId = null; }
+    topicEnd?.destroy();
+    topicEnd = null;
     els?.root?.remove();
     els = null;
     resetState();
   },
 
   canComplete() {
-    return comparisonCorrect;
+    return zonesSeen.size >= REQUIRED_DISTINCT_ZONES;
   },
 
   complete() {
