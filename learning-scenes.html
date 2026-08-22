@@ -48,6 +48,7 @@ import { createSceneRegistry } from './scenes/sceneRegistry.js';
 import { scene01BoardIntro } from './scenes/scene01BoardIntro.js';
 import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js';
 import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js';
 import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js';
 import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js';
 import { EventLog } from './core/eventLog.js';
@@ -78,7 +79,7 @@ const canvas = document.getElementById('ls-canvas');
 const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
 const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19 });
 
-const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition]);
+const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties]);
 
 const searchParams = new URLSearchParams(location.search);
 

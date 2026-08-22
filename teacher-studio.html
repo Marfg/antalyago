@@ -231,6 +231,8 @@ import { createSceneRegistry } from './scenes/sceneRegistry.js';
 import { scene01BoardIntro } from './scenes/scene01BoardIntro.js';
 import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js';
 import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js';
+import { getAnchor, getConnectionTargets, matchesCurriculumSeed } from './scenes/groupLibertyPolicy.js';
 import { validateCandidateOrder } from './scenes/turnPolicy.js';
 import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js';
 import { BoardState } from './core/boardState.js';
@@ -243,7 +245,7 @@ import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js';
    yalnız statik metadata'larını (id/version/curriculumRef) registry
    üzerinden okur — mevcut Curriculum/Diagnostics/Event Log panelleri
    genişletildi, yeni bir dashboard YOK. */
-const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition]);
+const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties]);
 
 /* ── localStorage erişimi — ogren-3d.html İLE AYNI anahtarlar ──────
    Studio kendi core mantığını YAZMAZ; yalnızca aynı adaptör deseniyle
@@ -826,6 +828,69 @@ function renderSceneDiagnostics() {
     }
     if (!adapterSrc.includes('setMovePreview') || !adapterSrc.includes('clearMovePreview')) {
       rows.push(`<tr><td>${scene03LibertiesByPosition.id}</td><td>MISSING_MOVE_PREVIEW_API</td></tr>`);
+    }
+  }
+
+  // Sahne #4 — "Grubun Nefesi" (core/curriculum.js l2.steps[2] — bkz.
+  // scenes/groupLibertyPolicy.js). Koordinatlar SAHNE İLE AYNI paylaşılan
+  // saf politika modülünden okunur — burada ikinci kez sabitlenmez (bkz.
+  // görev talimatı: "Teacher Studio içine sahne mantığının ikinci
+  // kopyasını hard-code etme"). Bu sahne müfredatın KENDİ iddiasını (3
+  // bitişik doğrusal taş → birlikte 8 nefes noktası) statik metinden
+  // DEĞİL, gerçek core/ruleEngine.js hesabından üretir — Studio burada
+  // sahneyi mount ETMEDEN, aynı çapa+hedef noktalarını saf BoardState
+  // üzerinde bağımsızca yeniden kurup doğrular.
+  {
+    const anchor = getAnchor();
+    const targets = getConnectionTargets();
+    if (!anchor || targets.length !== 2) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>INVALID_CURRICULUM_SEED_SHAPE:anchor=${JSON.stringify(anchor)} targets=${targets.length}</td></tr>`);
+    } else {
+      // stepIndex:2 referansı gerçek bir adıma mı gidiyor? — ALL_LESSONS
+      // üzerinden l2 dersinin 3. (index 2) adımının VAR olduğunu doğrula.
+      const l2 = ALL_LESSONS.find(x => x.lesson.id === scene04GroupLiberties.curriculumRef?.lessonId);
+      const referencedStep = l2?.lesson?.steps?.[scene04GroupLiberties.curriculumRef?.stepIndex];
+      if (!referencedStep) {
+        rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>UNKNOWN_CURRICULUM_STEP:stepIndex=${scene04GroupLiberties.curriculumRef?.stepIndex}</td></tr>`);
+      } else if (!Array.isArray(referencedStep.board) || referencedStep.board.length !== 3) {
+        rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>CURRICULUM_STEP_BOARD_NOT_THREE_STONES:count=${referencedStep.board?.length ?? 0}</td></tr>`);
+      }
+
+      // Sahnenin çapa + nihai iki hedefi curriculum board ile BİREBİR eşleşiyor mu?
+      const finalPlaced = [anchor, ...targets];
+      if (!matchesCurriculumSeed(finalPlaced)) {
+        rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>SCENE_TARGETS_DO_NOT_MATCH_CURRICULUM_SEED</td></tr>`);
+      }
+
+      // Çapa TEK BAŞINA: grup boyutu 1, gerçek nefes 4.
+      const anchorOnly = new BoardState(9);
+      anchorOnly.placeStone(anchor.col, anchor.row, 'black');
+      const anchorGroup = getGroup(anchorOnly, anchor.col, anchor.row);
+      const anchorLibs = getLiberties(anchorOnly, anchorGroup).size;
+      if (anchorGroup.size !== 1 || anchorLibs !== 4) {
+        rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>UNEXPECTED_ANCHOR_RESULT:groupSize=${anchorGroup.size} liberty=${anchorLibs} (beklenen 1/4)</td></tr>`);
+      }
+
+      // İlk bağlantı: grup boyutu 2, gerçek nefes 6.
+      const afterFirst = new BoardState(9);
+      afterFirst.placeStone(anchor.col, anchor.row, 'black');
+      afterFirst.placeStone(targets[0].col, targets[0].row, 'black');
+      const firstGroup = getGroup(afterFirst, anchor.col, anchor.row);
+      const firstLibs = getLiberties(afterFirst, firstGroup).size;
+      if (firstGroup.size !== 2 || firstLibs !== 6) {
+        rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>UNEXPECTED_FIRST_CONNECTION_RESULT:groupSize=${firstGroup.size} liberty=${firstLibs} (beklenen 2/6)</td></tr>`);
+      }
+
+      // Nihai (ikinci) bağlantı: grup boyutu 3, doğrusal, gerçek nefes 8.
+      const final = new BoardState(9);
+      final.placeStone(anchor.col, anchor.row, 'black');
+      final.placeStone(targets[0].col, targets[0].row, 'black');
+      final.placeStone(targets[1].col, targets[1].row, 'black');
+      const finalGroup = getGroup(final, anchor.col, anchor.row);
+      const finalLibs = getLiberties(final, finalGroup).size;
+      if (finalGroup.size !== 3 || finalLibs !== 8) {
+        rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>UNEXPECTED_FINAL_GROUP_RESULT:groupSize=${finalGroup.size} liberty=${finalLibs} (beklenen 3/8, curriculum l2.steps[2])</td></tr>`);
+      }
     }
   }
 
