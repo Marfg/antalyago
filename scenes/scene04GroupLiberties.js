@@ -25,6 +25,15 @@
  * v0.16 (eski, artık geçersiz): sabit `(4,3)→(4,4)→(4,5)` sırası +
  * `matchesCurriculumSeed()` completion şartı — bkz. yukarıdaki not.
  *
+ * v0.18 — `version: 3 → 4`. Davranış AYNI (v0.17'nin serbest keşif
+ * mantığı değişmedi) — yalnız GitHub Pages/CDN'in .js dosyalarına
+ * uyguladığı saatlerce süren Cache-Control yüzünden bir kullanıcının
+ * tarayıcısında hâlâ ÖNCEKİ (sıralı/zorunlu) modülün çalışıyor olabildiği
+ * kök neden düzeltmesinin bir parçası (bkz. core/releaseVersion.js,
+ * scripts/stamp-scene-release.mjs). `sceneVersion:4` event payload'ında
+ * görünür — Diagnostics/Event Log'da "gerçekten yeni kod mu çalışıyor"
+ * ayrımını KANITLANABİLİR yapar.
+ *
  * TERMİNOLOJİ (bkz. görev talimatı Bölüm 1): kullanıcıya gösterilen HİÇBİR
  * metinde "özgürlük/özgürlüğü/serbestlik" veya İngilizce "liberty/liberties"
  * KULLANILMAZ — yalnız "nefes noktası"/"nefes noktaları". İç teknik
@@ -36,8 +45,8 @@
  * üzerinden getLibertiesAt) gerçek sonucudur — sabit metinden ÜRETİLMEZ.
  */
 
-import { mountTopicEndControls } from './topicEndControls.js';
-import { ANCHOR, MIN_GROUP_SIZE, MAX_GROUP_SIZE, shapeSignature, isConnectedSingleGroup } from './groupLibertyPolicy.js';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-08-23.2';
+import { ANCHOR, MIN_GROUP_SIZE, MAX_GROUP_SIZE, shapeSignature, isConnectedSingleGroup } from './groupLibertyPolicy.js?v=2026-08-23.2';
 
 const STATE = {
   INTRO: 'intro',
@@ -223,7 +232,7 @@ function on(el, type, handler) {
 
 export const scene04GroupLiberties = {
   id: 'scene-04-group-liberties',
-  version: 3,
+  version: 4,
   title: 'Grubun Nefesi',
   curriculumRef: { lessonId: 'l2', concept: 'liberty', stepIndex: 2 },
 
