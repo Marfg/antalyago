@@ -238,7 +238,16 @@ body {
 .ls-strip-btn {
   flex: 0 0 auto; padding: .55rem 1.1rem; border-radius: 8px; min-height: 44px;
   border: 1px solid var(--gborder); background: rgba(200, 168, 75, .1); color: var(--muted);
-  font-size: .78rem; font-weight: 700; cursor: pointer; transition: all .18s; font-family: inherit;
+  font-size: .78rem; font-weight: 700; cursor: pointer; font-family: inherit;
+  /* v0.19 — kök neden düzeltmesi: `transition: all` daha önce `visibility`yi
+     de (bkz. .s05-continue--waiting) kapsıyordu — bu, Sahne #5'in "Devam"
+     düğmesi hidden→visible geçişinde `.focus()`'un GERÇEK tarayıcıda
+     (ölçüldü, Chromium) senkron/rAF ertelemeli hiçbir biçimde TUTMAMASINA
+     yol açıyordu (odak sessizce <body>'de kalıyordu — bkz. görev talimatı
+     H24). Yalnız GERÇEKTEN animasyonlu özellikler (renk/kenarlık/opaklık)
+     adlandırılarak `visibility`nin transition kapsamı DIŞINDA kalması
+     sağlandı — görsel davranış (hover/disabled geçişleri) DEĞİŞMEDİ. */
+  transition: background-color .18s, border-color .18s, color .18s, opacity .18s, filter .18s;
 }
 .ls-strip-btn:disabled { cursor: default; opacity: .5; }
 .ls-strip-btn:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--dark); }
@@ -272,6 +281,129 @@ body {
 .ls-strip-fade.ls-closing { opacity: 0; transform: translateY(-4px); }
 @media (prefers-reduced-motion: reduce) {
   .ls-strip-fade, .ls-strip-fade.ls-closing { transition: none; }
+}
+
+/* Sahne #5 İÇ değerlendirme geçişi (bkz. scenes/assessmentTransition.js) —
+   GERÇEK sahne geçişi DEĞİL, yalnız aynı sahnenin 1/5→5/5 içerik swap'ı.
+   90ms fade-out / 110ms fade-in — scenes/assessmentTransition.js'teki
+   FADE_OUT_MS/FADE_IN_MS ile AYNI süreler. */
+.ls-assessment-fade-out { opacity: 0; transition: opacity .09s ease; }
+.ls-assessment-fade-in { opacity: 0; animation: ls-assessment-fade-in-kf .11s ease forwards; }
+@keyframes ls-assessment-fade-in-kf { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .ls-assessment-fade-out, .ls-assessment-fade-in { transition: none; animation: none; opacity: 1; }
+}
+
+/* v0.19d — kök neden düzeltmesi: #ls-narration'ın `align-items:center`i
+   (bkz. dosya başı), Sahne #5'in dört bloklu düzeni GERÇEKTEN
+   `--narration-h` bütçesini aşınca (ör. uzun geri bildirim metni + dar
+   mobil genişlik) taşan içeriği YUKARI DOĞRU da merkezliyordu — scrollTop
+   varsayılan 0'dan NEGATİFE inemediği için üst taşma ERİŞİLEMEZ biçimde
+   gizleniyordu (bkz. görev talimatı: "hiçbir viewport'ta kırpılma/taşma
+   olmamalı"). `align-self:flex-start`, YALNIZ Sahne #5 mount'luyken
+   (bkz. scene05LibertyAssessment.js mount/unmount — sınıf ekleyip
+   kaldırıyor) `#ls-scene-host`u üstten hizalar; taşma varsa artık YALNIZ
+   aşağıya (kaydırılabilir `#ls-narration` alanına) doğru olur. Sahne #1-4
+   BU KURALDAN ETKİLENMEZ (sınıf yalnız Sahne #5'e özgü). */
+#ls-scene-host.s05-scene-host { align-self: flex-start; justify-content: flex-start; }
+
+/* ── Sahne #5 — değerlendirme aşamaları (bkz. scenes/scene05LibertyAssessment.js) ──
+   v0.19 — kök neden düzeltmesi: #s05-assess, miras aldığı `.ls-strip-row`nun
+   TEK SATIRLIK flex-wrap paketleme davranışını kullanıyordu — progress/
+   content/feedback/continue GİBİ genişliği birbirinden ÇOK farklı DÖRT
+   öğe aynı satıra paketlenmeye çalışılıyordu. `#s05-feedback` boşken
+   (0px genişlik) ile doluyken (ör. ~236px) paketleme deseni TAMAMEN
+   değişiyordu (hangi öğe hangi satıra düşüyor) — bu da satır SAYISINI
+   (ve dolayısıyla #ls-scene-host'un GERÇEK yüksekliğini) öğeden öğeye
+   SIÇRATIYORDU (ölçüldü: 141.5px → 89.5px, bkz. görev talimatı H14/H15).
+   Kalıcı çözüm: bu satırı KENDİ dikey (column) yerleşimine ÇEVİRMEK —
+   her öğe HER ZAMAN kendi satırını alır, bu yüzden hangi öğenin hangi
+   satıra "paketlendiği" sorusu bir daha hiç OLUŞMAZ (yalnız her öğenin
+   KENDİ min-height'ı önemli kalır — feedback/continue için bu zaten
+   ayrıca REZERVE EDİLDİ, bkz. altta). */
+/* v0.19b — kök neden düzeltmesi #2: yukarıdaki column geçişi satır-paketleme
+   sıçramasını çözdü AMA satırın TOPLAM yüksekliğini (~191px) paylaşılan
+   `--narration-h` (clamp 96–130px, bkz. dosya başı) bütçesinin ÇOK üstüne
+   çıkardı — sonuç: `#ls-narration`nun `align-items:center` + sabit
+   `height` + `overflow-y:auto` birleşimi taşan içeriği YUKARI DOĞRU da
+   taşırıyordu (scrollTop varsayılan 0'da negatife inemediği için üst
+   taşma HİÇ görünmüyordu — ölçüldü: progress göstergesi board'un
+   ALTINDA/ARKASINDA gizli kalıyordu). Kalıcı çözüm İKİ parçalı:
+   1) İlerleme göstergesi kendi AKIŞ satırını almaz — üst-sağ köşede
+      mutlak konumlu KÜÇÜK bir rozet olur (bkz. görev talimatı: "ekranı
+      sıkıştırmayan basit bir ilerleme göstergesi").
+   2) Geri bildirim metni + "Devam" düğmesi TEK satırda birleşir (bkz.
+      scene05LibertyAssessment.js .s05-feedback-row sarmalayıcı) — önceden
+      İKİ ayrı dikey satırdı. */
+#s05-assess { position: relative; flex-direction: column; align-items: stretch; gap: .2rem; padding-top: .2rem; }
+.s05-progress {
+  position: absolute; top: -.15rem; right: 0;
+  display: flex; align-items: center; gap: .35rem; font-size: .66rem; color: var(--text); opacity: .68;
+}
+.s05-progress-dots { display: flex; gap: .25rem; }
+.s05-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gborder); }
+.s05-dot--active { background: var(--gold); }
+.s05-dot--done { background: var(--green); }
+/* v0.19c — choice tipi öğeler (prompt+seçenekler) ile board_tap tipi
+   öğeler (prompt+tek ipucu satırı) DOĞAL olarak farklı yükseklikte —
+   bu fark düzeltilmezse öğe TÜRÜ değiştiğinde (ör. 2/5→3/5) #ls-scene-host
+   yine sıçrardı (ölçüldü: 116.5px → 98.125px). choice tipinin GERÇEK
+   yüksekliği taban alınarak min-height REZERVE edildi — tüm öğe türleri
+   AYNI toplam satır yüksekliğini paylaşır. */
+.s05-content { min-height: 52px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+.s05-item { display: flex; flex-direction: column; align-items: stretch; gap: .2rem; }
+.s05-prompt { margin: 0; font-size: .84rem; line-height: 1.25; color: var(--text); }
+.s05-prompt p { margin: 0; }
+.s05-choice-options { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; }
+.s05-feedback-row {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .4rem .7rem;
+}
+.s05-choice-btn {
+  padding: .35rem .8rem; border: 1px solid var(--gborder); background: var(--glass);
+  color: var(--text); border-radius: 8px; font-size: .84rem; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: border-color .16s, background .16s, color .16s;
+}
+.s05-choice-btn:hover:not(:disabled) { border-color: var(--gold); }
+.s05-choice-btn:focus-visible { outline: 2px solid var(--gold2); outline-offset: 2px; }
+.s05-choice-btn:disabled { cursor: default; opacity: .7; }
+.s05-choice-btn--correct { border-color: var(--green); background: rgba(62, 207, 128, .16); color: var(--green); opacity: 1; }
+.s05-choice-btn--wrong { border-color: #e2726b; background: rgba(226, 114, 107, .14); color: #e2726b; }
+.s05-tap-hint { margin: 0; font-size: .78rem; color: var(--text); opacity: .78; }
+.s05-feedback { margin: 0; font-size: .8rem; font-weight: 600; line-height: 1.1; min-height: 1.1em; text-align: center; }
+.s05-feedback--ok { color: var(--green); }
+.s05-feedback--err { color: #e2726b; }
+/* v0.19 — #s05-continue'ün doğru cevaptan ÖNCE/SONRA `hidden` özniteliğiyle
+   açılıp kapanması UA varsayılan `[hidden]{display:none}` kuralı yüzünden
+   düğmenin TÜM kutusunu (bkz. .ls-strip-btn min-height:44px) yok ediyordu —
+   bu da her öğe geçişinde #ls-scene-host'un GERÇEK yüksekliğinin (Devam
+   görünürken/görünmezken) sıçramasına yol açıyordu (H14/H15, ölçülen
+   fark ~37.5px). Kalıcı çözüm: düğme HER ZAMAN kendi kutusunu korur,
+   yalnız `visibility`/`pointer-events` ile etkileşimsiz+görünmez kılınır
+   (bkz. #ls-scene-host'un kendi min-height köke-neden notu, yukarıda). */
+.s05-continue--waiting { visibility: hidden; pointer-events: none; }
+/* v0.19d — kök neden düzeltmesi: küresel mobil kuralı `.ls-strip-btn{width:100%}`
+   (bkz. dosya sonu, ≤480px) TEK BAŞINA duran eylem düğmeleri (Sahne #1-4)
+   için doğruydu, ama Sahne #5'in "Devam" düğmesi artık geri bildirim
+   metniyle AYNI satırda (bkz. .s05-feedback-row) — tam genişlik zorlanınca
+   metin kendi satırına düşüyor, satır SAYISI artıyor ve mobilde
+   #ls-narration'ın sabit yüksekliğini AŞIYORDU (bkz. görev talimatı: "hiçbir
+   viewport'ta yatay/dikey taşma/kırpılma olmamalı"). Bu tek media query
+   bloğu BİLEREK yukarıdaki TÜM .s05-* temel kurallarından SONRA duruyor —
+   aksi hâlde eşit özgüllükte, kaynak sırası SONRAKİ (temel) kural kazanır
+   ve mobil daraltmalar SESSİZCE geçersiz kalırdı (yaşanmış hata, bkz. görev
+   talimatı). */
+@media (max-width: 480px) {
+  #s05-continue { width: auto; }
+  .s05-content { min-height: 64px; }
+  .s05-item { gap: .2rem; }
+  .s05-prompt { line-height: 1.25; }
+  .s05-choice-btn { padding: .3rem .6rem; font-size: .78rem; }
+  .s05-feedback { font-size: .72rem; }
+  .s05-feedback-row { gap: .25rem .5rem; }
+  #s05-assess { gap: .15rem; padding-top: .95rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s05-choice-btn { transition: none; }
 }
 
 /* ── Hata / bilinmeyen sahne / mount hatası kurtarma ──

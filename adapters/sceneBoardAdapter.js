@@ -103,9 +103,9 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-08-23.2';
-import { BoardState } from '../core/boardState.js?v=2026-08-23.2';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-08-23.2';
+import { CAM } from '../core/curriculum.js?v=2026-08-23.3';
+import { BoardState } from '../core/boardState.js?v=2026-08-23.3';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-08-23.3';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -607,6 +607,21 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
      */
     getMovePreviewState() {
       return movePreview ? { row: movePreview.gz, col: movePreview.gx, color: movePreview.color } : null;
+    },
+
+    /**
+     * Salt-okunur GERÇEK hit-test sonucu — YALNIZ gözlem/test amaçlı
+     * (bkz. getMovePreviewState ile AYNI desen). Sahne modülünün hover
+     * aboneliği kurup KURMADIĞINDAN bağımsızdır (bkz. scenes/
+     * scene05LibertyAssessment.js — board_tap öğeleri görsel bir hover
+     * önizlemesi KURMAZ, ama adaptörün kendi hit-test'i yine de her
+     * pointermove'da çalışır) — testlerin "hangi ekran ofseti hangi GERÇEK
+     * (row,col)'a denk geliyor" sorusunu, üretim davranışını hiç
+     * ETKİLEMEDEN, sabit piksel varsayımı OLMADAN yanıtlamasını sağlar.
+     * @returns {{row:number,col:number}|null}
+     */
+    getHoverPoint() {
+      return hoverPoint ? { row: hoverPoint.gz, col: hoverPoint.gx } : null;
     },
 
     /** false iken onIntersectionTap/onIntersectionHover abonelerine ASLA ulaşılmaz (girdi kilidi) — preview'ı da temizler.

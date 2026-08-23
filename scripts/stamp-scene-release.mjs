@@ -53,6 +53,8 @@ const GRAPH_BASENAMES = [
   // geçersiz kalırdı (bare URL kendisi de saatlerce eski cache'den
   // gelebilirdi — çözülmeye çalışılan sorunun ta kendisi).
   'releaseVersion.js',
+  // v3 (2026-08-23.3) — Sahne #5 ve İKİ yeni yardımcı modülü.
+  'scene05LibertyAssessment.js', 'libertyAssessmentPolicy.js', 'assessmentTransition.js',
 ];
 
 /** Import satırı içerebilecek, graph'a dahil dosyalar + HTML entry point'leri. */
@@ -67,6 +69,8 @@ const SCAN_FILES = [
   'scenes/topicEndControls.js',
   'scenes/groupLibertyPolicy.js',
   'adapters/sceneBoardAdapter.js',
+  'scenes/scene05LibertyAssessment.js',
+  'scenes/libertyAssessmentPolicy.js',
 ];
 
 const importLineRe = /(from\s+['"])(\.[\w./-]+\.js)(\?[^'"]*)?(['"])/g;

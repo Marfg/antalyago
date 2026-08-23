@@ -216,7 +216,7 @@
 </div>
 
 <script type="module">
-import { CURRICULUM } from './core/curriculum.js?v=2026-08-23.2';
+import { CURRICULUM } from './core/curriculum.js?v=2026-08-23.3';
 import { classifyCurriculumStep, responseTypeOf, stripMarkup, isAssessmentLesson } from './core/learningContext.js';
 import { KNOWN_CONCEPTS } from './core/conceptMap.js';
 import { createStudentModel, hydrateStudentModel, getConceptState } from './core/studentModel.js';
@@ -225,21 +225,28 @@ import { CONTENT_PURPOSES, CONTENT_STUDENT_STATUSES, CONTENT_STAGES, validateCon
 import { mergeContentOverrides, applyOverride, OVERRIDABLE_FIELDS } from './core/contentOverrides.js';
 import { teacherContentOverrides } from './adapters/teacherContentOverrides.js';
 import { buildRetrievalQuery, retrieveContent } from './core/contentRetriever.js';
-import { EventLog } from './core/eventLog.js?v=2026-08-23.2';
+import { EventLog } from './core/eventLog.js?v=2026-08-23.3';
 import { buildAiReviewEvent } from './core/teacherAssistant.js';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-23.2';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-23.2';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-23.2';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-23.2';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-23.2';
-import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-08-23.2';
-import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-08-23.2';
-import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-08-23.2';
-import { BoardState } from './core/boardState.js?v=2026-08-23.2';
-import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-08-23.2';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-23.2';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-23.2';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-23.2';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-23.3';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-23.3';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-23.3';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-23.3';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-23.3';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-08-23.3';
+import {
+  getAssessmentSteps as getLibertyAssessmentSteps,
+  computeChoiceCorrectIndex as computeLibertyChoiceCorrectIndex,
+  computeTapTargets as computeLibertyTapTargets,
+  ASSESSMENT_STEP_INDICES as LIBERTY_ASSESSMENT_STEP_INDICES,
+} from './scenes/libertyAssessmentPolicy.js?v=2026-08-23.3';
+import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-08-23.3';
+import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-08-23.3';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-08-23.3';
+import { BoardState } from './core/boardState.js?v=2026-08-23.3';
+import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-08-23.3';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-23.3';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-23.3';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-23.3';
 
 /* ── Sürüm/cache bekçisi — learning-scenes.html İLE AYNI mekanizma ────
    (bkz. o dosyadaki dosya başı notu, KRİTİK DÜZELTME: SCENE_RELEASE artık
@@ -307,7 +314,7 @@ function showStudioStaleReleaseUI() {
    yalnız statik metadata'larını (id/version/curriculumRef) registry
    üzerinden okur — mevcut Curriculum/Diagnostics/Event Log panelleri
    genişletildi, yeni bir dashboard YOK. */
-const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties]);
+const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment]);
 
 /* ── localStorage erişimi — ogren-3d.html İLE AYNI anahtarlar ──────
    Studio kendi core mantığını YAZMAZ; yalnızca aynı adaptör deseniyle
@@ -539,16 +546,38 @@ function renderCurriculumScenes() {
   const completed = sceneProgressAdapter.load().completedSceneIds;
   // Konu başlıkları YALNIZ registry metadata'sından (scene.title) okunur —
   // hiçbir yerde ikinci kez sabitlenmez (bkz. görev talimatı Bölüm A).
-  const rows = sceneRegistry.list().map(scene => `
+  // "Kapsam" — YALNIZ birden fazla curriculumRefs taşıyan sahnelerde
+  // (bugün yalnız Sahne #5) o sahnenin GERÇEKTEN kapsadığı adım index'lerini
+  // gösterir (bkz. görev talimatı Bölüm 13: "kapsadığı beş step index/ID").
+  // Tek-ref'li sahnelerde boş kalır — sözleşme geriye uyumlu.
+  // Sahne #5'in İTEM AYRINTISI — her adımın kendi GERÇEK assessmentConcept'i
+  // (varsa expectedResultConcept'i) sahnenin PRIMARY concept'inden (Concept
+  // sütunu, her zaman 'liberty') AYRI gösterilir (bkz. görev talimatı
+  // Bölüm 8: "Scene özeti" ile "Item ayrıntısı" İKİ farklı seviyedir).
+  let libertyAssessmentDetail = [];
+  try { libertyAssessmentDetail = getLibertyAssessmentSteps(); } catch { /* Diagnostics zaten kendi hata satırını üretir */ }
+  const rows = sceneRegistry.list().map(scene => {
+    const refs = Array.isArray(scene.curriculumRefs) ? scene.curriculumRefs : null;
+    const scope = refs && refs.length > 1
+      ? `${refs.length} değerlendirme — ${refs.map((r, i) => {
+          const detail = libertyAssessmentDetail.find(a => a.curriculumStepIndex === r.stepIndex);
+          const conceptLabel = detail ? detail.assessmentConcept : r.concept;
+          const resultSuffix = detail?.expectedResultConcept ? `→${detail.expectedResultConcept}` : '';
+          return `adım ${r.stepIndex + 1}(${conceptLabel}${resultSuffix})`;
+        }).join(', ')}`
+      : '—';
+    return `
     <tr>
       <td>${escapeHtml(scene.title)}</td>
       <td>${scene.id}</td>
       <td>${scene.curriculumRef?.lessonId ?? '—'}</td>
       <td>${scene.curriculumRef?.concept ?? '—'}</td>
+      <td>${scope}</td>
       <td>v${scene.version}</td>
       <td>${completed.includes(scene.id) ? '<span class="pill ok">tamamlandı</span>' : '<span class="pill muted">—</span>'}</td>
-    </tr>`).join('');
-  table.innerHTML = `<tr><th>Konu Başlığı</th><th>Scene ID</th><th>Lesson</th><th>Concept</th><th>Version</th><th>Durum</th></tr>${rows || '<tr><td colspan="6" class="empty">Kayıtlı sahne yok.</td></tr>'}`;
+    </tr>`;
+  }).join('');
+  table.innerHTML = `<tr><th>Konu Başlığı</th><th>Scene ID</th><th>Lesson</th><th>Concept</th><th>Kapsam</th><th>Version</th><th>Durum</th></tr>${rows || '<tr><td colspan="7" class="empty">Kayıtlı sahne yok.</td></tr>'}`;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -970,6 +999,128 @@ function renderSceneDiagnostics() {
     const sevenLibs = computeGroupLiberties(sevenStones);
     if (sevenLibs.length && canAddStone(sevenStones, sevenLibs[0])) {
       rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>EIGHTH_STONE_NOT_REJECTED</td></tr>`);
+    }
+  }
+
+  // Sahne #5 — "Nefes Noktalarını Değerlendir" (core/curriculum.js l2'nin
+  // kullanıcıya görünen 4-8. adımları, steps[3..7] — bkz. scenes/
+  // libertyAssessmentPolicy.js, TEK doğruluk kaynağı). Studio burada
+  // sahneyi mount ETMEDEN, saf libertyAssessmentPolicy.js üzerinden BEŞ
+  // curriculum ref'in TAMAMININ geçerli olduğunu, her board seed'inin
+  // GERÇEK RuleEngine sonucuyla (curriculum'un kendi answers/miniQuestion
+  // alanlarıyla) uyuştuğunu ve registry sırasının scene04'ten SONRA
+  // geldiğini doğrular.
+  {
+    // Registry sırası: scene05, scene04'ten HEMEN sonra gelmeli.
+    const order = sceneRegistry.list().map(s => s.id);
+    const idx4 = order.indexOf(scene04GroupLiberties.id);
+    const idx5 = order.indexOf(scene05LibertyAssessment.id);
+    if (idx5 !== idx4 + 1) {
+      rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>REGISTRY_ORDER_INVALID:scene04 index=${idx4} scene05 index=${idx5}</td></tr>`);
+    }
+    // Sahne #4 artık son sahne DEĞİL — "Sonraki konu" scene05'e gitmeli.
+    if (sceneRegistry.next(scene04GroupLiberties.id)?.id !== scene05LibertyAssessment.id) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>NEXT_SCENE_NOT_SCENE05</td></tr>`);
+    }
+    // Sahne #5 son sahne — kendi başına bir "sonraki" YOK, topic-end
+    // kontrolü "Konular" göstermeli (bkz. scenes/topicEndControls.js
+    // context.hasNextScene mantığı).
+    if (sceneRegistry.next(scene05LibertyAssessment.id) != null) {
+      rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>UNEXPECTED_NEXT_SCENE:son sahne olmalıydı</td></tr>`);
+    }
+
+    // curriculumRefs — BEŞ referansın TAMAMI gerçek l2 adımlarına gitmeli,
+    // beklenen index'lerle (3,4,5,6,7) birebir eşleşmeli.
+    const refs = scene05LibertyAssessment.curriculumRefs ?? [];
+    if (refs.length !== LIBERTY_ASSESSMENT_STEP_INDICES.length) {
+      rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>CURRICULUM_REFS_COUNT_MISMATCH:${refs.length} (beklenen ${LIBERTY_ASSESSMENT_STEP_INDICES.length})</td></tr>`);
+    }
+    const l2ForAssessment = ALL_LESSONS.find(x => x.lesson.id === 'l2')?.lesson;
+    refs.forEach((ref, i) => {
+      const expectedIdx = LIBERTY_ASSESSMENT_STEP_INDICES[i];
+      if (ref.stepIndex !== expectedIdx) {
+        rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>CURRICULUM_REF_INDEX_MISMATCH:ref[${i}]=${ref.stepIndex} beklenen=${expectedIdx}</td></tr>`);
+      }
+      if (!l2ForAssessment?.steps?.[ref.stepIndex]) {
+        rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>UNKNOWN_CURRICULUM_STEP:stepIndex=${ref.stepIndex}</td></tr>`);
+      }
+    });
+
+    // Beş değerlendirmenin HER BİRİ — GERÇEK RuleEngine sonucu curriculum'un
+    // kendi answers/miniQuestion alanlarıyla uyuşuyor mu?
+    let choiceCount = 0, tapCount = 0;
+    let assessmentSteps = [];
+    try { assessmentSteps = getLibertyAssessmentSteps(); }
+    catch (e) { rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>ASSESSMENT_STEPS_THREW:${e.message}</td></tr>`); }
+
+    assessmentSteps.forEach(a => {
+      if (a.type === 'choice') {
+        choiceCount++;
+        const correctIdx = computeLibertyChoiceCorrectIndex(a);
+        if (correctIdx < 0) {
+          rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>CHOICE_NO_MATCHING_OPTION:step=${a.curriculumStepIndex}</td></tr>`);
+        }
+        const statedCorrect = a.options.findIndex(o => o.correct);
+        // Not: normalizeStep curriculum'un correct:true bayrağını STRIP eder
+        // (yalnız text/feedback taşınır) — bu yüzden statedCorrect burada
+        // her zaman -1'dir; bu SATIR KASITLI olarak "curriculum ham
+        // correct:true'sunu YOKSAYIYORUZ, yalnız GERÇEK hesap sayılır"
+        // ilkesini belgelemek için burada bırakılmıştır.
+        void statedCorrect;
+      } else {
+        tapCount++;
+        const targets = computeLibertyTapTargets(a);
+        if (targets.length === 0) {
+          rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>BOARD_TAP_NO_REAL_TARGETS:step=${a.curriculumStepIndex}</td></tr>`);
+        }
+        const stated = (a.curriculumStatedAnswers || []).map(p => `${p.y},${p.x}`).sort().join('|');
+        const real = targets.map(p => `${p.row},${p.col}`).sort().join('|');
+        if (stated !== real) {
+          rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>BOARD_TAP_REAL_VS_CURRICULUM_MISMATCH:step=${a.curriculumStepIndex} stated=${stated} real=${real}</td></tr>`);
+        }
+      }
+    });
+    // Beklenen dağılım: 2 choice (steps 3,4) + 3 board_tap (steps 5,6,7).
+    if (choiceCount !== 2 || tapCount !== 3) {
+      rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>UNEXPECTED_ASSESSMENT_TYPE_DISTRIBUTION:choice=${choiceCount} tap=${tapCount} (beklenen 2/3)</td></tr>`);
+    }
+    // steps[6]'nın (atari) hedef kümesi TAM OLARAK tek noktaya inmeli —
+    // "son nefes" senaryosunun kanıtı.
+    const atariStep = assessmentSteps.find(a => a.curriculumStepIndex === 7);
+    if (atariStep && computeLibertyTapTargets(atariStep).length !== 1) {
+      rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>ATARI_STEP_NOT_SINGLE_LIBERTY:count=${computeLibertyTapTargets(atariStep).length}</td></tr>`);
+    }
+
+    // v2 — kavram ayrımı doğrulaması (bkz. görev talimatı Bölüm 9): tek bir
+    // global sabitin BEŞ öğeye de körlemesine yayılmadığını, curriculumRefs'in
+    // policy'nin GERÇEK assessmentConcept'iyle senkron olduğunu ve item 5'in
+    // atari→capture geçişinin doğru raporlandığını KANITLAR — bir sonraki
+    // "tek CONCEPT sabiti" regresyonunu Diagnostics'in KENDİSİ yakalar.
+    const KNOWN_ASSESSMENT_CONCEPTS = ['liberty', 'atari'];
+    assessmentSteps.forEach((a, i) => {
+      if (!KNOWN_ASSESSMENT_CONCEPTS.includes(a.assessmentConcept)) {
+        rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>UNKNOWN_ASSESSMENT_CONCEPT:step=${a.curriculumStepIndex} concept=${a.assessmentConcept}</td></tr>`);
+      }
+      const ref = refs[i];
+      if (ref && ref.concept !== a.assessmentConcept) {
+        rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>CURRICULUM_REF_CONCEPT_MISMATCH:step=${a.curriculumStepIndex} ref.concept=${ref.concept} policy.assessmentConcept=${a.assessmentConcept}</td></tr>`);
+      }
+    });
+    const firstFour = assessmentSteps.filter(a => a.curriculumStepIndex !== 7);
+    if (firstFour.some(a => a.assessmentConcept !== 'liberty')) {
+      rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>FIRST_FOUR_ITEMS_CONCEPT_NOT_LIBERTY:${firstFour.map(a => `${a.curriculumStepIndex}:${a.assessmentConcept}`).join(',')}</td></tr>`);
+    }
+    if (atariStep && atariStep.assessmentConcept !== 'atari') {
+      rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>ATARI_STEP_ASSESSMENT_CONCEPT_NOT_ATARI:concept=${atariStep.assessmentConcept}</td></tr>`);
+    }
+    if (atariStep && atariStep.expectedResultConcept !== 'capture') {
+      rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>ATARI_STEP_EXPECTED_RESULT_NOT_CAPTURE:expectedResultConcept=${atariStep?.expectedResultConcept}</td></tr>`);
+    }
+    // "Tek global sabit tüm öğelere yayılıyor" regresyonu: beş öğenin
+    // assessmentConcept'i TAMAMEN AYNIYSA (ör. hepsi 'liberty') item 5'in
+    // GERÇEK atari doğası kaybolmuş demektir.
+    if (assessmentSteps.length && assessmentSteps.every(a => a.assessmentConcept === assessmentSteps[0].assessmentConcept)) {
+      rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>ALL_ITEMS_SHARE_SAME_CONCEPT:tek global sabitten geliyor olabilir</td></tr>`);
     }
   }
 

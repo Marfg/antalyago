@@ -40,6 +40,8 @@ const GRAPH_BASENAMES = [
   // geçersiz kalır (bkz. görev talimatı, core/releaseVersion.js dosya
   // başı notu).
   'releaseVersion.js',
+  // v3 (2026-08-23.3) — Sahne #5 ve iki yeni yardımcı modülü.
+  'scene05LibertyAssessment.js', 'libertyAssessmentPolicy.js', 'assessmentTransition.js',
 ];
 const SCAN_FILES = [
   'learning-scenes.html', 'teacher-studio.html',
@@ -48,6 +50,7 @@ const SCAN_FILES = [
   'scenes/scene03LibertiesByPosition.js', 'scenes/scene04GroupLiberties.js',
   'scenes/topicEndControls.js', 'scenes/groupLibertyPolicy.js',
   'adapters/sceneBoardAdapter.js',
+  'scenes/scene05LibertyAssessment.js', 'scenes/libertyAssessmentPolicy.js',
 ];
 // Studio'nun kapsam DIŞI (AI asistan / içerik kütüphanesi) import'ları —
 // bunlar KASITLI olarak versiyonSUZ kalmalı (bkz. stamp script dosya başı
@@ -145,6 +148,23 @@ test('scenes/scene04GroupLiberties.js: exported version >= 4 (bu release için b
   const m = src.slice(idIdx).match(/version:\s*(\d+)/);
   assert.ok(m, 'exported obje içinde version alanı bulunamadı');
   assert.ok(Number(m[1]) >= 4, `version >= 4 olmalı, bulunan: ${m[1]}`);
+});
+
+test('scenes/scene05LibertyAssessment.js: exported version >= 1, sahne release token\'ından BAĞIMSIZ (bkz. görev talimatı: "Scene version bağımsız olarak 1 başlayabilir")', () => {
+  const src = read('scenes/scene05LibertyAssessment.js');
+  const idIdx = src.indexOf(`id: 'scene-05-liberty-assessment'`);
+  assert.ok(idIdx >= 0, 'exported scene objesi bulunamadı');
+  const m = src.slice(idIdx).match(/version:\s*(\d+)/);
+  assert.ok(m, 'exported obje içinde version alanı bulunamadı');
+  assert.ok(Number(m[1]) >= 1, `version >= 1 olmalı, bulunan: ${m[1]}`);
+});
+
+test('RELEASE token "2026-08-23.3" — eski "2026-08-23.2" query\'si AKTİF graph\'ta KALMAMIŞ', () => {
+  assert.equal(RELEASE, '2026-08-23.3');
+  for (const rel of SCAN_FILES) {
+    const src = read(rel);
+    assert.ok(!src.includes('?v=2026-08-23.2'), `${rel}: eski release query'si HÂLÂ mevcut`);
+  }
 });
 
 test('scripts/stamp-scene-release.mjs idempotent: script tekrar çalıştırılınca dosyalarda DEĞİŞİKLİK üretmiyor (zaten güncel)', () => {

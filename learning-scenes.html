@@ -43,17 +43,18 @@
 </div>
 
 <script type="module">
-import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-08-23.2';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-23.2';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-23.2';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-23.2';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-23.2';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-23.2';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-23.2';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-23.2';
-import { EventLog } from './core/eventLog.js?v=2026-08-23.2';
-import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-08-23.2';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-23.2';
+import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-08-23.3';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-23.3';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-23.3';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-23.3';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-23.3';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-23.3';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-08-23.3';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-23.3';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-23.3';
+import { EventLog } from './core/eventLog.js?v=2026-08-23.3';
+import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-08-23.3';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-23.3';
 
 /* ── Sürüm/cache bekçisi ──────────────────────────────────────────────
    GitHub Pages önündeki CDN, .js dosyalarına saatlerce (bkz. görev
@@ -164,7 +165,7 @@ const canvas = document.getElementById('ls-canvas');
 const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
 const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19 });
 
-const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties]);
+const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment]);
 
 const searchParams = new URLSearchParams(location.search);
 
@@ -173,9 +174,18 @@ const searchParams = new URLSearchParams(location.search);
    Sahne #3'ün başlangıç taş silueti gibi canvas-only ghost preview
    durumunu gerçek tarayıcı testlerinde DOM/event log'a yansımadan
    doğrulayabilmek için (bkz. görev talimatı). Parametre yoksa hiçbir
-   global değişken OLUŞTURULMAZ — üretim davranışı ETKİLENMEZ. */
+   global değişken OLUŞTURULMAZ — üretim davranışı ETKİLENMEZ.
+   v0.19 — getHoverPoint eklendi: Sahne #5'in board_tap öğeleri görsel bir
+   hover önizlemesi KURMAZ (bkz. scene05LibertyAssessment.js), bu yüzden
+   testlerin "hangi ekran ofseti hangi GERÇEK (row,col)'a denk geliyor"
+   sorusunu sabit piksel varsayımı OLMADAN yanıtlayabilmesi için adaptörün
+   kendi hit-test sonucu ayrıca dışa açıldı (bkz. adapters/
+   sceneBoardAdapter.js getHoverPoint notu). */
 if (searchParams.get('exposeBoardAdapter') === '1') {
-  window.__lsTestBoardAdapter = { getMovePreview: () => boardAdapter.getMovePreviewState() };
+  window.__lsTestBoardAdapter = {
+    getMovePreview: () => boardAdapter.getMovePreviewState(),
+    getHoverPoint: () => boardAdapter.getHoverPoint(),
+  };
 }
 
 /* Test-only hook: ?forceMountError=<sceneId> o TEK sahnenin mount()'unu
