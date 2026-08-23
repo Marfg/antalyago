@@ -232,7 +232,7 @@ import { scene01BoardIntro } from './scenes/scene01BoardIntro.js';
 import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js';
 import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js';
 import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js';
-import { getAnchor, getConnectionTargets, matchesCurriculumSeed } from './scenes/groupLibertyPolicy.js';
+import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js';
 import { validateCandidateOrder } from './scenes/turnPolicy.js';
 import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js';
 import { BoardState } from './core/boardState.js';
@@ -832,65 +832,82 @@ function renderSceneDiagnostics() {
   }
 
   // Sahne #4 — "Grubun Nefesi" (core/curriculum.js l2.steps[2] — bkz.
-  // scenes/groupLibertyPolicy.js). Koordinatlar SAHNE İLE AYNI paylaşılan
-  // saf politika modülünden okunur — burada ikinci kez sabitlenmez (bkz.
-  // görev talimatı: "Teacher Studio içine sahne mantığının ikinci
-  // kopyasını hard-code etme"). Bu sahne müfredatın KENDİ iddiasını (3
-  // bitişik doğrusal taş → birlikte 8 nefes noktası) statik metinden
-  // DEĞİL, gerçek core/ruleEngine.js hesabından üretir — Studio burada
-  // sahneyi mount ETMEDEN, aynı çapa+hedef noktalarını saf BoardState
-  // üzerinde bağımsızca yeniden kurup doğrular.
+  // scenes/groupLibertyPolicy.js). v0.17: sahne artık curriculum'un
+  // doğrusal örneğine KİLİTLİ DEĞİL (bkz. görev talimatı) — kullanıcı
+  // 3-7 taşlık İSTEDİĞİ bağlı şekli serbestçe kurabilir. Studio burada
+  // sahneyi mount ETMEDEN, saf scenes/groupLibertyPolicy.js üzerinden:
+  // (a) curriculum'un TARİHSEL doğrusal örneğinin hâlâ geçerli/8-nefesli
+  // olduğunu, (b) AYNI taş sayısındaki bir L-biçiminin FARKLI bir sonuç
+  // ürettiğini (yani sahne tek bir şekle kilitli değil), (c) 3/7 sınırlarını
+  // bağımsızca doğrular.
   {
     const anchor = getAnchor();
-    const targets = getConnectionTargets();
-    if (!anchor || targets.length !== 2) {
-      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>INVALID_CURRICULUM_SEED_SHAPE:anchor=${JSON.stringify(anchor)} targets=${targets.length}</td></tr>`);
-    } else {
-      // stepIndex:2 referansı gerçek bir adıma mı gidiyor? — ALL_LESSONS
-      // üzerinden l2 dersinin 3. (index 2) adımının VAR olduğunu doğrula.
-      const l2 = ALL_LESSONS.find(x => x.lesson.id === scene04GroupLiberties.curriculumRef?.lessonId);
-      const referencedStep = l2?.lesson?.steps?.[scene04GroupLiberties.curriculumRef?.stepIndex];
-      if (!referencedStep) {
-        rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>UNKNOWN_CURRICULUM_STEP:stepIndex=${scene04GroupLiberties.curriculumRef?.stepIndex}</td></tr>`);
-      } else if (!Array.isArray(referencedStep.board) || referencedStep.board.length !== 3) {
-        rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>CURRICULUM_STEP_BOARD_NOT_THREE_STONES:count=${referencedStep.board?.length ?? 0}</td></tr>`);
-      }
+    const seed = getCurriculumGroupSeed();
 
-      // Sahnenin çapa + nihai iki hedefi curriculum board ile BİREBİR eşleşiyor mu?
-      const finalPlaced = [anchor, ...targets];
-      if (!matchesCurriculumSeed(finalPlaced)) {
-        rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>SCENE_TARGETS_DO_NOT_MATCH_CURRICULUM_SEED</td></tr>`);
-      }
+    // stepIndex:2 referansı gerçek bir adıma mı gidiyor?
+    const l2 = ALL_LESSONS.find(x => x.lesson.id === scene04GroupLiberties.curriculumRef?.lessonId);
+    const referencedStep = l2?.lesson?.steps?.[scene04GroupLiberties.curriculumRef?.stepIndex];
+    if (!referencedStep) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>UNKNOWN_CURRICULUM_STEP:stepIndex=${scene04GroupLiberties.curriculumRef?.stepIndex}</td></tr>`);
+    } else if (!Array.isArray(referencedStep.board) || referencedStep.board.length !== 3) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>CURRICULUM_STEP_BOARD_NOT_THREE_STONES:count=${referencedStep.board?.length ?? 0}</td></tr>`);
+    }
 
-      // Çapa TEK BAŞINA: grup boyutu 1, gerçek nefes 4.
-      const anchorOnly = new BoardState(9);
-      anchorOnly.placeStone(anchor.col, anchor.row, 'black');
-      const anchorGroup = getGroup(anchorOnly, anchor.col, anchor.row);
-      const anchorLibs = getLiberties(anchorOnly, anchorGroup).size;
-      if (anchorGroup.size !== 1 || anchorLibs !== 4) {
-        rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>UNEXPECTED_ANCHOR_RESULT:groupSize=${anchorGroup.size} liberty=${anchorLibs} (beklenen 1/4)</td></tr>`);
-      }
+    // Çapa TEK BAŞINA: grup boyutu 1, gerçek nefes 4.
+    const anchorLibs = computeGroupLiberties([anchor]);
+    if (anchorLibs.length !== 4) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>UNEXPECTED_ANCHOR_RESULT:liberty=${anchorLibs.length} (beklenen 4)</td></tr>`);
+    }
 
-      // İlk bağlantı: grup boyutu 2, gerçek nefes 6.
-      const afterFirst = new BoardState(9);
-      afterFirst.placeStone(anchor.col, anchor.row, 'black');
-      afterFirst.placeStone(targets[0].col, targets[0].row, 'black');
-      const firstGroup = getGroup(afterFirst, anchor.col, anchor.row);
-      const firstLibs = getLiberties(afterFirst, firstGroup).size;
-      if (firstGroup.size !== 2 || firstLibs !== 6) {
-        rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>UNEXPECTED_FIRST_CONNECTION_RESULT:groupSize=${firstGroup.size} liberty=${firstLibs} (beklenen 2/6)</td></tr>`);
-      }
+    // (a) curriculum'un TARİHSEL doğrusal üç-taş örneği hâlâ geçerli/8-nefesli.
+    if (!isConnectedSingleGroup(seed) || seed.length !== 3) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>CURRICULUM_SEED_NOT_SINGLE_CONNECTED_GROUP</td></tr>`);
+    }
+    const seedLibs = computeGroupLiberties(seed);
+    if (seedLibs.length !== 8) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>UNEXPECTED_LINEAR_SEED_RESULT:liberty=${seedLibs.length} (beklenen 8, curriculum l2.steps[2])</td></tr>`);
+    }
 
-      // Nihai (ikinci) bağlantı: grup boyutu 3, doğrusal, gerçek nefes 8.
-      const final = new BoardState(9);
-      final.placeStone(anchor.col, anchor.row, 'black');
-      final.placeStone(targets[0].col, targets[0].row, 'black');
-      final.placeStone(targets[1].col, targets[1].row, 'black');
-      const finalGroup = getGroup(final, anchor.col, anchor.row);
-      const finalLibs = getLiberties(final, finalGroup).size;
-      if (finalGroup.size !== 3 || finalLibs !== 8) {
-        rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>UNEXPECTED_FINAL_GROUP_RESULT:groupSize=${finalGroup.size} liberty=${finalLibs} (beklenen 3/8, curriculum l2.steps[2])</td></tr>`);
-      }
+    // (b) AYNI 3 taş sayısında bir L-biçimi FARKLI bir sonuç üretir —
+    // sahne tek bir "doğru şekle" kilitli DEĞİL, gerçek RuleEngine
+    // sonucu şekle göre değişir.
+    const lShape = [anchor, { row: anchor.row, col: anchor.col + 1 }, { row: anchor.row - 1, col: anchor.col + 1 }];
+    const lLibs = computeGroupLiberties(lShape);
+    if (!isConnectedSingleGroup(lShape) || lShape.length !== 3) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>L_SHAPE_FIXTURE_NOT_SINGLE_CONNECTED_GROUP</td></tr>`);
+    }
+    if (lLibs.length === seedLibs.length) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>L_SHAPE_LIBERTY_MATCHES_LINEAR:beklenen FARKLI sonuç, ikisi de ${lLibs.length}</td></tr>`);
+    }
+
+    // (c) kullanıcı sahnesi yalnız curriculum seed'ine kilitli değil —
+    // curriculum'da OLMAYAN bağlı bir T-biçiminin de policy tarafından
+    // geçerli/eklenebilir kabul edildiğini doğrula.
+    const tShapeBase = [anchor, { row: anchor.row, col: anchor.col + 1 }];
+    const tExtra = { row: anchor.row - 1, col: anchor.col + 1 };
+    if (!canAddStone(tShapeBase, tExtra)) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>NON_SEED_SHAPE_REJECTED:sahne curriculum dışı bağlı şekilleri kabul etmiyor olabilir</td></tr>`);
+    }
+
+    // Minimum/maksimum sınırları.
+    if (MIN_GROUP_SIZE !== 3 || MAX_GROUP_SIZE !== 7) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>UNEXPECTED_SIZE_BOUNDS:min=${MIN_GROUP_SIZE} max=${MAX_GROUP_SIZE} (beklenen 3/7)</td></tr>`);
+    }
+    if (isCompletable([anchor, tShapeBase[1]])) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>COMPLETABLE_BELOW_MINIMUM:2 taş completion için yeterli SAYILMAMALI</td></tr>`);
+    }
+    if (!isCompletable(seed)) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>NOT_COMPLETABLE_AT_MINIMUM:3 taş completion için yeterli OLMALI</td></tr>`);
+    }
+    // Dikey 7'li doğru — anchor.col sabit, satırlar 1..7 (9x9'da her zaman
+    // tahta-içi; yatay olsaydı anchor.col+6=9 tahta dışına taşardı).
+    const sevenStones = Array.from({ length: 7 }, (_, i) => ({ row: anchor.row - 3 + i, col: anchor.col }));
+    if (!isCompletable(sevenStones) || !isAtMax(sevenStones)) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>SEVEN_STONE_BOUNDARY_INVALID</td></tr>`);
+    }
+    const sevenLibs = computeGroupLiberties(sevenStones);
+    if (sevenLibs.length && canAddStone(sevenStones, sevenLibs[0])) {
+      rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>EIGHTH_STONE_NOT_REJECTED</td></tr>`);
     }
   }
 

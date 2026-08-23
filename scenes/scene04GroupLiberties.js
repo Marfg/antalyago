@@ -2,86 +2,81 @@
  * scenes/scene04GroupLiberties.js
  *
  * Konu #4 — "Grubun Nefesi". Müfredat kaynağı: core/curriculum.js, l2
- * "Nefes Noktaları" dersinin `steps[2]` (0-tabanlı index — kullanıcıya
- * görünen "3. adım", bkz. proje CLAUDE.md'sindeki "l2 Nefes Noktaları —
- * 8 adım" sayımı). O adımın ORİJİNAL (pasif/auto) tanımı:
+ * "Nefes Noktaları" dersinin `steps[2]` (kullanıcıya görünen "3. adım").
+ * O adımın ORİJİNAL (pasif) tanımı curriculum.js'te SADECE bir örnek
+ * olarak kalır — sahne artık bu örneği ZORUNLU KILMAZ (bkz. v0.17 notu).
  *
- *   text: "Yatay veya dikey olarak birbirine bağlı taşlar <b>grup</b>
- *          oluşturur. Grubun özgürlüğü tüm taşlarının boş komşularının
- *          toplamıdır."
- *   board: [{B,x:3,y:4}, {B,x:4,y:4}, {B,x:5,y:4}]   // üç bitişik siyah taş
- *   fb: "Bu üç taş bir grup — birlikte 8 nefes noktası var."
+ * v0.17 — kök neden düzeltmesi (bkz. görev talimatı): önceki sürüm
+ * curriculum'un ÜÇ TAŞLI DOĞRUSAL örneğini SIRALI, ZORUNLU bir hedef
+ * listesine çeviriyordu — kullanıcı yalnız (4,4) sonra (4,5)'e
+ * tıklayabiliyordu; L/T/dallanan şekiller REDDEDİLİYORDU. Bu, sahnenin
+ * "bir örnek ezberlet" laboratuvarına dönüşmesine yol açtı. Artık:
+ *   - Kullanıcı tek çapa taşıyla başlar, grubun GERÇEK nefes
+ *     noktalarından HERHANGİ birine (istediği sırada) tıklayarak
+ *     3-7 taşlık İSTEDİĞİ bağlı şekli serbestçe kurar (bkz.
+ *     scenes/groupLibertyPolicy.js canAddStone/isSelectableLibertyPoint).
+ *   - Ghost artık ZORUNLU/varsayılan değil — yalnız pointer GERÇEKTEN
+ *     bir nefes noktasının üzerine geldiğinde görünür (bkz. handleHover).
+ *   - completion grup İLK KEZ 3 taşa ulaştığında açılır (tam bir kez);
+ *     kullanıcı isterse 7'ye kadar eklemeye devam edebilir, 8. taş
+ *     HİÇBİR KOŞULDA eklenmez (bkz. scenes/groupLibertyPolicy.js
+ *     MIN_GROUP_SIZE/MAX_GROUP_SIZE).
  *
- * v0.16 — kök neden düzeltmesi: önceki sürüm completion'ı İLK bağlantıdan
- * (2 taş/6 nefes) sonra açıyordu — müfredatın GERÇEK örneği (3 taş/8 nefes,
- * DOĞRUSAL) hiç zorunlu kılınmıyordu. Üçüncü taş/L-biçimi vs doğrusal ayrımı
- * ("groupSize===3 tek başına yeterli değil") hiç test edilmiyordu. Artık:
- *   - Hedef koordinatlar scenes/groupLibertyPolicy.js'den (curriculum'un
- *     KENDİ board seed'inden TÜRETİLİR, ikinci kez sabitlenmez) okunur.
- *   - Sahne yalnız curriculum'un SIRALI iki bağlantı hedefini ((4,4) sonra
- *     (4,5)) kabul eder — hedef DIŞI (L-biçimi dahil) her tıklama state'i
- *     DEĞİŞTİRMEDEN reddedilir (bkz. handleTap/isExpectedNextTarget).
- *   - completion YALNIZ ikinci (SON) bağlantıdan sonra, nihai board
- *     curriculum seed'iyle BİREBİR eşleştiğinde açılır (bkz. canComplete).
+ * v0.16 (eski, artık geçersiz): sabit `(4,3)→(4,4)→(4,5)` sırası +
+ * `matchesCurriculumSeed()` completion şartı — bkz. yukarıdaki not.
  *
- * Etkileşim modeli:
- *   1. mount() çapa taşını yerleştirir — curriculum seed'inin ilk noktası.
- *   2. Tick onayından hemen sonra çapanın GERÇEK nefes noktaları
- *      (adapters/sceneBoardAdapter.js getLibertiesAt → core/ruleEngine.js)
- *      turkuaz işaretlerle gösterilir; SIRADAKİ hedef (4,4) pointer
- *      hareketi BEKLENMEDEN yarı saydam bir ghost olarak görünür.
- *   3. Kullanıcı (4,4)'e tıklar → GERÇEK taş (playMove). Grup 2 taşlı olur,
- *      YENİ ortak nefes kümesi (6 nokta) yeniden hesaplanıp gösterilir.
- *      Completion AÇILMAZ — ghost artık SON hedefe (4,5) geçer.
- *   4. Kullanıcı (4,5)'e tıklar → GERÇEK taş. Grup 3 taşlı, curriculum'un
- *      TAM örneğiyle BİREBİR aynı, GERÇEK ortak nefes 8. Yalnız BURADA
- *      completion açılır.
- *   5. Sıradaki hedef DIŞINDA bir noktaya tıklama (L-biçimi dahil) hiçbir
- *      state'i DEĞİŞTİRMEZ — yalnız yönlendirici bir metin gösterilir.
+ * TERMİNOLOJİ (bkz. görev talimatı Bölüm 1): kullanıcıya gösterilen HİÇBİR
+ * metinde "özgürlük/özgürlüğü/serbestlik" veya İngilizce "liberty/liberties"
+ * KULLANILMAZ — yalnız "nefes noktası"/"nefes noktaları". İç teknik
+ * sözleşmeler (concept ID 'liberty', `libertyCount`, `getLibertiesAt`,
+ * event payload alanları, RuleEngine API'leri) BİLEREK değiştirilmedi —
+ * bunlar kod-içi tanımlayıcılardır, kullanıcıya hiç gösterilmez.
  *
  * Sayılar HER ZAMAN core/ruleEngine.js'in (getGroup+getLiberties, adaptör
  * üzerinden getLibertiesAt) gerçek sonucudur — sabit metinden ÜRETİLMEZ.
  */
 
 import { mountTopicEndControls } from './topicEndControls.js';
-import { getAnchor, getNextTarget, totalConnectionsRequired, isSequenceComplete, isExpectedNextTarget, matchesCurriculumSeed } from './groupLibertyPolicy.js';
+import { ANCHOR, MIN_GROUP_SIZE, MAX_GROUP_SIZE, shapeSignature, isConnectedSingleGroup } from './groupLibertyPolicy.js';
 
 const STATE = {
   INTRO: 'intro',
-  AWAITING_CONNECT: 'awaiting_connect',
-  CONNECTED: 'connected',
+  AWAITING_MOVE: 'awaiting_move',
+  PLAYING: 'playing',
 };
 
-const ANCHOR = getAnchor();
-const TOTAL_CONNECTIONS = totalConnectionsRequired();
-
-const INTRO_TEXT = 'Yatay veya dikey olarak birbirine bağlı taşlar <strong>grup</strong> oluşturur. Grubun özgürlüğü tüm taşlarının boş komşularının toplamıdır.';
-const FIRST_TARGET_INSTRUCTION = 'Taşın yanına, yatay veya dikey bitişik başka bir siyah taş yerleştir.';
-const NEXT_TARGET_INSTRUCTION = 'Zinciri tamamlamak için işaretli noktaya bir taş daha yerleştir.';
-const WRONG_POINT_HINT = 'Taşı mevcut grubun devamındaki işaretli noktaya yerleştir.';
-const CONTINUE_DISABLED_HINT = 'Devam etmek için grubu tamamla.';
-const SUMMARY_TEXT = 'Grup nefesi, taşların nefeslerini ayrı ayrı toplamak değil, grubun çevresindeki tekil boş noktalardır.';
+const INTRO_TEXT = 'Yatay veya dikey bitişik taşlar bir grup oluşturur. Grubun nefes noktaları, grubun çevresindeki boş kesişimlerdir.';
+const MOVE_INSTRUCTION = 'Turkuaz işaretli nefes noktalarından birine tıklayarak gruba yeni bir taş ekle.';
+const WRONG_POINT_HINT = 'Yeni taşı turkuazla gösterilen nefes noktalarından birine yerleştir.';
+const BELOW_MIN_HINT = 'Örüntüyü görmek için grubu en az 3 taşa ulaştır.';
+const CONTINUE_OPTIONAL_HINT = 'Grubun şeklini değiştirmek için istersen taş eklemeye devam edebilirsin.';
+const MAX_REACHED_HINT = 'Yedi taşlık örüntünü oluşturdun.';
+const SUMMARY_TEXT = 'Grup nefesi, taşların nefeslerini ayrı ayrı toplamak değil, grubun çevresindeki tekil boş noktalardır. Aynı boş kesişim yalnız bir kez sayılır.';
 
 let state = STATE.INTRO;
-let connectionsMade = 0;
+/** @type {Array<{row:number,col:number}>} — çapa dahil, kullanıcının kurduğu GERÇEK şekil. */
+let placedPoints = [];
 let unlockedEmitted = false;
 let topicEnded = false;
 let topicEnd = null;
 let els = null;
 let cleanupFns = [];
 let unsubscribeTap = null;
+let unsubscribeHover = null;
 
 function resetState() {
   state = STATE.INTRO;
-  connectionsMade = 0;
+  placedPoints = [];
   unlockedEmitted = false;
   topicEnded = false;
   topicEnd = null;
   unsubscribeTap = null;
+  unsubscribeHover = null;
 }
 
-function groupSize() { return connectionsMade + 1; }
-function sequenceDone() { return isSequenceComplete(connectionsMade); }
+function groupSize() { return placedPoints.length; }
+function atMax() { return groupSize() >= MAX_GROUP_SIZE; }
+function meetsMin() { return groupSize() >= MIN_GROUP_SIZE; }
 
 function render() {
   if (!els) return;
@@ -89,92 +84,100 @@ function render() {
   els.playRow.hidden = state === STATE.INTRO || topicEnded;
   if (topicEnded) return;
 
-  const done = sequenceDone();
+  const done = meetsMin();
   els.nextBtn.disabled = !done;
   els.continueHint.hidden = done;
 
-  if (state === STATE.AWAITING_CONNECT) {
-    els.statusEl.textContent = FIRST_TARGET_INSTRUCTION;
+  if (state === STATE.AWAITING_MOVE && groupSize() === 1) {
+    els.statusEl.textContent = MOVE_INSTRUCTION;
     els.captionEl.textContent = '';
   }
 }
 
 function unsubscribeBoardListeners() {
   if (unsubscribeTap) { unsubscribeTap(); unsubscribeTap = null; }
+  if (unsubscribeHover) { unsubscribeHover(); unsubscribeHover = null; }
 }
 
-/** Grubun GERÇEK, o anki ortak nefes noktaları — her zaman çapanın
-    konumundan core/ruleEngine.js (getGroup/getLiberties) üzerinden. */
+/** Grubun GERÇEK, o anki ortak nefes noktaları — çapanın konumundan
+    core/ruleEngine.js (getGroup/getLiberties, adaptör üzerinden) alınır.
+    Çapa her zaman grubun bir üyesidir, bu yüzden hangi şekil kurulursa
+    kurulsun AYNI (doğru) grubu döndürür. */
 function currentGroupLiberties(context) {
   return context.boardAdapter.getLibertiesAt({ row: ANCHOR.row, col: ANCHOR.col });
 }
 
-/** Sıradaki hedefi (varsa) pointer hareketi BEKLENMEDEN ghost olarak
-    gösterir; hedef kalmadıysa (sekans tamamlandıysa) ghost'u temizler. */
-function showNextTargetGhost(context) {
-  const target = getNextTarget(connectionsMade);
-  if (target) context.boardAdapter.setMovePreview({ row: target.row, col: target.col, color: 'black' });
-  else context.boardAdapter.clearMovePreview();
+function isValidSelection(context, hit) {
+  if (!hit || atMax()) return false;
+  return currentGroupLiberties(context).some(l => l.row === hit.row && l.col === hit.col);
 }
 
 function statusTextFor(size, libertyCount) {
   return `Bu ${size} taş bir grup — birlikte ${libertyCount} nefes noktası var.`;
 }
 
-function handleTap(context, { row, col }) {
-  if (topicEnded || state === STATE.INTRO || sequenceDone()) return;
+/** Yalnız pointer GERÇEKTEN bir nefes noktasının üzerine geldiğinde ghost
+    gösterir — zorunlu/varsayılan hedef YOK (bkz. dosya başı notu). */
+function handleHover(context, hit) {
+  if (topicEnded || state === STATE.INTRO) { context.boardAdapter.clearMovePreview(); return; }
+  if (!isValidSelection(context, hit)) { context.boardAdapter.clearMovePreview(); return; }
+  context.boardAdapter.setMovePreview({ row: hit.row, col: hit.col, color: 'black' });
+}
 
-  if (!isExpectedNextTarget(connectionsMade, { row, col })) {
+function closeInput(context) {
+  context.boardAdapter.setInputEnabled(false); // preview'ı da temizler (bkz. adaptör sözleşmesi)
+  unsubscribeBoardListeners();
+}
+
+function handleTap(context, hit) {
+  if (topicEnded || state === STATE.INTRO) return;
+  if (!isValidSelection(context, hit)) {
     els.statusEl.textContent = WRONG_POINT_HINT;
     return; // gerçek state DEĞİŞMEZ — hedef dışı deneme taş bırakmaz, liberty işaretleri BOZULMAZ.
   }
 
-  const result = context.boardAdapter.playMove({ row, col, color: 'black' });
-  if (!result.ok) return; // savunma amaçlı — hedef noktalar zaten her zaman yasaldır.
+  const result = context.boardAdapter.playMove({ row: hit.row, col: hit.col, color: 'black' });
+  if (!result.ok) return; // savunma amaçlı — seçilebilir nefes noktaları zaten her zaman yasaldır.
 
-  connectionsMade += 1;
+  placedPoints.push({ row: hit.row, col: hit.col });
   const size = groupSize();
   const newLiberties = currentGroupLiberties(context);
   const libertyCount = newLiberties.length;
+  const connectionNumber = size - 1; // çapadan sonraki kaçıncı kullanıcı hamlesi
 
-  context.emit('scene_move_played', { row, col, color: 'black', groupSize: size, libertyCount, connectionNumber: connectionsMade });
+  context.emit('scene_move_played', {
+    row: hit.row, col: hit.col, color: 'black',
+    groupSize: size, libertyCount, connectionNumber,
+    shapeSignature: shapeSignature(placedPoints),
+  });
   context.boardAdapter.showLiberties(newLiberties);
-  context.emit('scene_liberties_shown', { row, col, groupSize: size, libertyCount });
+  context.emit('scene_liberties_shown', { groupSize: size, libertyCount });
+  context.boardAdapter.clearMovePreview(); // yeni hover gerekir — eski hedefin ghost'u kalıntı bırakmaz.
 
   els.statusEl.textContent = statusTextFor(size, libertyCount);
 
-  if (sequenceDone()) {
-    context.boardAdapter.clearMovePreview();
-    els.captionEl.textContent = '';
-    // Savunma amaçlı nihai doğrulama — bkz. scenes/groupLibertyPolicy.js
-    // dosya başı notu (yalnız groupSize===3 YETERLİ DEĞİL, nihai KONUM
-    // curriculum'un doğrusal örneğiyle BİREBİR eşleşmeli).
-    const placedPoints = [ANCHOR, ...Array.from({ length: connectionsMade }, (_, i) => getTargetAt(i))];
-    if (matchesCurriculumSeed(placedPoints) && !unlockedEmitted) {
-      unlockedEmitted = true;
-      context.emit('scene_completion_unlocked', {});
-    }
-  } else {
-    showNextTargetGhost(context);
-    els.captionEl.textContent = NEXT_TARGET_INSTRUCTION;
+  if (size === MIN_GROUP_SIZE && !unlockedEmitted) {
+    unlockedEmitted = true;
+    context.emit('scene_completion_unlocked', {});
   }
-  state = STATE.CONNECTED;
+
+  if (atMax()) {
+    els.captionEl.textContent = MAX_REACHED_HINT;
+    closeInput(context);
+  } else if (meetsMin()) {
+    els.captionEl.textContent = CONTINUE_OPTIONAL_HINT;
+  } else {
+    els.captionEl.textContent = '';
+  }
+
+  state = STATE.PLAYING;
   render();
 }
 
-/** i'inci (0-tabanlı) tamamlanmış bağlantı hedefi — canComplete/handleTap
-    nihai board doğrulaması için (bkz. scenes/groupLibertyPolicy.js). */
-function getTargetAt(i) {
-  // TOTAL_CONNECTIONS sabit ve küçüktür (bu örnekte 2) — sırayla
-  // getNextTarget(0..TOTAL_CONNECTIONS-1) tam tamamlanmış hedef listesini verir.
-  return getNextTarget(i);
-}
-
 function goToNextTopic(context) {
-  if (!sequenceDone() || topicEnded) return;
+  if (!meetsMin() || topicEnded) return;
   topicEnded = true;
-  context.boardAdapter.setInputEnabled(false);
-  unsubscribeBoardListeners();
+  closeInput(context);
   topicEnd = mountTopicEndControls(context, { summaryText: SUMMARY_TEXT });
   render();
 }
@@ -196,7 +199,7 @@ function buildDom(context) {
       <span class="ls-strip-status" id="s04-status" role="status" aria-live="polite"></span>
       <span class="ls-strip-caption" id="s04-caption"></span>
       <button type="button" class="ls-strip-btn" id="s04-next" disabled aria-describedby="s04-continue-hint">Sonraki konu</button>
-      <span class="ls-strip-caption" id="s04-continue-hint">${CONTINUE_DISABLED_HINT}</span>
+      <span class="ls-strip-caption" id="s04-continue-hint">${BELOW_MIN_HINT}</span>
     </div>
   `;
   context.container.appendChild(root);
@@ -220,7 +223,7 @@ function on(el, type, handler) {
 
 export const scene04GroupLiberties = {
   id: 'scene-04-group-liberties',
-  version: 2,
+  version: 3,
   title: 'Grubun Nefesi',
   curriculumRef: { lessonId: 'l2', concept: 'liberty', stepIndex: 2 },
 
@@ -234,9 +237,10 @@ export const scene04GroupLiberties = {
     context.boardAdapter.focus('center');
     context.boardAdapter.setInputEnabled(false);
     context.boardAdapter.clearLiberties();
-    // Çapa taş — curriculum grup örneğinin ilk taşı (bkz. dosya başı notu).
+    // Çapa taş — serbest keşfin başlangıç noktası (bkz. dosya başı notu).
     // Board State'e her zaman yasal (boş tahta) — sonuç göz ardı edilebilir.
     context.boardAdapter.playMove({ row: ANCHOR.row, col: ANCHOR.col, color: 'black' });
+    placedPoints = [{ row: ANCHOR.row, col: ANCHOR.col }];
 
     let confirming = false;
     on(els.confirmBtn, 'click', () => {
@@ -248,14 +252,13 @@ export const scene04GroupLiberties = {
       const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const doAdvance = () => {
         context.emit('scene_intro_confirmed', {});
-        state = STATE.AWAITING_CONNECT;
+        state = STATE.AWAITING_MOVE;
         context.boardAdapter.setInputEnabled(true);
         unsubscribeTap = context.boardAdapter.onIntersectionTap(hit => handleTap(context, hit));
-        // Çapanın GERÇEK nefes noktaları — "buraya bağlanabilirsin" görsel
-        // referansı (bkz. dosya başı notu, currentGroupLiberties).
+        unsubscribeHover = context.boardAdapter.onIntersectionHover(hit => handleHover(context, hit));
+        // Çapanın GERÇEK nefes noktaları — hepsi seçilebilir hedeftir,
+        // hepsi turkuaz işaretlenir (bkz. dosya başı notu).
         context.boardAdapter.showLiberties(currentGroupLiberties(context));
-        // İlk hedef ((4,4)) pointer hareketi BEKLENMEDEN ghost olarak görünür.
-        showNextTargetGhost(context);
         render();
       };
       if (reduceMotion) { doAdvance(); return; }
@@ -282,9 +285,7 @@ export const scene04GroupLiberties = {
   },
 
   canComplete() {
-    if (!sequenceDone()) return false;
-    const placedPoints = [ANCHOR, ...Array.from({ length: connectionsMade }, (_, i) => getTargetAt(i))];
-    return matchesCurriculumSeed(placedPoints);
+    return meetsMin() && isConnectedSingleGroup(placedPoints);
   },
 
   complete() {

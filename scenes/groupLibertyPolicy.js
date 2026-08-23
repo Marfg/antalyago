@@ -1,29 +1,52 @@
 /**
  * scenes/groupLibertyPolicy.js
  *
- * Sahne #4 ("Grubun Nefesi") için saf, DOM'suz hedef/başarı politikası.
- * core/curriculum.js'in l2.steps[2] (kullanıcıya görünen "3. adım") üç
- * taşlı doğrusal grup örneğini TEK kaynaktan okur — scenes/
- * scene04GroupLiberties.js VE teacher-studio.html Diagnostics AYNI bu
- * modülü kullanır, hiçbiri koordinatları kendi başına ikinci kez
- * sabitlemez (bkz. görev talimatı: "Teacher Studio içine sahne
- * mantığının ikinci kopyasını hard-code etme").
+ * Sahne #4 ("Grubun Nefesi") için saf, DOM'suz grup/nefes-noktası
+ * politikası. v0.17 — kök neden düzeltmesi (bkz. görev talimatı): önceki
+ * sürüm curriculum'un l2.steps[2] üç-taşlı DOĞRUSAL örneğini SIRALI,
+ * ZORUNLU bir hedef listesine çeviriyordu (`getConnectionTargets`,
+ * `isExpectedNextTarget`, `matchesCurriculumSeed` completion şartı) —
+ * kullanıcı yalnız (4,4) sonra (4,5)'e tıklayabiliyordu, L/T/dallanan
+ * şekiller REDDEDİLİYORDU. Artık bu modül SERBEST bağlı-grup keşfini
+ * destekler: kullanıcı çapadan başlayıp grubun GERÇEK nefes
+ * noktalarından herhangi birine (sırayla veya karışık) tıklayarak 3-7
+ * taşlık İSTEDİĞİ bağlı şekli kurabilir.
  *
- * canvas/DOM/renderer bilmez — yalnız {row,col} koordinat verisiyle
- * çalışır, unit test edilebilir.
+ * scenes/scene04GroupLiberties.js VE teacher-studio.html Diagnostics
+ * AYNI bu modülü kullanır — sahne mantığının ikinci bir kopyası hard-code
+ * edilmez.
+ *
+ * canvas/DOM/renderer/sahne global state BİLMEZ — yalnız {row,col}
+ * koordinat verisiyle çalışır, core/boardState.js ve core/ruleEngine.js
+ * (ikisi de saf) üzerinden hesaplar, unit test edilebilir.
  */
 
 import { CURRICULUM } from '../core/curriculum.js';
+import { BoardState } from '../core/boardState.js';
+import { getGroup, getLiberties } from '../core/ruleEngine.js';
 
 const LESSON_ID = 'l2';
 const STEP_INDEX = 2;
+const BOARD_SIZE = 9;
+
+export const MIN_GROUP_SIZE = 3;
+export const MAX_GROUP_SIZE = 7;
 
 /**
- * curriculum'un l2.steps[2] board seed'ini {row,col} listesine çevirir
- * (SGF/curriculum kuralı: x=col, y=row — bkz. proje CLAUDE.md "SGF
- * Koordinat Çevirisi"). Seed sırası curriculum'daki tanım sırasıdır:
- * ilk taş çapa, kalan taşlar sıralı bağlantı hedefleridir.
- * @returns {Array<{row:number, col:number}>}
+ * Serbest keşfin başlangıç çapası — curriculum'un tarihsel örneğiyle AYNI
+ * konum (row:4,col:3), her yöne büyümeye yetecek iç alanı var (9×9'da
+ * kenara en az 3 kesişim mesafede). Artık kullanıcı akışını KISITLAMAZ,
+ * yalnız başlangıç noktasıdır.
+ */
+export const ANCHOR = { row: 4, col: 3 };
+/** @returns {{row:number,col:number}} */
+export function getAnchor() { return { ...ANCHOR }; }
+
+/**
+ * curriculum'un l2.steps[2] TARİHSEL üç-taşlı DOĞRUSAL örneği — yalnız
+ * Diagnostics/test çapraz-doğrulaması için okunur, sahne akışını ARTIK
+ * GATE ETMEZ (bkz. dosya başı notu).
+ * @returns {Array<{row:number,col:number}>}
  */
 export function getCurriculumGroupSeed() {
   const lesson = CURRICULUM.flatMap(chapter => chapter.lessons).find(l => l.id === LESSON_ID);
@@ -32,63 +55,84 @@ export function getCurriculumGroupSeed() {
   return board.map(({ x, y }) => ({ row: y, col: x }));
 }
 
-/** Çapa taş (seed'in ilk noktası). */
-export function getAnchor() {
-  return getCurriculumGroupSeed()[0] ?? null;
+function keyOf(p) { return `${p.row},${p.col}`; }
+function inBounds(p, size) { return p.row >= 0 && p.row < size && p.col >= 0 && p.col < size; }
+
+/** Noktaları tekilleştirip deterministik (satır,sütun) sırasına dizer. */
+export function normalizeGroup(points) {
+  const seen = new Map();
+  for (const p of points ?? []) { if (p) seen.set(keyOf(p), { row: p.row, col: p.col }); }
+  return [...seen.values()].sort((a, b) => a.row - b.row || a.col - b.col);
 }
 
-/** Sıralı bağlantı hedefleri (çapadan SONRAKİ seed noktaları, sırayla). */
-export function getConnectionTargets() {
-  return getCurriculumGroupSeed().slice(1);
+/** Deterministik, sıra-bağımsız şekil kimliği — event payload'ında sabit
+    bir "shape label" yerine güvenli bir imza olarak kullanılabilir. */
+export function shapeSignature(points) {
+  return normalizeGroup(points).map(keyOf).join('|');
 }
 
-/** Tamamlanması gereken toplam bağlantı sayısı (bu örnekte 2). */
-export function totalConnectionsRequired() {
-  return getConnectionTargets().length;
-}
-
-/**
- * `connectionsMade` (0..N) tamamlanan bağlantı sayısına göre bir SONRAKİ
- * beklenen hedef nokta — kalan hedef yoksa null.
- * @param {number} connectionsMade
- * @returns {{row:number,col:number}|null}
- */
-export function getNextTarget(connectionsMade) {
-  return getConnectionTargets()[connectionsMade] ?? null;
-}
-
-/** @param {number} connectionsMade */
-export function isSequenceComplete(connectionsMade) {
-  return connectionsMade >= totalConnectionsRequired();
+/** Duplicate koordinatlar TEKİLLEŞTİRİLDİKTEN sonraki gerçek taş sayısı. */
+export function getGroupSize(points) {
+  return normalizeGroup(points).length;
 }
 
 /**
- * Verilen bir noktanın, `connectionsMade` durumunda kabul edilecek TEK
- * doğru sonraki hedefle eşleşip eşleşmediğini doğrular — sahne bu
- * fonksiyonu KULLANARAK "yasal ama hedef dışı" (ör. L-biçimi oluşturacak)
- * hamleleri reddeder (bkz. görev talimatı "Neden tam doğrusal örnek
- * gerekli?").
- * @param {number} connectionsMade
- * @param {{row:number,col:number}} point
+ * Verilen noktaların GERÇEKTEN tek bağlı (yatay/dikey) grup oluşturup
+ * oluşturmadığını core/ruleEngine.js (getGroup — flood-fill) üzerinden
+ * doğrular. Tahta dışı koordinat veya kopuk taş kümesi GEÇMEZ (false).
+ * @param {Array<{row:number,col:number}>} points
+ * @param {number} [size]
  */
-export function isExpectedNextTarget(connectionsMade, point) {
-  const target = getNextTarget(connectionsMade);
-  return !!target && !!point && target.row === point.row && target.col === point.col;
+export function isConnectedSingleGroup(points, size = BOARD_SIZE) {
+  const norm = normalizeGroup(points);
+  if (norm.length === 0) return false;
+  if (!norm.every(p => inBounds(p, size))) return false;
+  const board = new BoardState(size);
+  for (const p of norm) board.placeStone(p.col, p.row, 'black');
+  const group = getGroup(board, norm[0].col, norm[0].row);
+  return group.size === norm.length;
 }
 
 /**
- * Nihai (tüm bağlantılar tamamlanmış) yerleştirilmiş taş listesinin
- * curriculum seed'iyle BİREBİR (sıra bağımsız küme) eşleştiğini doğrular
- * — yalnız `groupSize===3` yeterli değildir (L-biçimi de 3 taşlık tek
- * grup olabilir ama farklı bir liberty sonucu üretir), bu yüzden nihai
- * KONUM curriculum'un doğrusal örneğiyle AYNI olmalı.
- * @param {Array<{row:number,col:number}>} placedPoints
+ * (GEÇERLİ, tek bağlı) bir grubun GERÇEK ortak nefes noktalarını
+ * core/ruleEngine.js üzerinden hesaplar — saf, adaptör/DOM'suz referans
+ * hesabı. Canlı sahne AYNI sonucu adapters/sceneBoardAdapter.js'in
+ * getLibertiesAt()'ı üzerinden alır; bu fonksiyon test/Diagnostics
+ * için BAĞIMSIZ bir ikinci kanıttır.
+ * @param {Array<{row:number,col:number}>} points
+ * @param {number} [size]
+ * @returns {Array<{row:number,col:number}>}
  */
-export function matchesCurriculumSeed(placedPoints) {
-  const seed = getCurriculumGroupSeed();
-  if (!Array.isArray(placedPoints) || placedPoints.length !== seed.length) return false;
-  const key = (p) => `${p.row},${p.col}`;
-  const seedKeys = seed.map(key).sort();
-  const placedKeys = placedPoints.map(key).sort();
-  return seedKeys.every((k, i) => k === placedKeys[i]);
+export function computeGroupLiberties(points, size = BOARD_SIZE) {
+  const norm = normalizeGroup(points);
+  if (!isConnectedSingleGroup(norm, size)) return [];
+  const board = new BoardState(size);
+  for (const p of norm) board.placeStone(p.col, p.row, 'black');
+  const group = getGroup(board, norm[0].col, norm[0].row);
+  const libs = getLiberties(board, group);
+  return [...libs].map(k => { const [x, y] = k.split(',').map(Number); return { row: y, col: x }; });
+}
+
+/** `point`, mevcut (geçerli, tek bağlı) grubun GERÇEK bir nefes noktası mı?
+    Boş + tahta-içi + gruba (yatay/dikey) bitişik olma koşulunu TEK YERDEN
+    kapsar — ayrı "occupied/out-of-bounds/disconnected" kontrolü GEREKMEZ
+    (nefes noktası tanımı zaten bunları dışlar). */
+export function isSelectableLibertyPoint(points, point, size = BOARD_SIZE) {
+  if (!point) return false;
+  return computeGroupLiberties(points, size).some(l => l.row === point.row && l.col === point.col);
+}
+
+/** Yeni bir taş EKLENEBİLİR mi — 7 sınırı + gerçek nefes koşulu birlikte. */
+export function canAddStone(points, point, size = BOARD_SIZE) {
+  if (getGroupSize(points) >= MAX_GROUP_SIZE) return false;
+  return isSelectableLibertyPoint(points, point, size);
+}
+
+/** Grup 7 taşlık üst sınıra ulaştı mı (sekizinci taş HİÇBİR KOŞULDA eklenmez). */
+export function isAtMax(points) { return getGroupSize(points) >= MAX_GROUP_SIZE; }
+
+/** Completion uygunluğu: 3 ≤ grup boyutu ≤ 7 VE gerçekten tek bağlı grup. */
+export function isCompletable(points, size = BOARD_SIZE) {
+  const n = getGroupSize(points);
+  return n >= MIN_GROUP_SIZE && n <= MAX_GROUP_SIZE && isConnectedSingleGroup(points, size);
 }
