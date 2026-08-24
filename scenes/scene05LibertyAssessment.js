@@ -46,12 +46,12 @@
  * SKOR DİLİ YOK (bkz. görev talimatı Bölüm 10): puan/yüzde/başarısızlık
  * ekranı YOK — yalnız "Doğru" / "Bir kez daha düşün" + kısa açıklama.
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-08-23.3';
-import { assessmentTransition } from './assessmentTransition.js?v=2026-08-23.3';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-08-24.1';
+import { assessmentTransition } from './assessmentTransition.js?v=2026-08-24.1';
 import {
   getAssessmentSteps, computeChoiceCorrectIndex, computeTapTargets,
-  isValidTapAnswer, isValidChoiceAnswer,
-} from './libertyAssessmentPolicy.js?v=2026-08-23.3';
+  isValidTapAnswer, isValidChoiceAnswer, computeResultAfterMove,
+} from './libertyAssessmentPolicy.js?v=2026-08-24.1';
 
 const CONCEPT = 'liberty';
 
@@ -208,7 +208,17 @@ function renderTapItem(context, assessment) {
     // çağrısıyla, hamle sonucu belli olduktan SONRA emit edilir.
     let resultConcept = null;
     let playResult = null;
+    // v2 — kök neden düzeltmesi: resultInfo, HAM curriculum seed'i + GERÇEKTEN
+    // tıklanan `hit` noktası üzerinden core/ruleEngine.js ile SIMÜLE edilir
+    // (bkz. libertyAssessmentPolicy.js computeResultAfterMove) — sonuç
+    // highlight'ı ARTIK computeTapTargets(assessment)'i (hamle-ÖNCESİ küme)
+    // TEKRAR ÇAĞIRMIYOR (eski hata: board'da yeni taş/yeni grup varken
+    // ekranda hâlâ eski taşın/grubun hamle-öncesi nefesleri gösteriliyordu —
+    // bkz. görev talimatı Bölüm 1). Seçilen yön DEĞİŞSE bile (item 4'ün dört
+    // kabul edilen noktası) sonuç HER ZAMAN gerçek/tekil hesaplanır.
+    let resultInfo = null;
     if (isCorrect) {
+      resultInfo = computeResultAfterMove(assessment, hit);
       playResult = context.boardAdapter.playMove({ row: hit.row, col: hit.col, color: 'black' });
       if (!playResult.ok) return; // savunma amaçlı — geçerli hedefler zaten her zaman yasaldır.
       if (playResult.captured?.length > 0) resultConcept = 'capture';
@@ -224,6 +234,15 @@ function renderTapItem(context, assessment) {
       col: hit.col,
       libertyCount: realTargets.length,
       ...(resultConcept ? { resultConcept } : {}),
+      // Yanlış cevapta HİÇ eklenmez (hamle oynanmadı, board değişmedi) —
+      // yalnız doğru cevapta, GERÇEK hamle-öncesi/hamle-sonrası kanıtı taşır.
+      ...(resultInfo ? {
+        groupSizeBeforeMove: resultInfo.groupSizeBeforeMove,
+        libertyCountBeforeMove: resultInfo.libertyCountBeforeMove,
+        groupSizeAfterMove: resultInfo.groupSizeAfterMove,
+        libertyCountAfterMove: resultInfo.libertyCountAfterMove,
+        resultLibertyPoints: resultInfo.resultLibertyPoints,
+      } : {}),
     });
     if (!isCorrect) {
       setFeedback(assessment.feedbackErr ? `${assessment.feedbackErr}` : RETRY_HINT_TAP, 'err');
@@ -231,9 +250,27 @@ function renderTapItem(context, assessment) {
     }
     answeredCorrectly[currentIndex] = true;
     context.boardAdapter.setInputEnabled(false);
-    context.boardAdapter.showLiberties(computeTapTargets(assessment));
+    // Önceki (hamle-öncesi) highlight'lar TAMAMEN temizlenir — eski ve yeni
+    // işaretler bir kareliğine bile üst üste kalmaz (bkz. görev talimatı
+    // Bölüm 3/5).
+    context.boardAdapter.clearLiberties();
     const captured = resultConcept === 'capture';
-    setFeedback(assessment.feedbackOk || (captured ? 'Mükemmel! Yakaladın.' : 'Doğru!'), 'ok');
+    if (captured) {
+      // steps[7] (atari/yakalama) — yeni taşın KENDİ (izole, gruba bağlı
+      // OLMAYAN) nefeslerini göstermek pedagojik olarak konu dışıdır (bkz.
+      // görev talimatı Bölüm 2: "pedagojik odağını bozmadan ele al") — bu
+      // alıştırmanın konusu yakalamanın KENDİSİ, sonuç grup boyutu DEĞİL.
+      // Eski hatalı (görünmez biçimde çakışan) tek noktalık işaret artık HİÇ
+      // çizilmiyor; capture'ın kendisi zaten yeterli görsel geri bildirim.
+      setFeedback(assessment.feedbackOk || 'Mükemmel! Yakaladın.', 'ok');
+    } else {
+      // steps[5]/[6] (item 3/4) — sonuç, GERÇEK hesaplanan nihai grubun TÜM
+      // nefes noktalarını gösterir; feedback metni artık curriculum'un sabit
+      // "Bu bir nefes noktasıydı" cümlesiyle YETİNMEZ, oluşan grubu anlatır
+      // (bkz. görev talimatı Bölüm 6).
+      context.boardAdapter.showLiberties(resultInfo.resultLibertyPoints);
+      setFeedback(`Doğru. Yeni taş gruba bağlandı. Bu ${resultInfo.groupSizeAfterMove} taşlı grubun ${resultInfo.libertyCountAfterMove} nefes noktası var.`, 'ok');
+    }
     showContinueControl(context);
   });
   return els.contentEl.querySelector('.s05-tap-hint');
@@ -394,7 +431,11 @@ function buildDom(context) {
 
 export const scene05LibertyAssessment = {
   id: 'scene-05-liberty-assessment',
-  version: 1,
+  // v2 (2026-08-24.1) — davranışsal değişiklik: doğru cevap sonrası nefes
+  // highlight'ı artık hamle-ÖNCESİ değil hamle-SONRASI GERÇEK grubu gösterir
+  // (bkz. computeResultAfterMove, dosya başı v2 notu). Sahne version'ı
+  // sürüm token'ından BAĞIMSIZ (bkz. tests/sceneRelease.test.js).
+  version: 2,
   title: 'Nefes Noktalarını Değerlendir',
   curriculumRef: { lessonId: 'l2', concept: 'liberty', stepIndex: 3 },
   // Geriye uyumlu TEKİL curriculumRef korunurken (registry/Diagnostics

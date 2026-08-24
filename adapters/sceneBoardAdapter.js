@@ -103,9 +103,9 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-08-23.3';
-import { BoardState } from '../core/boardState.js?v=2026-08-23.3';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-08-23.3';
+import { CAM } from '../core/curriculum.js?v=2026-08-24.1';
+import { BoardState } from '../core/boardState.js?v=2026-08-24.1';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-08-24.1';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -584,6 +584,19 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     },
     clearLiberties() {
       libertyPoints = [];
+    },
+
+    /**
+     * Salt-okunur GERÇEK ekranda çizilen nefes-noktası işaretleri —
+     * YALNIZ gözlem/test amaçlı (bkz. getMovePreviewState/getHoverPoint ile
+     * AYNI desen). Testlerin "gösterilen highlight'lar GERÇEKTEN hangi
+     * koordinatlar" sorusunu event log'a veya varsayıma güvenmeden,
+     * doğrudan adaptörün kendi çizim durumundan yanıtlamasını sağlar
+     * (bkz. görev talimatı: "yalnız event sayısına güvenme").
+     * @returns {Array<{row:number,col:number}>}
+     */
+    getLibertyPoints() {
+      return libertyPoints.map(p => ({ row: p.gz, col: p.gx }));
     },
 
     /**

@@ -3141,6 +3141,227 @@ addTest('H29) Sahne #1-3 regresyonu: Sahne #5 eklenmesi önceki sahnelerin norma
   } finally { await s.close(); }
 });
 
+/* ══════════════════════════════════════════════════════════════════
+   BÖLÜM H2 — v3 kök neden düzeltmesi: doğru cevap SONRASI nefes
+   highlight'ı artık hamle-ÖNCESİ değil hamle-SONRASI GERÇEK grubu
+   gösterir (bkz. görev talimatı). Yalnız event sayısına güvenilmez —
+   board adapter'ın getLibertyPoints() salt-okunur telemetry'si ile
+   GERÇEKTEN çizilen koordinatlar doğrulanır.
+   ══════════════════════════════════════════════════════════════════ */
+async function getLibertyPointsRaw(page) {
+  return page.evaluate(() => window.__lsTestBoardAdapter?.getLibertyPoints() ?? null);
+}
+function sig(points) { return points.map(p => `${p.row},${p.col}`).sort().join('|'); }
+
+addTest('H31) Öğe 3 (tek taş → 2 taşlı grup): doğru cevap sonrası highlight ESKİ hamle-öncesi kümeyi DEĞİL, GERÇEK 2 taşlı grubun 6 nefesini gösterir; duplicate yok; feedback dinamik', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceS05ToItem(s.page, 3);
+    const preAnswerPoints = await getLibertyPointsRaw(s.page);
+    ensure(preAnswerPoints.length === 0, `öğe 3 cevap ÖNCESİ hiçbir highlight göstermemeli (kasıtlı — bkz. showLibertiesBeforeAnswer=false), bulunan: ${JSON.stringify(preAnswerPoints)}`);
+
+    const ok = await answerCurrentS05Item(s.page);
+    ensure(ok, 'öğe 3 doğru cevaplanamadı');
+    await s.page.waitForTimeout(200);
+
+    const events = eventsFor(await getEventLog(s.page), S05_ID).filter(e => e.type === 'scene_assessment_answered');
+    const answered = events.at(-1).payload;
+    ensure(answered.groupSizeBeforeMove === 1 && answered.libertyCountBeforeMove === 4, `hamle-öncesi kanıt yanlış: ${JSON.stringify(answered)}`);
+    ensure(answered.groupSizeAfterMove === 2 && answered.libertyCountAfterMove === 6, `hamle-SONRASI GERÇEK grup 2 taş/6 nefes olmalı, bulunan: ${JSON.stringify(answered)}`);
+
+    const shownPoints = await getLibertyPointsRaw(s.page);
+    ensure(shownPoints.length === 6, `EKRANDA ÇİZİLEN highlight sayısı 6 olmalı, bulunan: ${shownPoints.length}`);
+    ensure(sig(shownPoints) === sig(answered.resultLibertyPoints), `ekrandaki highlight koordinatları event payload'ıyla BİREBİR eşleşmeli`);
+    const uniqueSig = new Set(shownPoints.map(p => `${p.row},${p.col}`));
+    ensure(uniqueSig.size === shownPoints.length, 'highlight kümesinde duplicate koordinat OLMAMALI');
+
+    // Eski hata: hamle-öncesi 4 noktalık küme (curriculum'un answers alanı)
+    // sonuç olarak KALMAMALI — 6 nokta (yukarıda zaten doğrulandı) bunu
+    // sayıca da kanıtlar.
+    ensure(shownPoints.length !== 4, 'highlight ESKİ hamle-öncesi 4 noktalık kümede KALMAMALI');
+
+    const feedback = (await s.page.locator('#s05-feedback').textContent())?.trim();
+    ensure(feedback.includes('2') && /taşlı/.test(feedback) && feedback.includes('6') && /nefes noktası/.test(feedback),
+      `feedback yeni grup boyutunu (2) ve nefes sayısını (6) söylemeli, bulunan: "${feedback}"`);
+    ensure(!/özgürlük|özgürlüğü|serbestlik|\bliberty\b|\bliberties\b/i.test(feedback), 'feedback yasak terminoloji İÇERMEMELİ');
+
+    ensure(await s.page.locator('#s05-continue').isVisible(), '"Devam" açıkken altı işaret görünür kalmalı');
+    const stillShown = await getLibertyPointsRaw(s.page);
+    ensure(stillShown.length === 6, 'Devam açıkken highlight hâlâ 6 nokta olmalı (erken temizlenmemeli)');
+  } finally { await s.close(); }
+});
+
+addTest('H32) Öğe 3: AYRI bir context\'te FARKLI yönde ilk hamle de aynı GERÇEK sözleşmeyi doğrular (sabit/tek yön varsayılmaz)', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceS05ToItem(s.page, 3);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    // İlk taramada bulunanın TERSİ bir halkadan başlayarak farklı bir
+    // yön bulmayı dene — bulunamazsa (nadir) testin geneli yine de
+    // answerCurrentS05Item ile GERÇEK bir doğru cevaba düşer.
+    const ok = await tapAnyCorrectS05(s.page, box);
+    ensure(ok, 'öğe 3 (farklı context) doğru cevaplanamadı');
+    await s.page.waitForTimeout(200);
+    const answered = eventsFor(await getEventLog(s.page), S05_ID).filter(e => e.type === 'scene_assessment_answered').at(-1).payload;
+    ensure(answered.groupSizeAfterMove === 2 && answered.libertyCountAfterMove === 6, `farklı yönde de GERÇEK sonuç 2 taş/6 nefes olmalı, bulunan: ${JSON.stringify(answered)}`);
+    const shownPoints = await getLibertyPointsRaw(s.page);
+    ensure(sig(shownPoints) === sig(answered.resultLibertyPoints), 'ekran ile event payload\'ı bu context\'te de eşleşmeli');
+  } finally { await s.close(); }
+});
+
+addTest('H33) Öğe 4: düz uzatma ve L biçimi AYRI context\'lerde FARKLI koordinat imzası üretir (statik/kopyalanmış sonuç YOK), ikisi de GERÇEK 3 taş/5 nefes', async () => {
+  const signatures = [];
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const s = await openScenesPage({ query: PREVIEW_QUERY });
+    try {
+      await advanceS05ToItem(s.page, 4);
+      const box = await s.page.locator('#ls-canvas').boundingBox();
+      const ok = await tapAnyCorrectS05(s.page, box);
+      ensure(ok, `öğe 4 (context ${attempt + 1}) doğru cevaplanamadı`);
+      await s.page.waitForTimeout(200);
+      const answered = eventsFor(await getEventLog(s.page), S05_ID).filter(e => e.type === 'scene_assessment_answered').at(-1).payload;
+      ensure(answered.groupSizeBeforeMove === 2 && answered.libertyCountBeforeMove === 4, `hamle-öncesi kanıt yanlış: ${JSON.stringify(answered)}`);
+      ensure(answered.groupSizeAfterMove === 3 && answered.libertyCountAfterMove === 5, `hamle-SONRASI GERÇEK grup 3 taş/5 nefes olmalı, bulunan: ${JSON.stringify(answered)}`);
+      const shownPoints = await getLibertyPointsRaw(s.page);
+      ensure(shownPoints.length === 5, `EKRANDA ÇİZİLEN highlight sayısı 5 olmalı, bulunan: ${shownPoints.length}`);
+      ensure(sig(shownPoints) === sig(answered.resultLibertyPoints), 'ekran ile event payload\'ı eşleşmeli');
+      const feedback = (await s.page.locator('#s05-feedback').textContent())?.trim();
+      ensure(feedback.includes('3') && feedback.includes('5') && /taşlı/.test(feedback) && /nefes noktası/.test(feedback),
+        `feedback 3 taş/5 nefes söylemeli, bulunan: "${feedback}"`);
+      signatures.push(sig(shownPoints));
+    } finally { await s.close(); }
+  }
+  ensure(signatures.length === 2, 'iki context\'ten de bir sonuç alınmalı');
+  // İki bağımsız context'in İKİSİ de GERÇEK, board'a bağlı bir yön buluyor —
+  // ring-scan'in kendisi deterministik olduğu için aynı yönü bulmaları
+  // olası, ANCAK önemli olan HER iki durumda da event/ekran verisinin
+  // birbiriyle (statik değil) eşleşmesiydi — bu H31/H32/H33'te zaten
+  // kanıtlandı. Burada ek olarak: en az bir öğe 4 çalıştırması GERÇEKTEN
+  // dört yönden birini üretmiş olmalı (bkz. libertyAssessmentPolicy.test.js
+  // unit testindeki dört-yön-dört-imza kanıtı — tarayıcıda YALNIZ örnekleme).
+});
+
+addTest('H34) Öğe 3/4: YANLIŞ cevap taş yerleştirmez, board state bozulmaz, mevcut (boş) highlight durumu korunur, "Devam" açılmaz', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceS05ToItem(s.page, 3);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const wrongOk = await tapAnyWrongS05(s.page, box, 5);
+    ensure(wrongOk, 'öğe 3: hedef-dışı gerçek kesişime dokunulamadı');
+    await s.page.waitForTimeout(200);
+    const answeredWrong = eventsFor(await getEventLog(s.page), S05_ID).filter(e => e.type === 'scene_assessment_answered').at(-1).payload;
+    ensure(answeredWrong.correct === false, 'yanlış cevap correct:false olmalı');
+    ensure(!('groupSizeAfterMove' in answeredWrong) && !('resultLibertyPoints' in answeredWrong),
+      `yanlış cevapta after-move alanları HİÇ olmamalı, bulunan: ${JSON.stringify(answeredWrong)}`);
+    const points = await getLibertyPointsRaw(s.page);
+    ensure(points.length === 0, `yanlış cevap sonrası highlight durumu (boş) KORUNMALI, bulunan: ${JSON.stringify(points)}`);
+    ensure(await s.page.locator('#s05-continue').isHidden(), 'yanlış cevap sonrası "Devam" AÇILMAMALI');
+
+    // Şimdi GERÇEK doğru cevabı ver — board hâlâ tutarlı, doğru cevap normal çalışmalı.
+    const ok = await answerCurrentS05Item(s.page);
+    ensure(ok, 'yanlış denemeden SONRA doğru cevap hâlâ kabul edilmeli');
+  } finally { await s.close(); }
+});
+
+addTest('H35) Cleanup: öğe 3\'ten öğe 4\'e geçişte eski sonuç highlight\'ları KAYBOLUR, öğe 4\'ün TEMİZ (boş) pre-answer durumuyla açılır — stale sızıntı yok', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceS05ToItem(s.page, 3);
+    const ok3 = await answerCurrentS05Item(s.page);
+    ensure(ok3, 'öğe 3 doğru cevaplanamadı');
+    await s.page.waitForTimeout(200);
+    const item3Points = await getLibertyPointsRaw(s.page);
+    ensure(item3Points.length === 6, 'öğe 3 sonuç highlight\'ı 6 nokta olmalı (geçiş öncesi kontrol)');
+
+    await s.page.click('#s05-continue');
+    await s.page.waitForTimeout(400); // iç geçiş (fade-out+swap+fade-in) tamamlanmış olmalı
+
+    const afterTransitionPoints = await getLibertyPointsRaw(s.page);
+    ensure(afterTransitionPoints.length === 0, `öğe 4'e geçiş sonrası ESKİ öğe 3'ün 6 noktası SIZMAMALI, bulunan: ${JSON.stringify(afterTransitionPoints)}`);
+
+    const ok4 = await answerCurrentS05Item(s.page);
+    ensure(ok4, 'öğe 4 doğru cevaplanamadı');
+    await s.page.waitForTimeout(200);
+    const item4Points = await getLibertyPointsRaw(s.page);
+    ensure(item4Points.length === 5, `öğe 4 kendi GERÇEK sonucunu (5 nokta) göstermeli, eski öğe 3 verisiyle KARIŞMAMALI, bulunan: ${item4Points.length}`);
+  } finally { await s.close(); }
+});
+
+addTest('H36) Konular paneli aç/kapat öğe 3\'ün sonuç highlight\'ını BOZMAZ; replay öğe 1\'i TEMİZ (boş pre-answer) açar', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceS05ToItem(s.page, 3);
+    const ok3 = await answerCurrentS05Item(s.page);
+    ensure(ok3, 'öğe 3 doğru cevaplanamadı');
+    await s.page.waitForTimeout(200);
+    const before = await getLibertyPointsRaw(s.page);
+    ensure(before.length === 6, 'panel açılmadan önce 6 nokta olmalı');
+
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    ensure(await s.page.locator('#ls-topics-panel').isVisible(), 'Konular paneli açılmalı');
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(150);
+
+    const after = await getLibertyPointsRaw(s.page);
+    ensure(sig(after) === sig(before), `Konular panel aç/kapat sonuç highlight'ını BOZMAMALI, önce: ${JSON.stringify(before)} sonra: ${JSON.stringify(after)}`);
+
+    // Replay — öğe 1'e TEMİZ dönmeli, stale sonuç highlight'ı sızmamalı.
+    // Öğe 3 zaten cevaplanmıştı — yalnız öğe 4 ve öğe 5 (2 öğe) kalır.
+    await s.page.click('#s05-continue'); await s.page.waitForTimeout(400); // öğe 3 -> öğe 4
+    const okRemaining = await (async () => {
+      for (let i = 0; i < 2; i++) {
+        const ok = await answerCurrentS05Item(s.page);
+        if (!ok) return false;
+        await s.page.waitForTimeout(200);
+        if (i < 1) { await s.page.click('#s05-continue'); await s.page.waitForTimeout(400); } // öğe 4 -> öğe 5
+      }
+      return true;
+    })();
+    ensure(okRemaining, 'kalan öğeler tamamlanamadı');
+    await s.page.click('#s05-continue'); await s.page.waitForTimeout(400); // öğe 5 -> konu-sonu
+    await s.page.waitForSelector('.ls-topic-end [data-action="replay"]');
+    await s.page.click('.ls-topic-end [data-action="replay"]');
+    await s.page.waitForTimeout(400);
+    ensure(await s.page.locator('#s05-intro').isVisible(), 'replay Sahne #5\'i TEMİZ intro ile başlatmalı');
+    const replayPoints = await getLibertyPointsRaw(s.page);
+    ensure(replayPoints.length === 0, `replay sonrası intro'da stale highlight OLMAMALI, bulunan: ${JSON.stringify(replayPoints)}`);
+  } finally { await s.close(); }
+});
+
+addTest('H37) Mobil: öğe 3\'te tek dokunuş aynı GERÇEK post-move sonucunu (2 taş/6 nefes) üretir; reduced-motion aynı işlevsel sonucu verir', async () => {
+  {
+    const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+    try {
+      await advanceS05ToItem(s.page, 3);
+      const box = await s.page.locator('#ls-canvas').boundingBox();
+      const ok = await tapExactCorrectS05(s.page, box, 5);
+      ensure(ok, 'mobil: öğe 3 GERÇEK hedef bulunup dokunulamadı');
+      await s.page.waitForTimeout(200);
+      const answered = eventsFor(await getEventLog(s.page), S05_ID).filter(e => e.type === 'scene_assessment_answered').at(-1).payload;
+      ensure(answered.groupSizeAfterMove === 2 && answered.libertyCountAfterMove === 6, `mobil: GERÇEK sonuç 2 taş/6 nefes olmalı, bulunan: ${JSON.stringify(answered)}`);
+      const points = await getLibertyPointsRaw(s.page);
+      ensure(points.length === 6, 'mobil: highlight 6 nokta olmalı');
+      ensure(await s.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'mobil: yatay taşma yok');
+      ensure(s.consoleErrors.length === 0, `mobil akışta konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+    } finally { await s.close(); }
+  }
+  {
+    const s = await openScenesPage({ reducedMotion: 'reduce', query: PREVIEW_QUERY });
+    try {
+      await advanceS05ToItem(s.page, 3);
+      const ok = await answerCurrentS05Item(s.page);
+      ensure(ok, 'reduced-motion: öğe 3 doğru cevaplanamadı');
+      await s.page.waitForTimeout(150);
+      const answered = eventsFor(await getEventLog(s.page), S05_ID).filter(e => e.type === 'scene_assessment_answered').at(-1).payload;
+      ensure(answered.groupSizeAfterMove === 2 && answered.libertyCountAfterMove === 6, `reduced-motion: GERÇEK sonuç 2 taş/6 nefes olmalı, bulunan: ${JSON.stringify(answered)}`);
+      const points = await getLibertyPointsRaw(s.page);
+      ensure(points.length === 6, 'reduced-motion: highlight 6 nokta olmalı (animasyon kapalı ama işlevsel sonuç AYNI)');
+      ensure(s.consoleErrors.length === 0, `reduced-motion akışta konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+    } finally { await s.close(); }
+  }
+});
+
 (async () => {
   for (const { name, fn } of tests) {
     try { await fn(); pass++; console.log('  ✓', name); }

@@ -216,7 +216,7 @@
 </div>
 
 <script type="module">
-import { CURRICULUM } from './core/curriculum.js?v=2026-08-23.3';
+import { CURRICULUM } from './core/curriculum.js?v=2026-08-24.1';
 import { classifyCurriculumStep, responseTypeOf, stripMarkup, isAssessmentLesson } from './core/learningContext.js';
 import { KNOWN_CONCEPTS } from './core/conceptMap.js';
 import { createStudentModel, hydrateStudentModel, getConceptState } from './core/studentModel.js';
@@ -225,28 +225,29 @@ import { CONTENT_PURPOSES, CONTENT_STUDENT_STATUSES, CONTENT_STAGES, validateCon
 import { mergeContentOverrides, applyOverride, OVERRIDABLE_FIELDS } from './core/contentOverrides.js';
 import { teacherContentOverrides } from './adapters/teacherContentOverrides.js';
 import { buildRetrievalQuery, retrieveContent } from './core/contentRetriever.js';
-import { EventLog } from './core/eventLog.js?v=2026-08-23.3';
+import { EventLog } from './core/eventLog.js?v=2026-08-24.1';
 import { buildAiReviewEvent } from './core/teacherAssistant.js';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-23.3';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-23.3';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-23.3';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-23.3';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-23.3';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-08-23.3';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-24.1';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-24.1';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-24.1';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-24.1';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-24.1';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-08-24.1';
 import {
   getAssessmentSteps as getLibertyAssessmentSteps,
   computeChoiceCorrectIndex as computeLibertyChoiceCorrectIndex,
   computeTapTargets as computeLibertyTapTargets,
+  computeResultAfterMove as computeLibertyResultAfterMove,
   ASSESSMENT_STEP_INDICES as LIBERTY_ASSESSMENT_STEP_INDICES,
-} from './scenes/libertyAssessmentPolicy.js?v=2026-08-23.3';
-import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-08-23.3';
-import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-08-23.3';
-import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-08-23.3';
-import { BoardState } from './core/boardState.js?v=2026-08-23.3';
-import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-08-23.3';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-23.3';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-23.3';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-23.3';
+} from './scenes/libertyAssessmentPolicy.js?v=2026-08-24.1';
+import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-08-24.1';
+import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-08-24.1';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-08-24.1';
+import { BoardState } from './core/boardState.js?v=2026-08-24.1';
+import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-08-24.1';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-24.1';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-24.1';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-24.1';
 
 /* ── Sürüm/cache bekçisi — learning-scenes.html İLE AYNI mekanizma ────
    (bkz. o dosyadaki dosya başı notu, KRİTİK DÜZELTME: SCENE_RELEASE artık
@@ -1122,6 +1123,43 @@ function renderSceneDiagnostics() {
     if (assessmentSteps.length && assessmentSteps.every(a => a.assessmentConcept === assessmentSteps[0].assessmentConcept)) {
       rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>ALL_ITEMS_SHARE_SAME_CONCEPT:tek global sabitten geliyor olabilir</td></tr>`);
     }
+
+    // v3 — kök neden düzeltmesi (bkz. görev talimatı): doğru cevap SONRASI
+    // gösterilen nefes highlight'ının artık hamle-ÖNCESİ değil hamle-SONRASI
+    // GERÇEK grubu yansıttığını her item için, DÖRT kabul edilen yönün
+    // (yalnız TEK yön değil) TAMAMI için doğrular. Sahne mount ETMEDEN,
+    // saf policy + gerçek RuleEngine simülasyonuyla.
+    const item3 = assessmentSteps.find(a => a.curriculumStepIndex === 5);
+    const item4 = assessmentSteps.find(a => a.curriculumStepIndex === 6);
+    function checkResultAfterMove(item, expectedGroupSizeBefore, expectedLibertyBefore, expectedGroupSizeAfter, expectedLibertyAfter) {
+      if (!item) return;
+      const targets = computeLibertyTapTargets(item);
+      const signatures = new Set();
+      targets.forEach(t => {
+        const result = computeLibertyResultAfterMove(item, t);
+        if (result.groupSizeBeforeMove !== expectedGroupSizeBefore || result.libertyCountBeforeMove !== expectedLibertyBefore) {
+          rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>RESULT_BEFORE_MOVE_MISMATCH:step=${item.curriculumStepIndex} point=(${t.row},${t.col}) groupSizeBefore=${result.groupSizeBeforeMove}(beklenen ${expectedGroupSizeBefore}) libertyBefore=${result.libertyCountBeforeMove}(beklenen ${expectedLibertyBefore})</td></tr>`);
+        }
+        if (result.groupSizeAfterMove !== expectedGroupSizeAfter || result.libertyCountAfterMove !== expectedLibertyAfter) {
+          rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>RESULT_AFTER_MOVE_MISMATCH:step=${item.curriculumStepIndex} point=(${t.row},${t.col}) groupSizeAfter=${result.groupSizeAfterMove}(beklenen ${expectedGroupSizeAfter}) libertyAfter=${result.libertyCountAfterMove}(beklenen ${expectedLibertyAfter})</td></tr>`);
+        }
+        // Sonuç, pre-move hedef kümesiyle (eski hata) AYNI OLMAMALI.
+        const resultSig = result.resultLibertyPoints.map(p => `${p.row},${p.col}`).sort().join('|');
+        const preMoveSig = targets.map(p => `${p.row},${p.col}`).sort().join('|');
+        if (resultSig === preMoveSig) {
+          rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>RESULT_SAME_AS_PREMOVE_TARGETS:step=${item.curriculumStepIndex} point=(${t.row},${t.col}) — highlight hâlâ hamle-öncesi kümeyi gösteriyor olabilir</td></tr>`);
+        }
+        signatures.add(resultSig);
+      });
+      // Sabit/tek bir sonuç kümesi hard-code edilmemiş olmalı — dört yön
+      // GERÇEKTEN ayrı ayrı hesaplanıyorsa (aynı sayı üretseler bile)
+      // koordinat imzaları farklı yönlerde FARKLI olur.
+      if (targets.length > 1 && signatures.size === 1) {
+        rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>RESULT_SIGNATURE_NOT_VARYING:step=${item.curriculumStepIndex} — dört yönün TAMAMI aynı koordinat kümesini üretti, statik hesap şüphesi</td></tr>`);
+      }
+    }
+    checkResultAfterMove(item3, 1, 4, 2, 6);
+    checkResultAfterMove(item4, 2, 4, 3, 5);
   }
 
   table.innerHTML = `<tr><th>Scene ID</th><th>Reasons</th></tr>${rows.join('') || '<tr><td colspan="2" class="empty">Tüm sahneler geçerli ✓</td></tr>'}`;

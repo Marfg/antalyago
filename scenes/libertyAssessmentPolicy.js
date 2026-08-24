@@ -27,9 +27,9 @@
  *     oynanan hamlenin GERÇEK yakalamayı ürettiğini garanti eder — bkz.
  *     adapters/sceneBoardAdapter.js playMove()).
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-08-23.3';
-import { BoardState } from '../core/boardState.js?v=2026-08-23.3';
-import { getGroup, getLiberties, applyMove } from '../core/ruleEngine.js?v=2026-08-23.3';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-08-24.1';
+import { BoardState } from '../core/boardState.js?v=2026-08-24.1';
+import { getGroup, getLiberties, applyMove } from '../core/ruleEngine.js?v=2026-08-24.1';
 
 const LESSON_ID = 'l2';
 const BOARD_SIZE = 9;
@@ -206,6 +206,55 @@ export function computeTapTargets(assessment) {
 export function isValidTapAnswer(assessment, point) {
   if (!point) return false;
   return computeTapTargets(assessment).some(p => p.row === point.row && p.col === point.col);
+}
+
+/**
+ * v2 — kök neden düzeltmesi: DOĞRU cevap oynandıktan SONRA gösterilen
+ * turkuaz nefes işaretleri eskiden `computeTapTargets(assessment)`'i
+ * TEKRAR çağırıyordu — bu fonksiyon HER ZAMAN `assessment.board`'un
+ * (curriculum'dan gelen, ASLA mutate edilmeyen) HAM/hamle-ÖNCESİ diziliminden
+ * hesap yapar, bu yüzden "sonuç" highlight'ı aslında hâlâ eski taşın/grubun
+ * hamle-ÖNCESİ nefes noktalarıydı — board'da artık YENİ bir taş ve YENİ
+ * (genelde daha büyük) bir grup varken (bkz. görev talimatı Bölüm 1).
+ *
+ * Bu fonksiyon, `point`teki DOĞRU hamleyi HAM board seed'i üzerinde GERÇEKTEN
+ * simüle eder (core/ruleEngine.js applyMove — computeExpectedResultConcept
+ * ile AYNI teknik) ve hamle SONRASI nihai bağlı grubun TÜM gerçek/tekil
+ * nefes noktalarını döner — sabit koordinat listesinden, curriculum'un
+ * answers alanından veya hamle-öncesi state'ten DEĞİL.
+ *
+ * `point` genelde computeTapTargets()'in kabul ettiği noktalardan biridir,
+ * ama bu fonksiyon ÖZELLİKLE HANGİ nokta seçilirse seçilsin (item 4'ün dört
+ * kabul edilen yönü FARKLI koordinat kümeleri ama item 3'te AYNI sayıyı
+ * üretebilir — bkz. görev talimatı Bölüm 2 "seçilen yön değişse bile") doğru
+ * sonucu verir; sabit/tek bir yön varsayılmaz.
+ *
+ * @param {object} assessment — normalizeStep()'in döndürdüğü 'board_tap' öğesi
+ * @param {{row:number,col:number}} point — GERÇEKTEN oynanan (doğru) nokta
+ * @returns {{groupSizeBeforeMove:number, libertyCountBeforeMove:number, groupSizeAfterMove:number, libertyCountAfterMove:number, resultLibertyPoints:Array<{row:number,col:number}>}}
+ */
+export function computeResultAfterMove(assessment, point) {
+  const bs = seedBoardState(assessment.board, assessment.size);
+  const anchor = assessment.board[0];
+  const beforeGroup = getGroup(bs, anchor.x, anchor.y);
+  const libertyCountBeforeMove = getLiberties(bs, beforeGroup).size;
+  const groupSizeBeforeMove = beforeGroup.size;
+
+  const { newState } = applyMove(bs, point.col, point.row, 'black');
+  const afterGroup = getGroup(newState, point.col, point.row);
+  const afterLibs = getLiberties(newState, afterGroup);
+  const resultLibertyPoints = [...afterLibs].map(key => {
+    const [x, y] = key.split(',').map(Number);
+    return { row: y, col: x };
+  });
+
+  return {
+    groupSizeBeforeMove,
+    libertyCountBeforeMove,
+    groupSizeAfterMove: afterGroup.size,
+    libertyCountAfterMove: resultLibertyPoints.length,
+    resultLibertyPoints,
+  };
 }
 
 export function isValidChoiceAnswer(assessment, optionIndex) {

@@ -159,11 +159,12 @@ test('scenes/scene05LibertyAssessment.js: exported version >= 1, sahne release t
   assert.ok(Number(m[1]) >= 1, `version >= 1 olmalı, bulunan: ${m[1]}`);
 });
 
-test('RELEASE token "2026-08-23.3" — eski "2026-08-23.2" query\'si AKTİF graph\'ta KALMAMIŞ', () => {
-  assert.equal(RELEASE, '2026-08-23.3');
+test('RELEASE token "2026-08-24.1" — eski "2026-08-23.2" ve "2026-08-23.3" query\'leri AKTİF graph\'ta KALMAMIŞ', () => {
+  assert.equal(RELEASE, '2026-08-24.1');
   for (const rel of SCAN_FILES) {
     const src = read(rel);
-    assert.ok(!src.includes('?v=2026-08-23.2'), `${rel}: eski release query'si HÂLÂ mevcut`);
+    assert.ok(!src.includes('?v=2026-08-23.2'), `${rel}: eski (2026-08-23.2) release query'si HÂLÂ mevcut`);
+    assert.ok(!src.includes('?v=2026-08-23.3'), `${rel}: eski (2026-08-23.3, production'da idi) release query'si HÂLÂ mevcut`);
   }
 });
 
