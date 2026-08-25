@@ -305,7 +305,7 @@ body {
    kaldırıyor) `#ls-scene-host`u üstten hizalar; taşma varsa artık YALNIZ
    aşağıya (kaydırılabilir `#ls-narration` alanına) doğru olur. Sahne #1-4
    BU KURALDAN ETKİLENMEZ (sınıf yalnız Sahne #5'e özgü). */
-#ls-scene-host.s05-scene-host { align-self: flex-start; justify-content: flex-start; }
+#ls-scene-host.s05-scene-host, #ls-scene-host.s06-scene-host { align-self: flex-start; justify-content: flex-start; }
 
 /* ── Sahne #5 — değerlendirme aşamaları (bkz. scenes/scene05LibertyAssessment.js) ──
    v0.19 — kök neden düzeltmesi: #s05-assess, miras aldığı `.ls-strip-row`nun
@@ -335,7 +335,7 @@ body {
    2) Geri bildirim metni + "Devam" düğmesi TEK satırda birleşir (bkz.
       scene05LibertyAssessment.js .s05-feedback-row sarmalayıcı) — önceden
       İKİ ayrı dikey satırdı. */
-#s05-assess { position: relative; flex-direction: column; align-items: stretch; gap: .2rem; padding-top: .2rem; }
+#s05-assess, #s06-assess { position: relative; flex-direction: column; align-items: stretch; gap: .2rem; padding-top: .2rem; }
 .s05-progress {
   position: absolute; top: -.15rem; right: 0;
   display: flex; align-items: center; gap: .35rem; font-size: .66rem; color: var(--text); opacity: .68;
@@ -393,14 +393,14 @@ body {
    ve mobil daraltmalar SESSİZCE geçersiz kalırdı (yaşanmış hata, bkz. görev
    talimatı). */
 @media (max-width: 480px) {
-  #s05-continue { width: auto; }
+  #s05-continue, #s06-continue { width: auto; }
   .s05-content { min-height: 64px; }
   .s05-item { gap: .2rem; }
   .s05-prompt { line-height: 1.25; }
   .s05-choice-btn { padding: .3rem .6rem; font-size: .78rem; }
   .s05-feedback { font-size: .72rem; }
   .s05-feedback-row { gap: .25rem .5rem; }
-  #s05-assess { gap: .15rem; padding-top: .95rem; }
+  #s05-assess, #s06-assess { gap: .15rem; padding-top: .95rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .s05-choice-btn { transition: none; }

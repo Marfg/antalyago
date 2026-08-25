@@ -43,18 +43,19 @@
 </div>
 
 <script type="module">
-import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-08-24.1';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-24.1';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-24.1';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-24.1';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-24.1';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-24.1';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-08-24.1';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-24.1';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-24.1';
-import { EventLog } from './core/eventLog.js?v=2026-08-24.1';
-import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-08-24.1';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-24.1';
+import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-08-25.1';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-25.1';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-25.1';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-25.1';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-25.1';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-25.1';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-08-25.1';
+import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-08-25.1';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-25.1';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-25.1';
+import { EventLog } from './core/eventLog.js?v=2026-08-25.1';
+import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-08-25.1';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-25.1';
 
 /* ── Sürüm/cache bekçisi ──────────────────────────────────────────────
    GitHub Pages önündeki CDN, .js dosyalarına saatlerce (bkz. görev
@@ -165,7 +166,7 @@ const canvas = document.getElementById('ls-canvas');
 const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
 const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19 });
 
-const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment]);
+const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics]);
 
 const searchParams = new URLSearchParams(location.search);
 

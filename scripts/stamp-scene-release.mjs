@@ -55,6 +55,8 @@ const GRAPH_BASENAMES = [
   'releaseVersion.js',
   // v3 (2026-08-23.3) — Sahne #5 ve İKİ yeni yardımcı modülü.
   'scene05LibertyAssessment.js', 'libertyAssessmentPolicy.js', 'assessmentTransition.js',
+  // v4 (2026-08-25.1) — Sahne #6 ("Taş Alma") ve TEK yeni yardımcı modülü.
+  'scene06CaptureBasics.js', 'capturePolicy.js',
 ];
 
 /** Import satırı içerebilecek, graph'a dahil dosyalar + HTML entry point'leri. */
@@ -71,6 +73,8 @@ const SCAN_FILES = [
   'adapters/sceneBoardAdapter.js',
   'scenes/scene05LibertyAssessment.js',
   'scenes/libertyAssessmentPolicy.js',
+  'scenes/scene06CaptureBasics.js',
+  'scenes/capturePolicy.js',
 ];
 
 const importLineRe = /(from\s+['"])(\.[\w./-]+\.js)(\?[^'"]*)?(['"])/g;

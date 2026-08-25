@@ -216,7 +216,7 @@
 </div>
 
 <script type="module">
-import { CURRICULUM } from './core/curriculum.js?v=2026-08-24.1';
+import { CURRICULUM } from './core/curriculum.js?v=2026-08-25.1';
 import { classifyCurriculumStep, responseTypeOf, stripMarkup, isAssessmentLesson } from './core/learningContext.js';
 import { KNOWN_CONCEPTS } from './core/conceptMap.js';
 import { createStudentModel, hydrateStudentModel, getConceptState } from './core/studentModel.js';
@@ -225,29 +225,36 @@ import { CONTENT_PURPOSES, CONTENT_STUDENT_STATUSES, CONTENT_STAGES, validateCon
 import { mergeContentOverrides, applyOverride, OVERRIDABLE_FIELDS } from './core/contentOverrides.js';
 import { teacherContentOverrides } from './adapters/teacherContentOverrides.js';
 import { buildRetrievalQuery, retrieveContent } from './core/contentRetriever.js';
-import { EventLog } from './core/eventLog.js?v=2026-08-24.1';
+import { EventLog } from './core/eventLog.js?v=2026-08-25.1';
 import { buildAiReviewEvent } from './core/teacherAssistant.js';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-24.1';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-24.1';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-24.1';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-24.1';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-24.1';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-08-24.1';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-25.1';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-25.1';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-25.1';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-25.1';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-25.1';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-08-25.1';
+import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-08-25.1';
 import {
   getAssessmentSteps as getLibertyAssessmentSteps,
   computeChoiceCorrectIndex as computeLibertyChoiceCorrectIndex,
   computeTapTargets as computeLibertyTapTargets,
   computeResultAfterMove as computeLibertyResultAfterMove,
   ASSESSMENT_STEP_INDICES as LIBERTY_ASSESSMENT_STEP_INDICES,
-} from './scenes/libertyAssessmentPolicy.js?v=2026-08-24.1';
-import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-08-24.1';
-import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-08-24.1';
-import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-08-24.1';
-import { BoardState } from './core/boardState.js?v=2026-08-24.1';
-import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-08-24.1';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-24.1';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-24.1';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-24.1';
+} from './scenes/libertyAssessmentPolicy.js?v=2026-08-25.1';
+import {
+  getCaptureMoments,
+  isValidCapturePoint as isValidCaptureMomentPoint,
+  computeCaptureResult,
+  MOMENT_STEP_INDICES as CAPTURE_MOMENT_STEP_INDICES,
+} from './scenes/capturePolicy.js?v=2026-08-25.1';
+import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-08-25.1';
+import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-08-25.1';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-08-25.1';
+import { BoardState } from './core/boardState.js?v=2026-08-25.1';
+import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-08-25.1';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-25.1';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-25.1';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-25.1';
 
 /* ── Sürüm/cache bekçisi — learning-scenes.html İLE AYNI mekanizma ────
    (bkz. o dosyadaki dosya başı notu, KRİTİK DÜZELTME: SCENE_RELEASE artık
@@ -315,7 +322,7 @@ function showStudioStaleReleaseUI() {
    yalnız statik metadata'larını (id/version/curriculumRef) registry
    üzerinden okur — mevcut Curriculum/Diagnostics/Event Log panelleri
    genişletildi, yeni bir dashboard YOK. */
-const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment]);
+const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics]);
 
 /* ── localStorage erişimi — ogren-3d.html İLE AYNI anahtarlar ──────
    Studio kendi core mantığını YAZMAZ; yalnızca aynı adaptör deseniyle
@@ -551,17 +558,28 @@ function renderCurriculumScenes() {
   // (bugün yalnız Sahne #5) o sahnenin GERÇEKTEN kapsadığı adım index'lerini
   // gösterir (bkz. görev talimatı Bölüm 13: "kapsadığı beş step index/ID").
   // Tek-ref'li sahnelerde boş kalır — sözleşme geriye uyumlu.
-  // Sahne #5'in İTEM AYRINTISI — her adımın kendi GERÇEK assessmentConcept'i
+  // Sahne #5/#6'nın İTEM AYRINTISI — her adımın kendi GERÇEK assessmentConcept'i
   // (varsa expectedResultConcept'i) sahnenin PRIMARY concept'inden (Concept
-  // sütunu, her zaman 'liberty') AYRI gösterilir (bkz. görev talimatı
-  // Bölüm 8: "Scene özeti" ile "Item ayrıntısı" İKİ farklı seviyedir).
+  // sütunu — Sahne #5 için her zaman 'liberty', Sahne #6 için her zaman
+  // 'capture') AYRI gösterilir (bkz. görev talimatı Bölüm 8: "Scene özeti"
+  // ile "Item ayrıntısı" İKİ farklı seviyedir). Birden fazla çoklu-ref'li
+  // sahne olduğu için ayrıntı listesi sahne ID'sine göre EŞLENİR — tek bir
+  // ortak diziye güvenmek (eski sürüm) yalnız TEK bir çoklu-ref sahne
+  // varken güvenliydi.
   let libertyAssessmentDetail = [];
   try { libertyAssessmentDetail = getLibertyAssessmentSteps(); } catch { /* Diagnostics zaten kendi hata satırını üretir */ }
+  let captureDetail = [];
+  try { captureDetail = getCaptureMoments(); } catch { /* Diagnostics zaten kendi hata satırını üretir */ }
+  const detailByScene = {
+    [scene05LibertyAssessment.id]: libertyAssessmentDetail,
+    [scene06CaptureBasics.id]: captureDetail,
+  };
   const rows = sceneRegistry.list().map(scene => {
     const refs = Array.isArray(scene.curriculumRefs) ? scene.curriculumRefs : null;
+    const detailList = detailByScene[scene.id] || [];
     const scope = refs && refs.length > 1
       ? `${refs.length} değerlendirme — ${refs.map((r, i) => {
-          const detail = libertyAssessmentDetail.find(a => a.curriculumStepIndex === r.stepIndex);
+          const detail = detailList.find(a => a.curriculumStepIndex === r.stepIndex);
           const conceptLabel = detail ? detail.assessmentConcept : r.concept;
           const resultSuffix = detail?.expectedResultConcept ? `→${detail.expectedResultConcept}` : '';
           return `adım ${r.stepIndex + 1}(${conceptLabel}${resultSuffix})`;
@@ -1023,11 +1041,16 @@ function renderSceneDiagnostics() {
     if (sceneRegistry.next(scene04GroupLiberties.id)?.id !== scene05LibertyAssessment.id) {
       rows.push(`<tr><td>${scene04GroupLiberties.id}</td><td>NEXT_SCENE_NOT_SCENE05</td></tr>`);
     }
-    // Sahne #5 son sahne — kendi başına bir "sonraki" YOK, topic-end
-    // kontrolü "Konular" göstermeli (bkz. scenes/topicEndControls.js
-    // context.hasNextScene mantığı).
-    if (sceneRegistry.next(scene05LibertyAssessment.id) != null) {
-      rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>UNEXPECTED_NEXT_SCENE:son sahne olmalıydı</td></tr>`);
+    // v3 (Sahne #6 eklendi) — Sahne #5 ARTIK son sahne DEĞİL: "Sonraki
+    // konu" scene06'ya gitmeli (bkz. scenes/topicEndControls.js
+    // context.hasNextScene mantığı — bu, scene05LibertyAssessment.js'in
+    // KENDİ kodu DEĞİŞMEDEN, yalnız registry sırasının GENİŞLEMESİYLE
+    // doğal olarak değişen bir runtime davranışıdır, bkz. görev talimatı:
+    // "Mevcut Sahne #5'i değiştirme"). Eski "scene05 son sahne olmalı"
+    // iddiası artık YANLIŞ olurdu — bu satır scene06 eklenirken BİLEREK
+    // güncellendi (Sahne #5'in KENDİ dosyasına DOKUNULMADI).
+    if (sceneRegistry.next(scene05LibertyAssessment.id)?.id !== scene06CaptureBasics.id) {
+      rows.push(`<tr><td>${scene05LibertyAssessment.id}</td><td>NEXT_SCENE_NOT_SCENE06</td></tr>`);
     }
 
     // curriculumRefs — BEŞ referansın TAMAMI gerçek l2 adımlarına gitmeli,
@@ -1160,6 +1183,106 @@ function renderSceneDiagnostics() {
     }
     checkResultAfterMove(item3, 1, 4, 2, 6);
     checkResultAfterMove(item4, 2, 4, 3, 5);
+  }
+
+  // Sahne #6 — "Taş Alma" (core/curriculum.js l3'ün kullanıcıya görünen
+  // 1-3. adımları, steps[0..2] — bkz. scenes/capturePolicy.js, TEK
+  // doğruluk kaynağı). Studio burada sahneyi mount ETMEDEN, saf
+  // capturePolicy.js üzerinden üç curriculum ref'in TAMAMININ geçerli
+  // olduğunu, her board seed'inin GERÇEK RuleEngine sonucuyla (curriculum'un
+  // kendi answer/capture alanlarıyla) uyuştuğunu, registry sırasının
+  // scene05'ten SONRA (ve GERÇEKTEN son) geldiğini ve doğru hamlenin
+  // GERÇEKTEN hedef grubu tahtadan kaldırdığını doğrular.
+  {
+    const order = sceneRegistry.list().map(s => s.id);
+    const idx5 = order.indexOf(scene05LibertyAssessment.id);
+    const idx6 = order.indexOf(scene06CaptureBasics.id);
+    if (idx6 !== idx5 + 1) {
+      rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>REGISTRY_ORDER_INVALID:scene05 index=${idx5} scene06 index=${idx6}</td></tr>`);
+    }
+    // Sahne #6 son sahne — kendi başına bir "sonraki" YOK, topic-end
+    // kontrolü "Konular" göstermeli.
+    if (sceneRegistry.next(scene06CaptureBasics.id) != null) {
+      rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>UNEXPECTED_NEXT_SCENE:son sahne olmalıydı</td></tr>`);
+    }
+
+    // curriculumRefs — ÜÇ referansın TAMAMI gerçek l3 adımlarına gitmeli,
+    // beklenen index'lerle (0,1,2) birebir eşleşmeli.
+    const refs6 = scene06CaptureBasics.curriculumRefs ?? [];
+    if (refs6.length !== CAPTURE_MOMENT_STEP_INDICES.length) {
+      rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>CURRICULUM_REFS_COUNT_MISMATCH:${refs6.length} (beklenen ${CAPTURE_MOMENT_STEP_INDICES.length})</td></tr>`);
+    }
+    const l3ForCapture = ALL_LESSONS.find(x => x.lesson.id === 'l3')?.lesson;
+    refs6.forEach((ref, i) => {
+      const expectedIdx = CAPTURE_MOMENT_STEP_INDICES[i];
+      if (ref.stepIndex !== expectedIdx) {
+        rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>CURRICULUM_REF_INDEX_MISMATCH:ref[${i}]=${ref.stepIndex} beklenen=${expectedIdx}</td></tr>`);
+      }
+      if (!l3ForCapture?.steps?.[ref.stepIndex]) {
+        rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>UNKNOWN_CURRICULUM_STEP:stepIndex=${ref.stepIndex}</td></tr>`);
+      }
+    });
+
+    let captureMoments = [];
+    try { captureMoments = getCaptureMoments(); }
+    catch (e) { rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>MOMENTS_THREW:${e.message}</td></tr>`); }
+
+    // Her anın kabul kümesi (GERÇEK son nefes noktaları) TAM OLARAK bir
+    // noktaya inmeli — üçünün de "son nefes" senaryosu olduğunun kanıtı —
+    // VE curriculum'un kendi `answer` alanıyla uyuşmalı.
+    const KNOWN_MOMENT_CONCEPTS = ['atari', 'capture'];
+    captureMoments.forEach(m => {
+      if (m.lastLibertyPoints.length !== 1) {
+        rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>MOMENT_NOT_SINGLE_LIBERTY:step=${m.curriculumStepIndex} count=${m.lastLibertyPoints.length}</td></tr>`);
+      }
+      if (m.curriculumStatedAnswer) {
+        const stated = `${m.curriculumStatedAnswer.row},${m.curriculumStatedAnswer.col}`;
+        const real = m.lastLibertyPoints.map(p => `${p.row},${p.col}`).sort().join('|');
+        if (!real.split('|').includes(stated)) {
+          rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>STATED_ANSWER_NOT_IN_REAL_SET:step=${m.curriculumStepIndex} stated=${stated} real=${real}</td></tr>`);
+        }
+      }
+      if (!KNOWN_MOMENT_CONCEPTS.includes(m.assessmentConcept)) {
+        rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>UNKNOWN_ASSESSMENT_CONCEPT:step=${m.curriculumStepIndex} concept=${m.assessmentConcept}</td></tr>`);
+      }
+      if (m.assessmentConcept !== 'atari') {
+        rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>MOMENT_NOT_ATARI:step=${m.curriculumStepIndex} concept=${m.assessmentConcept}</td></tr>`);
+      }
+      if (m.expectedResultConcept !== 'capture') {
+        rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>MOMENT_EXPECTED_RESULT_NOT_CAPTURE:step=${m.curriculumStepIndex} expectedResultConcept=${m.expectedResultConcept}</td></tr>`);
+      }
+      const ref = refs6[m.momentIndex];
+      if (ref && ref.concept !== m.assessmentConcept) {
+        rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>CURRICULUM_REF_CONCEPT_MISMATCH:step=${m.curriculumStepIndex} ref.concept=${ref.concept} policy.assessmentConcept=${m.assessmentConcept}</td></tr>`);
+      }
+
+      // Doğru hamle GERÇEKTEN hedef grubu (taşın kendisini/grubu) tahtadan
+      // kaldırıyor mu — sabit bir "capture=true" varsayımı DEĞİL, GERÇEK
+      // applyMove sonucundan (bkz. capturePolicy.js computeCaptureResult).
+      const target = m.lastLibertyPoints[0];
+      if (target) {
+        const result = computeCaptureResult(m, target);
+        if (result.capturedCount !== m.targetGroupSize) {
+          rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>CAPTURED_COUNT_MISMATCH:step=${m.curriculumStepIndex} captured=${result.capturedCount} beklenen=${m.targetGroupSize}</td></tr>`);
+        }
+        if (!result.targetRemovedFromBoard) {
+          rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>TARGET_NOT_REMOVED:step=${m.curriculumStepIndex}</td></tr>`);
+        }
+      }
+      // Yanlış (hedef-dışı gerçek bir kesişim) bir nokta board'u
+      // DEĞİŞTİRMEMELİ — isValidCapturePoint bunu reddetmeli.
+      if (isValidCaptureMomentPoint(m, { row: 0, col: 8 }) && !(target && target.row === 0 && target.col === 8)) {
+        rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>WRONG_POINT_ACCEPTED:step=${m.curriculumStepIndex}</td></tr>`);
+      }
+    });
+
+    // Escalation — üç anın hedef grup boyutu GERÇEKTEN 1→2→3 artmalı
+    // (curriculum'un KENDİ authored sırası, bkz. scenes/scene06CaptureBasics.js
+    // dosya başı "pedagojik uyarlama" notu) — sabit bir varsayım DEĞİL.
+    const sizes = captureMoments.map(m => m.targetGroupSize);
+    if (sizes.join(',') !== '1,2,3') {
+      rows.push(`<tr><td>${scene06CaptureBasics.id}</td><td>UNEXPECTED_GROUP_SIZE_PROGRESSION:${sizes.join(',')} (beklenen 1,2,3)</td></tr>`);
+    }
   }
 
   table.innerHTML = `<tr><th>Scene ID</th><th>Reasons</th></tr>${rows.join('') || '<tr><td colspan="2" class="empty">Tüm sahneler geçerli ✓</td></tr>'}`;

@@ -27,6 +27,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import { getAssessmentSteps, computeTapTargets } from '../scenes/libertyAssessmentPolicy.js';
+import { getCaptureMoments } from '../scenes/capturePolicy.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = 'http://antalyago-scenes.test';
@@ -41,6 +42,7 @@ const S02_ID = 'scene-02-turns-and-intersections';
 const S03_ID = 'scene-03-liberties-by-position';
 const S04_ID = 'scene-04-group-liberties';
 const S05_ID = 'scene-05-liberty-assessment';
+const S06_ID = 'scene-06-capture-basics';
 // Sahne #2'nin beyaz cevap gecikmesini sıfırlayan query — YALNIZ turn-loop
 // testlerinin gerçek zamanlı beklemesini önler (bkz. learning-scenes.html
 // dosya başı test-hook notu). Sahne #3'ün artık HİÇBİR zamanlayıcısı yok
@@ -401,12 +403,13 @@ addTest('A10) Konular listesi: registry sırası, kullanıcı başlıkları, tek
     await s.page.click('#ls-topics-open');
     await s.page.waitForTimeout(100);
     const items = s.page.locator('.ls-topic-item');
-    // v0.19 — Sahne #5 ("Nefes Noktalarını Değerlendir") kayıtlı olduğu için artık BEŞ konu var.
-    ensure(await items.count() === 5, 'beş konu listelenmiyor');
+    // v4 — Sahne #6 ("Taş Alma") kayıtlı olduğu için artık ALTI konu var
+    // (bkz. görev talimatı: registry sırasına yeni Sahne #6 eklendi).
+    ensure(await items.count() === 6, 'altı konu listelenmiyor');
     const titles = await items.allTextContents();
     ensure(
       titles[0].includes('Tahtayı Tanı') && titles[1].includes('Sırayla Oyna') && titles[2].includes('Taşların Nefesi') &&
-      titles[3].includes('Grubun Nefesi') && titles[4].includes('Nefes Noktalarını Değerlendir'),
+      titles[3].includes('Grubun Nefesi') && titles[4].includes('Nefes Noktalarını Değerlendir') && titles[5].includes('Taş Alma'),
       `sıra/başlıklar yanlış: ${JSON.stringify(titles)}`);
     ensure(!titles.some(t => /scene-0\d/.test(t)), 'teknik scene ID görünüyor');
 
@@ -415,6 +418,7 @@ addTest('A10) Konular listesi: registry sırası, kullanıcı başlıkları, tek
     ensure(await items.nth(2).isDisabled(), 'henüz açılmamış 3. konu disabled değil');
     ensure(await items.nth(3).isDisabled(), 'henüz açılmamış 4. konu disabled değil');
     ensure(await items.nth(4).isDisabled(), 'henüz açılmamış 5. konu disabled değil');
+    ensure(await items.nth(5).isDisabled(), 'henüz açılmamış 6. konu disabled değil');
 
     // Renk TEK durum göstergesi olmamalı — glif farkı da olmalı.
     const mark0 = (await items.nth(0).locator('.ls-topic-mark').textContent())?.trim();
@@ -820,22 +824,23 @@ addTest('C15) reload: ilk hamleden sonra ama "Sonraki konu"ya basmadan → temiz
   } finally { await s.close(); }
 });
 
-addTest('C16) reload: tüm konular tamamlanmışken SON konu (Sahne #5) REPLAY modunda açılır (teknik final ekranı YOK)', async () => {
+addTest('C16) reload: tüm konular tamamlanmışken SON konu (Sahne #6) REPLAY modunda açılır (teknik final ekranı YOK)', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
-    // v0.19 — Sahne #5 ("Nefes Noktalarını Değerlendir") kayıtlı olduğu için
-    // registry sırasındaki GERÇEK son sahne artık S05'tir (bkz. görev
-    // talimatı Bölüm 2 — registry sırası tamamlanma sırasıdır).
+    // v4 — Sahne #6 ("Taş Alma") kayıtlı olduğu için registry sırasındaki
+    // GERÇEK son sahne artık S06'dır (bkz. görev talimatı: registry sırası
+    // tamamlanma sırasıdır — Sahne #5'in KENDİ kodu DEĞİŞMEDEN, yalnız
+    // registry sırasının genişlemesiyle doğal olarak değişen davranış).
     await s.page.evaluate((ids) => {
       localStorage.setItem('go_scene_progress_v1', JSON.stringify({
-        version: 1, activeSceneId: ids[4], completedSceneIds: ids, sceneState: {},
+        version: 1, activeSceneId: ids[5], completedSceneIds: ids, sceneState: {},
       }));
-    }, [S01_ID, S02_ID, S03_ID, S04_ID, S05_ID]);
+    }, [S01_ID, S02_ID, S03_ID, S04_ID, S05_ID, S06_ID]);
     await s.page.reload({ waitUntil: 'networkidle' });
     await s.page.waitForTimeout(300);
-    ensure(await s.page.locator('#s05-intro').isVisible(), 'son konu (Sahne #5) replay modunda açılmadı');
+    ensure(await s.page.locator('#s06-intro').isVisible(), 'son konu (Sahne #6) replay modunda açılmadı');
     const events = await getEventLog(s.page);
-    ensure(events.some(e => e.type === 'scene_replay_started' && e.stepId === S05_ID), 'boot replay\'i scene_replay_started üretmedi');
+    ensure(events.some(e => e.type === 'scene_replay_started' && e.stepId === S06_ID), 'boot replay\'i scene_replay_started üretmedi');
     ensure(await s.page.locator('#ls-error').isHidden(), 'hata/final ekranı yanlışlıkla gösterildi');
   } finally { await s.close(); }
 });
@@ -2726,7 +2731,7 @@ addTest('H10/H11/H12) Yanlış cevap ilerletmiyor, tekrar denemeye izin veriyor,
   } finally { await s.close(); }
 });
 
-addTest('H13/H17/H18/H19) İç "Devam" yalnız doğru cevaptan SONRA açılır; 5 öğe tamamlanmadan completion açılmaz; 5. doğru cevaptan sonra TAM BİR KEZ açılır; son ileri kontrolü "Konular"', async () => {
+addTest('H13/H17/H18/H19) İç "Devam" yalnız doğru cevaptan SONRA açılır; 5 öğe tamamlanmadan completion açılmaz; 5. doğru cevaptan sonra TAM BİR KEZ açılır; ileri kontrolü "Sonraki konu" (Sahne #6 kayıtlı olduğu için)', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
     await advanceToScene5AndIntro(s.page);
@@ -2745,7 +2750,12 @@ addTest('H13/H17/H18/H19) İç "Devam" yalnız doğru cevaptan SONRA açılır; 
     await goToNextS05Item(s.page);
     await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
     const advanceLabel = (await s.page.locator('.ls-topic-end [data-action="advance"]').textContent())?.trim();
-    ensure(advanceLabel === 'Konular', `Sahne #5 son sahne — ileri kontrolü "Konular" olmalı, bulunan: "${advanceLabel}"`);
+    // v4 — Sahne #6 kayıtlı olduğu için Sahne #5 ARTIK son sahne DEĞİL;
+    // "Sonraki konu" göstermeli (bkz. context.hasNextScene, scenes/
+    // topicEndControls.js — Sahne #5'in KENDİ kodu DEĞİŞMEDEN, yalnız
+    // registry sırasının genişlemesiyle doğal olarak değişen bir runtime
+    // davranışı). "Konular" etiketi artık yalnız Sahne #6'da.
+    ensure(advanceLabel === 'Sonraki konu', `Sahne #5 (artık son kayıtlı sahne DEĞİL) butonu "Sonraki konu" olmalı, bulunan: "${advanceLabel}"`);
     const completed = eventsFor(await getEventLog(s.page), S05_ID).filter(e => e.type === 'scene_completed');
     ensure(completed.length === 1, 'scene_completed TAM BİR KEZ üretildi');
   } finally { await s.close(); }
@@ -3362,12 +3372,468 @@ addTest('H37) Mobil: öğe 3\'te tek dokunuş aynı GERÇEK post-move sonucunu (
   }
 });
 
+/* ══════════════════════════════════════════════════════════════════
+   Sahne #6 ("Taş Alma") akış yardımcıları
+   ══════════════════════════════════════════════════════════════════ */
+async function completeScene5(page) {
+  await advanceToScene5AndIntro(page);
+  for (let i = 0; i < 5; i++) {
+    const ok = await answerCurrentS05Item(page);
+    ensure(ok, `Sahne #5 öğe ${i + 1} doğru cevaplanamadı (Sahne #6'ya ilerlerken)`);
+    // 5. (son) öğeden sonraki "Devam" tıklaması topic-end'i TETİKLEYEN
+    // hamledir (bkz. scenes/scene05LibertyAssessment.js goToNextItem) —
+    // HER öğeden sonra (5. dahil) tıklanmalı, aksi hâlde topic-end ASLA
+    // açılmaz (kendi kendine bulunan H13 regresyonu — bkz. görev talimatı).
+    await goToNextS05Item(page);
+  }
+  await page.waitForSelector('.ls-topic-end [data-action="advance"]');
+}
+async function advanceToScene6(page) {
+  await completeScene5(page);
+  await page.click('.ls-topic-end [data-action="advance"]');
+  await page.waitForTimeout(400);
+}
+async function confirmS06Intro(page) {
+  await page.waitForSelector('#s06-confirm');
+  await page.click('#s06-confirm');
+  await page.waitForTimeout(300);
+}
+async function advanceToScene6AndIntro(page) {
+  await advanceToScene6(page);
+  await confirmS06Intro(page);
+}
+/** Sahne #6'nın AKTİF anında GERÇEK son nefes noktasını (capturePolicy.js
+    üzerinden, sabit piksel varsayımı OLMADAN) bulup dokunur — başarı
+    "Devam" düğmesinin görünür olmasıyla ölçülür. */
+async function tapExactCorrectS06(page, box, curriculumStepIndex) {
+  const moment = getCaptureMoments().find(m => m.curriculumStepIndex === curriculumStepIndex);
+  if (!moment) return false;
+  const target = moment.lastLibertyPoints[0];
+  const cx = box.width / 2, cy = box.height / 2 - 8;
+  for (const { dx, dy } of ringOffsets()) {
+    const x = box.x + cx + dx, y = box.y + cy + dy;
+    if (x < box.x || x > box.x + box.width || y < box.y || y > box.y + box.height) continue;
+    await page.mouse.move(x, y);
+    await page.waitForTimeout(20);
+    const hit = await getHoverPoint(page);
+    if (hit && hit.row === target.row && hit.col === target.col) {
+      await page.mouse.click(x, y);
+      return true;
+    }
+  }
+  return false;
+}
+/** GERÇEKTEN board üzerinde ama hedef (son nefes) noktasında OLMAYAN bir
+    kesişime tek bir click ile dokunur — tapExactCorrectS06 ile AYNI
+    hover-tabanlı hit-test okumasıyla, sabit/tahmini piksel ofseti YOK. */
+async function tapAnyWrongS06(page, box, curriculumStepIndex) {
+  const moment = getCaptureMoments().find(m => m.curriculumStepIndex === curriculumStepIndex);
+  if (!moment) return false;
+  const target = moment.lastLibertyPoints[0];
+  const cx = box.width / 2, cy = box.height / 2 - 8;
+  for (const { dx, dy } of ringOffsets()) {
+    const x = box.x + cx + dx, y = box.y + cy + dy;
+    if (x < box.x || x > box.x + box.width || y < box.y || y > box.y + box.height) continue;
+    await page.mouse.move(x, y);
+    await page.waitForTimeout(20);
+    const hit = await getHoverPoint(page);
+    if (hit && !(hit.row === target.row && hit.col === target.col)) {
+      await page.mouse.click(x, y);
+      return true;
+    }
+  }
+  return false;
+}
+/** Sahne #6'nın AKTİF anına herhangi bir GERÇEK doğru noktayı bulup dokunur
+    (ring-scan, "Devam" görünürlüğüyle ölçülür) — tür ayrımı YOK, Sahne
+    #6'nın üç anının hepsi 'board_tap'. */
+async function answerCurrentS06Item(page) {
+  const box = await page.locator('#ls-canvas').boundingBox();
+  const cx = box.width / 2, cy = box.height / 2 - 8;
+  for (const { dx, dy } of ringOffsets()) {
+    const x = box.x + cx + dx, y = box.y + cy + dy;
+    if (x < box.x || x > box.x + box.width || y < box.y || y > box.y + box.height) continue;
+    await page.mouse.click(x, y);
+    await page.waitForTimeout(30);
+    if (!(await page.locator('#s06-continue').isHidden())) return true;
+  }
+  return false;
+}
+async function goToNextS06Item(page) {
+  await page.click('#s06-continue');
+  await page.waitForTimeout(350);
+}
+/** Sahne #6'yı intro'dan itibaren N. ana (1-tabanlı) kadar sırayla doğru
+    cevaplarla ilerletir. */
+async function advanceS06ToItem(page, targetIndex1Based) {
+  await advanceToScene6AndIntro(page);
+  for (let i = 1; i < targetIndex1Based; i++) {
+    const ok = await answerCurrentS06Item(page);
+    ensure(ok, `Sahne #6 an ${i}'e doğru cevap verilemedi (${targetIndex1Based}. ana ilerlerken)`);
+    await goToNextS06Item(page);
+  }
+}
+
+addTest('I1) Sahne #5 → Sahne #6 doğal geçiş: board/narration/host bbox <1px stabil, tek scene_started, duplicate ID yok', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await completeScene5(s.page);
+    const boardBefore = await s.page.locator('#ls-canvas').boundingBox();
+    const narrBefore = await s.page.locator('#ls-narration').boundingBox();
+    const hostBefore = await s.page.locator('#ls-scene-host').boundingBox();
+
+    await s.page.click('.ls-topic-end [data-action="advance"]');
+    await s.page.waitForTimeout(400);
+
+    ensure(await s.page.locator('#s06-intro').isVisible(), 'Sahne #6 intro görünmüyor');
+    const boardAfter = await s.page.locator('#ls-canvas').boundingBox();
+    const narrAfter = await s.page.locator('#ls-narration').boundingBox();
+    const hostAfter = await s.page.locator('#ls-scene-host').boundingBox();
+    ensure(bboxMaxDiff(boardBefore, boardAfter) < 1, `Sahne #5→#6 geçişte board bbox <1px sabit olmalı (fark=${bboxMaxDiff(boardBefore, boardAfter).toFixed(3)}px)`);
+    ensure(bboxMaxDiff(narrBefore, narrAfter) < 1, `Sahne #5→#6 geçişte narration bbox <1px sabit olmalı (fark=${bboxMaxDiff(narrBefore, narrAfter).toFixed(3)}px)`);
+    ensure(bboxMaxDiff(hostBefore, hostAfter) < 1, `Sahne #5→#6 geçişte host bbox <1px sabit olmalı (fark=${bboxMaxDiff(hostBefore, hostAfter).toFixed(3)}px)`);
+
+    const allIds = await s.page.evaluate(() => [...document.querySelectorAll('[id]')].map(el => el.id));
+    ensure(new Set(allIds).size === allIds.length, 'Sahne #6 mount sonrası duplicate ID YOK');
+
+    const started = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_started');
+    ensure(started.length === 1, `Sahne #6 tek scene_started üretmeli, bulunan: ${started.length}`);
+    ensure(s.consoleErrors.length === 0, `Sahne #5→#6 geçişinde konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('I2) İlk üç müfredat adımı (l3.steps[0..2]) doğru sırayla sunulur; terminoloji yalnız "nefes noktası"', async () => {
+  const s = await openScenesPage({ query: FAST_QUERY });
+  try {
+    await advanceToScene6AndIntro(s.page);
+    const presented = [];
+    for (let i = 0; i < 3; i++) {
+      const events = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_presented');
+      presented.push(events.at(-1).payload.curriculumStepIndex);
+      const bodyText = await s.page.locator('#ls-scene-host').innerText();
+      ensure(!/özgürlük|serbestlik|\bliberty\b|\bliberties\b/i.test(bodyText), `an ${i}: yasak terminoloji sızmış: "${bodyText}"`);
+      if (i < 2) {
+        const ok = await answerCurrentS06Item(s.page);
+        ensure(ok, `an ${i + 1} doğru cevaplanamadı`);
+        await goToNextS06Item(s.page);
+      }
+    }
+    ensure(JSON.stringify(presented) === JSON.stringify([0, 1, 2]), `üç an curriculum SIRASIYLA (0,1,2) sunulmalı, bulunan: ${JSON.stringify(presented)}`);
+  } finally { await s.close(); }
+});
+
+addTest('I3) An 1 (tek taş): sunulduğunda hedef grup boyutu 1, GERÇEK son nefes noktası (5,4) neon işaretli; koordinat RuleEngine ile birebir eşleşir', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene6AndIntro(s.page);
+    const presented = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_presented').at(-1).payload;
+    ensure(presented.targetGroupSize === 1 && presented.libertyCountBeforeMove === 1, `an 1 sunum: ${JSON.stringify(presented)}`);
+    ensure(presented.lastLibertyPoint && presented.lastLibertyPoint.row === 5 && presented.lastLibertyPoint.col === 4, `an 1 son nefes noktası (5,4) olmalı: ${JSON.stringify(presented.lastLibertyPoint)}`);
+    const points = await getLibertyPointsRaw(s.page);
+    ensure(points.length === 1 && points[0].row === 5 && points[0].col === 4, `an 1 neon işaret TAM OLARAK (5,4) olmalı, bulunan: ${JSON.stringify(points)}`);
+  } finally { await s.close(); }
+});
+
+addTest('I4) An 2 (2 taşlı grup): yalnız GERÇEK son nefes noktası (4,3) neon işaretli — tek nokta, sahte/DOM-taklit değil', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceS06ToItem(s.page, 2);
+    const presented = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_presented').at(-1).payload;
+    ensure(presented.targetGroupSize === 2 && presented.libertyCountBeforeMove === 1, `an 2 sunum: ${JSON.stringify(presented)}`);
+    const points = await getLibertyPointsRaw(s.page);
+    ensure(points.length === 1 && points[0].row === 4 && points[0].col === 3, `an 2 neon işaret TAM OLARAK (4,3) olmalı, bulunan: ${JSON.stringify(points)}`);
+  } finally { await s.close(); }
+});
+
+addTest('I5) An 3 (3 taşlı grup): GERÇEK son nefes noktası (3,4) doğru gösterilir; hedef grup dizilimde SALDIRAN taşlardan SONRA gelse bile doğru bulunur', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceS06ToItem(s.page, 3);
+    const presented = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_presented').at(-1).payload;
+    ensure(presented.targetGroupSize === 3 && presented.libertyCountBeforeMove === 1, `an 3 sunum: ${JSON.stringify(presented)}`);
+    const points = await getLibertyPointsRaw(s.page);
+    ensure(points.length === 1 && points[0].row === 3 && points[0].col === 4, `an 3 neon işaret TAM OLARAK (3,4) olmalı, bulunan: ${JSON.stringify(points)}`);
+  } finally { await s.close(); }
+});
+
+addTest('I6) Yanlış kesişim: board DEĞİŞMEZ (taş sayısı aynı kalır), completion açılmaz, neon işaret YERİNDE kalır', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene6AndIntro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const pointsBefore = await getLibertyPointsRaw(s.page);
+    const ok = await tapAnyWrongS06(s.page, box, 0);
+    ensure(ok, 'an 1: hedef-dışı gerçek kesişime dokunulamadı');
+    await s.page.waitForTimeout(200);
+    ensure(await s.page.locator('#s06-continue').isHidden(), 'yanlış hamleden sonra Devam GÖRÜNMEMELİ');
+    const unlocked = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_completion_unlocked');
+    ensure(unlocked.length === 0, 'yanlış hamlede completion AÇILMAMALI');
+    const pointsAfter = await getLibertyPointsRaw(s.page);
+    ensure(sig(pointsAfter) === sig(pointsBefore), `yanlış hamle sonrası neon işaret YERİNDE kalmalı, önce: ${JSON.stringify(pointsBefore)} sonra: ${JSON.stringify(pointsAfter)}`);
+    const wrongEv = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_answered').at(-1).payload;
+    ensure(wrongEv.correct === false, 'yanlış event correct:false olmalı');
+    ensure(wrongEv.capturedCount === undefined && wrongEv.resultConcept === undefined, `yanlış cevapta hamle-sonucu alanları HİÇ EKLENMEMELİ: ${JSON.stringify(wrongEv)}`);
+    ensure(wrongEv.assessmentConcept === 'atari', `yanlış cevapta bile assessmentConcept 'atari' kalmalı: ${JSON.stringify(wrongEv)}`);
+  } finally { await s.close(); }
+});
+
+addTest('I7) An 1 doğru yakalama: GERÇEK taş board\'dan kalkar, capturedCount=1, targetRemovedFromBoard=true, assessmentConcept:\'atari\'+resultConcept:\'capture\', neon işaret hemen temizlenir', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene6AndIntro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const ok = await tapExactCorrectS06(s.page, box, 0);
+    ensure(ok, 'an 1: GERÇEK hedef bulunup dokunulamadı');
+    await s.page.waitForTimeout(200);
+    const answered = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_answered').at(-1).payload;
+    ensure(answered.correct === true, 'an 1 doğru cevaplanmalı');
+    ensure(answered.capturedCount === 1, `an 1: capturedCount 1 olmalı, bulunan: ${JSON.stringify(answered)}`);
+    ensure(answered.targetRemovedFromBoard === true, 'an 1: targetRemovedFromBoard true olmalı');
+    ensure(answered.assessmentConcept === 'atari' && answered.resultConcept === 'capture', `an 1 kavram sözleşmesi: ${JSON.stringify(answered)}`);
+    const points = await getLibertyPointsRaw(s.page);
+    ensure(points.length === 0, `doğru yakalamadan HEMEN SONRA neon işaret temizlenmeli, bulunan: ${JSON.stringify(points)}`);
+    ensure(await s.page.locator('#s06-continue').isVisible(), 'doğru cevaptan sonra Devam GÖRÜNMELİ');
+  } finally { await s.close(); }
+});
+
+addTest('I8) An 2 doğru yakalama: GERÇEK 2 taşlı grup board\'dan kalkar, capturedCount=2', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceS06ToItem(s.page, 2);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const ok = await tapExactCorrectS06(s.page, box, 1);
+    ensure(ok, 'an 2: GERÇEK hedef bulunup dokunulamadı');
+    await s.page.waitForTimeout(200);
+    const answered = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_answered').at(-1).payload;
+    ensure(answered.capturedCount === 2 && answered.targetRemovedFromBoard === true, `an 2: 2 taş kalkmalı: ${JSON.stringify(answered)}`);
+  } finally { await s.close(); }
+});
+
+addTest('I9) An 3 doğru yakalama: GERÇEK 3 taşlı grup board\'dan kalkar, capturedCount=3; tüm alıştırmalar tamamlanınca completion TAM BİR KEZ açılır, "Konular" gösterilir', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceS06ToItem(s.page, 3);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const ok = await tapExactCorrectS06(s.page, box, 2);
+    ensure(ok, 'an 3: GERÇEK hedef bulunup dokunulamadı');
+    await s.page.waitForTimeout(200);
+    const answered = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_answered').at(-1).payload;
+    ensure(answered.capturedCount === 3 && answered.targetRemovedFromBoard === true, `an 3: 3 taş kalkmalı: ${JSON.stringify(answered)}`);
+    const unlockedBefore = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_completion_unlocked');
+    ensure(unlockedBefore.length === 1, `3/3 doğrudan SONRA completion TAM BİR KEZ açılmalı, bulunan: ${unlockedBefore.length}`);
+    await goToNextS06Item(s.page);
+    await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
+    const advanceLabel = (await s.page.locator('.ls-topic-end [data-action="advance"]').textContent())?.trim();
+    ensure(advanceLabel === 'Konular', `Sahne #6 son sahne — ileri kontrolü "Konular" olmalı, bulunan: "${advanceLabel}"`);
+    const bodyText = await s.page.locator('#ls-scene-host').innerText();
+    ensure(!/sahne\s*tamamlandı|scene.?completed|registry|runtime/i.test(bodyText), `teknik dil sızmış: "${bodyText}"`);
+    const completed = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_completed');
+    ensure(completed.length === 1, 'scene_completed TAM BİR KEZ üretildi');
+    // Sahte son-an "advanced" event'i (from===to) ÜRETİLMEMİŞ olmalı.
+    const advanced = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_advanced');
+    ensure(!advanced.some(e => e.payload.fromAssessmentIndex === e.payload.toAssessmentIndex), 'sahte from===to advanced event YOK');
+  } finally { await s.close(); }
+});
+
+addTest('I10) Hızlı çift tıklama: doğru yakalamada yalnız TEK hamle/event üretir (ikinci tıklama input kilitli olduğu için yok sayılır)', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene6AndIntro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const moment = getCaptureMoments()[0];
+    const target = moment.lastLibertyPoints[0];
+    let picked = null;
+    const cx = box.width / 2, cy = box.height / 2 - 8;
+    for (const { dx, dy } of ringOffsets()) {
+      const x = box.x + cx + dx, y = box.y + cy + dy;
+      if (x < box.x || x > box.x + box.width || y < box.y || y > box.y + box.height) continue;
+      await s.page.mouse.move(x, y);
+      await s.page.waitForTimeout(15);
+      const hit = await getHoverPoint(s.page);
+      if (hit && hit.row === target.row && hit.col === target.col) { picked = { x, y }; break; }
+    }
+    ensure(picked, 'GERÇEK hedef bulunamadı');
+    await Promise.all([s.page.mouse.click(picked.x, picked.y), s.page.mouse.click(picked.x, picked.y).catch(() => {})]);
+    await s.page.waitForTimeout(300);
+    const answered = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_answered');
+    ensure(answered.length === 1, `hızlı çift tıklama TEK bir answered event üretmeli, bulunan: ${answered.length}`);
+    ensure(answered[0].payload.capturedCount === 1, 'tek hamle GERÇEK yakalamayı üretmeli');
+  } finally { await s.close(); }
+});
+
+addTest('I11) Konular paneli açıkken board input kilitlenir (yanlış/doğru hamle üretmez), kapanınca eski duruma döner', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene6AndIntro(s.page);
+    const before = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_answered').length;
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    ensure(await s.page.locator('#ls-topics-panel').isVisible(), 'Konular paneli açılmalı');
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await s.page.waitForTimeout(150);
+    const duringOpen = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_answered').length;
+    ensure(duringOpen === before, 'Konular paneli açıkken canvas tıklaması hamle/event üretti — input yanlış kilitli');
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(150);
+    const ok = await answerCurrentS06Item(s.page);
+    ensure(ok, 'Konular paneli kapandıktan sonra normal girdi çalışmalı');
+  } finally { await s.close(); }
+});
+
+addTest('I12) Replay temiz (an 1) başlar, completion geçmişini KORUR (ikinci kez eklemez); yarım reload TEMİZ sahne state\'iyle açılır', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene6AndIntro(s.page);
+    for (let i = 0; i < 3; i++) {
+      const ok = await answerCurrentS06Item(s.page);
+      ensure(ok, `an ${i + 1} doğru cevaplanamadı`);
+      await goToNextS06Item(s.page);
+    }
+    await s.page.waitForSelector('.ls-topic-end [data-action="replay"]');
+    const progressBeforeReplay = await s.page.evaluate(() => JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null'));
+    ensure(progressBeforeReplay.completedSceneIds.includes(S06_ID), 'completion listesine EKLENMİŞ olmalı');
+    await s.page.click('.ls-topic-end [data-action="replay"]');
+    await s.page.waitForTimeout(400);
+    ensure(await s.page.locator('#s06-intro').isVisible(), 'replay Sahne #6\'yı TEMİZ intro ile başlatmalı');
+    const replayPoints = await getLibertyPointsRaw(s.page);
+    ensure(replayPoints.length === 0, `replay sonrası intro'da stale highlight OLMAMALI, bulunan: ${JSON.stringify(replayPoints)}`);
+    const replayEvents = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_replay_started');
+    ensure(replayEvents.length === 1, 'scene_replay_started tam bir kez üretilmeli');
+    const progressAfterReplay = await s.page.evaluate(() => JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null'));
+    ensure(progressAfterReplay.completedSceneIds.filter(id => id === S06_ID).length === 1, 'completion geçmişi İKİNCİ KEZ EKLENMEMELİ');
+
+    // Yarım reload — an 1'i doğru cevapla, sayfayı YENİDEN YÜKLE, TEMİZ
+    // (intro) state ile açılmalı (bkz. scenes/sceneRuntime.js progress
+    // sözleşmesi — activeSceneId reload sonrası scene mount() ile YENİDEN
+    // TEMİZ başlar, ORTASINDA kalınmış bir an state'i PERSIST EDİLMEZ).
+    await s.page.click('#s06-confirm');
+    await s.page.waitForTimeout(300);
+    const okMidway = await answerCurrentS06Item(s.page);
+    ensure(okMidway, 'yarım reload öncesi an 1 doğru cevaplanamadı');
+    await s.page.reload({ waitUntil: 'networkidle' });
+    await s.page.waitForTimeout(400);
+    ensure(await s.page.locator('#s06-intro').isVisible(), 'yarım reload sonrası Sahne #6 TEMİZ intro ile açılmalı');
+    const reloadPoints = await getLibertyPointsRaw(s.page);
+    ensure(reloadPoints === null || reloadPoints.length === 0, 'yarım reload sonrası stale highlight OLMAMALI');
+  } finally { await s.close(); }
+});
+
+addTest('I13) Masaüstü/tablet/mobil: taşma/kesişme yok; mobilde tek dokunuşla yakalama yapılır (ikinci dokunuş gerekmez)', async () => {
+  for (const viewport of [VIEWPORTS.desktop, VIEWPORTS.tablet]) {
+    const s = await openScenesPage({ viewport, query: FAST_QUERY });
+    try {
+      await advanceToScene6AndIntro(s.page);
+      const boardBox = await s.page.locator('#ls-canvas').boundingBox();
+      const narrBox = await s.page.locator('#ls-narration').boundingBox();
+      ensure(!boxesIntersect(boardBox, narrBox), `${viewport.width}x${viewport.height}: board/narration kesişiyor`);
+      ensure(await s.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `${viewport.width}x${viewport.height}: yatay taşma var`);
+    } finally { await s.close(); }
+  }
+  {
+    const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+    try {
+      await advanceToScene6AndIntro(s.page);
+      const box = await s.page.locator('#ls-canvas').boundingBox();
+      const ok = await tapExactCorrectS06(s.page, box, 0);
+      ensure(ok, 'mobil: an 1 GERÇEK hedef bulunup dokunulamadı');
+      await s.page.waitForTimeout(200);
+      const answered = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_answered').at(-1).payload;
+      ensure(answered.correct === true && answered.capturedCount === 1, `mobil: tek dokunuşla GERÇEK yakalama olmalı: ${JSON.stringify(answered)}`);
+      ensure(await s.page.locator('#s06-continue').isVisible(), 'mobil: tek dokunuş yeterli olmalı — ikinci dokunuş GEREKMEMELİ');
+      ensure(await s.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'mobil: yatay taşma yok');
+      ensure(s.consoleErrors.length === 0, `mobil akışta konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+    } finally { await s.close(); }
+  }
+});
+
+addTest('I14) Reduced-motion: intro geçişi ANINDA tamamlanır, an akışı işlevsel olarak AYNI (gerçek yakalama üretir)', async () => {
+  const s = await openScenesPage({ reducedMotion: 'reduce', query: PREVIEW_QUERY });
+  try {
+    await advanceToScene6AndIntro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const ok = await tapExactCorrectS06(s.page, box, 0);
+    ensure(ok, 'reduced-motion: an 1 doğru cevaplanamadı');
+    await s.page.waitForTimeout(150);
+    const answered = eventsFor(await getEventLog(s.page), S06_ID).filter(e => e.type === 'scene_assessment_answered').at(-1).payload;
+    ensure(answered.correct === true && answered.capturedCount === 1, `reduced-motion: GERÇEK yakalama olmalı: ${JSON.stringify(answered)}`);
+    ensure(s.consoleErrors.length === 0, `reduced-motion akışta konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('I15) Studio: Diagnostics Sahne #6 için hata bildirmiyor; Event Log Sahne #6 event\'lerini ve capturedCount alanını gösterir; terminoloji yalnız "nefes noktası"', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene6AndIntro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const ok = await tapExactCorrectS06(s.page, box, 0);
+    ensure(ok, 'an 1 doğru cevaplanamadı');
+    await s.page.waitForTimeout(200);
+
+    const studioErrors = [];
+    const studioPage = await s.context.newPage();
+    studioPage.on('pageerror', e => studioErrors.push('pageerror: ' + e.message));
+    studioPage.on('console', m => { if (m.type() === 'error') studioErrors.push('console: ' + m.text()); });
+    await studioPage.goto(`${BASE}/teacher-studio.html`, { waitUntil: 'networkidle' });
+    await studioPage.waitForTimeout(300);
+
+    await studioPage.click('[data-tab="diagnostics"]');
+    await studioPage.waitForTimeout(150);
+    const diagText = await studioPage.locator('#diag-scene-table').textContent();
+    ensure(!diagText.includes(S06_ID) || diagText.includes('geçerli'), `Diagnostics Sahne #6 için hata bildiriyor: ${diagText.slice(0, 800)}`);
+
+    await studioPage.click('[data-tab="curriculum"]');
+    await studioPage.waitForTimeout(150);
+    const curriculumText = await studioPage.locator('#curriculum-scene-table').textContent();
+    ensure(curriculumText.includes(S06_ID) && curriculumText.includes('atari'), `Curriculum tablosu Sahne #6 kapsamını (atari) göstermiyor: ${curriculumText.slice(0, 400)}`);
+    ensure(!/özgürlük|serbestlik/i.test(curriculumText), `Curriculum tablosunda yasak terminoloji: ${curriculumText}`);
+
+    await studioPage.click('[data-tab="event-log"]');
+    await studioPage.waitForTimeout(150);
+    const eventLogText = await studioPage.locator('#event-log-table').textContent();
+    ensure(eventLogText.includes(S06_ID), 'Event Log Sahne #6 event\'lerini göstermiyor');
+    ensure(eventLogText.includes('capturedCount'), 'Event Log capturedCount alanını göstermiyor');
+    ensure(!/özgürlük|serbestlik/i.test(eventLogText), `Event Log\'da yasak terminoloji: ${eventLogText}`);
+
+    ensure(studioErrors.length === 0, `Studio'da hata: ${studioErrors.join(' | ')}`);
+    await studioPage.close();
+  } finally { await s.close(); }
+});
+
+addTest('I16) ogren-3d.html regresyonsuz açılır ve canvas render eder (Sahne #6 eklenmesinden ETKİLENMEZ)', async () => {
+  const context = await (await launchChromium()).newContext();
+  const consoleErrors = [];
+  try {
+    await context.route(`${BASE}/**`, async route => {
+      const url = new URL(route.request().url());
+      const pathname = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
+      const filePath = absPath(pathname || 'ogren-3d.html');
+      try { await route.fulfill({ status: 200, contentType: mime(filePath), body: fs.readFileSync(filePath) }); }
+      catch { await route.abort(); }
+    });
+    const page = await context.newPage();
+    page.on('pageerror', e => consoleErrors.push('pageerror: ' + e.message));
+    page.on('console', m => { if (m.type() === 'error') consoleErrors.push('console: ' + m.text()); });
+    const resp = await page.goto(`${BASE}/ogren-3d.html`, { waitUntil: 'networkidle' });
+    ensure(resp && resp.status() === 200, `ogren-3d.html HTTP ${resp?.status()}`);
+    await page.waitForTimeout(600);
+    ensure(await page.locator('canvas').count() > 0, 'ogren-3d.html canvas render etmiyor');
+    ensure(consoleErrors.length === 0, `ogren-3d.html konsol/pageerror sıfır olmalı: ${JSON.stringify(consoleErrors)}`);
+  } finally { await context.close(); }
+});
+
+// TEST_FILTER=<regex> node tests/verify-learning-scenes.mjs — yalnız adı bu
+// regex'le eşleşen testleri çalıştırır (hızlı hedefli hata ayıklama için;
+// boşsa/tanımsızsa TÜM testler çalışır, üretim/CI davranışı DEĞİŞMEZ).
+const TEST_FILTER = process.env.TEST_FILTER || '';
+const selectedTests = TEST_FILTER ? tests.filter(t => new RegExp(TEST_FILTER).test(t.name)) : tests;
+
 (async () => {
-  for (const { name, fn } of tests) {
+  for (const { name, fn } of selectedTests) {
     try { await fn(); pass++; console.log('  ✓', name); }
     catch (error) { fail++; console.error('  ✗', name, '-', error?.message || error); }
   }
-  console.log(`\nlearning-scenes tarayıcı test sayısı: ${tests.length}`);
+  console.log(`\nlearning-scenes tarayıcı test sayısı: ${selectedTests.length}${TEST_FILTER ? ` (filtre: "${TEST_FILTER}", toplam ${tests.length})` : ''}`);
   console.log('özet:', `${pass}/${pass + fail}`);
   if (fail) process.exit(1);
 })();
