@@ -205,7 +205,7 @@ body {
   opacity: 1; transform: translateX(-50%) translateY(0);
 }
 .ls-tick:focus-visible, .ls-pill:focus-visible, .ls-strip-btn:focus-visible,
-.ls-topic-item:focus-visible, .ls-topbar-btn:focus-visible {
+.ls-topic-item:focus-visible, .ls-topbar-btn:focus-visible, .s07-hint-btn:focus-visible {
   outline: 2px solid var(--gold2); outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -305,7 +305,7 @@ body {
    kaldırıyor) `#ls-scene-host`u üstten hizalar; taşma varsa artık YALNIZ
    aşağıya (kaydırılabilir `#ls-narration` alanına) doğru olur. Sahne #1-4
    BU KURALDAN ETKİLENMEZ (sınıf yalnız Sahne #5'e özgü). */
-#ls-scene-host.s05-scene-host, #ls-scene-host.s06-scene-host { align-self: flex-start; justify-content: flex-start; }
+#ls-scene-host.s05-scene-host, #ls-scene-host.s06-scene-host, #ls-scene-host.s07-scene-host { align-self: flex-start; justify-content: flex-start; }
 
 /* ── Sahne #5 — değerlendirme aşamaları (bkz. scenes/scene05LibertyAssessment.js) ──
    v0.19 — kök neden düzeltmesi: #s05-assess, miras aldığı `.ls-strip-row`nun
@@ -335,7 +335,7 @@ body {
    2) Geri bildirim metni + "Devam" düğmesi TEK satırda birleşir (bkz.
       scene05LibertyAssessment.js .s05-feedback-row sarmalayıcı) — önceden
       İKİ ayrı dikey satırdı. */
-#s05-assess, #s06-assess { position: relative; flex-direction: column; align-items: stretch; gap: .2rem; padding-top: .2rem; }
+#s05-assess, #s06-assess, #s07-assess { position: relative; flex-direction: column; align-items: stretch; gap: .2rem; padding-top: .2rem; }
 .s05-progress {
   position: absolute; top: -.15rem; right: 0;
   display: flex; align-items: center; gap: .35rem; font-size: .66rem; color: var(--text); opacity: .68;
@@ -369,6 +369,20 @@ body {
 .s05-choice-btn--correct { border-color: var(--green); background: rgba(62, 207, 128, .16); color: var(--green); opacity: 1; }
 .s05-choice-btn--wrong { border-color: #e2726b; background: rgba(226, 114, 107, .14); color: #e2726b; }
 .s05-tap-hint { margin: 0; font-size: .78rem; color: var(--text); opacity: .78; }
+/* Sahne #7 — "Nefes noktasını göster" ipucu kontrolü (bkz. görev talimatı
+   Bölüm 5): en az 44×44px etkileşim alanı, klavye odaklanabilir,
+   aria-pressed ile açık/kapalı durumu ayırt edilir (bkz. .s07-hint-btn--active). */
+.s07-hint-btn {
+  align-self: center; margin-top: .15rem; min-width: 44px; min-height: 44px;
+  padding: .3rem .85rem; border-radius: 999px; border: 1px solid var(--gborder);
+  background: transparent; color: var(--text); font-size: .78rem; cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
+}
+.s07-hint-btn:hover { border-color: var(--gold); background: rgba(200, 168, 75, .08); }
+.s07-hint-btn--active {
+  border-color: rgba(91, 210, 195, .55); background: rgba(91, 210, 195, .14); color: #5bd2c3;
+}
+@media (prefers-reduced-motion: reduce) { .s07-hint-btn { transition: none; } }
 .s05-feedback { margin: 0; font-size: .8rem; font-weight: 600; line-height: 1.1; min-height: 1.1em; text-align: center; }
 .s05-feedback--ok { color: var(--green); }
 .s05-feedback--err { color: #e2726b; }
@@ -393,14 +407,14 @@ body {
    ve mobil daraltmalar SESSİZCE geçersiz kalırdı (yaşanmış hata, bkz. görev
    talimatı). */
 @media (max-width: 480px) {
-  #s05-continue, #s06-continue { width: auto; }
+  #s05-continue, #s06-continue, #s07-continue { width: auto; }
   .s05-content { min-height: 64px; }
   .s05-item { gap: .2rem; }
   .s05-prompt { line-height: 1.25; }
   .s05-choice-btn { padding: .3rem .6rem; font-size: .78rem; }
   .s05-feedback { font-size: .72rem; }
   .s05-feedback-row { gap: .25rem .5rem; }
-  #s05-assess, #s06-assess { gap: .15rem; padding-top: .95rem; }
+  #s05-assess, #s06-assess, #s07-assess { gap: .15rem; padding-top: .95rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .s05-choice-btn { transition: none; }
