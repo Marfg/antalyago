@@ -32,9 +32,9 @@
  *      scenes/libertyAssessmentPolicy.js/capturePolicy.js "getLesson()
  *      throws if not found" deseniyle AYNI disiplin.
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-08-25.2';
-import { BoardState } from '../core/boardState.js?v=2026-08-25.2';
-import { getGroup, getLiberties, applyMove, isValidMove } from '../core/ruleEngine.js?v=2026-08-25.2';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-08-26.1';
+import { BoardState } from '../core/boardState.js?v=2026-08-26.1';
+import { getGroup, getLiberties, applyMove, isValidMove } from '../core/ruleEngine.js?v=2026-08-26.1';
 
 const LESSON_ID = 'l3';
 const BOARD_SIZE = 9;
@@ -221,6 +221,7 @@ function normalizeMoment(step, curriculumStepIndex, momentIndex) {
   const target = resolveTargetGroup(board, size, rawAnswer);
   const lastLibertyPoints = toRowColPoints(target.liberties);
   const targetGroupSize = target.points.length;
+  const hintMode = computeHintMode(momentIndex, targetGroupSize);
   return {
     momentIndex,
     curriculumStepIndex,
@@ -240,7 +241,15 @@ function normalizeMoment(step, curriculumStepIndex, momentIndex) {
     ...(computeExpectedResultConcept(board, size, lastLibertyPoints[0]) === 'capture'
       ? { expectedResultConcept: 'capture' }
       : {}),
-    hintMode: computeHintMode(momentIndex, targetGroupSize),
+    hintMode,
+    // İlk an (immediate) açılışta YALNIZ neon nefes işareti otomatik
+    // gösterilir — taş silüeti DEĞİL (aşırı yönlendirmeyi sadeleştirme).
+    // Diğer TÜM anlarda (after_mistake'in otomatik açılışı VEYA
+    // on_request/none_until_request'in manuel düğme tetiklemesi) mevcut
+    // iki katmanlı (neon + silüet) davranış KORUNUR. immediate dışında
+    // hiçbir moment bu alanı false almaz; index'e göre AYRI bir dal YOK —
+    // tek kaynak zaten yukarıdaki hintMode'dur.
+    showAutomaticMovePreview: hintMode !== HINT_MODES.IMMEDIATE,
     // Ham curriculum answer — YALNIZ ön koşul/sağlamlık doğrulaması için
     // saklanır. Runtime kabul kararı HER ZAMAN resolveTargetGroup()/
     // lastLibertyPoints'ten gelir, bundan DEĞİL.

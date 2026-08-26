@@ -161,6 +161,17 @@ test('hintMode dağılımı: immediate, after_mistake, on_request, on_request, a
   ]);
 });
 
+test('v0.15 — showAutomaticMovePreview: YALNIZ an 1 (immediate) false, diğer beş an true ("İlk taş alma ipucunu sadeleştir" — aşırı yönlendirme kaldırıldı)', () => {
+  const moments = getCapturePracticeMoments();
+  equal(moments.map(m => m.showAutomaticMovePreview), [false, true, true, true, true, true]);
+  // hintMode==='immediate' YALNIZ momentIndex===0 için döner (bkz. computeHintMode)
+  // — showAutomaticMovePreview bu yüzden hintMode'un TERSİ olarak GÜVENLE
+  // türetilebilir, index'e göre AYRI bir dal GEREKMEZ.
+  moments.forEach((m) => {
+    equal(m.showAutomaticMovePreview, m.hintMode !== HINT_MODES.IMMEDIATE, `moment ${m.momentIndex}: showAutomaticMovePreview hintMode'un tersi olmalı`);
+  });
+});
+
 test('computeHintMode: momentIndex+targetGroupSize\'a göre HER dal test edilebilir (bkz. görev talimatı: "körlemesine hard-code etme")', () => {
   equal(computeHintMode(0, 1), HINT_MODES.IMMEDIATE);
   equal(computeHintMode(1, 1), HINT_MODES.AFTER_MISTAKE);

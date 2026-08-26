@@ -28,4 +28,4 @@
  *      TÜM transitive import URL'lerine — bu dosyanın kendi importu
  *      DAHİL — ?v=<RELEASE> damgalar).
  */
-export const SCENE_RELEASE = '2026-08-25.2';
+export const SCENE_RELEASE = '2026-08-26.1';

@@ -38,11 +38,11 @@
  * SAHNEYE ÖZEL OLMAYAN genel event: `scene_hint_revealed` (bkz.
  * revealHint altında) — bir an için EN FAZLA BİR KEZ üretilir.
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-08-25.2';
-import { assessmentTransition } from './assessmentTransition.js?v=2026-08-25.2';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-08-26.1';
+import { assessmentTransition } from './assessmentTransition.js?v=2026-08-26.1';
 import {
   getCapturePracticeMoments, isValidCapturePoint, computePracticeResult, buildResultText,
-} from './capturePracticePolicy.js?v=2026-08-25.2';
+} from './capturePracticePolicy.js?v=2026-08-26.1';
 
 const CONCEPT = 'capture';
 
@@ -134,7 +134,13 @@ function revealHint(context, moment, hintRequested) {
   const alreadyRevealed = hintRevealed[currentIndex];
   context.boardAdapter.showLiberties(moment.lastLibertyPoints);
   const target = moment.lastLibertyPoints[0];
-  if (target) {
+  // İlk an (moment.showAutomaticMovePreview === false — bkz.
+  // capturePracticePolicy.js normalizeMoment): YALNIZ neon nefes işareti
+  // otomatik gösterilir, taş silüeti GÖSTERİLMEZ. Kullanıcı imleci hedefe
+  // getirirse adaptörün KENDİ bağımsız hover-önizleme mekanizması
+  // (drawHoverPoint) zaten normal şekilde devreye girer — bu satır o
+  // mekanizmayı etkilemez.
+  if (target && moment.showAutomaticMovePreview !== false) {
     context.boardAdapter.setMovePreview({ row: target.row, col: target.col, color: 'black' });
   }
   if (alreadyRevealed) return;
@@ -420,7 +426,7 @@ function buildDom(context) {
 
 export const scene07CapturePractice = {
   id: 'scene-07-capture-practice',
-  version: 1,
+  version: 2,
   title: 'Taş Alma Uygulamaları',
   curriculumRef: { lessonId: 'l3', concept: 'capture', stepIndex: 3 },
   // Geriye uyumlu TEKİL curriculumRef korunurken, bu sahnenin GERÇEKTEN

@@ -216,7 +216,7 @@
 </div>
 
 <script type="module">
-import { CURRICULUM } from './core/curriculum.js?v=2026-08-25.2';
+import { CURRICULUM } from './core/curriculum.js?v=2026-08-26.1';
 import { classifyCurriculumStep, responseTypeOf, stripMarkup, isAssessmentLesson } from './core/learningContext.js';
 import { KNOWN_CONCEPTS } from './core/conceptMap.js';
 import { createStudentModel, hydrateStudentModel, getConceptState } from './core/studentModel.js';
@@ -225,44 +225,44 @@ import { CONTENT_PURPOSES, CONTENT_STUDENT_STATUSES, CONTENT_STAGES, validateCon
 import { mergeContentOverrides, applyOverride, OVERRIDABLE_FIELDS } from './core/contentOverrides.js';
 import { teacherContentOverrides } from './adapters/teacherContentOverrides.js';
 import { buildRetrievalQuery, retrieveContent } from './core/contentRetriever.js';
-import { EventLog } from './core/eventLog.js?v=2026-08-25.2';
+import { EventLog } from './core/eventLog.js?v=2026-08-26.1';
 import { buildAiReviewEvent } from './core/teacherAssistant.js';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-25.2';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-25.2';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-25.2';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-25.2';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-25.2';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-08-25.2';
-import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-08-25.2';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-08-25.2';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-26.1';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-26.1';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-26.1';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-26.1';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-26.1';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-08-26.1';
+import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-08-26.1';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-08-26.1';
 import {
   getAssessmentSteps as getLibertyAssessmentSteps,
   computeChoiceCorrectIndex as computeLibertyChoiceCorrectIndex,
   computeTapTargets as computeLibertyTapTargets,
   computeResultAfterMove as computeLibertyResultAfterMove,
   ASSESSMENT_STEP_INDICES as LIBERTY_ASSESSMENT_STEP_INDICES,
-} from './scenes/libertyAssessmentPolicy.js?v=2026-08-25.2';
+} from './scenes/libertyAssessmentPolicy.js?v=2026-08-26.1';
 import {
   getCaptureMoments,
   isValidCapturePoint as isValidCaptureMomentPoint,
   computeCaptureResult,
   MOMENT_STEP_INDICES as CAPTURE_MOMENT_STEP_INDICES,
-} from './scenes/capturePolicy.js?v=2026-08-25.2';
+} from './scenes/capturePolicy.js?v=2026-08-26.1';
 import {
   getCapturePracticeMoments,
   isValidCapturePoint as isValidPracticePoint,
   computePracticeResult,
   isKnownHintMode,
   MOMENT_STEP_INDICES as PRACTICE_MOMENT_STEP_INDICES,
-} from './scenes/capturePracticePolicy.js?v=2026-08-25.2';
-import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-08-25.2';
-import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-08-25.2';
-import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-08-25.2';
-import { BoardState } from './core/boardState.js?v=2026-08-25.2';
-import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-08-25.2';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-25.2';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-25.2';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-25.2';
+} from './scenes/capturePracticePolicy.js?v=2026-08-26.1';
+import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-08-26.1';
+import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-08-26.1';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-08-26.1';
+import { BoardState } from './core/boardState.js?v=2026-08-26.1';
+import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-08-26.1';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-26.1';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-26.1';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-26.1';
 
 /* ── Sürüm/cache bekçisi — learning-scenes.html İLE AYNI mekanizma ────
    (bkz. o dosyadaki dosya başı notu, KRİTİK DÜZELTME: SCENE_RELEASE artık

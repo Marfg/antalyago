@@ -4057,7 +4057,7 @@ addTest('J2b) Altı gerçek curriculum adımı doğru sırada (stepIndex 3,4,5,6
   } finally { await s.close(); }
 });
 
-addTest('J3) An 1 (immediate hintMode): sunulduğunda ipucu OTOMATİK görünür (düğme YOK), targetGroupSize/lastLibertyPoint curriculum answer ile eşleşir', async () => {
+addTest('J3) An 1 (immediate hintMode): sunulduğunda ipucu OTOMATİK görünür (düğme YOK), targetGroupSize/lastLibertyPoint curriculum answer ile eşleşir; OTOMATİK taş silüeti GÖSTERİLMEZ (v0.15 — aşırı yönlendirme sadeleştirmesi)', async () => {
   const s = await openScenesPage({ query: PREVIEW_QUERY });
   try {
     await advanceToScene7AndIntro(s.page);
@@ -4069,6 +4069,175 @@ addTest('J3) An 1 (immediate hintMode): sunulduğunda ipucu OTOMATİK görünür
     ensure(await s.page.locator('#s07-hint').count() === 0, 'immediate modda ipucu düğmesi OLMAMALI (gereksiz kalabalık)');
     const revealed = eventsFor(await getEventLog(s.page), S07_ID).filter(e => e.type === 'scene_hint_revealed');
     ensure(revealed.length === 1 && revealed[0].payload.hintRequested === false, `an 1 hint reveal event (otomatik, istemsiz): ${JSON.stringify(revealed)}`);
+    // v0.15 — moment.showAutomaticMovePreview===false: neon YİNE otomatik
+    // gösterilir (yukarıda doğrulandı) ama taş silüeti (movePreview state)
+    // sıfır imleç hareketiyle KURULMAMALI (bkz. scene07CapturePractice.js
+    // revealHint, capturePracticePolicy.js normalizeMoment).
+    const preview = await getMovePreview(s.page);
+    ensure(preview === null, `an 1 açılışında (sıfır imleç hareketi) OTOMATİK taş silüeti KURULMAMALI, bulunan: ${JSON.stringify(preview)}`);
+    const moved = eventsFor(await getEventLog(s.page), S07_ID).filter(e => e.type === 'scene_assessment_answered' || e.type === 'scene_move_played');
+    ensure(moved.length === 0, `an 1 açılışında gerçek hamle/cevap event'i ÜRETİLMEMELİ (otomatik neon bir cevap SAYILMAZ): ${JSON.stringify(moved)}`);
+  } finally { await s.close(); }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   J3b/J3c — v0.15: "İlk taş alma ipucunu sadeleştir". Sahne #7 an 1'in
+   (immediate hintMode) açılışında neon nefes işareti KORUNDU, ama aynı
+   cevabı ikinci kez gösteren otomatik taş silüeti KALDIRILDI — YALNIZ
+   bu an için (bkz. capturePracticePolicy.js normalizeMoment'in
+   showAutomaticMovePreview alanı ve scene07CapturePractice.js
+   revealHint'in buna göre koşullu setMovePreview çağrısı). J3 state
+   (`getMovePreviewState`) üzerinden doğruluyordu — Bölüm E'nin kendi
+   notu (movePreview state'in her zaman görsel BAŞARIYI kanıtlamadığı)
+   BURADA TERSİNE de geçerli: state null olması TEK BAŞINA ekranda
+   GERÇEKTEN hiçbir koyu taş şeklinin kalmadığını kanıtlamaz — bu yüzden
+   J3b GERÇEK canvas piksellerini örnekler (Bölüm E'nin `canvasPixelAt`/
+   `measureVisibleDiscRadius` altyapısı YENİDEN KULLANILIR).
+   ══════════════════════════════════════════════════════════════════ */
+
+addTest('J3b) An 1 açılışında PİKSEL kanıtı: hedefte turkuaz nefes işareti GERÇEKTEN görünür VE gerçek köşe taşıyla kıyaslanabilir boyutta koyu bir taş-çaplı disk YOK', async () => {
+  // Kalibrasyon: hedefin ((1,0)) VE tahtadaki GERÇEK beyaz köşe taşının
+  // ((0,0)) canvas-lokal ekran konumunu AYRI bir sayfada (fare hareketi
+  // gerektiren findScreenPointFor ile) bul. Asıl test sayfası (aşağıda)
+  // "sıfır imleç hareketi" açılış durumunu örneklemeli — konum arama O
+  // sayfada YAPILAMAZ (aksi halde kendi iddiasını geçersiz kılar). Aynı
+  // viewport + aynı kamera preseti (corner_tl) + aynı tahta boyutu (9) →
+  // AYNI canvas-lokal projeksiyon, bu yüzden kalibrasyon güvenle taşınır.
+  const calib = await openScenesPage({ query: PREVIEW_QUERY });
+  let targetXY, whiteStoneXY;
+  try {
+    await advanceToScene7AndIntro(calib.page);
+    const box = await calib.page.locator('#ls-canvas').boundingBox();
+    const targetPt = await findScreenPointFor(calib.page, { row: 1, col: 0 });
+    ensure(targetPt, 'an 1 hedefinin ekran konumu bulunamadı (kalibrasyon)');
+    targetXY = { dx: Math.round(targetPt.x - box.x), dy: Math.round(targetPt.y - box.y) };
+    const whitePt = await findScreenPointFor(calib.page, { row: 0, col: 0 });
+    ensure(whitePt, 'an 1 gerçek köşe taşının ekran konumu bulunamadı (kalibrasyon)');
+    whiteStoneXY = { dx: Math.round(whitePt.x - box.x), dy: Math.round(whitePt.y - box.y) };
+  } finally { await calib.close(); }
+
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7AndIntro(s.page);
+    // Fare bu sayfada canvas'a HİÇ değmedi (advanceToScene7AndIntro yalnız
+    // DOM düğmelerine tıklar) — açılış anındaki GERÇEK "sıfır imleç
+    // hareketi" durumu burada örnekleniyor. Kamera board.focus('corner_tl')
+    // ile CAM_DUR=0.65s'lik bir lerp animasyonu BAŞLATIR (bkz. adapters/
+    // sceneBoardAdapter.js) — bu bir SAAT beklemesidir, imleç hareketi
+    // DEĞİL, bu yüzden "sıfır imleç hareketi" iddiasını bozmaz. Kalibrasyon
+    // sayfası kendi tarama döngüsü (findScreenPointFor, saniyelerce sürer)
+    // yüzünden DOĞAL olarak animasyon-sonrası konumu ölçtü — burada da AYNI
+    // yerleşmiş konumu örneklemek için açıkça beklenir.
+    await s.page.waitForTimeout(700);
+
+    // 1) Turkuaz nefes işareti PİKSEL olarak var — hedef civarında en az
+    // bir örnek piksel drawLibertyMark'ın rengine (rgb(91,210,195)) yakın
+    // olmalı (bkz. adapters/sceneBoardAdapter.js drawLibertyMark).
+    let foundTurquoise = false;
+    outer: for (let dx = -16; dx <= 16; dx += 2) {
+      for (let dy = -16; dy <= 16; dy += 2) {
+        const px = await canvasPixelAt(s.page, targetXY.dx, targetXY.dy, dx, dy);
+        if (Math.abs(px.r - 91) < 45 && Math.abs(px.g - 210) < 45 && Math.abs(px.b - 195) < 45 && px.a > 0) {
+          foundTurquoise = true; break outer;
+        }
+      }
+    }
+    ensure(foundTurquoise, `an 1 açılışında hedef civarında turkuaz nefes işareti piksel olarak bulunamadı (dx=${targetXY.dx},dy=${targetXY.dy})`);
+
+    // 2) Koyu taş-çaplı DOLU disk YOK. Sabit bir dış "temiz board" referans
+    // ofseti (ör. hedeften -50,-50) burada GÜVENİLMEZ oldu (bkz. görev
+    // talimatı hata ayıklaması: hedef (1,0) köşeye yakın — corner_tl
+    // kamerasında -50,-50 ofseti tahtanın GÖRÜNÜR silüetinin DIŞINA,
+    // boş/siyah arka plana taşıyordu, bu da tüm ahşap-tonu pikselleri
+    // yanlışlıkla "sapma" sayıyordu). Bunun yerine KENDİ KENDİNE referans
+    // veren bir yöntem kullanılır: örnek ızgaranın KENDİSİNDEN, en sık
+    // görülen (mod) rengi "temiz zemin" olarak çıkarır — küçük bir
+    // komşulukta zemin (ahşap tahta) HER ZAMAN çoğunluktadır (dolu bir
+    // taş veya ince bir artı işareti azınlıktadır), bu yüzden mod DIŞ bir
+    // varsayıma İHTİYAÇ DUYMADAN doğru zemin rengini bulur. Dolu bir disk
+    // (drawStone/STONE_R) ızgaranın BÜYÜK bir kısmını kaplar; drawLibertyMark'ın
+    // ince artı + küçük merkez noktası YALNIZ küçük bir kesrini kaplar.
+    async function fillFraction(page, cx, cy) {
+      const samples = [];
+      for (let dx = -22; dx <= 22; dx += 4) {
+        for (let dy = -22; dy <= 22; dy += 4) {
+          samples.push(await canvasPixelAt(page, cx, cy, dx, dy));
+        }
+      }
+      // Mod: her pikseli 15'e yuvarlayıp en sık kovayı bul (zemin, KÜÇÜK
+      // varyanslı düz bir renk olduğu için TEK, baskın bir kovaya düşer).
+      const buckets = new Map();
+      for (const px of samples) {
+        const key = `${Math.round(px.r / 15)},${Math.round(px.g / 15)},${Math.round(px.b / 15)}`;
+        buckets.set(key, (buckets.get(key) || 0) + 1);
+      }
+      let modeKey = null, modeCount = -1;
+      for (const [k, c] of buckets) if (c > modeCount) { modeKey = k; modeCount = c; }
+      const [mr, mg, mb] = modeKey.split(',').map(n => Number(n) * 15);
+      const ref = pixelLuminance({ r: mr, g: mg, b: mb });
+      const deviating = samples.filter(px => Math.abs(pixelLuminance(px) - ref) > 15).length;
+      return deviating / samples.length;
+    }
+    // Pozitif kontrol: AYNI yöntem GERÇEK beyaz köşe taşında (dolu bir
+    // disk, YÖNTEM BUNU YAKALAMALI) belirgin bir dolgu oranı üretmeli —
+    // yöntemin kendisini bu sayfada doğrular (kör bir eşik varsayılmaz).
+    const whiteFraction = await fillFraction(s.page, whiteStoneXY.dx, whiteStoneXY.dy);
+    ensure(whiteFraction > 0.25, `kalibrasyon/yöntem doğrulaması: GERÇEK beyaz taşın dolgu oranı çok düşük (${(whiteFraction * 100).toFixed(0)}%) — yöntem veya kalibrasyon koordinatları güvenilmez olabilir`);
+
+    // Hedefte AYNI yöntemle ölçülen dolgu oranı, gerçek taşınkinden ÇOK
+    // düşük kalmalı — artı işareti dolu bir disk KADAR alan KAPLAMAZ.
+    const targetFraction = await fillFraction(s.page, targetXY.dx, targetXY.dy);
+    ensure(targetFraction < whiteFraction * 0.5, `an 1 açılışında hedefte gerçek taşla KIYASLANABİLİR oranda bir dolgu bulundu (hedef=${(targetFraction * 100).toFixed(0)}%, gerçek taş=${(whiteFraction * 100).toFixed(0)}%) — otomatik silüet HÂLÂ gösteriliyor olabilir`);
+  } finally { await s.close(); }
+});
+
+addTest('J3c) An 1: imleç hedefe GERÇEKTEN taşınırsa normal hover-önizleme (sade halka) hâlâ çalışır; imleç ayrılınca temizlenir, neon DEĞİŞMEZ', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7AndIntro(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const pt = await findScreenPointFor(s.page, { row: 1, col: 0 });
+    ensure(pt, 'an 1 hedefinin ekran konumu bulunamadı');
+    // İmleç GERÇEKTEN hedefe taşındı (findScreenPointFor'un kendisi bunu
+    // yapar) — bu, "sıfır imleç hareketi" durumunun AKSİNE, kullanıcının
+    // GERÇEKTEN fareyi hedefe getirdiği senaryodur (bkz. görev talimatı
+    // Bölüm 2: "kullanıcı imleci hedefe taşırsa normal hover-önizleme
+    // davranışı yine geçerli olabilir").
+    const hover = await getHoverPoint(s.page);
+    ensure(hover && hover.row === 1 && hover.col === 0, `imleç hedefe taşındıktan sonra hover state (1,0) olmalı, bulunan: ${JSON.stringify(hover)}`);
+    // Bu, adapters/sceneBoardAdapter.js'in KENDİ BAĞIMSIZ drawHoverPoint
+    // mekanizmasıdır — setMovePreview'a hiç dokunmaz, movePreview state
+    // hâlâ null KALMALI (an 1'de otomatik silüet YOK).
+    const preview = await getMovePreview(s.page);
+    ensure(preview === null, `hover sırasında bile an 1'de movePreview state null KALMALI (hover ≠ silüet), bulunan: ${JSON.stringify(preview)}`);
+    const points = await getLibertyPointsRaw(s.page);
+    ensure(points.length === 1 && points[0].row === 1 && points[0].col === 0, `hover sırasında neon işaret DEĞİŞMEMELİ: ${JSON.stringify(points)}`);
+
+    // İmleç tahtadan tamamen ayrılır — hover temizlenir, neon YİNE DEĞİŞMEZ.
+    await s.page.mouse.move(box.x - 40, box.y - 40);
+    await s.page.waitForTimeout(80);
+    const pointsAfter = await getLibertyPointsRaw(s.page);
+    ensure(pointsAfter.length === 1 && pointsAfter[0].row === 1 && pointsAfter[0].col === 0, `imleç ayrıldıktan sonra neon işaret DEĞİŞMEMELİ: ${JSON.stringify(pointsAfter)}`);
+  } finally { await s.close(); }
+});
+
+addTest('J3d) An 1: mobilde neon işarete TEK dokunuş — silüet ÖNCE kurulmadan — doğrudan GERÇEK yakalamayı uygular (ikinci dokunuş GEREKMEZ)', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7AndIntro(s.page);
+    const preview = await getMovePreview(s.page);
+    ensure(preview === null, `an 1 mobil açılışta otomatik taş silüeti KURULMAMALI, bulunan: ${JSON.stringify(preview)}`);
+    // onIntersectionTap doğrudan ekran koordinatından hesaplanır (bkz.
+    // adapters/sceneBoardAdapter.js handleClick) — movePreview state'ten
+    // TAMAMEN BAĞIMSIZDIR, bu yüzden silüet kurulmamış olsa da TEK bir
+    // dokunuş gerçek hamleyi doğrudan uygulamalı.
+    const ok = await tapExactCorrectS07(s.page, 3);
+    ensure(ok, 'an 1 mobil: GERÇEK hedef bulunup dokunulamadı');
+    await s.page.waitForTimeout(250);
+    const answered = eventsFor(await getEventLog(s.page), S07_ID).filter(e => e.type === 'scene_assessment_answered').at(-1).payload;
+    ensure(answered.isCorrect === true && answered.capturedCount === 1 && answered.targetRemovedFromBoard === true, `an 1 mobil: tek dokunuşla GERÇEK yakalama (silüet olmadan): ${JSON.stringify(answered)}`);
+    ensure(await s.page.locator('#s07-continue').isVisible(), 'an 1 mobil: tek dokunuş yeterli — ikinci dokunuş GEREKMEMELİ');
+    ensure(s.consoleErrors.length === 0, `an 1 mobil akışta konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
   } finally { await s.close(); }
 });
 
@@ -4090,6 +4259,12 @@ addTest('J4) An 2 (after_mistake): başlangıçta ipucu GİZLİ; yanlış hamled
     ensure(wrongEv.isCorrect === false && wrongEv.capturedCount === undefined && wrongEv.resultConcept === undefined, `yanlış cevapta başarı alanları HİÇ EKLENMEMELİ: ${JSON.stringify(wrongEv)}`);
     const after = await getLibertyPointsRaw(s.page);
     ensure(after.length === 1 && after[0].row === 1 && after[0].col === 4, `yanlış hamleden SONRA ipucu OTOMATİK açılmalı (1,4): ${JSON.stringify(after)}`);
+    // v0.15 kapsam sınırı kanıtı: an 1'in AKSİNE, an 2 (after_mistake)
+    // showAutomaticMovePreview===true KORUR — bu yüzden otomatik taş
+    // silüeti (movePreview state) BURADA HÂLÂ kurulmalı (bkz. görev
+    // talimatı Bölüm 3 — diğer beş anın ipucu davranışı DEĞİŞMEMELİ).
+    const preview = await getMovePreview(s.page);
+    ensure(preview && preview.row === 1 && preview.col === 4 && preview.color === 'black', `an 2'de yanlış hamleden SONRA otomatik taş silüeti HÂLÂ kurulmalı (1,4 siyah) — v0.15 YALNIZ an 1'i etkilemeli, bulunan: ${JSON.stringify(preview)}`);
     // NOT: an 1 (immediate) kendi otomatik reveal'ini ZATEN üretmiş olabilir
     // (advanceS07ToItem an 1'i doğru cevaplayarak geçti) — bu yüzden BU anın
     // (assessmentIndex===1) reveal event'i AYRI filtrelenir, ham toplam
@@ -4125,6 +4300,10 @@ addTest('J5) An 3/4 (on_request): ipucu YALNIZ düğmeyle açılır, otomatik a�
     ensure(await hintBtn.getAttribute('aria-pressed') === 'true', 'istekten sonra aria-pressed=true olmalı');
     const after = await getLibertyPointsRaw(s.page);
     ensure(after.length === 1 && after[0].row === 6 && after[0].col === 4, `düğme sonrası neon işaret (6,4): ${JSON.stringify(after)}`);
+    // v0.15 kapsam sınırı kanıtı: an 3 (on_request) showAutomaticMovePreview
+    // ===true KORUR — düğmeyle AÇILAN ipucunda taş silüeti HÂLÂ kurulmalı.
+    const preview = await getMovePreview(s.page);
+    ensure(preview && preview.row === 6 && preview.col === 4 && preview.color === 'black', `an 3'te düğme sonrası otomatik taş silüeti HÂLÂ kurulmalı (6,4 siyah) — v0.15 YALNIZ an 1'i etkilemeli, bulunan: ${JSON.stringify(preview)}`);
     const answeredAfter = eventsFor(await getEventLog(s.page), S07_ID).filter(e => e.type === 'scene_assessment_answered').length;
     ensure(answeredAfter === answeredBefore, 'ipucu açılması HİÇBİR cevap eventi ÜRETMEMELİ');
     const unlocked = eventsFor(await getEventLog(s.page), S07_ID).filter(e => e.type === 'scene_completion_unlocked');
@@ -4264,6 +4443,14 @@ addTest('J10) Konular paneli açıkken board input kilitlenir (hamle/hint sızma
     ensure(duringCount === beforeCount, 'Konular paneli açıkken canvas tıklaması hamle/event üretti — input yanlış kilitli');
     await s.page.keyboard.press('Escape');
     await s.page.waitForTimeout(150);
+    // v0.15: panel kapanışı an 1'in OTOMATİK taş silüetini GERİ
+    // GETİRMEMELİ (görev talimatı Bölüm 5 — "replay/panel-close must not
+    // restore auto silhouette") — panel açılırken/kapanırken movePreview
+    // snapshot alınıp geri yüklenir (bkz. adapters/sceneBoardAdapter.js
+    // suspendInteraction/resumeInteraction); an 1'de snapshot zaten null
+    // olduğundan geri yüklenen de null KALMALI.
+    const previewAfterPanelClose = await getMovePreview(s.page);
+    ensure(previewAfterPanelClose === null, `an 1'de Konular paneli kapandıktan sonra otomatik taş silüeti GERİ GELMEMELİ, bulunan: ${JSON.stringify(previewAfterPanelClose)}`);
     const ok = await tapExactCorrectS07(s.page, 3);
     ensure(ok, 'Konular paneli kapandıktan sonra normal girdi çalışmalı');
     await s.page.waitForTimeout(150);
@@ -4291,6 +4478,11 @@ addTest('J10) Konular paneli açıkken board input kilitlenir (hamle/hint sızma
     await s.page.waitForTimeout(300);
     const replayPoints = await getLibertyPointsRaw(s.page);
     ensure(replayPoints.length === 1, `replay an 1 (immediate) ilk seed'e döner, hint yeniden görünür: ${JSON.stringify(replayPoints)}`);
+    // v0.15: replay an 1'i TEKRAR açtığında da OTOMATİK taş silüeti
+    // KURULMAMALI — v0.15'in davranışı yalnız İLK açılışa özgü DEĞİL,
+    // her yeniden mount'ta (revealHint'in kendi mantığı) geçerli.
+    const replayPreview = await getMovePreview(s.page);
+    ensure(replayPreview === null, `replay sonrası an 1'de otomatik taş silüeti GERİ GELMEMELİ, bulunan: ${JSON.stringify(replayPreview)}`);
     const presented = eventsFor(await getEventLog(s.page), S07_ID).filter(e => e.type === 'scene_assessment_presented').at(-1).payload;
     ensure(presented.stepIndex === 3, `replay İLK board seed'e (stepIndex 3) dönmeli, bulunan: ${presented.stepIndex}`);
   } finally { await s.close(); }
