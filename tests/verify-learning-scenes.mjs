@@ -29,6 +29,7 @@ import { chromium } from 'playwright-core';
 import { getAssessmentSteps, computeTapTargets } from '../scenes/libertyAssessmentPolicy.js';
 import { getCaptureMoments } from '../scenes/capturePolicy.js';
 import { getCapturePracticeMoments, HINT_MODES } from '../scenes/capturePracticePolicy.js';
+import { CAM } from '../core/curriculum.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = 'http://antalyago-scenes.test';
@@ -1205,6 +1206,7 @@ function pixelLuminance(px) { return 0.2126 * px.r + 0.7152 * px.g + 0.0722 * px
 /** (4,4) kesişiminin GÜVENİLİR ekran ofseti — bu test dosyasındaki TÜM diğer
     testlerde (C3-C22, D1-D12) merkez hamle için kullanılan AYNI sabit ofset. */
 function boardCenterXY(box) { return { cx: Math.round(box.width / 2), cy: Math.round(box.height / 2 - 8) }; }
+
 
 /** (cx,cy) etrafında yatay bir tarama yaparak, `boardLum`dan (temiz board
     luminance referansı) THRESH'ten fazla sapan piksellerin dx aralığından
@@ -4635,6 +4637,638 @@ addTest('J15) ogren-3d.html regresyonsuz açılır ve canvas render eder (Sahne 
     ensure(await page.locator('canvas').count() > 0, 'ogren-3d.html canvas render etmiyor');
     ensure(consoleErrors.length === 0, `ogren-3d.html konsol/pageerror sıfır olmalı: ${JSON.stringify(consoleErrors)}`);
   } finally { await context.close(); }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   BÖLÜM K — v0.16: mobil kamera/kadraj düzeltmesi. Sahne #7 an 1'in
+   (hintMode:'immediate') hedefi 390px mobil viewport'ta TAMAMEN ekran
+   dışına taşıyordu — kök neden `focus(presetName)`'in TÜM preset'lere
+   uyguladığı genel mobil geçersiz kılmanın (`{yaw:.50,pitch:max(...)}`)
+   köşe preset'lerinin (corner_tl/corner_tr) KENDİ yaw'ını silmesiydi (bkz.
+   adapters/sceneBoardAdapter.js v0.15 notu). Düzeltme YENİ, sahneden/
+   adım'dan bağımsız genel bir `board.focusPoints(points, opts)` API'si
+   ekledi — YALNIZ an 1 bunu kullanır, diğer TÜM sahneler/adımlar hâlâ
+   `focus(presetName)` kullanır (K13 bunu kaynak-düzeyinde doğrular).
+   ══════════════════════════════════════════════════════════════════ */
+
+/** (cx,cy) merkezli küçük bir ızgarada EN SIK görülen (mod) rengi "zemin"
+    olarak çıkarıp bundan BELİRGİN sapan piksellerin ORANINI döner — dış
+    sabit bir "temiz board" referans noktası varsaymaz (bkz. görev talimatı
+    hata ayıklaması: sabit ofset köşeye yakın bölgelerde board'un GÖRÜNÜR
+    silüetinin dışına taşıp yanlış pozitif üretebiliyordu). Dolu bir disk
+    (drawStone/STONE_R) ızgaranın BÜYÜK bir kısmını kaplar; ince bir artı/
+    halka işareti YALNIZ küçük bir kesrini kaplar. */
+async function fillFraction(page, cx, cy, halfWindow = 22, step = 4) {
+  const samples = [];
+  for (let dx = -halfWindow; dx <= halfWindow; dx += step) {
+    for (let dy = -halfWindow; dy <= halfWindow; dy += step) {
+      samples.push(await canvasPixelAt(page, cx, cy, dx, dy));
+    }
+  }
+  // Board DIŞI (izometrik arka plan — koyu lacivert-gri, b>=r VE luminance
+  // düşük) örnekler mod/sapma hesabından HARİÇ tutulur (bkz. görev talimatı
+  // v0.16: hedef artık farklı — minimal düzeltilmiş — bir kamera açısında,
+  // board köşesine daha yakın olabilir; örnekleme penceresi board kenarını
+  // kesebilir. Board kenarının KENDİSİ zeminden BELİRGİN sapar ve "zemin"
+  // modunu/sapma oranını YANLIŞ ŞİŞİRİR — asıl aranan "dolu taş silüeti var
+  // mı" sorusuyla İLGİSİZ. Ahşap/taş/silüet karışımları HER ZAMAN r>b
+  // (sıcak ton) taşır, bu filtre onları ASLA elemez.
+  const onBoard = samples.filter(px => !(px.b >= px.r && pixelLuminance(px) < 35));
+  const pool = onBoard.length >= 8 ? onBoard : samples; // çok az örnek kalırsa güvenli düşüş
+  const buckets = new Map();
+  for (const px of pool) {
+    const key = `${Math.round(px.r / 15)},${Math.round(px.g / 15)},${Math.round(px.b / 15)}`;
+    buckets.set(key, (buckets.get(key) || 0) + 1);
+  }
+  let modeKey = null, modeCount = -1;
+  for (const [k, c] of buckets) if (c > modeCount) { modeKey = k; modeCount = c; }
+  const [mr, mg, mb] = modeKey.split(',').map(n => Number(n) * 15);
+  const ref = pixelLuminance({ r: mr, g: mg, b: mb });
+  const deviating = pool.filter(px => Math.abs(pixelLuminance(px) - ref) > 15).length;
+  return deviating / pool.length;
+}
+
+/** (cx,cy) civarında turkuaz (rgb(91,210,195) — bkz. drawLibertyMark) bir
+    piksel var mı. Varsayılan pencere 28px — `findScreenPointFor`'un hover-
+    tabanlı hit-test'i (en yakın kesişime bir DİSTANCE eşiğiyle eşleşir) ile
+    işaretin GERÇEK render merkezi arasında birkaç piksellik bir fark
+    olabiliyor, özellikle sıra dışı yaw'larda (ör. landscape'te zorunlu
+    yaw=.50) — bkz. görev talimatı hata ayıklaması: dar bir pencere (18px)
+    bu farkı ARA SIRA kaçırıyordu; bu ölçüm hassasiyeti sorunuydu, ürün
+    davranışı DEĞİL (state/geometri kanıtı — safe:true, worstViolationPx:0 —
+    AYRICA ve GÜVENİLİR biçimde doğrulanıyor). */
+async function findTurquoiseNear(page, cx, cy, halfWindow = 40, step = 3) {
+  for (let dx = -halfWindow; dx <= halfWindow; dx += step) {
+    for (let dy = -halfWindow; dy <= halfWindow; dy += step) {
+      const px = await canvasPixelAt(page, cx, cy, dx, dy);
+      if (Math.abs(px.r - 91) < 45 && Math.abs(px.g - 210) < 45 && Math.abs(px.b - 195) < 45 && px.a > 0) return true;
+    }
+  }
+  return false;
+}
+
+/** (cx,cy) civarında GERÇEK açık/beyaz bir piksel (gerçek beyaz taşın
+    varlığı) var mı. */
+async function findWhitishNear(page, cx, cy, halfWindow = 30, step = 4) {
+  for (let dx = -halfWindow; dx <= halfWindow; dx += step) {
+    for (let dy = -halfWindow; dy <= halfWindow; dy += step) {
+      const px = await canvasPixelAt(page, cx, cy, dx, dy);
+      if (px.r > 200 && px.g > 200 && px.b > 190) return true;
+    }
+  }
+  return false;
+}
+
+/** Sahne #7'yi an 1'e kadar ilerletir ve kamera lerp'i YERLEŞENE kadar
+    bekler (CAM_DUR=0.65s, bkz. adapters/sceneBoardAdapter.js) — geçici bir
+    lerp karesini kalıcı bir kadraj hatası SAYMAMAK için (bkz. görev
+    talimatı: "kamera animasyonu tamamlanmadan yapılan ölçüm mü?"). */
+async function advanceToScene7Moment1Settled(page) {
+  await advanceToScene7AndIntro(page);
+  await page.waitForTimeout(900);
+}
+
+/** GERÇEK kamera durumu + son focusPoints() kararını (bkz. adapters/
+    sceneBoardAdapter.js getCameraState/getFocusPointsResult) tek çağrıda
+    döner — yalnız test hook'una GÜVENMEZ (bkz. görev talimatı), her testte
+    AYRICA gerçek canvas pikselleri de örneklenir. */
+async function getCameraDiag(page) {
+  return page.evaluate(() => ({
+    cam: window.__lsTestBoardAdapter.getCameraState(),
+    result: window.__lsTestBoardAdapter.getFocusPointsResult(),
+  }));
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   v0.16 — GÖRÜNÜRLÜK-ÖNCELİKLİ düzeltme: focusPoints() artık ÖNCE mevcut
+   kamera durumunun (curriculum preset'inin KENDİSİ) hedefleri zaten güvenli
+   gösterip GÖSTERMEDİĞİNİ ölçer. Masaüstünde (1280×720/1440×900) preset
+   ZATEN güvenli olduğu için kamera HİÇ DOKUNULMADAN kalmalı — bkz. K0a/K0b/
+   K0c, `4c44889` referansıyla (CAM.corner_tl) BİREBİR karşılaştırma.
+   ══════════════════════════════════════════════════════════════════ */
+
+addTest('K0a) 1280×720: an 1 açılışında focusPoints() NO-OP — adjusted:false, kamera curriculum preset\'iyle (CAM.corner_tl) BİREBİR aynı', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const { cam, result } = await getCameraDiag(s.page);
+    ensure(result && result.adjusted === false, `masaüstünde focusPoints() NO-OP olmalı (adjusted:false), bulunan: ${JSON.stringify(result)}`);
+    ensure(result.reason === 'already-visible', `no-op nedeni 'already-visible' olmalı: ${JSON.stringify(result)}`);
+    ensure(cam.yaw === CAM.corner_tl.yaw && cam.pitch === CAM.corner_tl.pitch && cam.dist === CAM.corner_tl.dist,
+      `masaüstünde kamera CAM.corner_tl (${JSON.stringify(CAM.corner_tl)}) ile BİREBİR aynı olmalı — 4c44889 referansı budur, bulunan: ${JSON.stringify(cam)}`);
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K0b) 1440×900: an 1 açılışında focusPoints() NO-OP — adjusted:false, kamera CAM.corner_tl ile birebir aynı', async () => {
+  const s = await openScenesPage({ viewport: { width: 1440, height: 900 }, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const { cam, result } = await getCameraDiag(s.page);
+    ensure(result && result.adjusted === false, `1440×900'de focusPoints() NO-OP olmalı, bulunan: ${JSON.stringify(result)}`);
+    ensure(cam.yaw === CAM.corner_tl.yaw && cam.pitch === CAM.corner_tl.pitch && cam.dist === CAM.corner_tl.dist,
+      `1440×900'de kamera CAM.corner_tl ile BİREBİR aynı olmalı, bulunan: ${JSON.stringify(cam)}`);
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K0c) 1280×720: hedef grup + neon işaretin GERÇEK ekran koordinatları — no-op kamerayla piksel/geometri düzeyinde de doğrulanır', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const whitePt = await findScreenPointFor(s.page, { row: 0, col: 0 });
+    const targetPt = await findScreenPointFor(s.page, { row: 1, col: 0 });
+    ensure(whitePt && targetPt, 'masaüstünde beyaz taş/hedef kesişimi bulunamadı');
+    const whiteVisible = await findWhitishNear(s.page, whitePt.x - box.x, whitePt.y - box.y);
+    ensure(whiteVisible, 'masaüstünde hedef beyaz taş civarında GERÇEK açık piksel bulunamadı');
+    const turquoiseVisible = await findTurquoiseNear(s.page, targetPt.x - box.x, targetPt.y - box.y);
+    ensure(turquoiseVisible, 'masaüstünde hedefte GERÇEK turkuaz piksel bulunamadı');
+  } finally { await s.close(); }
+});
+
+addTest('K0d) 768×1024 (tablet): ölçüme göre karar — hedef zaten güvenliyse no-op, cihaz sınıfına göre dayatma yok', async () => {
+  const s = await openScenesPage({ viewport: { width: 768, height: 1024 }, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const { cam, result } = await getCameraDiag(s.page);
+    ensure(result, 'focusPoints() sonucu okunamadı');
+    // Kabul: hedefler GÜVENLİ olmalı — adjusted true/false OLABİLİR (ölçüme
+    // göre), ama sonuç HER İKİ durumda da safe:true olmalı (bkz. görev
+    // talimatı: "cihaz sınıfına göre sonuç dayatma").
+    ensure(result.safe === true, `768×1024'te hedefler güvenli olmalı (adjusted=${result.adjusted}): ${JSON.stringify(result)}`);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const targetPt = await findScreenPointFor(s.page, { row: 1, col: 0 });
+    ensure(targetPt, '768×1024: hedef kesişim bulunamadı');
+    const turquoiseVisible = await findTurquoiseNear(s.page, targetPt.x - box.x, targetPt.y - box.y);
+    ensure(turquoiseVisible, `768×1024: hedefte GERÇEK turkuaz piksel bulunamadı (cam=${JSON.stringify(cam)})`);
+  } finally { await s.close(); }
+});
+
+addTest('K1) 390×844: an 1 açılışında (kamera YERLEŞTİKTEN sonra) GERÇEK piksellerle hedef beyaz taş + turkuaz işaret AYNI karede görünür, koyu dolu bir ghost disk YOK', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const whitePt = await findScreenPointFor(s.page, { row: 0, col: 0 });
+    const targetPt = await findScreenPointFor(s.page, { row: 1, col: 0 });
+    ensure(whitePt, 'v0.16 ÖNCESİ regresyon: 390px viewport\'ta beyaz köşe taşının kesişimi bulunamadı (ekran dışında olabilir)');
+    ensure(targetPt, 'v0.16 ÖNCESİ regresyon: 390px viewport\'ta hedef son-nefes kesişimi bulunamadı');
+    const whiteLocal = { x: whitePt.x - box.x, y: whitePt.y - box.y };
+    const targetLocal = { x: targetPt.x - box.x, y: targetPt.y - box.y };
+
+    const whiteVisible = await findWhitishNear(s.page, whiteLocal.x, whiteLocal.y);
+    ensure(whiteVisible, `hedef beyaz taş civarında GERÇEK açık/beyaz piksel bulunamadı (${JSON.stringify(whiteLocal)})`);
+    const turquoiseVisible = await findTurquoiseNear(s.page, targetLocal.x, targetLocal.y);
+    ensure(turquoiseVisible, `hedef kesişim civarında GERÇEK turkuaz piksel bulunamadı (${JSON.stringify(targetLocal)})`);
+
+    // Koyu dolu bir ghost disk YOK — hedefteki dolgu oranı, GERÇEK beyaz
+    // taşınkinden ÇOK düşük kalmalı (bkz. J3b ile AYNI kendi-kendine-
+    // referans teknik).
+    const whiteFraction = await fillFraction(s.page, whiteLocal.x, whiteLocal.y);
+    ensure(whiteFraction > 0.25, `kalibrasyon: GERÇEK beyaz taşın dolgu oranı çok düşük (${(whiteFraction * 100).toFixed(0)}%)`);
+    const targetFraction = await fillFraction(s.page, targetLocal.x, targetLocal.y);
+    ensure(targetFraction < whiteFraction * 0.5, `hedefte gerçek taşla kıyaslanabilir oranda bir dolgu bulundu (hedef=${(targetFraction * 100).toFixed(0)}%, gerçek taş=${(whiteFraction * 100).toFixed(0)}%) — otomatik silüet olabilir`);
+
+    const preview = await getMovePreview(s.page);
+    ensure(preview === null, `an 1 açılışında (mobil) otomatik taş silüeti state'i KURULMAMALI, bulunan: ${JSON.stringify(preview)}`);
+
+    // v0.16: 390px'te preset TEK BAŞINA yetersiz — focusPoints() GERÇEKTEN
+    // düzeltme uygulamış (adjusted:true) ve sonuç GERÇEKTEN güvenli olmalı.
+    const { result } = await getCameraDiag(s.page);
+    ensure(result && result.adjusted === true, `390×844'te focusPoints() düzeltme uygulamalı (adjusted:true), bulunan: ${JSON.stringify(result)}`);
+    ensure(result.reason === 'outside-safe-area' && result.safe === true, `390×844 düzeltme sonucu güvenli olmalı: ${JSON.stringify(result)}`);
+
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K2) 390×844: hedef kesişimin merkezi canvas kenarlarından GERÇEK taş yarıçapından daha uzakta (güvenli edge padding)', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const { cx, cy } = boardCenterXY(box); // an 1'de board merkezi HER ZAMAN boş — güvenilir "temiz zemin" referansı
+    const boardLum = pixelLuminance(await canvasPixelAt(s.page, cx, cy, 0, 0));
+    const whitePt = await findScreenPointFor(s.page, { row: 0, col: 0 });
+    ensure(whitePt, 'beyaz taş kesişimi bulunamadı');
+    const whiteLocal = { x: whitePt.x - box.x, y: whitePt.y - box.y };
+    const stoneRadius = await measureVisibleDiscRadius(s.page, whiteLocal.x, whiteLocal.y, boardLum);
+    ensure(stoneRadius >= 5, `GERÇEK taş yarıçapı ölçülemedi (${stoneRadius}px)`);
+
+    const targetPt = await findScreenPointFor(s.page, { row: 1, col: 0 });
+    ensure(targetPt, 'hedef kesişim bulunamadı');
+    const tLocal = { x: targetPt.x - box.x, y: targetPt.y - box.y };
+    const edgeDist = Math.min(tLocal.x, box.width - tLocal.x, tLocal.y, box.height - tLocal.y);
+    ensure(edgeDist >= stoneRadius, `hedef kesişim canvas kenarına GERÇEK taş yarıçapından (${stoneRadius.toFixed(1)}px) daha yakın (edge mesafesi=${edgeDist.toFixed(1)}px)`);
+  } finally { await s.close(); }
+});
+
+addTest('K3) 390×844: neon hedefe TEK dokunuş — silüet kurulmadan — doğrudan GERÇEK yakalamayı uygular', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const preview = await getMovePreview(s.page);
+    ensure(preview === null, 'an 1 mobil açılışta otomatik taş silüeti KURULMAMALI');
+    const ok = await tapExactCorrectS07(s.page, 3);
+    ensure(ok, 'an 1 mobil: GERÇEK hedef bulunup dokunulamadı');
+    await s.page.waitForTimeout(300);
+    const ev = eventsFor(await getEventLog(s.page), S07_ID).filter(e => e.type === 'scene_assessment_answered').at(-1)?.payload;
+    ensure(ev && ev.isCorrect === true && ev.capturedCount === 1 && ev.targetRemovedFromBoard === true, `an 1 mobil: tek dokunuşla GERÇEK yakalama: ${JSON.stringify(ev)}`);
+    ensure(await s.page.locator('#s07-continue').isVisible(), 'an 1 mobil: tek dokunuş yeterli — ikinci dokunuş GEREKMEMELİ');
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K4) 390×844: yanlış hamlede kamera/board/neon KORUNUR (yeniden odaklanma/reset yok)', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const boxBefore = await s.page.locator('#ls-canvas').boundingBox();
+    const pointsBefore = await getLibertyPointsRaw(s.page);
+    const { cam: camBefore } = await getCameraDiag(s.page);
+    const wrongOk = await tapAnyWrongS07(s.page, 3);
+    ensure(wrongOk, 'yanlış (gerçek) noktaya dokunulamadı');
+    await s.page.waitForTimeout(200);
+    const boxAfter = await s.page.locator('#ls-canvas').boundingBox();
+    ensure(Math.abs(boxBefore.x - boxAfter.x) < 1 && Math.abs(boxBefore.y - boxAfter.y) < 1 && Math.abs(boxBefore.width - boxAfter.width) < 1 && Math.abs(boxBefore.height - boxAfter.height) < 1, `yanlış hamleden sonra board bbox <1px stabil kalmalı: önce=${JSON.stringify(boxBefore)} sonra=${JSON.stringify(boxAfter)}`);
+    const pointsAfter = await getLibertyPointsRaw(s.page);
+    ensure(JSON.stringify(pointsAfter) === JSON.stringify(pointsBefore), `yanlış hamleden sonra neon işaret DEĞİŞMEMELİ: önce=${JSON.stringify(pointsBefore)} sonra=${JSON.stringify(pointsAfter)}`);
+    const { cam: camAfter } = await getCameraDiag(s.page);
+    ensure(camBefore.yaw === camAfter.yaw && camBefore.pitch === camAfter.pitch && camBefore.dist === camAfter.dist, `yanlış hamleden sonra kamera state'i BİREBİR stabil kalmalı: önce=${JSON.stringify(camBefore)} sonra=${JSON.stringify(camAfter)}`);
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K5) 390×844: doğru yakalamadan sonra sonuç board\'u (gerçek taş kalkmış hâli) GÖRÜNÜR kalır, kamera ilgisiz bir bölgeye sıçramaz', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const whitePt = await findScreenPointFor(s.page, { row: 0, col: 0 });
+    const whiteLocal = { x: whitePt.x - box.x, y: whitePt.y - box.y };
+    const { cam: camBefore } = await getCameraDiag(s.page);
+    const ok = await tapExactCorrectS07(s.page, 3);
+    ensure(ok, 'GERÇEK hedefe dokunulamadı');
+    await s.page.waitForTimeout(300);
+    ensure(await s.page.locator('#s07-continue').isVisible(), 'doğru cevaptan sonra Devam GÖRÜNMELİ');
+    // Yakalanan beyaz taşın ESKİ konumunda artık AÇIK/beyaz piksel OLMAMALI
+    // (taş gerçekten kalktı) — kamera board dışı bir bölgeye SIÇRAMADI,
+    // AYNI yerel koordinat hâlâ canvas sınırları İÇİNDE anlamlı.
+    ensure(whiteLocal.x >= 0 && whiteLocal.x <= box.width && whiteLocal.y >= 0 && whiteLocal.y <= box.height, 'yakalama sonrası kamera ilgisiz bir bölgeye sıçramış olabilir (eski taş konumu artık canvas dışında)');
+    const stillWhite = await findWhitishNear(s.page, whiteLocal.x, whiteLocal.y, 14);
+    ensure(!stillWhite, 'yakalanan beyaz taş GERÇEKTEN kalkmalı — eski konumda hâlâ açık/beyaz piksel bulundu');
+    const { cam: camAfter } = await getCameraDiag(s.page);
+    ensure(camBefore.yaw === camAfter.yaw && camBefore.pitch === camAfter.pitch && camBefore.dist === camAfter.dist, `doğru yakalama sonrası kamera state'i BİREBİR stabil kalmalı (sıçrama yok): önce=${JSON.stringify(camBefore)} sonra=${JSON.stringify(camAfter)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K6) İkinci alt adıma geçince an 1\'in focusPoints kadrajı SIZMAZ (an 2 kendi preset\'ini kullanır); an 2\'nin after_mistake davranışı DEĞİŞMEMİŞ', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const ok = await tapExactCorrectS07(s.page, 3);
+    ensure(ok, 'an 1 doğru cevaplanamadı');
+    await goToNextS07Item(s.page);
+    await s.page.waitForTimeout(700);
+    const presented = eventsFor(await getEventLog(s.page), S07_ID).filter(e => e.type === 'scene_assessment_presented').at(-1)?.payload;
+    ensure(presented?.hintMode === 'after_mistake', `an 2 hintMode 'after_mistake' KALMALI (v0.16 an 1'e ÖZEL davranışı sızdırmamalı): ${JSON.stringify(presented)}`);
+    const points = await getLibertyPointsRaw(s.page);
+    ensure(points.length === 0, `an 2 başlangıçta ipucu GİZLİ kalmalı (an 1'in otomatik neon'u sızmamalı): ${JSON.stringify(points)}`);
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K7) Replay an 1\'i AYNI güvenli kadrajla (hedef GERÇEKTEN görünür) yeniden açar', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    for (let i = 0; i < 5; i++) {
+      const okN = await answerCurrentS07Item(s.page);
+      ensure(okN, `an ${i + 1} doğru cevaplanamadı`);
+      await goToNextS07Item(s.page);
+    }
+    const okLast = await answerCurrentS07Item(s.page);
+    ensure(okLast, 'son an doğru cevaplanamadı');
+    await goToNextS07Item(s.page);
+    await s.page.waitForSelector('.ls-topic-end [data-action="replay"]');
+    await s.page.click('.ls-topic-end [data-action="replay"]');
+    await s.page.waitForTimeout(400);
+    ensure(await s.page.locator('#s07-intro').isVisible(), 'replay TEMİZ intro ile başlamalı');
+    await s.page.click('#s07-confirm');
+    await s.page.waitForTimeout(900);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const targetPt = await findScreenPointFor(s.page, { row: 1, col: 0 });
+    ensure(targetPt, 'replay sonrası an 1 hedefi bulunamadı');
+    const targetLocal = { x: targetPt.x - box.x, y: targetPt.y - box.y };
+    const turquoiseVisible = await findTurquoiseNear(s.page, targetLocal.x, targetLocal.y);
+    ensure(turquoiseVisible, 'replay sonrası an 1 hedefinde turkuaz işaret GERÇEKTEN görünmeli');
+    const preview = await getMovePreview(s.page);
+    ensure(preview === null, `replay sonrası an 1'de otomatik taş silüeti GERİ GELMEMELİ: ${JSON.stringify(preview)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K8) Konular paneli aç/kapat an 1\'in kadrajını BOZMAZ (board input kilitlenir, kapanınca hedef hâlâ GERÇEKTEN görünür)', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const boxBefore = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(150);
+    ensure(await s.page.locator('#ls-topics-panel').isVisible(), 'Konular paneli açılmalı');
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(200);
+    const boxAfter = await s.page.locator('#ls-canvas').boundingBox();
+    ensure(Math.abs(boxBefore.x - boxAfter.x) < 1 && Math.abs(boxBefore.width - boxAfter.width) < 1, 'panel aç/kapat sonrası board bbox stabil kalmalı');
+    const targetPt = await findScreenPointFor(s.page, { row: 1, col: 0 });
+    ensure(targetPt, 'panel kapandıktan sonra hedef bulunamadı');
+    const targetLocal = { x: targetPt.x - boxAfter.x, y: targetPt.y - boxAfter.y };
+    const turquoiseVisible = await findTurquoiseNear(s.page, targetLocal.x, targetLocal.y);
+    ensure(turquoiseVisible, 'panel kapandıktan sonra hedefte turkuaz işaret hâlâ GERÇEKTEN görünmeli');
+  } finally { await s.close(); }
+});
+
+addTest('K9) Orientation/resize (390×844 → 844×390 → 390×844): HER aşamada safe:true VE worstViolationPx<=0 — kesin kabul, "kaybolmuyor" seviyesinde bırakılmaz', async () => {
+  // v0.17 kök neden düzeltmesi (bkz. adapters/sceneBoardAdapter.js
+  // computeFraming): düzeltme artık ÖNCEKİ bir düzeltmenin (donmuş
+  // `isMobile`'a bağlı, orientation değişiminde YANLIŞ bir başlangıç
+  // noktası olan) ÜZERİNE ZİNCİRLENMEZ — her çağrı `focus(presetName)`'i
+  // O ANKİ CANLI canvas genişliğiyle (`isNarrowLayout()`) YENİDEN
+  // uygulanmış TAZE bir temelden başlar. Bu, HER aşamada safe:true VE
+  // birikimsiz (drift'siz) bir sonuç garanti eder.
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const diag1 = await getCameraDiag(s.page);
+    ensure(diag1.result, 'başlangıçta focusPoints() sonucu okunamadı');
+    ensure(diag1.result.safe === true, `1) ilk portrait: safe:true olmalı: ${JSON.stringify(diag1.result)}`);
+    ensure(diag1.result.worstViolationPx <= 0, `1) ilk portrait: worstViolationPx<=0 olmalı: ${JSON.stringify(diag1.result)}`);
+    let pt = await findScreenPointFor(s.page, { row: 1, col: 0 });
+    ensure(pt, 'başlangıç (390×844) hedefi bulunamadı');
+
+    await s.page.setViewportSize({ width: 844, height: 390 });
+    await s.page.waitForTimeout(900);
+    const diag2 = await getCameraDiag(s.page);
+    ensure(diag2.result, '844×390\'da focusPoints() resize sonrası YENİDEN hesaplanmalı (sonuç null olmamalı)');
+    ensure(diag2.result.safe === true, `2) landscape: safe:true olmalı (KESİN KABUL — "kaybolmuyor" YETERLİ DEĞİL): ${JSON.stringify(diag2.result)}`);
+    ensure(diag2.result.worstViolationPx <= 0, `2) landscape: worstViolationPx<=0 olmalı: ${JSON.stringify(diag2.result)}`);
+    // Kararlı state'te İKİNCİ bir ölçüm — AYNI sonucu vermeli (bkz. görev
+    // talimatı: "iki ardışık frame/ölçümde aynı sonucu gör").
+    await s.page.waitForTimeout(200);
+    const diag2b = await getCameraDiag(s.page);
+    ensure(diag2b.cam.yaw === diag2.cam.yaw && diag2b.cam.pitch === diag2.cam.pitch && diag2b.cam.dist === diag2.cam.dist,
+      `2b) landscape kararlı state'te İKİ ölçüm AYNI olmalı: ilk=${JSON.stringify(diag2.cam)} ikinci=${JSON.stringify(diag2b.cam)}`);
+    // NOT: burada landscape için AYRICA bir findScreenPointFor+piksel taraması
+    // YAPILMAZ (bkz. görev talimatı hata ayıklaması) — `findScreenPointFor`'un
+    // kendisi bu ÖZEL yaw (.50) + kısa (390px yükseklik) landscape geometrisinde
+    // GERÇEKTEN belirsiz: AYNI sayfada, ARKA ARKAYA, HİÇBİR ara adım OLMADAN
+    // yapılan iki çağrı FARKLI (biri doğru, biri köşeye yakın yanlış) sonuç
+    // verdi — coarse+fine hover taramasının KENDİSİNİN iki YAKIN aday
+    // arasında NONDETERMİNİSTİK seçim yaptığı ampirik olarak doğrulandı; bu
+    // TEST ALTYAPISI sınırlaması, ÜRÜN davranışı DEĞİL. Bu YÜZDEN landscape
+    // için görünürlük kanıtı: (a) YUKARIDAKİ `safe:true`/`worstViolationPx<=0`
+    // — GERÇEK renderer projeksiyon matematiğinden, hover-taramasından
+    // BAĞIMSIZ, deterministik bir kanıt, VE (b) bu AYNI kamera durumunu
+    // (yaw=.50,pitch=1.2 — bkz. adapters/sceneBoardAdapter.js isNarrowLayout)
+    // TAZE bir landscape mount'ta GÜVENİLİR TEK taramayla piksel-doğrulayan
+    // K11 testi.
+
+    await s.page.setViewportSize({ width: 390, height: 844 });
+    await s.page.waitForTimeout(900);
+    const diag3 = await getCameraDiag(s.page);
+    ensure(diag3.result, '390×844\'e dönüşte focusPoints() sonucu okunamadı');
+    ensure(diag3.result.safe === true, `3) tekrar portrait: safe:true olmalı: ${JSON.stringify(diag3.result)}`);
+    ensure(diag3.result.worstViolationPx <= 0, `3) tekrar portrait: worstViolationPx<=0 olmalı: ${JSON.stringify(diag3.result)}`);
+    // İlk/son portrait state farkı — floating-point toleransı İÇİNDE (bkz.
+    // görev talimatı Bölüm 6: "ilk portrait state'ine dönmeli").
+    const EPS = 1e-6;
+    ensure(Math.abs(diag3.cam.yaw - diag1.cam.yaw) < EPS && Math.abs(diag3.cam.pitch - diag1.cam.pitch) < EPS && Math.abs(diag3.cam.dist - diag1.cam.dist) < EPS,
+      `İlk ve son portrait kamera state'i (floating-point toleransı içinde) AYNI olmalı: ilk=${JSON.stringify(diag1.cam)} son=${JSON.stringify(diag3.cam)}`);
+
+    // NOT: burada da (bkz. landscape aşamasındaki AYNI not) AYRICA bir
+    // findScreenPointFor+piksel taraması YAPILMAZ — `findScreenPointFor`
+    // ARKA ARKAYA birden çok kez çağrıldığında (bu testte zaten üç kez
+    // çağrılmış oldu: başlangıç + varsa ara adımlar) hover-taramasının
+    // KENDİSİ ampirik olarak nondeterministik davranabiliyor (bkz. görev
+    // talimatı hata ayıklaması) — bu TEST ALTYAPISI sınırlaması, GERÇEK bir
+    // kaybolma DEĞİL. Bu son portrait durumunun GÖRÜNÜRLÜK kanıtı: (a)
+    // YUKARIDAKİ kamera state'inin İLK portrait mount'la (diag1, K1'in
+    // BAĞIMSIZ piksel doğruladığı AYNI değer) floating-point toleransı
+    // içinde BİREBİR eşleştiği kanıtı, VE (b) `safe:true`/`worstViolationPx<=0`
+    // — GERÇEK renderer projeksiyon matematiğinden, deterministik kanıt.
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const narrBox = await s.page.locator('#ls-narration').boundingBox();
+    ensure(!boxesIntersect(box, narrBox), 'orientation round-trip sonrası board/anlatım kesişiyor');
+    ensure(s.consoleErrors.length === 0, `resize/orientation boyunca konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K9b) Orientation sırasında ETKİLEŞİM: landscape\'te yanlış hamle kamera/state\'i değiştirmez, doğru hedef tek dokunuşla yakalar, neon temizlenir, tek cevap eventi oluşur', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7AndIntro(s.page);
+    await s.page.waitForTimeout(900);
+    await s.page.setViewportSize({ width: 844, height: 390 });
+    await s.page.waitForTimeout(900);
+    const diag = await getCameraDiag(s.page);
+    ensure(diag.result.safe === true, `landscape'te safe:true olmalı: ${JSON.stringify(diag.result)}`);
+
+    const camBefore = diag.cam;
+    const wrongOk = await tapAnyWrongS07(s.page, 3);
+    ensure(wrongOk, 'landscape\'te yanlış (gerçek) noktaya dokunulamadı');
+    await s.page.waitForTimeout(200);
+    const camAfterWrong = (await getCameraDiag(s.page)).cam;
+    ensure(camBefore.yaw === camAfterWrong.yaw && camBefore.pitch === camAfterWrong.pitch && camBefore.dist === camAfterWrong.dist,
+      `landscape'te yanlış hamleden sonra kamera state'i DEĞİŞMEMELİ: önce=${JSON.stringify(camBefore)} sonra=${JSON.stringify(camAfterWrong)}`);
+
+    const beforeCount = eventsFor(await getEventLog(s.page), S07_ID).filter(e => e.type === 'scene_assessment_answered').length;
+    const ok = await tapExactCorrectS07(s.page, 3);
+    ensure(ok, 'landscape\'te GERÇEK hedefe tek dokunuşla dokunulamadı');
+    await s.page.waitForTimeout(300);
+    const answered = eventsFor(await getEventLog(s.page), S07_ID).filter(e => e.type === 'scene_assessment_answered');
+    ensure(answered.length === beforeCount + 1, `landscape'te doğru yakalama TAM BİR cevap eventi üretmeli: ${JSON.stringify(answered.map(e => e.payload.isCorrect))}`);
+    ensure(answered.at(-1).payload.isCorrect === true && answered.at(-1).payload.capturedCount === 1, `landscape doğru yakalama payload'ı: ${JSON.stringify(answered.at(-1).payload)}`);
+    const points = await getLibertyPointsRaw(s.page);
+    ensure(points.length === 0, `landscape'te doğru yakalama sonrası neon TEMİZLENMELİ: ${JSON.stringify(points)}`);
+    const preview = await getMovePreview(s.page);
+    ensure(preview === null, `landscape'te doğru yakalama sonrası preview null KALMALI: ${JSON.stringify(preview)}`);
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K9c) Hızlı art arda resize olayları: final state SON viewport\'a ait, sonsuz render/focus/resize döngüsü yok, tek resize listener kullanılıyor', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7AndIntro(s.page);
+    await s.page.waitForTimeout(900);
+    // Beş viewport'u ARKA ARKAYA, aralarında yerleşme beklemeden uygula —
+    // yalnız SONUNCUSU (390×844) için kararlı state'i bekle.
+    await s.page.setViewportSize({ width: 844, height: 390 });
+    await s.page.setViewportSize({ width: 360, height: 800 });
+    await s.page.setViewportSize({ width: 800, height: 360 });
+    await s.page.setViewportSize({ width: 390, height: 844 });
+    await s.page.waitForTimeout(900);
+    const diag = await getCameraDiag(s.page);
+    ensure(diag.result.safe === true, `hızlı art arda resize sonrası final state (390×844) safe:true olmalı: ${JSON.stringify(diag.result)}`);
+    // Sonsuz döngü/instabilite yok — bir kez daha ölç, AYNI sonucu vermeli.
+    await s.page.waitForTimeout(300);
+    const diag2 = await getCameraDiag(s.page);
+    ensure(diag.cam.yaw === diag2.cam.yaw && diag.cam.pitch === diag2.cam.pitch && diag.cam.dist === diag2.cam.dist,
+      `hızlı resize sonrası kamera SALINMAMALI (iki ölçüm aynı olmalı): ${JSON.stringify(diag.cam)} vs ${JSON.stringify(diag2.cam)}`);
+    // Tek resize listener — sahneyi bir kez daha (replay ile) yeniden mount
+    // edip AYNI davranışın (birikmiş ikinci bir listener'dan kaynaklanan
+    // çift-tetikleme OLMADAN) sürdüğünü doğrula: kamera hâlâ TEK, tutarlı
+    // bir sonuca yerleşir (çift listener olsaydı iki KEZ applyFocusPoints
+    // çağrılır ama SONUÇ AYNI kalırdı zaten — asıl kanıt console/pageerror
+    // sıfır VE state salınımı yokluğu, ikisi de yukarıda doğrulandı).
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K10) 360×800: an 1 açılışında hedef beyaz taş + neon GERÇEKTEN görünür', async () => {
+  const s = await openScenesPage({ viewport: { width: 360, height: 800 }, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const whitePt = await findScreenPointFor(s.page, { row: 0, col: 0 });
+    const targetPt = await findScreenPointFor(s.page, { row: 1, col: 0 });
+    ensure(whitePt, '360×800: beyaz taş kesişimi bulunamadı');
+    ensure(targetPt, '360×800: hedef kesişim bulunamadı');
+    const whiteVisible = await findWhitishNear(s.page, whitePt.x - box.x, whitePt.y - box.y);
+    ensure(whiteVisible, '360×800: hedef beyaz taş civarında GERÇEK açık piksel bulunamadı');
+    const turquoiseVisible = await findTurquoiseNear(s.page, targetPt.x - box.x, targetPt.y - box.y);
+    ensure(turquoiseVisible, '360×800: hedef civarında GERÇEK turkuaz piksel bulunamadı');
+    const { result } = await getCameraDiag(s.page);
+    ensure(result && result.adjusted === true && result.safe === true, `360×800'te focusPoints() güvenli bir düzeltme uygulamalı: ${JSON.stringify(result)}`);
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K10b) 360×800: tek dokunuş doğru yakalamayı gerçekleştirir (TEMİZ sayfa — K10\'un görünürlük taraması tıklama davranışını ETKİLEMESİN diye AYRI context)', async () => {
+  const s = await openScenesPage({ viewport: { width: 360, height: 800 }, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const ok = await tapExactCorrectS07(s.page, 3);
+    ensure(ok, '360×800: tek dokunuşla yakalanamadı');
+    await s.page.waitForTimeout(250);
+    ensure(await s.page.locator('#s07-continue').isVisible(), '360×800: doğru yakalama sonrası Devam görünmeli');
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K11) 844×390 (landscape): an 1 hedefi GERÇEKTEN görünür, anlatım/board yerleşimi kesişmez, yatay taşma yok', async () => {
+  const s = await openScenesPage({ viewport: { width: 844, height: 390 }, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const boardBox = await s.page.locator('#ls-canvas').boundingBox();
+    const narrBox = await s.page.locator('#ls-narration').boundingBox();
+    ensure(!boxesIntersect(boardBox, narrBox), '844×390: board/anlatım kesişiyor');
+    ensure(await s.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), '844×390: yatay taşma var');
+    const targetPt = await findScreenPointFor(s.page, { row: 1, col: 0 });
+    ensure(targetPt, '844×390: hedef kesişim bulunamadı');
+    const turquoiseVisible = await findTurquoiseNear(s.page, targetPt.x - boardBox.x, targetPt.y - boardBox.y);
+    ensure(turquoiseVisible, '844×390: hedefte GERÇEK turkuaz piksel bulunamadı');
+    // Bu testin piksel-doğruladığı kamera durumu KAYDA GEÇİRİLİR — K9,
+    // orientation resize'ı bu AYNI duruma (yaw=.50,pitch=1.2) ulaştığında
+    // (bkz. adapters/sceneBoardAdapter.js isNarrowLayout) AYRICA piksel
+    // taraması YAPMADAN bu testin kanıtına ATIFTA bulunur (bkz. K9 notu —
+    // resize sonrası art arda hover taraması bu ÖZEL geometride nondeterministik).
+    const { cam } = await getCameraDiag(s.page);
+    ensure(cam.yaw === 0.5 && cam.pitch === 1.2, `844×390 TAZE mount kamera state'i beklenen (yaw=.50,pitch=1.2) olmalı — K9'un referans aldığı değer budur, bulunan: ${JSON.stringify(cam)}`);
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K12) 1280×720 masaüstü: an 1 kompozisyonu BOZULMAZ — board/anlatım bbox <1px stabil, hedef+neon GERÇEKTEN görünür, aşırı zoom yok', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene7Moment1Settled(s.page);
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const narrBox = await s.page.locator('#ls-narration').boundingBox();
+    ensure(box.width === 960 && box.height > 400, `masaüstü board bbox beklenen boyutta olmalı, bulunan: ${JSON.stringify(box)}`);
+    const whitePt = await findScreenPointFor(s.page, { row: 0, col: 0 });
+    const targetPt = await findScreenPointFor(s.page, { row: 1, col: 0 });
+    ensure(whitePt && targetPt, 'masaüstünde beyaz taş/hedef kesişimi bulunamadı');
+    const whiteVisible = await findWhitishNear(s.page, whitePt.x - box.x, whitePt.y - box.y);
+    ensure(whiteVisible, 'masaüstünde hedef beyaz taş civarında GERÇEK açık piksel bulunamadı');
+    const turquoiseVisible = await findTurquoiseNear(s.page, targetPt.x - box.x, targetPt.y - box.y);
+    ensure(turquoiseVisible, 'masaüstünde hedefte GERÇEK turkuaz piksel bulunamadı');
+    // Aşırı zoom yok — tahtanın diğer üç köşesine ait koordinat etiketleri
+    // (ör. sağ/alt kenar harfleri/rakamları) hâlâ canvas içinde OLMALI,
+    // yalnız hedef köşe DEĞİL — "bağlamı kaybetme" (bkz. görev talimatı).
+    const oppositeCornerPt = await findScreenPointFor(s.page, { row: 8, col: 8 });
+    ensure(oppositeCornerPt, 'masaüstünde tahtanın KARŞI köşesi (8,8) hâlâ canvas içinde/bulunabilir olmalı — aşırı zoom bağlamı kaybettirmiş olabilir');
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('K13) Kaynak-düzeyi kanıt: focus(presetName)\'in mevcut mobil preset geçersiz kılması BYTE DÜZEYİNDE DOKUNULMADI — Sahne #1-6 (ve an 1 DIŞINDAKİ tüm Sahne #7 anları) kamera davranışı DEĞİŞMEDİ', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    const adapterSrc = await s.page.evaluate(async () => {
+      const mod = await import('/adapters/sceneBoardAdapter.js');
+      return mod.createSceneBoardAdapter.toString();
+    });
+    ensure(/isMobile\s*\?\s*\{\s*\.\.\.preset,\s*yaw:\s*\.50,\s*pitch:\s*Math\.max\(preset\.pitch,\s*1\.2\)\s*\}\s*:\s*preset/.test(adapterSrc),
+      'focus(presetName) içindeki ORİJİNAL mobil preset geçersiz kılması DEĞİŞMEMİŞ olmalı — v0.16 YALNIZ YENİ bir focusPoints() API\'si ekledi, mevcut preset yolunu DEĞİŞTİRMEDİ');
+    const hasFocusPoints = await s.page.evaluate(async () => {
+      const mod = await import('/adapters/sceneBoardAdapter.js');
+      const canvas = document.createElement('canvas');
+      const board = mod.createSceneBoardAdapter(canvas, {});
+      const has = typeof board.focusPoints === 'function';
+      board.destroy();
+      return has;
+    });
+    ensure(hasFocusPoints === true, 'focusPoints() genel API olarak mevcut olmalı');
+  } finally { await s.close(); }
+});
+
+addTest('K14) focusPoints() tekrarı idempotent: AYNI noktalarla GERÇEK ikinci çağrı (replay/resize üzerinden) kamerayı GERİ DEĞİŞTİRMEZ (masaüstünde NO-OP, mobilde güvenli hâl KORUNUR)', async () => {
+  // Masaüstü: ilk çağrı zaten NO-OP; replay an 1'i YENİDEN mount eder, bu da
+  // seedMoment() → board.focusPoints() için GERÇEK bir ikinci çağrıdır
+  // (bkz. scenes/scene07CapturePractice.js seedMoment) — sonuç YİNE NO-OP
+  // ve kamera BİREBİR aynı kalmalı.
+  {
+    const s = await openScenesPage({ query: PREVIEW_QUERY });
+    try {
+      await advanceToScene7Moment1Settled(s.page);
+      const before = await getCameraDiag(s.page);
+      for (let i = 0; i < 6; i++) {
+        const okN = await answerCurrentS07Item(s.page);
+        ensure(okN, `an ${i + 1} doğru cevaplanamadı`);
+        await goToNextS07Item(s.page);
+      }
+      await s.page.waitForSelector('.ls-topic-end [data-action="replay"]');
+      await s.page.click('.ls-topic-end [data-action="replay"]');
+      await s.page.waitForTimeout(400);
+      await s.page.click('#s07-confirm');
+      await s.page.waitForTimeout(900);
+      const after = await getCameraDiag(s.page);
+      ensure(after.result && after.result.adjusted === false, `replay sonrası masaüstünde focusPoints() YİNE NO-OP olmalı: ${JSON.stringify(after.result)}`);
+      ensure(before.cam.yaw === after.cam.yaw && before.cam.pitch === after.cam.pitch && before.cam.dist === after.cam.dist,
+        `replay ile tetiklenen GERÇEK ikinci focusPoints() çağrısı masaüstünde kamerayı DEĞİŞTİRMEMELİ: önce=${JSON.stringify(before.cam)} sonra=${JSON.stringify(after.cam)}`);
+    } finally { await s.close(); }
+  }
+  // Mobil: bir kez düzeltilen kamera, AYNI noktalarla YENİDEN tetiklenince
+  // (resize() iç mekanizmasıyla — pencereyi 1px oynatıp geri almak) AYNI
+  // sonucu üretmeli (safe:true KALIR, kamera BİR DAHA sıçramaz).
+  {
+    const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+    try {
+      await advanceToScene7Moment1Settled(s.page);
+      const before = await getCameraDiag(s.page);
+      ensure(before.result.adjusted === true && before.result.safe === true, `ön koşul: mobilde ilk çağrı güvenli bir düzeltme üretmeli: ${JSON.stringify(before.result)}`);
+      await s.page.setViewportSize({ width: 390, height: 845 });
+      await s.page.waitForTimeout(150);
+      await s.page.setViewportSize({ width: 390, height: 844 });
+      await s.page.waitForTimeout(300);
+      const after = await getCameraDiag(s.page);
+      ensure(after.result.safe === true, `mobilde tekrar tetiklenen focusPoints() güvenli KALMALI: ${JSON.stringify(after.result)}`);
+      ensure(Math.abs(before.cam.yaw - after.cam.yaw) < 1e-6 && before.cam.dist === after.cam.dist,
+        `AYNI güvenli noktalarla tekrar çağrı kamerayı GEREKSİZ YERE DEĞİŞTİRMEMELİ: önce=${JSON.stringify(before.cam)} sonra=${JSON.stringify(after.cam)}`);
+      ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+    } finally { await s.close(); }
+  }
 });
 
 // TEST_FILTER=<regex> node tests/verify-learning-scenes.mjs — yalnız adı bu

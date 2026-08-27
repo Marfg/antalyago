@@ -38,11 +38,11 @@
  * SAHNEYE ÖZEL OLMAYAN genel event: `scene_hint_revealed` (bkz.
  * revealHint altında) — bir an için EN FAZLA BİR KEZ üretilir.
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-08-26.1';
-import { assessmentTransition } from './assessmentTransition.js?v=2026-08-26.1';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-08-26.2';
+import { assessmentTransition } from './assessmentTransition.js?v=2026-08-26.2';
 import {
   getCapturePracticeMoments, isValidCapturePoint, computePracticeResult, buildResultText,
-} from './capturePracticePolicy.js?v=2026-08-26.1';
+} from './capturePracticePolicy.js?v=2026-08-26.2';
 
 const CONCEPT = 'capture';
 
@@ -117,7 +117,35 @@ function seedMoment(context, moment) {
   const board = context.boardAdapter;
   board.setSize(moment.size);
   board.reset();
+  // Müfredat kamera preset'i HER anda (istisnasız) uygulanır — bkz. görev
+  // talimatı v0.16: "masaüstünde hedef zaten güvenliyse mevcut curriculum
+  // kamera preset'ini... değiştirmesin". board.focusPoints() (aşağıda,
+  // yalnız an 1 için) bu preset'in ÜZERİNE, GÖRÜNÜRLÜK-ÖNCELİKLİ bir katman
+  // olarak eklenir — preset zaten güvenliyse (bkz. adapters/
+  // sceneBoardAdapter.js computeFraming) kameraya HİÇ DOKUNMAZ.
   board.focus(moment.cameraPreset || 'center');
+  // An 1 (hintMode:'immediate' — bkz. capturePracticePolicy.js computeHintMode,
+  // YALNIZ momentIndex===0 için döner): mobil kadraj sorunu — köşe
+  // preset'inin (corner_tl) kendi yaw'ı, adapters/sceneBoardAdapter.js'in
+  // TÜM preset'lere uyguladığı genel mobil geçersiz kılma tarafından
+  // siliniyor, hedef beyaz taş/neon 390px viewport'ta TAMAMEN ekran dışına
+  // taşıyordu. Bu an artık sahneye/adım'a KÖR genel focusPoints()
+  // API'siyle — YALNIZ hedefler güvenli alan DIŞINDAYSA en küçük düzeltmeyle
+  // — kadrajlanır: hedef beyaz grubun taşları + saldıran komşu taş(lar) +
+  // son nefes noktası (moment.board/moment.lastLibertyPoints'ten GERÇEK,
+  // hiçbir koordinat burada hard-code EDİLMEDİ). Diğer TÜM anlar YALNIZ
+  // yukarıdaki preset-tabanlı focus()'u kullanır — DOKUNULMADI.
+  if (moment.hintMode === 'immediate') {
+    const points = [
+      ...moment.board.map(s => ({ row: s.y, col: s.x })),
+      ...moment.lastLibertyPoints,
+    ];
+    // presetName: bu an'ın curriculum preset'i (ör. 'corner_tl') — bkz.
+    // adapters/sceneBoardAdapter.js computeFraming: düzeltme GEREKİRSE
+    // buradan, O ANKİ CANLI canvas genişliğiyle YENİDEN türetilir (orientation
+    // değişiminde donmuş bir önceki düzeltmenin ÜZERİNE ZİNCİRLENMEZ).
+    board.focusPoints(points, { presetName: moment.cameraPreset || 'center' });
+  }
   for (const stone of moment.board) {
     board.playMove({ row: stone.y, col: stone.x, color: stone.color === 'B' ? 'black' : 'white' });
   }

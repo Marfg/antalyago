@@ -38,7 +38,45 @@
  *   board.resumeInteraction(snap);               // yalnız AYNI çağıranın snapshot'ı ile — girdi/preview'ı OLDUĞU gibi geri yükler
  *   const off = board.onIntersectionTap(({row,col}) => {...});   // off() ile abone iptali
  *   const offH = board.onIntersectionHover(hitOrNull => {...});  // pointer hareket/dokunuşunda; board dışında/kilitliyken null
+ *   board.focusPoints(points, opts);   // GENEL, GÖRÜNÜRLÜK-ÖNCELİKLİ kadraj (bkz. v0.16) — zaten güvenliyse NO-OP, sahne/adım BİLMEZ
+ *   board.getCameraState();            // {yaw,pitch,dist} — salt-okunur, YALNIZ test/gözlem amaçlı
+ *   board.getFocusPointsResult();      // son focusPoints() kararı — salt-okunur, YALNIZ test/gözlem amaçlı
  *   board.destroy();                   // RAF/resize/click listener'ı + tüm durumu temizler
+ *
+ * v0.15 — kök neden düzeltmesi: `focus(presetName)` altında mobil için TÜM
+ * preset'lere körü körüne uygulanan `{yaw:.50, pitch:max(pitch,1.2)}`
+ * geçersiz kılması, köşeye özel preset'lerin (`corner_tl`/`corner_tr`) KENDİ
+ * yaw'ını — köşeyi merkeze getiren asıl mekanizmayı — SİLİYORDU; Sahne #7 an
+ * 1'de bu, 390px mobil viewport'ta hedef beyaz taşın ve neon işaretinin
+ * TAMAMEN ekran dışına taşmasına yol açıyordu (piksel kanıtı: bkz. görev
+ * talimatı, hem parent commit `d20357c` hem `4c44889` üzerinde AYNI şekilde
+ * yeniden üretildi — ilk-ipucu sadeleştirmesinin bir regresyonu DEĞİL, ondan
+ * BAĞIMSIZ önceden var olan bir kadraj sorunu). Düzeltme bu blanket mobil
+ * geçersiz kılmayı DEĞİŞTİRMEDİ (diğer TÜM `focus()` çağrıları/preset'ler
+ * byte/davranış düzeyinde AYNI kaldı) — bunun yerine YENİ, sahneden/adımdan
+ * BAĞIMSIZ genel bir `focusPoints()` eklendi: verilen noktaların GERÇEK
+ * izdüşüm geometrisinden yaw'ı anlık türetir, dist'i (zoom) noktaların gerçek
+ * görsel ayak izini (STONE_R + nefes işareti kolu) canvas'ın güvenli alanına
+ * sığdıracak şekilde çözer (bkz. applyFocusPoints). Yalnız Sahne #7'nin an
+ * 1'i bu API'yi kullanır (bkz. scenes/scene07CapturePractice.js) — diğer
+ * TÜM sahneler/adımlar hâlâ `focus(presetName)` kullanır, DOKUNULMADI.
+ *
+ * v0.16 — GÖRÜNÜRLÜK-ÖNCELİKLİ düzeltme (bkz. görev talimatı): v0.15'in
+ * `focusPoints()`'i her zaman hedef merkezine SIFIRDAN bir yaw/dist üretiyordu
+ * — masaüstünde preset ZATEN hedefleri güvenli gösterse bile kamerayı
+ * gereksiz yere değiştiriyordu (kanıt: `4c44889` referansına karşı yaw/dist
+ * farkı ölçüldü). `computeFraming()` artık ÖNCE mevcut kamera durumunu
+ * (preset'in kendisi VEYA önceki bir düzeltme — bkz. `base`) hedeflerin GERÇEK
+ * güvenli-alan sınamasıyla değerlendirir: zaten güvenliyse `{adjusted:false}`
+ * döner ve camYaw/camPitch/camDist/camStart/camTarget'a HİÇ DOKUNULMAZ (no-op
+ * sözleşmesi). Güvenli DEĞİLSE artık "tam merkeze sıfırdan sıçrama" YERİNE
+ * mevcut pitch KORUNARAK, mevcut yaw'dan hedefleri güvenli kılan EN KÜÇÜK
+ * açısal sapma ikili aramayla bulunur; yaw tek başına yetmezse dist tam-
+ * merkezleme yawında güvenli sınırlara sığdırılır. Küçük bir histerezis payı
+ * (bkz. FOCUS_HYSTERESIS_PX) sınırda ölçüm gürültüsüyle salınımı önler. Test/
+ * gözlem için salt-okunur `getCameraState()`/`getFocusPointsResult()` eklendi.
+ * `focus(presetName)`'in kendisi (mobil preset geçersiz kılması DAHİL) BYTE
+ * düzeyinde DEĞİŞMEDİ.
  *
  * v0.9 — kesişim "rehber" (neon nokta) sistemi BİLEREK KALDIRILDI: kullanıcı
  * kesişimleri doğal tahta çizgileri, pointer hover/ghost geri bildirimi ve
@@ -103,9 +141,9 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-08-26.1';
-import { BoardState } from '../core/boardState.js?v=2026-08-26.1';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-08-26.1';
+import { CAM } from '../core/curriculum.js?v=2026-08-26.2';
+import { BoardState } from '../core/boardState.js?v=2026-08-26.2';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-08-26.2';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -148,6 +186,21 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   const ctx = canvas.getContext('2d');
   const woodPat = makeWoodPattern(ctx);
 
+  // Dokunma yeteneği — DONMUŞ `isMobile`'ın (yalnız CONSTRUCTION anındaki
+  // window.innerWidth'ten türetilen) AKSİNE, bu GERÇEK bir donanım
+  // özelliğidir (resize/orientation ile DEĞİŞMEZ) — bu yüzden anlık olarak
+  // yeniden okunması GEREKMEZ, ama STABİL biçimde bir kez saklanır.
+  // `isNarrowLayout()` (bkz. altta) bunu learning-scenes.html'in KENDİ
+  // `isMobile` FORMÜLÜYLE (`W<=640 || (touch && W<=1024)`) AYNI ŞEKİLDE,
+  // yalnız DONMUŞ window.innerWidth yerine O ANKİ CANLI canvas genişliğini
+  // (`W`) kullanarak yeniden hesaplar — computeFraming'in orientation
+  // değişiminde GÜNCEL bir preset temeli türetebilmesi için (bkz.
+  // computeFraming notu). `focus(presetName)`'in KENDİSİ hâlâ yalnız
+  // CONSTRUCTION-zamanlı `isMobile`'ı kullanır — BURADA DEĞİŞTİRİLMEDİ.
+  const touchCapable = typeof window !== 'undefined'
+    && (('ontouchstart' in window) || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0));
+  function isNarrowLayout() { return W <= 640 || (touchCapable && W <= 1024); }
+
   let W = 0, H = 0, projCY = 0;
   let SIZE = initialSize, CELL = sizeToCell(initialSize), HALF = (SIZE - 1) * CELL / 2;
   const BOARD_H = 14;
@@ -181,23 +234,251 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   let camYaw = .50, camPitch = isMobile ? 1.25 : .88, camDist = 500;
   let camStart = null, camTarget = null, camLerpT = 1;
   const CAM_DUR = 0.65;
+  // Son focusPoints() çağrısı — YALNIZ resize/orientation'da AYNI noktaları
+  // yeni canvas ölçüleriyle yeniden hesaplamak için saklanır (bkz. altta
+  // resize() ve focusPoints()). Adapter bu noktaların hangi sahne/moment'e
+  // ait olduğunu BİLMEZ — yalnız "en son hangi ham point listesi/seçenek
+  // verildi" bilgisini tutar.
+  let activeFocusPoints = null;
+  // Son focusPoints() SONUCU — { adjusted, reason, safe, yaw, pitch, dist } | null
+  // — YALNIZ test/gözlem amaçlı (bkz. getFocusPointsResult), getMovePreviewState()
+  // ile AYNI desen.
+  let lastFocusResult = null;
 
   function updateProjCenter() { projCY = H * 0.5; }
   function resize() {
     W = canvas.width = canvas.clientWidth || canvas.parentElement?.clientWidth || innerWidth;
     H = canvas.height = canvas.clientHeight || canvas.parentElement?.clientHeight || innerHeight;
     updateProjCenter();
+    // Aktif bir focusPoints() varsa YENİ canvas ölçüleriyle SESSİZCE (animasyonsuz,
+    // "sürekli zıplama" olmadan) yeniden hesaplanır — bkz. görev talimatı
+    // "mobil resize/orientation değişiminde güvenli biçimde yeniden hesaplanabilmeli".
+    if (activeFocusPoints) applyFocusPoints(activeFocusPoints.points, activeFocusPoints.opts, false);
   }
   resize();
   window.addEventListener('resize', resize);
 
-  function project(x, y, z) {
-    const rx = x * Math.cos(camYaw) + z * Math.sin(camYaw);
-    const rz = -x * Math.sin(camYaw) + z * Math.cos(camYaw);
-    const ry2 = y * Math.cos(camPitch) - rz * Math.sin(camPitch);
-    const rz2 = y * Math.sin(camPitch) + rz * Math.cos(camPitch);
-    const fov = 700, sc = fov / Math.max(fov + rz2, 1) * (camDist / 500);
+  function projectAt(x, y, z, yaw, pitch, dist) {
+    const rx = x * Math.cos(yaw) + z * Math.sin(yaw);
+    const rz = -x * Math.sin(yaw) + z * Math.cos(yaw);
+    const ry2 = y * Math.cos(pitch) - rz * Math.sin(pitch);
+    const rz2 = y * Math.sin(pitch) + rz * Math.cos(pitch);
+    const fov = 700, sc = fov / Math.max(fov + rz2, 1) * (dist / 500);
     return { sx: W / 2 + rx * sc, sy: projCY + ry2 * sc, scale: sc, z: rz2 };
+  }
+  function project(x, y, z) { return projectAt(x, y, z, camYaw, camPitch, camDist); }
+
+  function lerpAngle(a, b, t) { return a + (b - a) * t; }
+
+  /** `auxPts` (padding'li kenar noktaları), verilen (yaw,pitch,dist) kamera
+      durumunda `safe` dikdörtgenin NE KADAR (px) dışına taşıyor — en kötü
+      (en büyük) taşma değeri döner; <=0 ⟺ TÜMÜ güvenli alan içinde.
+      `shrink` küçük bir histerezis payıdır (bkz. computeFraming notu). */
+  function worstViolationAt(auxPts, safe, yaw, pitch, dist, shrink) {
+    const Y = stoneSurfaceY();
+    let worst = -Infinity;
+    for (const ap of auxPts) {
+      const p = projectAt(ap.wx, Y, ap.wz, yaw, pitch, dist);
+      worst = Math.max(worst,
+        (safe.left + shrink) - p.sx, p.sx - (safe.right - shrink),
+        (safe.top + shrink) - p.sy, p.sy - (safe.bottom - shrink));
+    }
+    return worst;
+  }
+
+  /** `auxPts`'i sabit (yaw,pitch)'te `safe` dikdörtgene sığdıran EN BÜYÜK
+      (en az yakınlaştırılmış — bağlamı en çok koruyan) dist'i, [minZoom,
+      maxZoom] içinde, projeksiyonun dist'e göre LİNEER ölçeklenmesinden
+      (bkz. projectAt: sc ∝ dist, sabit yaw/pitch/nokta için) kapalı biçimde
+      çözer. */
+  function solveDistForFit(auxPts, safe, yaw, pitch, minZoom, maxZoom) {
+    const Y = stoneSurfaceY();
+    const REF_DIST = 500;
+    let lo = minZoom, hi = maxZoom;
+    for (const ap of auxPts) {
+      const proj = projectAt(ap.wx, Y, ap.wz, yaw, pitch, REF_DIST);
+      const dx = proj.sx - W / 2, dy = proj.sy - projCY;
+      if (dx !== 0) {
+        const b1 = (safe.left - W / 2) * REF_DIST / dx, b2 = (safe.right - W / 2) * REF_DIST / dx;
+        lo = Math.max(lo, Math.min(b1, b2)); hi = Math.min(hi, Math.max(b1, b2));
+      }
+      if (dy !== 0) {
+        const b1 = (safe.top - projCY) * REF_DIST / dy, b2 = (safe.bottom - projCY) * REF_DIST / dy;
+        lo = Math.max(lo, Math.min(b1, b2)); hi = Math.min(hi, Math.max(b1, b2));
+      }
+    }
+    // hi<lo ⟹ noktalar minZoom'da bile TAM sığmıyor (aşırı yayılmış) — en
+    // iyi çaba olarak en geniş açıyı (minZoom) kullan; kör bir throw/crash
+    // YERİNE sessizce en makul değere düşer (bkz. adapter genelindeki
+    // savunmacı üslup, ör. setSize) — GERÇEK sonuç `safe` alanında ayrıca
+    // raporlanır (bkz. computeFraming).
+    return Math.max(minZoom, Math.min(maxZoom, hi >= lo ? hi : minZoom));
+  }
+
+  const FOCUS_HYSTERESIS_PX = 3;
+
+  /**
+   * GÖRÜNÜRLÜK-ÖNCELİKLİ karar: hedefler (satır/sütun noktaları — her biri
+   * GERÇEK görsel ayak izi, STONE_R + nefes işareti kolu, dahil) MEVCUT
+   * (GERÇEKTEN o an render EDİLEN/edilecek — bkz. `liveState` altında)
+   * kamera durumunda zaten güvenli alandaysa kameraya HİÇ dokunulmaz —
+   * `{adjusted:false}` döner. DEĞİLSE düzeltme, `focus(presetName)`'in
+   * GÜNCEL (canlı) canvas geometrisiyle YENİDEN uygulanmış hâlinden (bkz.
+   * `freshBase` altında) başlar — ÖNCEKİ bir düzeltmenin üzerine
+   * ZİNCİRLEME YAPILMAZ (bkz. görev talimatı KÖK NEDEN: orientation
+   * değişiminde önceki düzeltmenin — donmuş `isMobile`'a bağlı — pitch'i
+   * YANLIŞ bir başlangıç noktası oluyordu). Bu, "portrait→landscape→
+   * portrait sonunda kamera AYNI ilk state'e döner" ve "birikimli drift
+   * OLMAZ" garantisini SAĞLAR — her çağrı, PRESET'İN KENDİSİNDEN + O ANKİ
+   * GERÇEK canvas ölçüsünden bağımsız/deterministik olarak yeniden türetir.
+   *
+   * Cihaz/user-agent/"mobil" bayrağı/sabit breakpoint/assessment-index'e
+   * HİÇ bakmaz — yalnız GERÇEK canvas ölçüleri + world→screen izdüşümü.
+   * `freshBase`'in pitch'i `focus(presetName)`'in KENDİ mobil-clamp
+   * FORMÜLÜYLE (`Math.max(preset.pitch,1.2)`) AYNI ŞEKİLDE hesaplanır —
+   * yalnız DONMUŞ `isMobile` yerine O ANKİ CANLI canvas genişliği (`W`)
+   * kullanılır; `focus()`'un KENDİSİ veya paylaşılan `isMobile` DEĞİŞMEDİ.
+   *
+   * @param {Array<{row:number,col:number}>} points
+   * @param {{padding?:number, minZoom?:number, maxZoom?:number, motion?:boolean, hysteresisPx?:number, presetName?:string}} [opts]
+   * @returns {{adjusted:boolean, reason:'already-visible'|'outside-safe-area'|'clamped-unresolved', safe:boolean, yaw:number, pitch:number, dist:number, worstViolationPx:number}}
+   */
+  function computeFraming(points, opts) {
+    const {
+      // Varsayılan: gerçek taş yarıçapı + nefes işaretinin kol uzunluğu
+      // (bkz. drawLibertyMark `arm = CELL*0.22`) + küçük görsel boşluk —
+      // "cihaza göre değil gerçek renderer geometrisine göre" (bkz. görev
+      // talimatı Bölüm 4/8).
+      padding = STONE_R + CELL * 0.22 + CELL * 0.18,
+      minZoom = 320,
+      // Mevcut preset'lerin dist aralığıyla (420-520) tutarlı üst sınır —
+      // bağlamı kaybettirecek kadar agresif YAKINLAŞTIRMAZ.
+      maxZoom = 480,
+      hysteresisPx = FOCUS_HYSTERESIS_PX,
+      presetName = 'overview',
+    } = opts || {};
+
+    const worldPts = points.map(p => ({ wx: -HALF + p.col * CELL, wz: -HALF + p.row * CELL }));
+    const wx0 = worldPts.reduce((s, p) => s + p.wx, 0) / worldPts.length;
+    const wz0 = worldPts.reduce((s, p) => s + p.wz, 0) / worldPts.length;
+    // Her gerçek noktanın etrafına, GERÇEK görsel ayak izini (padding)
+    // kapsayan eksen-hizalı 4 "kenar" noktası eklenir — dairesel bir ayak
+    // izinin dünya-uzayı sınır kutusu TAM OLARAK merkez±padding'tir, bu
+    // yüzden köşegen nokta GEREKMEZ.
+    const auxPts = [];
+    for (const p of worldPts) {
+      auxPts.push({ wx: p.wx + padding, wz: p.wz }, { wx: p.wx - padding, wz: p.wz },
+        { wx: p.wx, wz: p.wz + padding }, { wx: p.wx, wz: p.wz - padding });
+    }
+    // Kenar boşluğu, canvas'ın küçük kenarıyla ORANTILI (cihaza özel sabit
+    // DEĞİL) — üstte, learning-scenes.html'in canvas üzerine bindirdiği
+    // "← Ana"/"Konular" düğmeleri için ek bir pay bırakılır.
+    const edgeMargin = Math.max(24, Math.min(W, H) * 0.05);
+    const topMargin = Math.max(edgeMargin, 56);
+    const safe = { left: edgeMargin, right: W - edgeMargin, top: topMargin, bottom: H - edgeMargin };
+
+    // 1) GÜVENLİK KONTROLÜ — GERÇEKTEN o an render EDİLEN/edilecek duruma
+    // (`camTarget`, `focus(presetName)` az önce çağrıldıysa O preset'in
+    // GERÇEK hedef değerlerini — animasyon henüz İLERLEMEMİŞ olsa bile —
+    // taşır) karşı. Bu "canlı ama animasyon henüz tık atmadı" ara durumunu
+    // DEĞİL, kullanıcının GÖRECEĞİ nihai durumu doğru yansıtır (masaüstü
+    // no-op'un timing-güvenli kalması İÇİN gerekli).
+    const liveState = camTarget || { yaw: camYaw, pitch: camPitch, dist: camDist };
+    const liveWorst = worstViolationAt(auxPts, safe, liveState.yaw, liveState.pitch, liveState.dist, hysteresisPx);
+    if (liveWorst <= 0) {
+      return { adjusted: false, reason: 'already-visible', safe: true, yaw: liveState.yaw, pitch: liveState.pitch, dist: liveState.dist, worstViolationPx: 0 };
+    }
+
+    // 2) DÜZELTME GEREKLİ. Başlangıç noktası — ÖNCEKİ bir düzeltmenin
+    // (`liveState`) DEĞİL — `focus(presetName)`'in O ANKİ CANLI canvas
+    // genişliğiyle YENİDEN uygulanmış hâlidir (bkz. fonksiyon başı notu).
+    const rawPreset = CAM_PRESETS[presetName] || CAM_PRESETS.overview;
+    // freshBase, `focus(presetName)`'in KENDİ dar-layout FORMÜLÜYLE
+    // (`{...preset, yaw:.50, pitch:Math.max(preset.pitch,1.2)}`) BİREBİR
+    // AYNI şekilde — yalnız donmuş `isMobile` yerine `isNarrowLayout()`
+    // (canlı `W`) ile — yeniden türetilir; böylece "taze bir mount bu
+    // preset'i BU geometride nasıl uygulardı" sorusunun cevabıyla TUTARLI
+    // kalır (bkz. fonksiyon başı notu).
+    const freshBase = isNarrowLayout()
+      ? { yaw: .50, pitch: Math.max(rawPreset.pitch, 1.2), dist: rawPreset.dist }
+      : { yaw: rawPreset.yaw, pitch: rawPreset.pitch, dist: rawPreset.dist };
+
+    // Tam-merkezleme yawını (rx=0 ⟺ (cos,sin) ⊥ (wx0,wz0)) kapalı biçimde
+    // çöz — YALNIZ bir ÜST SINIR/hedef olarak; asıl kullanılan sapma
+    // aşağıda ikili aramayla EN KÜÇÜK olacak şekilde bulunur.
+    let idealYaw = (wx0 === 0 && wz0 === 0) ? freshBase.yaw : Math.atan2(-wx0, wz0);
+    const rzCheck = -wx0 * Math.sin(idealYaw) + wz0 * Math.cos(idealYaw);
+    if (rzCheck < 0) idealYaw += Math.PI;
+    // freshBase.yaw'a EN YAKIN eşdeğer açıyı seç (en kısa açısal fark) —
+    // normalize edilmezse tam tur (2π) uzaklıktaki eşdeğer bir hedef
+    // GEREKSİZ YERE tam tur döndürürdü.
+    while (idealYaw - freshBase.yaw > Math.PI) idealYaw -= 2 * Math.PI;
+    while (idealYaw - freshBase.yaw < -Math.PI) idealYaw += 2 * Math.PI;
+
+    let chosenYaw = freshBase.yaw, chosenDist = freshBase.dist;
+    if (worstViolationAt(auxPts, safe, freshBase.yaw, freshBase.pitch, freshBase.dist, 0) <= 0) {
+      // freshBase'İN KENDİSİ (t=0, HİÇBİR sapma) ZATEN güvenli — bkz. görev
+      // talimatı KÖK NEDEN: `idealYaw`nın (tam merkezleme) her zaman freshBase
+      // kadar (hatta ondan DAHA AZ) güvenli olacağı VARSAYILAMAZ — özellikle
+      // KISA/geniş (landscape) bir canvas'ta tam merkezleme dikey sınırı
+      // İHLAL edebilirken, preset'in KENDİSİ (freshBase) zaten güvenli
+      // kalabilir. Bu durumda EK hiçbir sapma/zoom GEREKMEZ — doğrudan
+      // preset'e (yeniden) dönülür.
+      chosenYaw = freshBase.yaw; chosenDist = freshBase.dist;
+    } else if (worstViolationAt(auxPts, safe, idealYaw, freshBase.pitch, freshBase.dist, 0) <= 0) {
+      // freshBase'in KENDİSİ yetersiz ama tam merkezleme (freshBase dist'inde)
+      // yeterli — freshBase.yaw'dan idealYaw'a giden yolda, güvenliği sağlayan
+      // EN KÜÇÜK t∈(0,1] payını ikili arama ile bul (yalnız GEREKEN kadar dön).
+      let lo = 0, hi = 1;
+      for (let i = 0; i < 24; i++) {
+        const mid = (lo + hi) / 2;
+        const y = lerpAngle(freshBase.yaw, idealYaw, mid);
+        if (worstViolationAt(auxPts, safe, y, freshBase.pitch, freshBase.dist, 0) <= 0) hi = mid; else lo = mid;
+      }
+      chosenYaw = lerpAngle(freshBase.yaw, idealYaw, hi);
+      chosenDist = freshBase.dist;
+    } else {
+      // Yaw TEK BAŞINA (freshBase dist'inde, ne t=0 ne tam merkezleme)
+      // yetersiz — bağlamı korumak için tam-merkezleme yawında dist'i
+      // (zoom) GEREKEN kadar (gereksiz yakınlaşma/uzaklaşma OLMADAN)
+      // güvenli sınırlara sığdır.
+      chosenYaw = idealYaw;
+      chosenDist = solveDistForFit(auxPts, safe, idealYaw, freshBase.pitch, minZoom, maxZoom);
+    }
+
+    const finalWorst = worstViolationAt(auxPts, safe, chosenYaw, freshBase.pitch, chosenDist, 0);
+    const isSafe = finalWorst <= 0.5;
+    return { adjusted: true, reason: isSafe ? 'outside-safe-area' : 'clamped-unresolved', safe: isSafe, yaw: chosenYaw, pitch: freshBase.pitch, dist: chosenDist, worstViolationPx: Math.max(0, finalWorst) };
+  }
+
+  /**
+   * `computeFraming`'in sonucunu GERÇEKTEN uygular. Sonuç `adjusted:false`
+   * ise camYaw/camPitch/camDist/camStart/camTarget'a HİÇ DOKUNMAZ (bkz. görev
+   * talimatı Bölüm 5: "no-op sözleşmesi") — mevcut preset'in (veya önceki
+   * odaklanmanın) animasyonu/durağan hâli KESİNTİSİZ devam eder.
+   * @param {Array<{row:number,col:number}>} points
+   * @param {object} [opts]
+   * @param {boolean} animate — false ise ANINDA (lerp'siz) uygulanır (resize/orientation)
+   * @returns {ReturnType<typeof computeFraming>|null}
+   */
+  function applyFocusPoints(points, opts, animate) {
+    if (!Array.isArray(points) || points.length === 0) { activeFocusPoints = null; lastFocusResult = null; return null; }
+    const { motion = true } = opts || {};
+    const result = computeFraming(points, opts);
+    activeFocusPoints = { points, opts };
+    lastFocusResult = result;
+    if (!result.adjusted) return result;
+
+    if (!animate) {
+      camYaw = result.yaw; camPitch = result.pitch; camDist = result.dist;
+      camStart = camTarget = null; camLerpT = 1;
+      return result;
+    }
+    camStart = { yaw: camYaw, pitch: camPitch, dist: camDist };
+    camTarget = { yaw: result.yaw, pitch: result.pitch, dist: result.dist };
+    camLerpT = motion && !reduceMotion ? 0 : 1;
+    if (camLerpT === 1) { camYaw = result.yaw; camPitch = result.pitch; camDist = result.dist; }
+    return result;
   }
 
   function drawFace(corners, fill, stroke) {
@@ -502,11 +783,42 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       hoverPoint = null;
     },
     focus(presetName) {
+      // bkz. focusPoints() — adlandırılmış preset'e dönüş eski focus-noktası
+      // state'ini/tanı sonucunu GEÇERSİZ kılar.
+      activeFocusPoints = null;
+      lastFocusResult = null;
       const preset = CAM_PRESETS[presetName] || CAM_PRESETS.overview;
       const target = isMobile ? { ...preset, yaw: .50, pitch: Math.max(preset.pitch, 1.2) } : preset;
       camStart = { yaw: camYaw, pitch: camPitch, dist: camDist };
       camTarget = { ...target };
       camLerpT = 0;
+    },
+
+    /**
+     * GÖRÜNÜRLÜK-ÖNCELİKLİ kamera kadrajı (bkz. computeFraming üstündeki tam
+     * algoritma notu): verilen board noktaları (satır/sütun — her birinin
+     * gerçek görsel ayak izi, taş yarıçapı + nefes işareti kolu, dahil)
+     * MEVCUT (GERÇEKTEN o an render edilen/edilecek) kamera durumunda ZATEN
+     * güvenli alandaysa kameraya HİÇ DOKUNMAZ — `focus(presetName)`'in
+     * aksine SAHNEYE/adım'a ÖZEL bilgi TAŞIMAZ, cihaz/user-agent/"mobil"
+     * bayrağı/breakpoint'e BAKMAZ, yalnız verilen noktaların GERÇEK izdüşüm
+     * geometrisini kullanır. Güvenli DEĞİLSE düzeltme, `opts.presetName`'in
+     * O ANKİ CANLI canvas genişliğiyle YENİDEN uygulanmış hâlinden başlar
+     * (bkz. computeFraming — ÖNCEKİ bir düzeltmenin üzerine ZİNCİRLEME
+     * YAPILMAZ, bu orientation değişiminde birikimli drift'i ÖNLER) ve
+     * EN KÜÇÜK yaw/dist sapmasını uygular. Mobil resize/orientation
+     * değişiminde OTOMATİK yeniden hesaplanır (bkz. resize()); `destroy()`
+     * ÇAĞRILDIĞINDA ekstra bir temizlik GEREKMEZ — yalnız var olan `resize`
+     * listener'ına (zaten destroy'da kaldırılıyor) iliştirilmiştir, yeni bir
+     * listener/timer AÇILMAZ.
+     * @param {Array<{row:number,col:number}>} points
+     * @param {{padding?:number, minZoom?:number, maxZoom?:number, motion?:boolean, hysteresisPx?:number, presetName?:string}} [opts]
+     *   `presetName` — düzeltme GEREKİRSE başlangıç preset'i (bkz. CAM_PRESETS);
+     *   verilmezse 'overview' varsayılır.
+     * @returns {{adjusted:boolean, reason:string, safe:boolean, yaw:number, pitch:number, dist:number, worstViolationPx:number}|null}
+     */
+    focusPoints(points, opts) {
+      return applyFocusPoints(points, opts, true);
     },
     getSize() { return SIZE; },
 
@@ -620,6 +932,26 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
      */
     getMovePreviewState() {
       return movePreview ? { row: movePreview.gz, col: movePreview.gx, color: movePreview.color } : null;
+    },
+
+    /**
+     * Salt-okunur GERÇEK kamera durumu (yaw/pitch/dist) — YALNIZ gözlem/test
+     * amaçlı, `getMovePreviewState()` ile AYNI desen. Üretim kodu tarafından
+     * KULLANILMAZ.
+     * @returns {{yaw:number, pitch:number, dist:number}}
+     */
+    getCameraState() {
+      return { yaw: camYaw, pitch: camPitch, dist: camDist };
+    },
+
+    /**
+     * Son `focusPoints()` çağrısının GERÇEK kararı — YALNIZ gözlem/test
+     * amaçlı (bkz. computeFraming). `focus(presetName)` çağrılınca `null`'a
+     * SIFIRLANIR (bkz. focus() notu).
+     * @returns {{adjusted:boolean, reason:string, safe:boolean, yaw:number, pitch:number, dist:number}|null}
+     */
+    getFocusPointsResult() {
+      return lastFocusResult;
     },
 
     /**

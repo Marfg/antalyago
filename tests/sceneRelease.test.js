@@ -165,15 +165,16 @@ test('scenes/scene05LibertyAssessment.js: exported version >= 1, sahne release t
   assert.ok(Number(m[1]) >= 1, `version >= 1 olmalı, bulunan: ${m[1]}`);
 });
 
-test('RELEASE token "2026-08-26.1" — eski "2026-08-23.2/.3", "2026-08-24.1", "2026-08-25.1" ve "2026-08-25.2" query\'leri AKTİF graph\'ta KALMAMIŞ', () => {
-  assert.equal(RELEASE, '2026-08-26.1');
+test('RELEASE token "2026-08-26.2" — eski "2026-08-23.2/.3", "2026-08-24.1", "2026-08-25.1", "2026-08-25.2" ve "2026-08-26.1" query\'leri AKTİF graph\'ta KALMAMIŞ', () => {
+  assert.equal(RELEASE, '2026-08-26.2');
   for (const rel of SCAN_FILES) {
     const src = read(rel);
     assert.ok(!src.includes('?v=2026-08-23.2'), `${rel}: eski (2026-08-23.2) release query'si HÂLÂ mevcut`);
     assert.ok(!src.includes('?v=2026-08-23.3'), `${rel}: eski (2026-08-23.3) release query'si HÂLÂ mevcut`);
     assert.ok(!src.includes('?v=2026-08-24.1'), `${rel}: eski (2026-08-24.1) release query'si HÂLÂ mevcut`);
     assert.ok(!src.includes('?v=2026-08-25.1'), `${rel}: eski (2026-08-25.1) release query'si HÂLÂ mevcut`);
-    assert.ok(!src.includes('?v=2026-08-25.2'), `${rel}: eski (2026-08-25.2, production'da idi) release query'si HÂLÂ mevcut`);
+    assert.ok(!src.includes('?v=2026-08-25.2'), `${rel}: eski (2026-08-25.2) release query'si HÂLÂ mevcut`);
+    assert.ok(!src.includes('?v=2026-08-26.1'), `${rel}: eski (2026-08-26.1, production'da idi) release query'si HÂLÂ mevcut`);
   }
 });
 

@@ -43,20 +43,20 @@
 </div>
 
 <script type="module">
-import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-08-26.1';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-26.1';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-26.1';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-26.1';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-26.1';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-26.1';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-08-26.1';
-import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-08-26.1';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-08-26.1';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-26.1';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-26.1';
-import { EventLog } from './core/eventLog.js?v=2026-08-26.1';
-import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-08-26.1';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-26.1';
+import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-08-26.2';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-26.2';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-26.2';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-26.2';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-26.2';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-26.2';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-08-26.2';
+import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-08-26.2';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-08-26.2';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-26.2';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-26.2';
+import { EventLog } from './core/eventLog.js?v=2026-08-26.2';
+import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-08-26.2';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-26.2';
 
 /* ── Sürüm/cache bekçisi ──────────────────────────────────────────────
    GitHub Pages önündeki CDN, .js dosyalarına saatlerce (bkz. görev
@@ -187,12 +187,19 @@ const searchParams = new URLSearchParams(location.search);
    hangi koordinatları turkuaz işaretlediğini (eski hata: hamle-ÖNCESİ küme
    tekrar gösteriliyordu) testlerin event log'a/varsayıma güvenmeden,
    adaptörün kendi çizim durumundan doğrudan okuyabilmesi için (bkz. görev
-   talimatı: "yalnız event sayısına güvenme"). */
+   talimatı: "yalnız event sayısına güvenme").
+   v3 — getCameraState/getFocusPointsResult eklendi: Sahne #7 an 1'in
+   görünürlük-öncelikli focusPoints() kararını (bkz. adapters/
+   sceneBoardAdapter.js computeFraming) testlerin GERÇEK yaw/pitch/dist
+   değerleriyle VE {adjusted,reason,safe} sonucuyla doğrulayabilmesi için
+   (bkz. görev talimatı: "masaüstünde adjusted:false kanıtı"). */
 if (searchParams.get('exposeBoardAdapter') === '1') {
   window.__lsTestBoardAdapter = {
     getMovePreview: () => boardAdapter.getMovePreviewState(),
     getHoverPoint: () => boardAdapter.getHoverPoint(),
     getLibertyPoints: () => boardAdapter.getLibertyPoints(),
+    getCameraState: () => boardAdapter.getCameraState(),
+    getFocusPointsResult: () => boardAdapter.getFocusPointsResult(),
   };
 }
 
