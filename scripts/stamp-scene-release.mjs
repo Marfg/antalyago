@@ -60,6 +60,9 @@ const GRAPH_BASENAMES = [
   // v5 (2026-08-25.2) — Sahne #7 ("Taş Alma Uygulamaları") ve TEK yeni
   // yardımcı modülü.
   'scene07CapturePractice.js', 'capturePracticePolicy.js',
+  // v6 (2026-08-29.1) — Sahne #8 ("Yasak Hamleler") ve TEK yeni yardımcı
+  // modülü.
+  'scene08IllegalMoves.js', 'illegalMovePolicy.js',
 ];
 
 /** Import satırı içerebilecek, graph'a dahil dosyalar + HTML entry point'leri. */
@@ -80,6 +83,8 @@ const SCAN_FILES = [
   'scenes/capturePolicy.js',
   'scenes/scene07CapturePractice.js',
   'scenes/capturePracticePolicy.js',
+  'scenes/scene08IllegalMoves.js',
+  'scenes/illegalMovePolicy.js',
 ];
 
 const importLineRe = /(from\s+['"])(\.[\w./-]+\.js)(\?[^'"]*)?(['"])/g;

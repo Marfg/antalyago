@@ -29,6 +29,9 @@ import { chromium } from 'playwright-core';
 import { getAssessmentSteps, computeTapTargets } from '../scenes/libertyAssessmentPolicy.js';
 import { getCaptureMoments } from '../scenes/capturePolicy.js';
 import { getCapturePracticeMoments, HINT_MODES } from '../scenes/capturePracticePolicy.js';
+import {
+  getIllegalMoveMoments, evaluateAttempt as evaluateIllegalMoveAttempt, MOMENT_KINDS as ILLEGAL_MOVE_KINDS,
+} from '../scenes/illegalMovePolicy.js';
 import { CAM } from '../core/curriculum.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -46,6 +49,7 @@ const S04_ID = 'scene-04-group-liberties';
 const S05_ID = 'scene-05-liberty-assessment';
 const S06_ID = 'scene-06-capture-basics';
 const S07_ID = 'scene-07-capture-practice';
+const S08_ID = 'scene-08-illegal-moves';
 // Sahne #2'nin beyaz cevap gecikmesini sıfırlayan query — YALNIZ turn-loop
 // testlerinin gerçek zamanlı beklemesini önler (bkz. learning-scenes.html
 // dosya başı test-hook notu). Sahne #3'ün artık HİÇBİR zamanlayıcısı yok
@@ -406,15 +410,16 @@ addTest('A10) Konular listesi: registry sırası, kullanıcı başlıkları, tek
     await s.page.click('#ls-topics-open');
     await s.page.waitForTimeout(100);
     const items = s.page.locator('.ls-topic-item');
-    // v5 — Sahne #7 ("Taş Alma Uygulamaları") kayıtlı olduğu için artık
-    // YEDİ konu var (bkz. görev talimatı: registry sırasına yeni Sahne #7
+    // v6 — Sahne #8 ("Yasak Hamleler") kayıtlı olduğu için artık SEKİZ
+    // konu var (bkz. görev talimatı: registry sırasına yeni Sahne #8
     // eklendi).
-    ensure(await items.count() === 7, 'yedi konu listelenmiyor');
+    ensure(await items.count() === 8, 'sekiz konu listelenmiyor');
     const titles = await items.allTextContents();
     ensure(
       titles[0].includes('Tahtayı Tanı') && titles[1].includes('Sırayla Oyna') && titles[2].includes('Taşların Nefesi') &&
       titles[3].includes('Grubun Nefesi') && titles[4].includes('Nefes Noktalarını Değerlendir') &&
-      titles[5].includes('Taş Alma') && !titles[5].includes('Uygulamaları') && titles[6].includes('Taş Alma Uygulamaları'),
+      titles[5].includes('Taş Alma') && !titles[5].includes('Uygulamaları') && titles[6].includes('Taş Alma Uygulamaları') &&
+      titles[7].includes('Yasak Hamleler'),
       `sıra/başlıklar yanlış: ${JSON.stringify(titles)}`);
     ensure(!titles.some(t => /scene-0\d/.test(t)), 'teknik scene ID görünüyor');
 
@@ -425,6 +430,7 @@ addTest('A10) Konular listesi: registry sırası, kullanıcı başlıkları, tek
     ensure(await items.nth(4).isDisabled(), 'henüz açılmamış 5. konu disabled değil');
     ensure(await items.nth(5).isDisabled(), 'henüz açılmamış 6. konu disabled değil');
     ensure(await items.nth(6).isDisabled(), 'henüz açılmamış 7. konu disabled değil');
+    ensure(await items.nth(7).isDisabled(), 'henüz açılmamış 8. konu disabled değil');
 
     // Renk TEK durum göstergesi olmamalı — glif farkı da olmalı.
     const mark0 = (await items.nth(0).locator('.ls-topic-mark').textContent())?.trim();
@@ -830,24 +836,24 @@ addTest('C15) reload: ilk hamleden sonra ama "Sonraki konu"ya basmadan → temiz
   } finally { await s.close(); }
 });
 
-addTest('C16) reload: tüm konular tamamlanmışken SON konu (Sahne #7) REPLAY modunda açılır (teknik final ekranı YOK)', async () => {
+addTest('C16) reload: tüm konular tamamlanmışken SON konu (Sahne #8) REPLAY modunda açılır (teknik final ekranı YOK)', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
-    // v5 — Sahne #7 ("Taş Alma Uygulamaları") kayıtlı olduğu için registry
-    // sırasındaki GERÇEK son sahne artık S07'dir (bkz. görev talimatı:
-    // registry sırası tamamlanma sırasıdır — Sahne #6'nın KENDİ kodu
+    // v6 — Sahne #8 ("Yasak Hamleler") kayıtlı olduğu için registry
+    // sırasındaki GERÇEK son sahne artık S08'dir (bkz. görev talimatı:
+    // registry sırası tamamlanma sırasıdır — Sahne #7'nin KENDİ kodu
     // DEĞİŞMEDEN, yalnız registry sırasının genişlemesiyle doğal olarak
     // değişen davranış).
     await s.page.evaluate((ids) => {
       localStorage.setItem('go_scene_progress_v1', JSON.stringify({
-        version: 1, activeSceneId: ids[6], completedSceneIds: ids, sceneState: {},
+        version: 1, activeSceneId: ids[7], completedSceneIds: ids, sceneState: {},
       }));
-    }, [S01_ID, S02_ID, S03_ID, S04_ID, S05_ID, S06_ID, S07_ID]);
+    }, [S01_ID, S02_ID, S03_ID, S04_ID, S05_ID, S06_ID, S07_ID, S08_ID]);
     await s.page.reload({ waitUntil: 'networkidle' });
     await s.page.waitForTimeout(300);
-    ensure(await s.page.locator('#s07-intro').isVisible(), 'son konu (Sahne #7) replay modunda açılmadı');
+    ensure(await s.page.locator('#s08-intro').isVisible(), 'son konu (Sahne #8) replay modunda açılmadı');
     const events = await getEventLog(s.page);
-    ensure(events.some(e => e.type === 'scene_replay_started' && e.stepId === S07_ID), 'boot replay\'i scene_replay_started üretmedi');
+    ensure(events.some(e => e.type === 'scene_replay_started' && e.stepId === S08_ID), 'boot replay\'i scene_replay_started üretmedi');
     ensure(await s.page.locator('#ls-error').isHidden(), 'hata/final ekranı yanlışlıkla gösterildi');
   } finally { await s.close(); }
 });
@@ -4403,9 +4409,15 @@ addTest('J8) Hızlı çift tıklama: aynı yanlış noktaya TEK yanlış-event; 
   } finally { await s.close(); }
 });
 
-addTest('J9) Tüm altı an tamamlanınca completion TAM BİR KEZ açılır, sahte {from:5,to:5} advanced eventi YOK, son kontrol "Konular", "Sahne tamamlandı" YOK', async () => {
+addTest('J9) Tüm altı an tamamlanınca completion TAM BİR KEZ açılır, sahte {from:5,to:5} advanced eventi YOK, son kontrol "Sonraki konu" (Sahne #8 eklendiğinden BERİ Sahne #7 artık son sahne DEĞİL), "Sahne tamamlandı" YOK', async () => {
   // v2 — aynı kök neden düzeltmesi (bkz. J2b notu): answerCurrentS07Item
   // → tapExactCorrectS07 GERÇEK hover test-hook'una ihtiyaç duyar.
+  // v3 — Sahne #8 ("Yasak Hamleler") kayıtlı olduğu için Sahne #7 ARTIK son
+  // sahne DEĞİL; "Sonraki konu" göstermeli (bkz. context.hasNextScene,
+  // scenes/topicEndControls.js — Sahne #7'nin KENDİ kodu DEĞİŞMEDEN, yalnız
+  // registry sırasının GENİŞLEMESİYLE doğal olarak değişen bir runtime
+  // davranışı, bkz. görev talimatı: "Mevcut Sahne #7'yi değiştirme").
+  // "Konular" etiketi artık yalnız Sahne #8'de (bkz. L1/L11 testleri).
   const s = await openScenesPage({ query: PREVIEW_QUERY });
   try {
     await advanceToScene7AndIntro(s.page);
@@ -4416,7 +4428,7 @@ addTest('J9) Tüm altı an tamamlanınca completion TAM BİR KEZ açılır, saht
     }
     await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
     const label = (await s.page.locator('.ls-topic-end [data-action="advance"]').textContent())?.trim();
-    ensure(label === 'Konular', `Sahne #7 son sahne — "Konular" olmalı, bulunan: "${label}"`);
+    ensure(label === 'Sonraki konu', `Sahne #7 (artık son sahne DEĞİL) "Sonraki konu" göstermeli, bulunan: "${label}"`);
     const bodyText = await s.page.locator('#ls-scene-host').innerText();
     ensure(!/sahne\s*tamamlandı|scene.?completed|scene-07|registry|runtime/i.test(bodyText), `teknik dil sızmış: "${bodyText}"`);
     ensure(!/özgürlük|serbestlik/i.test(bodyText), `yasak terminoloji sızmış: "${bodyText}"`);
@@ -4737,6 +4749,49 @@ async function getCameraDiag(page) {
     cam: window.__lsTestBoardAdapter.getCameraState(),
     result: window.__lsTestBoardAdapter.getFocusPointsResult(),
   }));
+}
+
+/** Kamera lerp'inin (bkz. adapters/sceneBoardAdapter.js `CAM_DUR=0.65`)
+    GERÇEKTEN tamamlandığını SEMANTİK olarak bekler — sabit bir `waitForTimeout`
+    süresine GÜVENMEZ (bkz. görev talimatı Bölüm 12 hata ayıklaması: K14'ün
+    ara sıra başarısız olmasının kök nedeni, replay yolunda `focus()`'un
+    GERÇEK çağrı anından `after` ölçümüne kadar geçen GERÇEK sürenin —
+    intro-kapanış `setTimeout(doAdvance,220)` gecikmesi + dışarıdaki 900ms
+    bekleyiş TOPLAMI ~680ms — CAM_DUR'un 650ms'lik eşiğine ÇOK YAKIN kalması,
+    gerçek zamanlayıcı/RAF jitter'ıyla ARA SIRA `camLerpT<1`'de yakalanmasıydı;
+    ölçülen sapma ~%0.02 — tam da bu marjla TUTARLI).
+    İKİ AŞAMALI: (1) `INITIAL_TRANSITION_GUARD_MS` (300ms — scene07/scene08'in
+    KENDİ `setTimeout(doAdvance,220)` sabitinden BÜYÜK, bilinçli bir marjla)
+    kadar bekler; bu, "yeterince zaman geçti" TAHMİNİ değil, `focus()`'un
+    KENDİSİNİN henüz TETİKLENMEMİŞ olduğu bir anda ölçüm alıp `getFocusPointsResult()
+    === null` (focus()'un KENDİ sıfırlama davranışı) durumunu YANLIŞLIKLA
+    "iki ardışık ölçüm aynı, demek ki durdu" SAYMAMAK için gereken tek
+    senkron gecikmedir — bir ilk gözlemli hata ayıklamasında BULUNDU
+    (`after.result === null` — focus() SIFIRLAMIŞ ama focusPoints() HENÜZ
+    ÇAĞRILMAMIŞ bir anda "settled" YANLIŞ POZİTİFİ). (2) SONRA kamera İKİ
+    ARDIŞIK ölçümde (50ms arayla) yaw/pitch/dist'te BİREBİR aynı çıkana kadar
+    POLL eder — `loop()`'un KENDİSİ `camLerpT===1` olduğunda kamerayı bir
+    daha GÜNCELLEMEDİĞİ için (bkz. adapters/sceneBoardAdapter.js loop() `if
+    (camLerpT<1 && camTarget)` koruması) iki ardışık BİREBİR-aynı okuma
+    lerp'in GERÇEKTEN durduğunun doğrudan kanıtıdır — bu AŞAMANIN kendisi
+    CAM_DUR'un GERÇEK süresini TAHMİN ETMEZ, ne kadar sürerse sürsün bekler.
+    Zaman aşımında (olağandışı bir durum) en son ölçümü döner — testin KENDİ
+    strict assertion'ı yine de gerçek hatayı YAKALAR, burada GİZLENMEZ/
+    gevşetilmez. */
+const INITIAL_TRANSITION_GUARD_MS = 300;
+async function waitForCameraSettled(page, { timeoutMs = 3000, pollMs = 50 } = {}) {
+  await page.waitForTimeout(INITIAL_TRANSITION_GUARD_MS);
+  const start = Date.now();
+  let last = await getCameraDiag(page);
+  while (Date.now() - start < timeoutMs) {
+    await page.waitForTimeout(pollMs);
+    const now = await getCameraDiag(page);
+    if (now.cam.yaw === last.cam.yaw && now.cam.pitch === last.cam.pitch && now.cam.dist === last.cam.dist) {
+      return now;
+    }
+    last = now;
+  }
+  return last;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -5232,7 +5287,13 @@ addTest('K14) focusPoints() tekrarı idempotent: AYNI noktalarla GERÇEK ikinci 
     const s = await openScenesPage({ query: PREVIEW_QUERY });
     try {
       await advanceToScene7Moment1Settled(s.page);
-      const before = await getCameraDiag(s.page);
+      // v2 — kök neden düzeltmesi (bkz. görev talimatı Bölüm 12): SABİT
+      // `waitForTimeout` yerine kamera lerp'inin GERÇEKTEN durduğu SEMANTİK
+      // olarak doğrulanır (bkz. waitForCameraSettled dosya başı notu) —
+      // `advanceToScene7Moment1Settled`'in KENDİ 900ms bekleyişi genellikle
+      // yeterlidir, ama BURADA (replay yolunun kendi zamanlama marjı ayrıca
+      // dar olduğu için) her iki ölçüm de ekstra güvenceyle alınır.
+      const before = await waitForCameraSettled(s.page);
       for (let i = 0; i < 6; i++) {
         const okN = await answerCurrentS07Item(s.page);
         ensure(okN, `an ${i + 1} doğru cevaplanamadı`);
@@ -5242,8 +5303,18 @@ addTest('K14) focusPoints() tekrarı idempotent: AYNI noktalarla GERÇEK ikinci 
       await s.page.click('.ls-topic-end [data-action="replay"]');
       await s.page.waitForTimeout(400);
       await s.page.click('#s07-confirm');
-      await s.page.waitForTimeout(900);
-      const after = await getCameraDiag(s.page);
+      // v2 — kök neden düzeltmesi: ÖNCEKİ sabit `waitForTimeout(900)`,
+      // `focus()`'un GERÇEK çağrı anından (intro-kapanışın kendi
+      // `setTimeout(doAdvance,220)` gecikmesi SONRASI) bu ölçüme kadar geçen
+      // GERÇEK süreyi yalnız ~680ms'e çıkarıyordu — `CAM_DUR=650ms`'e ÇOK
+      // YAKIN bir marj, gerçek zamanlayıcı/RAF jitter'ıyla ARA SIRA
+      // `camLerpT<1`'de yakalanıyordu (ölçülen sapma: yaw ~%0.02,
+      // dist ~0.02px — tam da bu dar marjla TUTARLI, bkz. görev talimatı
+      // hata ayıklaması). Artık kamera durumunun İKİ ARDIŞIK ölçümde
+      // BİREBİR aynı çıktığı (lerp'in `loop()` içinde GERÇEKTEN durduğunun
+      // kanıtı) SEMANTİK olarak beklenir — assertion'ın KENDİSİ (strict `===`)
+      // GEVŞETİLMEDİ, yalnız ÖLÇÜM ZAMANLAMASI düzeltildi.
+      const after = await waitForCameraSettled(s.page);
       ensure(after.result && after.result.adjusted === false, `replay sonrası masaüstünde focusPoints() YİNE NO-OP olmalı: ${JSON.stringify(after.result)}`);
       ensure(before.cam.yaw === after.cam.yaw && before.cam.pitch === after.cam.pitch && before.cam.dist === after.cam.dist,
         `replay ile tetiklenen GERÇEK ikinci focusPoints() çağrısı masaüstünde kamerayı DEĞİŞTİRMEMELİ: önce=${JSON.stringify(before.cam)} sonra=${JSON.stringify(after.cam)}`);
@@ -5269,6 +5340,606 @@ addTest('K14) focusPoints() tekrarı idempotent: AYNI noktalarla GERÇEK ikinci 
       ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
     } finally { await s.close(); }
   }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   Sahne #8 ("Yasak Hamleler") akış yardımcıları
+   ══════════════════════════════════════════════════════════════════ */
+async function completeScene7(page) {
+  await advanceToScene7AndIntro(page);
+  for (let i = 0; i < 6; i++) {
+    const ok = await answerCurrentS07Item(page);
+    ensure(ok, `Sahne #7 an ${i + 1} doğru cevaplanamadı (Sahne #8'e ilerlerken)`);
+    await goToNextS07Item(page);
+  }
+  await page.waitForSelector('.ls-topic-end [data-action="advance"]');
+}
+async function advanceToScene8(page) {
+  await completeScene7(page);
+  await page.click('.ls-topic-end [data-action="advance"]');
+  await page.waitForTimeout(400);
+}
+async function confirmS08Intro(page) {
+  await page.waitForSelector('#s08-confirm');
+  await page.click('#s08-confirm');
+  await page.waitForTimeout(300);
+}
+async function advanceToScene8AndIntro(page) {
+  await advanceToScene8(page);
+  await confirmS08Intro(page);
+}
+async function advanceToScene8Moment1Settled(page) {
+  await advanceToScene8AndIntro(page);
+  await page.waitForTimeout(900);
+}
+/** "N / 2" ilerleme göstergesinden AKTİF anın GERÇEK curriculumStepIndex'ini
+    okuyup illegalMovePolicy.js'in AYNI momentini döner — sabit index
+    varsayımı YOK (bkz. scenes/scene08IllegalMoves.js buildProgressHtml). */
+async function currentS08Moment(page) {
+  await page.waitForTimeout(80);
+  const progressText = (await page.locator('#s08-progress .s05-progress-text').textContent())?.trim() || '';
+  const idx1 = parseInt(progressText.split('/')[0].trim(), 10);
+  const moments = getIllegalMoveMoments();
+  return moments[idx1 - 1] || null;
+}
+/** Bu anın GERÇEK hedef noktasına (varsayılan: ilki) dokunur — hedef
+    curriculum'un forbidden/moves verisinden GERÇEKTEN türetilmiştir (bkz.
+    scenes/illegalMovePolicy.js), sabit piksel/koordinat varsayımı YOK. */
+async function tapS08Target(page, moment, targetIndex = 0) {
+  const target = moment.targetPoints[targetIndex];
+  const pt = await findScreenPointFor(page, target);
+  if (!pt) return false;
+  await page.mouse.click(pt.x, pt.y);
+  return true;
+}
+/** An 1'in (kind:'rejected') GERÇEK DÖRT hedefinin TAMAMINI, verilen
+    (varsayılan: curriculum'un authored sırasından FARKLI, kasıtlı KARIŞIK)
+    sırada bulup dener — sahne katmanının SERBEST sıralı Set-tabanlı
+    ilerlemesini GERÇEK tarayıcıda kanıtlar (bkz. görev talimatı Bölüm 4).
+    @param {number[]} [order] — targetPoints index sırası; verilmezse
+    [2,0,3,1] (curriculum'un KENDİ sırasından bilinçli olarak FARKLI). */
+async function attemptAllForbiddenTargets(page, moment, order = [2, 0, 3, 1]) {
+  for (const idx of order) {
+    const ok = await tapS08Target(page, moment, idx);
+    if (!ok) return false;
+    await page.waitForTimeout(250);
+  }
+  return true;
+}
+async function answerCurrentS08Item(page) {
+  const moment = await currentS08Moment(page);
+  if (!moment) return false;
+  if (moment.kind === ILLEGAL_MOVE_KINDS.REJECTED) {
+    return attemptAllForbiddenTargets(page, moment);
+  }
+  return tapS08Target(page, moment, 0);
+}
+async function goToNextS08Item(page) {
+  await page.click('#s08-continue');
+  await page.waitForTimeout(400);
+}
+
+addTest('L1) Sahne #7 → Sahne #8 GERÇEK topic-end geçişi: Sahne #7 artık son sahne DEĞİL, board/narration bbox <1px stabil, tek scene_started', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await completeScene7(s.page);
+    const s7Label = (await s.page.locator('.ls-topic-end [data-action="advance"]').textContent())?.trim();
+    ensure(s7Label === 'Sonraki konu', `Sahne #7 (artık son sahne DEĞİL) "Sonraki konu" göstermeli, bulunan: "${s7Label}"`);
+    const boardBefore = await s.page.locator('#ls-canvas').boundingBox();
+    const narrBefore = await s.page.locator('#ls-narration').boundingBox();
+    await s.page.click('.ls-topic-end [data-action="advance"]');
+    await s.page.waitForSelector('#s08-confirm');
+    const boardAfter = await s.page.locator('#ls-canvas').boundingBox();
+    const narrAfter = await s.page.locator('#ls-narration').boundingBox();
+    ensure(Math.abs(boardBefore.width - boardAfter.width) < 1 && Math.abs(boardBefore.height - boardAfter.height) < 1, 'geçişte board bbox değişti');
+    ensure(Math.abs(narrBefore.width - narrAfter.width) < 1, 'geçişte narrasyon bbox değişti');
+    const events = eventsFor(await getEventLog(s.page), S08_ID);
+    ensure(events.filter(e => e.type === 'scene_started').length === 1, `tek scene_started olmalı, bulunan: ${events.filter(e => e.type === 'scene_started').length}`);
+    const allIds = (await getEventLog(s.page)).map(e => e.stepId + '|' + e.type + '|' + JSON.stringify(e.payload) + Math.random());
+    ensure(new Set(allIds).size === allIds.length, 'sanity: event log listesi kendi içinde tutarlı');
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('L2) Intro tick erişilebilir (aria-label, tek onay), reduced-motion işlevsel sonucu değiştirmez', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY, reducedMotion: 'reduce' });
+  try {
+    await advanceToScene8(s.page);
+    const ariaLabel = await s.page.locator('#s08-confirm').getAttribute('aria-label');
+    ensure(ariaLabel && ariaLabel.length > 0, 'onay düğmesinin aria-label\'ı yok');
+    // Eş zamanlı çift tıklama (bkz. L5/J8 AYNI Promise.all deseni) — İLK
+    // tıklamanın senkron `confirming` guard'ı henüz düğmeyi disabled
+    // YAPMADAN önceki dar pencereyi test eder. Sıradan iki ayrı `await
+    // click()` KULLANILMAZ: İLK tıklama düğmeyi HEMEN disabled yapar,
+    // Playwright bu durumda İKİNCİ click()'i "enabled" bekleyerek
+    // sonsuza dek RETRY eder (gerçek bir davranış hatası DEĞİL, yalnız
+    // yanlış test deseni — bkz. görev talimatı hata ayıklaması).
+    await Promise.all([s.page.click('#s08-confirm'), s.page.click('#s08-confirm').catch(() => {})]);
+    await s.page.waitForTimeout(300);
+    const confirmed = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_intro_confirmed');
+    ensure(confirmed.length === 1, `çift onay TEK scene_intro_confirmed üretmeli, bulunan: ${confirmed.length}`);
+    ensure(await s.page.locator('#s08-assess').isVisible(), 'reduced-motion\'da an 1 açılmadı');
+  } finally { await s.close(); }
+});
+
+addTest('L3) An 1 GERÇEK curriculum seed\'iyle açılır (stepIndex:0, kind:"rejected"); hover silüeti gerçek taş üretmez (move/capture event YOK)', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    const moment = await currentS08Moment(s.page);
+    ensure(moment && moment.curriculumStepIndex === 0 && moment.kind === ILLEGAL_MOVE_KINDS.REJECTED, `An 1 stepIndex:0/kind:rejected olmalı, bulunan: ${JSON.stringify(moment)}`);
+    const canvasBox = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.move(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
+    await s.page.waitForTimeout(150);
+    const preview = await s.page.evaluate(() => window.__lsTestBoardAdapter.getMovePreview());
+    // Hover BOŞ bir kesişimdeyse silüet GÖRÜNEBİLİR (bkz. görev talimatı
+    // Bölüm 8) — ama board'a GERÇEK bir taş/move event'i ASLA üretmemeli.
+    ensure(!preview || (preview.row != null && preview.col != null), 'silüet şekli beklenmedik');
+    const events = eventsFor(await getEventLog(s.page), S08_ID);
+    ensure(!events.some(e => e.type === 'scene_illegal_move_attempted'), 'yalnız hover, deneme event\'i üretmemeli');
+  } finally { await s.close(); }
+});
+
+addTest('L4) An 1 hedefi GERÇEK RuleEngine sonucuyla yasaktır — taş yerleşmez, board signature/taş sayısı değişmez, doğru reason gösterilir, progress "1 / 4" olur, "Devam" TEK hedefte HÂLÂ KAPALI kalır', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    const moment = await currentS08Moment(s.page);
+    ensure(moment.targetPoints.length === 4, `An 1 DÖRT hedef taşımalı, bulunan: ${moment.targetPoints.length}`);
+    ensure((await s.page.locator('#s08-continue').getAttribute('tabindex')) === '-1', 'Devam denemeden ÖNCE zaten aktif olmamalı');
+    const progressBefore = (await s.page.locator('#s08-forbidden-progress').textContent())?.trim() || '';
+    ensure(progressBefore === '0 / 4 yasak nokta', `başlangıç progress "0 / 4 yasak nokta" olmalı, bulunan: "${progressBefore}"`);
+    const target = moment.targetPoints[0];
+    const expected = evaluateIllegalMoveAttempt(moment, target);
+    ensure(!expected.legal && expected.reason === 'SUICIDE', `ön koşul: hedef GERÇEKTEN SUICIDE olmalı, bulunan: ${JSON.stringify(expected)}`);
+    const ok = await tapS08Target(s.page, moment, 0);
+    ensure(ok, 'GERÇEK hedef ekranda bulunamadı');
+    await s.page.waitForTimeout(300);
+    const feedback = (await s.page.locator('#s08-feedback').textContent())?.trim() || '';
+    ensure(/öz-yakalama/i.test(feedback), `feedback reddetme nedenini içermeli, bulunan: "${feedback}"`);
+    const events = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_illegal_move_attempted');
+    ensure(events.length === 1, `tek deneme event'i, bulunan: ${events.length}`);
+    const payload = events[0].payload;
+    ensure(payload.legal === false && payload.isCurriculumTarget === true && payload.boardChanged === false, `payload beklenen: legal:false,isCurriculumTarget:true,boardChanged:false — bulunan: ${JSON.stringify(payload)}`);
+    ensure(payload.stoneCountBefore === payload.stoneCountAfter, 'taş sayısı DEĞİŞMEMELİ');
+    ensure(payload.reason === 'SUICIDE', `reason SUICIDE olmalı, bulunan: ${payload.reason}`);
+    ensure(payload.uniqueTargetNumber === 1 && payload.uniqueTargetsFound === 1 && payload.totalCurriculumTargets === 4 && payload.alreadyAttempted === false,
+      `payload serbest-sıra alanları yanlış: ${JSON.stringify(payload)}`);
+    const progressAfter = (await s.page.locator('#s08-forbidden-progress').textContent())?.trim() || '';
+    ensure(progressAfter === '1 / 4 yasak nokta', `TEK hedeften SONRA progress "1 / 4 yasak nokta" olmalı, bulunan: "${progressAfter}"`);
+    const tabindex = await s.page.locator('#s08-continue').getAttribute('tabindex');
+    ensure(tabindex === '-1', `TEK hedefte Devam HÂLÂ KAPALI kalmalı (dört gerekir), tabindex: ${tabindex}`);
+  } finally { await s.close(); }
+});
+
+addTest('L4b) An 1: dört hedef SERBEST (karışık) sırada bulunur; AYNI hedefe tekrar dokunmak progress\'i artırmaz/ikinci event\'i "alreadyAttempted" işaretler; DÖRDÜNCÜ benzersiz hedefte Devam açılır; bulunan DÖRT marker aynı anda görünür', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    const moment = await currentS08Moment(s.page);
+    // Kasıtlı KARIŞIK sıra — curriculum'un authored sırasıyla AYNI DEĞİL.
+    const order = [2, 0, 3, 1];
+
+    // İlk İKİ benzersiz hedef bulunur.
+    for (let i = 0; i < 2; i++) {
+      ensure(await tapS08Target(s.page, moment, order[i]), `hedef ${i + 1} (index ${order[i]}) ekranda bulunamadı`);
+      await s.page.waitForTimeout(300);
+      const progress = (await s.page.locator('#s08-forbidden-progress').textContent())?.trim() || '';
+      ensure(progress === `${i + 1} / 4 yasak nokta`, `${i + 1}. benzersiz hedeften sonra progress "${i + 1} / 4 yasak nokta" olmalı, bulunan: "${progress}"`);
+    }
+
+    // AYNI (ilk bulunan) hedefe TEKRAR dokunma — HÂLÂ tamamlanmadığı için
+    // girdi hâlâ açık; progress ARTMAMALI, event "alreadyAttempted:true"
+    // taşımalı (bkz. görev talimatı: "repeat tap doesn't increment").
+    const beforeRepeat = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_illegal_move_attempted').length;
+    const repeatOk = await tapS08Target(s.page, moment, order[0]);
+    ensure(repeatOk, 'tekrar denenecek hedef bulunamadı');
+    await s.page.waitForTimeout(300);
+    const progressAfterRepeat = (await s.page.locator('#s08-forbidden-progress').textContent())?.trim() || '';
+    ensure(progressAfterRepeat === '2 / 4 yasak nokta', `tekrar denemeden SONRA progress HÂLÂ "2 / 4 yasak nokta" olmalı, bulunan: "${progressAfterRepeat}"`);
+    const afterRepeatEvents = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_illegal_move_attempted');
+    ensure(afterRepeatEvents.length === beforeRepeat + 1, "tekrar deneme de GERÇEK bir event üretmeli (yalnız progress'i artırmamalı)");
+    const repeatPayload = afterRepeatEvents[afterRepeatEvents.length - 1].payload;
+    ensure(repeatPayload.alreadyAttempted === true && repeatPayload.uniqueTargetNumber === null,
+      `tekrar deneme payload'ı alreadyAttempted:true, uniqueTargetNumber:null taşımalı: ${JSON.stringify(repeatPayload)}`);
+
+    // Kalan İKİ benzersiz hedef de bulunur — DÖRDÜNCÜDE Devam açılmalı.
+    for (let i = 2; i < order.length; i++) {
+      ensure(await tapS08Target(s.page, moment, order[i]), `hedef ${i + 1} (index ${order[i]}) ekranda bulunamadı`);
+      await s.page.waitForTimeout(300);
+      const progress = (await s.page.locator('#s08-forbidden-progress').textContent())?.trim() || '';
+      ensure(progress === `${i + 1} / 4 yasak nokta`, `${i + 1}. benzersiz hedeften sonra progress "${i + 1} / 4 yasak nokta" olmalı, bulunan: "${progress}"`);
+    }
+    const tabindexAfterFour = await s.page.locator('#s08-continue').getAttribute('tabindex');
+    ensure(tabindexAfterFour === '0', `dört benzersiz hedeften SONRA Devam AÇIK olmalı, tabindex: ${tabindexAfterFour}`);
+
+    // Dört marker'ın TAMAMI aynı anda GERÇEKTEN görünür mü — adaptörün kendi
+    // çizim durumundan (bkz. adapters/sceneBoardAdapter.js getIllegalMoves),
+    // DOM/event log'a güvenmeden.
+    const marks = await s.page.evaluate(() => window.__lsTestBoardAdapter.getIllegalMoves());
+    ensure(marks.length === 4, `dört bulunmuş marker AYNI ANDA görünür olmalı, bulunan: ${marks.length}`);
+    const markKeys = new Set(marks.map(m => `${m.row},${m.col}`));
+    for (const tp of moment.targetPoints) {
+      ensure(markKeys.has(`${tp.row},${tp.col}`), `hedef (${tp.row},${tp.col}) marker listesinde eksik: ${JSON.stringify(marks)}`);
+    }
+  } finally { await s.close(); }
+});
+
+addTest('L4c) "Yasak noktaları göster" ipucu: başlangıçta cevap ÜRETMEZ; açılınca YALNIZ bulunmamış hedefleri gösterir, board/progress/event DEĞİŞTİRMEZ; aria-pressed doğru; TEK scene_hint_revealed', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    const moment = await currentS08Moment(s.page);
+    const hintBtn = s.page.locator('#s08-hint');
+    ensure(await hintBtn.getAttribute('aria-pressed') === 'false', 'ipucu başlangıçta aria-pressed=false olmalı');
+    const box = await hintBtn.boundingBox();
+    ensure(box.width >= 44 && box.height >= 44, `ipucu düğmesi en az 44×44px olmalı, bulunan: ${box.width}x${box.height}`);
+
+    // Bir hedefi ÖNCE bul (böylece ipucu "bulunmamış üçü" ile "bulunmuş biri"
+    // arasındaki AYRIMI da kanıtlayabilir).
+    ensure(await tapS08Target(s.page, moment, 0), 'ilk hedef bulunamadı');
+    await s.page.waitForTimeout(300);
+
+    const eventsBefore = await getEventLog(s.page);
+    await hintBtn.click();
+    await s.page.waitForTimeout(200);
+    ensure(await hintBtn.getAttribute('aria-pressed') === 'true', 'ipucu açıldıktan sonra aria-pressed=true olmalı');
+    const progressAfterHint = (await s.page.locator('#s08-forbidden-progress').textContent())?.trim() || '';
+    ensure(progressAfterHint === '1 / 4 yasak nokta', `ipucu progress'i DEĞİŞTİRMEMELİ, bulunan: "${progressAfterHint}"`);
+    ensure((await s.page.locator('#s08-continue').getAttribute('tabindex')) === '-1', 'ipucu tek başına Devam\'ı AÇMAMALI');
+    const preview = await s.page.evaluate(() => window.__lsTestBoardAdapter.getMovePreview());
+    ensure(preview === null, 'ipucu taş silüeti EKLEMEMELİ');
+    const hints = await s.page.evaluate(() => window.__lsTestBoardAdapter.getIllegalHints());
+    ensure(hints.length === 3, `ipucu YALNIZ bulunmamış üç hedefi göstermeli, bulunan: ${hints.length}`);
+    const hintKeys = new Set(hints.map(h => `${h.row},${h.col}`));
+    ensure(!hintKeys.has(`${moment.targetPoints[0].row},${moment.targetPoints[0].col}`), 'ipucu ZATEN BULUNMUŞ hedefi TEKRAR göstermemeli');
+    const marksAtHint = await s.page.evaluate(() => window.__lsTestBoardAdapter.getIllegalMoves());
+    ensure(marksAtHint.length === 1, `ipucu açıkken bulunmuş-marker sayısı DEĞİŞMEMELİ (1), bulunan: ${marksAtHint.length}`);
+    const eventsAfter = await getEventLog(s.page);
+    const newEvents = eventsAfter.slice(eventsBefore.length);
+    ensure(!newEvents.some(e => e.type === 'scene_illegal_move_attempted'), 'ipucu illegal-attempt event\'i ÜRETMEMELİ');
+    const hintEvents = newEvents.filter(e => e.type === 'scene_hint_revealed');
+    ensure(hintEvents.length === 1, `ipucu TEK scene_hint_revealed üretmeli, bulunan: ${hintEvents.length}`);
+
+    // İkinci tıklama — aynı an için İKİNCİ bir scene_hint_revealed ÜRETİLMEMELİ.
+    await hintBtn.click();
+    await s.page.waitForTimeout(150);
+    const eventsAfter2 = await getEventLog(s.page);
+    const hintEvents2 = eventsAfter2.slice(eventsBefore.length).filter(e => e.type === 'scene_hint_revealed');
+    ensure(hintEvents2.length === 1, `aynı an için İKİNCİ scene_hint_revealed ÜRETİLMEMELİ, bulunan: ${hintEvents2.length}`);
+  } finally { await s.close(); }
+});
+
+addTest('L5) An 1: aynı hedefe hızlı çift tıklama TEK illegal-attempt event\'i üretir', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    const moment = await currentS08Moment(s.page);
+    const pt = await findScreenPointFor(s.page, moment.targetPoints[0]);
+    ensure(pt, 'GERÇEK hedef bulunamadı');
+    await Promise.all([s.page.mouse.click(pt.x, pt.y), s.page.mouse.click(pt.x, pt.y).catch(() => {})]);
+    await s.page.waitForTimeout(300);
+    const events = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_illegal_move_attempted');
+    ensure(events.length === 1, `hızlı çift tıklama TEK event üretmeli, bulunan: ${events.length}`);
+  } finally { await s.close(); }
+});
+
+addTest('L6) Mobil (390×844, dokunma): tek dokunuş An 1 illegal denemesini gerçekleştirir, gerçek reddetme sonucu görünür', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    const moment = await currentS08Moment(s.page);
+    const ok = await tapS08Target(s.page, moment, 0);
+    ensure(ok, 'mobilde GERÇEK hedef bulunamadı');
+    await s.page.waitForTimeout(300);
+    const events = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_illegal_move_attempted');
+    ensure(events.length === 1 && events[0].payload.legal === false, `mobil tek dokunuş TEK reddedilen deneme üretmeli, bulunan: ${JSON.stringify(events.map(e => e.payload))}`);
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('L7) An 1: başka GERÇEK yasal (hedef-dışı) bir noktaya dokunmak board\'u DEĞİŞTİRMEZ, ilerletmez, seed korunur', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    const moment = await currentS08Moment(s.page);
+    const farLegal = { row: 8, col: 0 };
+    const check = evaluateIllegalMoveAttempt(moment, farLegal);
+    ensure(check.legal === true && check.isCurriculumTarget === false, `ön koşul: (8,0) yasal VE hedef-dışı olmalı, bulunan: ${JSON.stringify(check)}`);
+    const pt = await findScreenPointFor(s.page, farLegal);
+    ensure(pt, 'yasal hedef-dışı nokta ekranda bulunamadı');
+    await s.page.mouse.click(pt.x, pt.y);
+    await s.page.waitForTimeout(300);
+    const tabindex = await s.page.locator('#s08-continue').getAttribute('tabindex');
+    ensure(tabindex === '-1', 'hedef-dışı yasal deneme "Devam"ı AÇMAMALI');
+    const events = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_illegal_move_attempted');
+    ensure(events.length === 1 && events[0].payload.boardChanged === false, `hedef-dışı yasal deneme board'u DEĞİŞTİRMEMELİ: ${JSON.stringify(events.map(e => e.payload))}`);
+  } finally { await s.close(); }
+});
+
+addTest('L8) An 2 GERÇEK curriculum seed\'iyle açılır (stepIndex:1, kind:"legal_capture"); hedef GERÇEKTEN yasal — doğru deneme GERÇEK taşı yerleştirir ve GERÇEKTEN yakalar, feedback An 1\'den FARKLIDIR', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    ensure(await answerCurrentS08Item(s.page), 'An 1 cevaplanamadı');
+    await s.page.waitForTimeout(300);
+    const feedback1 = (await s.page.locator('#s08-feedback').textContent())?.trim() || '';
+    await goToNextS08Item(s.page);
+    await s.page.waitForTimeout(900);
+    const moment = await currentS08Moment(s.page);
+    ensure(moment && moment.curriculumStepIndex === 1 && moment.kind === ILLEGAL_MOVE_KINDS.LEGAL_CAPTURE, `An 2 stepIndex:1/kind:legal_capture olmalı, bulunan: ${JSON.stringify(moment)}`);
+    const target = moment.targetPoints[0];
+    const expected = evaluateIllegalMoveAttempt(moment, target);
+    ensure(expected.legal === true && expected.capturedCount === 5, `ön koşul: hedef GERÇEKTEN yasal + 5 taş yakalamalı, bulunan: ${JSON.stringify(expected)}`);
+    const ok = await tapS08Target(s.page, moment, 0);
+    ensure(ok, 'An 2 GERÇEK hedefi ekranda bulunamadı');
+    await s.page.waitForTimeout(400);
+    const events = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_illegal_move_attempted');
+    const an2Event = events.find(e => e.payload.stepIndex === 1);
+    ensure(an2Event, 'An 2 deneme event\'i üretilmedi');
+    ensure(an2Event.payload.legal === true && an2Event.payload.boardChanged === true && an2Event.payload.capturedCount === 5,
+      `An 2 payload beklenen: legal:true,boardChanged:true,capturedCount:5 — bulunan: ${JSON.stringify(an2Event.payload)}`);
+    ensure(an2Event.payload.stoneCountAfter === an2Event.payload.stoneCountBefore + 1 - 5,
+      `taş sayısı GERÇEK yakalamayı yansıtmalı: ${JSON.stringify(an2Event.payload)}`);
+    const feedback2 = (await s.page.locator('#s08-feedback').textContent())?.trim() || '';
+    ensure(feedback2 !== feedback1 && /yakalıyor|yasal/i.test(feedback2), `An 2 feedback An 1'den FARKLI ve yakalama-özgü olmalı: an1="${feedback1}" an2="${feedback2}"`);
+  } finally { await s.close(); }
+});
+
+addTest('L9) An 2: başka GERÇEK yasal (hedef-dışı) bir noktaya dokunmak GERÇEK taş koymaz, ilerletmez, seed korunur', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    ensure(await answerCurrentS08Item(s.page), 'An 1 cevaplanamadı');
+    await goToNextS08Item(s.page);
+    await s.page.waitForTimeout(900);
+    const moment = await currentS08Moment(s.page);
+    const farLegal = { row: 8, col: 8 };
+    const check = evaluateIllegalMoveAttempt(moment, farLegal);
+    ensure(check.legal === true && check.isCurriculumTarget === false, `ön koşul: (8,8) An 2'de yasal VE hedef-dışı olmalı, bulunan: ${JSON.stringify(check)}`);
+    const pt = await findScreenPointFor(s.page, farLegal);
+    ensure(pt, 'An 2 yasal hedef-dışı nokta ekranda bulunamadı');
+    await s.page.mouse.click(pt.x, pt.y);
+    await s.page.waitForTimeout(300);
+    const tabindex = await s.page.locator('#s08-continue').getAttribute('tabindex');
+    ensure(tabindex === '-1', 'An 2 hedef-dışı yasal deneme "Devam"ı AÇMAMALI');
+    const events = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_illegal_move_attempted' && e.payload.stepIndex === 1);
+    ensure(events.length === 1 && events[0].payload.boardChanged === false, `An 2 hedef-dışı yasal deneme board'u DEĞİŞTİRMEMELİ: ${JSON.stringify(events.map(e => e.payload))}`);
+  } finally { await s.close(); }
+});
+
+addTest('L10) Yasak-hamle işareti (kehribar-kırmızı halka/çarpı) bir sonraki ana SIZMAZ — An 2 açılışında illegal marker/silüet temiz', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    ensure(await answerCurrentS08Item(s.page), 'An 1 cevaplanamadı');
+    await s.page.waitForTimeout(200);
+    const preview1 = await s.page.evaluate(() => window.__lsTestBoardAdapter.getMovePreview());
+    ensure(preview1 === null, 'An 1 doğru denemeden sonra silüet temiz olmalı');
+    const marks1 = await s.page.evaluate(() => window.__lsTestBoardAdapter.getIllegalMoves());
+    ensure(marks1.length === 4, `An 1 dört hedefi de bulunmuş sayılınca DÖRT marker GÖRÜNÜR olmalı (An 2'ye geçmeden önce), bulunan: ${marks1.length}`);
+    await goToNextS08Item(s.page);
+    await s.page.waitForTimeout(900);
+    const preview2 = await s.page.evaluate(() => window.__lsTestBoardAdapter.getMovePreview());
+    ensure(preview2 === null, 'An 2 açılışında ÖNCEKİ silüet SIZMAMALI');
+    const marks2 = await s.page.evaluate(() => window.__lsTestBoardAdapter.getIllegalMoves());
+    ensure(marks2.length === 0, `An 1'in DÖRT marker'ı An 2'ye SIZMAMALI, bulunan: ${marks2.length}`);
+    const hints2 = await s.page.evaluate(() => window.__lsTestBoardAdapter.getIllegalHints());
+    ensure(hints2.length === 0, `An 1'in ipucu katmanı da An 2'ye SIZMAMALI, bulunan: ${hints2.length}`);
+  } finally { await s.close(); }
+});
+
+addTest('L11) İki hedef de başarıyla denendikten SONRA completion TAM BİR KEZ açılır, final kontrol "Konular", "Sahne tamamlandı" YOK, ham İngilizce reason kullanıcıya SIZMAZ', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    for (let i = 0; i < 2; i++) {
+      const ok = await answerCurrentS08Item(s.page);
+      ensure(ok, `An ${i + 1} doğru cevaplanamadı`);
+      await s.page.waitForTimeout(300);
+      await goToNextS08Item(s.page);
+      await s.page.waitForTimeout(i === 0 ? 900 : 400);
+    }
+    await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
+    const label = (await s.page.locator('.ls-topic-end [data-action="advance"]').textContent())?.trim();
+    ensure(label === 'Konular', `Sahne #8 son sahne — "Konular" olmalı, bulunan: "${label}"`);
+    const bodyText = await s.page.locator('#ls-scene-host').innerText();
+    ensure(!/sahne\s*tamamlandı|scene.?completed|scene-08|registry|runtime/i.test(bodyText), `teknik dil sızmış: "${bodyText}"`);
+    ensure(!/SUICIDE|OCCUPIED|OUT_OF_BOUNDS\b/.test(bodyText), `ham RuleEngine reason kodu kullanıcıya sızmış: "${bodyText}"`);
+    const completed = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_completed');
+    ensure(completed.length === 1, `scene_completed TAM BİR KEZ, bulunan: ${completed.length}`);
+    const unlocked = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_completion_unlocked');
+    ensure(unlocked.length === 1, `completion TAM BİR KEZ açılmalı, bulunan: ${unlocked.length}`);
+  } finally { await s.close(); }
+});
+
+addTest('L12) Replay temiz intro/ilk seed/marker-yok state açar, completion geçmişini çoğaltmaz', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    for (let i = 0; i < 2; i++) {
+      ensure(await answerCurrentS08Item(s.page), `An ${i + 1} cevaplanamadı`);
+      await s.page.waitForTimeout(300);
+      await goToNextS08Item(s.page);
+      await s.page.waitForTimeout(i === 0 ? 900 : 400);
+    }
+    await s.page.waitForSelector('.ls-topic-end [data-action="replay"]');
+    await s.page.click('.ls-topic-end [data-action="replay"]');
+    await s.page.waitForTimeout(400);
+    ensure(await s.page.locator('#s08-intro').isVisible(), 'replay temiz intro açmadı');
+    await s.page.click('#s08-confirm');
+    await s.page.waitForTimeout(900);
+    const moment = await currentS08Moment(s.page);
+    ensure(moment && moment.curriculumStepIndex === 0, 'replay An 1\'den başlamadı');
+    const preview = await s.page.evaluate(() => window.__lsTestBoardAdapter.getMovePreview());
+    ensure(preview === null, 'replay açılışında eski silüet SIZMAMALI');
+    const completedIds = await s.page.evaluate(() => (JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null')?.completedSceneIds || []).filter(id => id === 'scene-08-illegal-moves'));
+    ensure(completedIds.length === 1, `replay completion geçmişini ÇOĞALTMAMALI, bulunan: ${completedIds.length}`);
+  } finally { await s.close(); }
+});
+
+addTest('L13) Reload: yarım state (An 1 TAMAMEN cevaplanmış, Devam\'a basılmamış) → temiz başlangıca döner; go_scene_progress_v1 kullanılır, go_done_3d DEĞİŞMEZ', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    ensure(await answerCurrentS08Item(s.page), 'An 1 cevaplanamadı');
+    await s.page.waitForTimeout(300); // "Devam"a TIKLANMADI
+    await s.page.reload({ waitUntil: 'networkidle' });
+    await s.page.waitForTimeout(300);
+    ensure(await s.page.locator('#s08-intro').isVisible(), 'reload sonrası Sahne #8 baştan başlamadı');
+    const progress = await s.page.evaluate(() => JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null'));
+    ensure(!progress?.completedSceneIds?.includes(S08_ID), 'yarım kalan Sahne #8 yanlışlıkla tamamlanmış sayıldı');
+    const legacyTouched = await s.page.evaluate(() => localStorage.getItem('go_done_3d'));
+    ensure(legacyTouched === null, `go_done_3d DOKUNULMAMALI, bulunan: ${legacyTouched}`);
+  } finally { await s.close(); }
+});
+
+addTest('L13b) Reload: GERÇEKTEN kısmi serbest-sıra state (4 hedeften yalnız 2\'si bulunmuş) → reload sonrası ilerleme "0 / 4"e sıfırlanır, board seed korunur, önceki markerlar SIZMAZ', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    const moment = await currentS08Moment(s.page);
+    // Kasıtlı olarak DÖRDÜN YALNIZ İKİSİ — "answerCurrentS08Item" (dördünü de
+    // tamamlar) DEĞİL, doğrudan tapS08Target ile GERÇEKTEN kısmi state.
+    ensure(await tapS08Target(s.page, moment, 0), '1. hedef bulunamadı');
+    await s.page.waitForTimeout(300);
+    ensure(await tapS08Target(s.page, moment, 3), '2. hedef bulunamadı');
+    await s.page.waitForTimeout(300);
+    const progressBeforeReload = (await s.page.locator('#s08-forbidden-progress').textContent())?.trim() || '';
+    ensure(progressBeforeReload === '2 / 4 yasak nokta', `reload ÖNCESİ progress "2 / 4 yasak nokta" olmalı, bulunan: "${progressBeforeReload}"`);
+    ensure((await s.page.locator('#s08-continue').getAttribute('tabindex')) === '-1', 'kısmi state\'te Devam KAPALI kalmalı');
+
+    await s.page.reload({ waitUntil: 'networkidle' });
+    await s.page.waitForTimeout(300);
+    ensure(await s.page.locator('#s08-intro').isVisible(), 'reload sonrası Sahne #8 baştan başlamadı');
+    await s.page.click('#s08-confirm');
+    await s.page.waitForTimeout(900);
+    const progressAfterReload = (await s.page.locator('#s08-forbidden-progress').textContent())?.trim() || '';
+    ensure(progressAfterReload === '0 / 4 yasak nokta', `reload SONRASI ilerleme "0 / 4 yasak nokta"ya SIFIRLANMALI (in-memory, kalıcı değil), bulunan: "${progressAfterReload}"`);
+    const momentAfter = await currentS08Moment(s.page);
+    ensure(momentAfter && momentAfter.curriculumStepIndex === 0, 'reload sonrası An 1\'den başlamadı');
+    ensure(JSON.stringify(momentAfter.board) === JSON.stringify(moment.board), 'reload sonrası board seed AYNI kalmalı (kısmi ilerleme board\'u BOZMAMALI)');
+    const preview = await s.page.evaluate(() => window.__lsTestBoardAdapter.getMovePreview());
+    ensure(preview === null, 'reload sonrası ÖNCEKİ bulunan-marker SIZMAMALI');
+    const marksAfterReload = await s.page.evaluate(() => window.__lsTestBoardAdapter.getIllegalMoves());
+    ensure(marksAfterReload.length === 0, `reload sonrası ÖNCEKİ 2 bulunmuş-marker SIZMAMALI, bulunan: ${marksAfterReload.length}`);
+    const progress = await s.page.evaluate(() => JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null'));
+    ensure(!progress?.completedSceneIds?.includes(S08_ID), 'kısmi kalan Sahne #8 yanlışlıkla tamamlanmış sayıldı');
+  } finally { await s.close(); }
+});
+
+addTest('L14) Konular paneli açıkken board input sızmaz (illegal deneme üretmez), kapanınca eski duruma döner', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    const before = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_illegal_move_attempted').length;
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForSelector('#ls-topics-panel:not([hidden])');
+    const canvasBox = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
+    await s.page.waitForTimeout(150);
+    const duringOpen = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_illegal_move_attempted').length;
+    ensure(duringOpen === before, 'Konular paneli açıkken canvas tıklaması illegal-attempt üretti — input yanlış kilitli');
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(200);
+    const moment = await currentS08Moment(s.page);
+    const ok = await tapS08Target(s.page, moment, 0);
+    ensure(ok, 'panel kapandıktan sonra normal etkileşim çalışmıyor');
+  } finally { await s.close(); }
+});
+
+addTest('L15) Kamera/görünürlük: 1280×720/768×1024/390×844/360×800/844×390 hepsinde An 1 hedefi safe:true, worstViolationPx<=0, board/narration kesişmez, yatay taşma yok', async () => {
+  // TEK context, art arda `setViewportSize()` (K9'un orientation-döngüsü
+  // AYNI deseni — bkz. yukarıdaki K9/K9c) — beş AYRI `openScenesPage()` +
+  // beş kez BAŞTAN `completeScene7()` (her biri Sahne #7'nin altı GERÇEK
+  // anını `findScreenPointFor`'un pahalı hover-grid-taramasıyla yeniden
+  // gezer) DEĞİL. Bu yalnız bir hız optimizasyonu değil — `resize()`'ın
+  // `activeFocusPoints`'i CANLI canvas ölçüleriyle SESSİZCE yeniden
+  // hesapladığı GERÇEK üretim yolunun (bkz. adapters/sceneBoardAdapter.js
+  // resize() notu) TAM ÖLÇÜLDÜĞÜ senaryodur — K9 hangi senaryoyu Sahne
+  // #7 için sınıyorsa burada Sahne #8 için AYNISI. `hasTouch:true` (mobil
+  // cihaz TÜM viewport'lar boyunca SABİT donanım — bkz. K9c AYNI ilke)
+  // ile açılır; `isNarrowLayout()` CANLI `W`'ya bakar, sonuç viewport
+  // BAŞINA doğru hesaplanır.
+  const s = await openScenesPage({ viewport: { width: 1280, height: 720 }, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    const moment = await currentS08Moment(s.page);
+    ensure(moment.targetPoints.length === 4, `ön koşul: An 1 dört hedef taşımalı, bulunan: ${moment.targetPoints.length}`);
+    for (const viewport of [{ width: 1280, height: 720 }, { width: 768, height: 1024 }, VIEWPORTS.mobile, { width: 360, height: 800 }, { width: 844, height: 390 }]) {
+      await s.page.setViewportSize(viewport);
+      await s.page.waitForTimeout(900);
+      const { result } = await getCameraDiag(s.page);
+      ensure(result === null || result.safe === true, `${viewport.width}x${viewport.height}: safe:true olmalı, bulunan: ${JSON.stringify(result)}`);
+      if (result) ensure(!(result.worstViolationPx > 0), `${viewport.width}x${viewport.height}: worstViolationPx<=0 olmalı, bulunan: ${result.worstViolationPx}`);
+      const overflow = await s.page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      ensure(!overflow, `${viewport.width}x${viewport.height}: yatay taşma var`);
+      const boardBox = await s.page.locator('#ls-canvas').boundingBox();
+      const narrationBox = await s.page.locator('#ls-narration').boundingBox();
+      ensure(!boxesIntersect(boardBox, narrationBox), `${viewport.width}x${viewport.height}: board/narration kesişiyor`);
+      // DÖRT hedefin TAMAMI bu viewport'ta GERÇEKTEN ekranda ve tıklanabilir
+      // olmalı — kamera "safe" toplu bayrağı yetmez, her hedef AYRI AYRI
+      // bulunabilir olmalı (bkz. görev talimatı Bölüm 7 kabul kriteri).
+      for (let ti = 0; ti < moment.targetPoints.length; ti++) {
+        const pt = await findScreenPointFor(s.page, moment.targetPoints[ti]);
+        ensure(pt, `${viewport.width}x${viewport.height}: hedef ${ti + 1}/4 ekranda BULUNAMADI`);
+        ensure(pt.x >= 0 && pt.x <= viewport.width && pt.y >= 0 && pt.y <= viewport.height,
+          `${viewport.width}x${viewport.height}: hedef ${ti + 1}/4 viewport dışında: ${JSON.stringify(pt)}`);
+      }
+    }
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('L16) Teacher Studio Sahne #8\'i görür (Curriculum + Diagnostics), ham İngilizce reason Studio metninde de sızmaz, console/pageerror sıfır', async () => {
+  const context = await (await launchChromium()).newContext();
+  const consoleErrors = [];
+  try {
+    await context.route(`${BASE}/**`, async route => {
+      const url = new URL(route.request().url());
+      const pathname = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
+      const filePath = absPath(pathname || 'teacher-studio.html');
+      try { await route.fulfill({ status: 200, contentType: mime(filePath), body: fs.readFileSync(filePath) }); }
+      catch { await route.abort(); }
+    });
+    const page = await context.newPage();
+    page.on('pageerror', e => consoleErrors.push('pageerror: ' + e.message));
+    page.on('console', m => { if (m.type() === 'error') consoleErrors.push('console: ' + m.text()); });
+    const resp = await page.goto(`${BASE}/teacher-studio.html`, { waitUntil: 'networkidle' });
+    ensure(resp && resp.status() === 200, `teacher-studio.html HTTP ${resp?.status()}`);
+    await page.click('[data-tab="curriculum"]');
+    await page.waitForTimeout(200);
+    const curriculumText = await page.locator('#tab-curriculum').innerText();
+    ensure(/Yasak Hamleler/.test(curriculumText), 'Curriculum panelinde Sahne #8 başlığı görünmüyor');
+    await page.click('[data-tab="diagnostics"]');
+    await page.waitForTimeout(200);
+    const diagText = await page.locator('#diag-scene-table').innerText();
+    ensure(!/scene-08-illegal-moves.*REGISTRY_ORDER_INVALID|scene-08-illegal-moves.*NEXT_SCENE_NOT/i.test(diagText), `Sahne #8 registry sırası hatası: "${diagText}"`);
+    ensure(!/SUICIDE|OUT_OF_BOUNDS\b/.test(diagText), `ham RuleEngine reason kodu Diagnostics'in kullanıcıya-dönük metnine sızmamalı: "${diagText}"`);
+    ensure(consoleErrors.length === 0, `Teacher Studio konsol/pageerror sıfır olmalı: ${JSON.stringify(consoleErrors)}`);
+  } finally { await context.close(); }
+});
+
+addTest('L17) ogren-3d.html Sahne #8 eklenmesinden ETKİLENMEZ — regresyonsuz açılır, canvas render eder', async () => {
+  const context = await (await launchChromium()).newContext();
+  const consoleErrors = [];
+  try {
+    await context.route(`${BASE}/**`, async route => {
+      const url = new URL(route.request().url());
+      const pathname = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
+      const filePath = absPath(pathname || 'ogren-3d.html');
+      try { await route.fulfill({ status: 200, contentType: mime(filePath), body: fs.readFileSync(filePath) }); }
+      catch { await route.abort(); }
+    });
+    const page = await context.newPage();
+    page.on('pageerror', e => consoleErrors.push('pageerror: ' + e.message));
+    page.on('console', m => { if (m.type() === 'error') consoleErrors.push('console: ' + m.text()); });
+    const resp = await page.goto(`${BASE}/ogren-3d.html`, { waitUntil: 'networkidle' });
+    ensure(resp && resp.status() === 200, `ogren-3d.html HTTP ${resp?.status()}`);
+    await page.waitForTimeout(600);
+    ensure(await page.locator('canvas').count() > 0, 'ogren-3d.html canvas render etmiyor');
+    ensure(consoleErrors.length === 0, `ogren-3d.html konsol/pageerror sıfır olmalı: ${JSON.stringify(consoleErrors)}`);
+  } finally { await context.close(); }
 });
 
 // TEST_FILTER=<regex> node tests/verify-learning-scenes.mjs — yalnız adı bu

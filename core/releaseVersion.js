@@ -27,5 +27,9 @@
  *   3) node scripts/stamp-scene-release.mjs çalıştır (scene graph'taki
  *      TÜM transitive import URL'lerine — bu dosyanın kendi importu
  *      DAHİL — ?v=<RELEASE> damgalar).
+ *
+ * v6 (2026-08-29.1) — Sahne #8 ("Yasak Hamleler") ve TEK yeni yardımcı
+ * modülü (scenes/illegalMovePolicy.js) eklendi (bkz. scripts/
+ * stamp-scene-release.mjs GRAPH_BASENAMES).
  */
-export const SCENE_RELEASE = '2026-08-26.2';
+export const SCENE_RELEASE = '2026-08-29.1';

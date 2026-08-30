@@ -46,6 +46,8 @@ const GRAPH_BASENAMES = [
   'scene06CaptureBasics.js', 'capturePolicy.js',
   // v5 (2026-08-25.2) — Sahne #7 ve bir yeni yardımcı modülü.
   'scene07CapturePractice.js', 'capturePracticePolicy.js',
+  // v6 (2026-08-29.1) — Sahne #8 ve bir yeni yardımcı modülü.
+  'scene08IllegalMoves.js', 'illegalMovePolicy.js',
 ];
 const SCAN_FILES = [
   'learning-scenes.html', 'teacher-studio.html',
@@ -57,6 +59,7 @@ const SCAN_FILES = [
   'scenes/scene05LibertyAssessment.js', 'scenes/libertyAssessmentPolicy.js',
   'scenes/scene06CaptureBasics.js', 'scenes/capturePolicy.js',
   'scenes/scene07CapturePractice.js', 'scenes/capturePracticePolicy.js',
+  'scenes/scene08IllegalMoves.js', 'scenes/illegalMovePolicy.js',
 ];
 // Studio'nun kapsam DIŞI (AI asistan / içerik kütüphanesi) import'ları —
 // bunlar KASITLI olarak versiyonSUZ kalmalı (bkz. stamp script dosya başı
@@ -165,8 +168,8 @@ test('scenes/scene05LibertyAssessment.js: exported version >= 1, sahne release t
   assert.ok(Number(m[1]) >= 1, `version >= 1 olmalı, bulunan: ${m[1]}`);
 });
 
-test('RELEASE token "2026-08-26.2" — eski "2026-08-23.2/.3", "2026-08-24.1", "2026-08-25.1", "2026-08-25.2" ve "2026-08-26.1" query\'leri AKTİF graph\'ta KALMAMIŞ', () => {
-  assert.equal(RELEASE, '2026-08-26.2');
+test('RELEASE token "2026-08-29.1" — eski "2026-08-23.2/.3", "2026-08-24.1", "2026-08-25.1", "2026-08-25.2", "2026-08-26.1" ve "2026-08-26.2" query\'leri AKTİF graph\'ta KALMAMIŞ', () => {
+  assert.equal(RELEASE, '2026-08-29.1');
   for (const rel of SCAN_FILES) {
     const src = read(rel);
     assert.ok(!src.includes('?v=2026-08-23.2'), `${rel}: eski (2026-08-23.2) release query'si HÂLÂ mevcut`);
@@ -174,7 +177,8 @@ test('RELEASE token "2026-08-26.2" — eski "2026-08-23.2/.3", "2026-08-24.1", "
     assert.ok(!src.includes('?v=2026-08-24.1'), `${rel}: eski (2026-08-24.1) release query'si HÂLÂ mevcut`);
     assert.ok(!src.includes('?v=2026-08-25.1'), `${rel}: eski (2026-08-25.1) release query'si HÂLÂ mevcut`);
     assert.ok(!src.includes('?v=2026-08-25.2'), `${rel}: eski (2026-08-25.2) release query'si HÂLÂ mevcut`);
-    assert.ok(!src.includes('?v=2026-08-26.1'), `${rel}: eski (2026-08-26.1, production'da idi) release query'si HÂLÂ mevcut`);
+    assert.ok(!src.includes('?v=2026-08-26.1'), `${rel}: eski (2026-08-26.1) release query'si HÂLÂ mevcut`);
+    assert.ok(!src.includes('?v=2026-08-26.2'), `${rel}: eski (2026-08-26.2, production'da idi) release query'si HÂLÂ mevcut`);
   }
 });
 
@@ -190,6 +194,15 @@ test('scenes/scene06CaptureBasics.js: exported version >= 1', () => {
 test('scenes/scene07CapturePractice.js: exported version >= 1', () => {
   const src = read('scenes/scene07CapturePractice.js');
   const idIdx = src.indexOf(`id: 'scene-07-capture-practice'`);
+  assert.ok(idIdx >= 0, 'exported scene objesi bulunamadı');
+  const m = src.slice(idIdx).match(/version:\s*(\d+)/);
+  assert.ok(m, 'exported obje içinde version alanı bulunamadı');
+  assert.ok(Number(m[1]) >= 1, `version >= 1 olmalı, bulunan: ${m[1]}`);
+});
+
+test('scenes/scene08IllegalMoves.js: exported version >= 1', () => {
+  const src = read('scenes/scene08IllegalMoves.js');
+  const idIdx = src.indexOf(`id: 'scene-08-illegal-moves'`);
   assert.ok(idIdx >= 0, 'exported scene objesi bulunamadı');
   const m = src.slice(idIdx).match(/version:\s*(\d+)/);
   assert.ok(m, 'exported obje içinde version alanı bulunamadı');

@@ -41,8 +41,37 @@
  *   board.focusPoints(points, opts);   // GENEL, GÖRÜNÜRLÜK-ÖNCELİKLİ kadraj (bkz. v0.16) — zaten güvenliyse NO-OP, sahne/adım BİLMEZ
  *   board.getCameraState();            // {yaw,pitch,dist} — salt-okunur, YALNIZ test/gözlem amaçlı
  *   board.getFocusPointsResult();      // son focusPoints() kararı — salt-okunur, YALNIZ test/gözlem amaçlı
+ *   board.isOccupied({row,col});       // GERÇEK BoardState'ten — o kesişimde taş var mı (bkz. v0.18)
+ *   board.showIllegalMoves(points);    // ÇOKLU kehribar-kırmızı halka/çarpı — TAM listeyi DEĞİŞTİRİR (bkz. v0.19)
+ *   board.clearIllegalMoves();
+ *   board.showIllegalHints(points);    // "ipucu" — ince, kesikli, düşük yoğunluklu halka (bkz. v0.19, drawIllegalHint)
+ *   board.clearIllegalHints();
+ *   board.getIllegalMoves();           // GÜNCEL bulunmuş-marker listesi — salt-okunur, YALNIZ test/gözlem amaçlı
+ *   board.getIllegalHints();           // GÜNCEL ipucu-marker listesi — salt-okunur, YALNIZ test/gözlem amaçlı
  *   board.destroy();                   // RAF/resize/click listener'ı + tüm durumu temizler
  *
+ * v0.19 — Sahne #8'in serbest-sıralı ÇOKLU hedef akışı (curriculum'un 4
+ * GERÇEK öz-yakalama noktası, TEK hedef DEĞİL — bkz. görev talimatı: "kamera
+ * veya test kolaylığı gerekçesiyle içeriği tek hedefe indirme") için
+ * `showIllegalMove()`/`clearIllegalMove()` (v0.18, TEKİL) ÇOKLU
+ * `showIllegalMoves()`/`clearIllegalMoves()`'e genişletildi — TEK tüketicisi
+ * (scenes/scene08IllegalMoves.js) olduğu için TEKİL API kaldırıldı, geriye
+ * dönük ikinci bir yol BIRAKILMADI. Ayrıca AYRI bir "ipucu" katmanı
+ * (`showIllegalHints`/`clearIllegalHints`, bkz. drawIllegalHint) eklendi —
+ * bulunmuş (`illegalMarks`, dolu halka+çarpı) ile ipucu (`illegalHints`,
+ * kesikli/düşük-opaklık halka) GÖRSEL/ŞEKİL olarak ayrışır (renk AYNI kalır
+ * — "renk tek başına ayrım aracı olmamalı" ilkesi renk SABİT tutulup ŞEKİL
+ * DEĞİŞTİRİLEREK karşılanır). Adapter kaç hedef olduğunu/hangi sahneye ait
+ * olduğunu HÂLÂ BİLMEZ — yalnız "şu an gösterilecek iki ayrı liste" alır.
+ * v0.18 — `isOccupied()`: hover silüetinin YASAK bir hedef üzerinde de
+ * (yalnız GERÇEKTEN boşsa) gösterilebilmesi için mevcut `isLegalMove()`
+ * yetersizdi (o hem "dolu" hem "intihar" durumunda AYNI `false`'u döner,
+ * ikisini AYIRT ETMEZ). Taşın "geri çekilmesi" YENİ bir animasyon durumu
+ * EKLENMEDEN, sahne modülünün işaretle AYNI anda `clearMovePreview()`
+ * çağırmasıyla elde edilir. Hamlenin KENDİSİNİN yasal/yasak olduğu kararı
+ * BURADA ALINMAZ — mevcut `playMove()` zaten `{ok:false, reason}` döndürüp
+ * board'u DEĞİŞTİRMEDEN bırakır (bkz. core/ruleEngine.js isValidMove);
+ * ikinci bir paralel kural sistemi YAZILMADI.
  * v0.15 — kök neden düzeltmesi: `focus(presetName)` altında mobil için TÜM
  * preset'lere körü körüne uygulanan `{yaw:.50, pitch:max(pitch,1.2)}`
  * geçersiz kılması, köşeye özel preset'lerin (`corner_tl`/`corner_tr`) KENDİ
@@ -141,9 +170,9 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-08-26.2';
-import { BoardState } from '../core/boardState.js?v=2026-08-26.2';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-08-26.2';
+import { CAM } from '../core/curriculum.js?v=2026-08-29.1';
+import { BoardState } from '../core/boardState.js?v=2026-08-29.1';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-08-29.1';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -224,6 +253,18 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // yazılmaz, yalnız görsel bir önizlemedir (bkz. setMovePreview/
   // clearMovePreview/drawMovePreview).
   let movePreview = null;
+  // Reddedilen hamle denemelerinin GÖRSEL işaretleri — ÇOKLU liste
+  // ({gx,gz,t}[]), `t` 0→1 sakin bir fade-in için ilerler (libertyPoints ile
+  // AYNI desen). Board State'e ASLA yazılmaz, yalnız görsel. v0.19 — Sahne
+  // #8'in serbest-sıralı çoklu-hedef akışı için TEKİL `illegalMark`'tan
+  // ÇOKLU listeye genişletildi (bkz. showIllegalMoves/clearIllegalMoves) —
+  // adapter kaç hedef olduğunu/hangi sahneye ait olduğunu BİLMEZ, yalnız
+  // "şu an gösterilecek işaretli noktalar listesi budur" bilgisini tutar.
+  let illegalMarks = [];
+  // "Yasak noktaları göster" ipucunun GÖRSEL listesi — illegalMarks İLE AYNI
+  // desen, ayrı ve GÖRSEL/erişilebilir olarak FARKLI çizilir (bkz.
+  // drawIllegalHint). Board state'e dokunmaz, taş silüeti EKLEMEZ.
+  let illegalHints = [];
   let inputEnabled = false;
   const tapHandlers = new Set();
   const hoverHandlers = new Set();
@@ -656,6 +697,69 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     ctx.restore();
   }
 
+  /**
+   * Reddedilen bir hamle denemesinin GÖRSEL işareti — ince, statik bir
+   * kehribar-kırmızı halka + çarpı (bkz. görev talimatı Bölüm 7: "turkuaz/
+   * neon dili aynen kullanma", "renk tek başına bilgi taşımamalı"; ÇARPI
+   * biçimi rengin yanında İKİNCİ, renk-bağımsız bir işaret sağlar). Geometri
+   * `drawLibertyMark`'ın (halka kolu) VE `ogren-3d.html`'in eski
+   * `drawForbidden2D`/3D X-çizgisi TEKNİĞİNDEN adapte edildi, renk KASITLI
+   * olarak farklı (91,210,195 turkuaz DEĞİL, 214,92,58 kehribar-kırmızı —
+   * ayrıca eski kehribar HALKA renderer'ının RGB değerleriyle (bkz.
+   * teacher-studio.html LEGACY_AMBER_RING_RENDERER_STILL_PRESENT kontrolü —
+   * o üçlü BİLEREK burada bile alıntılanmıyor, kontrolün kendisi kaynak
+   * metninde ARADIĞI dizgeyle YANLIŞLIKLA eşleşmesin diye) de KARIŞTIRILMASIN
+   * diye bilerek FARKLI bir RGB üçlüsü seçildi. Büyük glow/pulse/ekran flaşı
+   * YOK (bkz. görev talimatı Bölüm 7: "sakin ve kısa").
+   */
+  function drawIllegalMark(gx, gz, t) {
+    const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
+    const Y = -BOARD_H / 2 - .3;
+    const p = project(wx, Y, wz);
+    if (p.scale < 0.12) return;
+    const e = reduceMotion ? 1 : easeInOutCubic(Math.min(1, t));
+    const alpha = 0.82 * e;
+    const color = `rgba(214,92,58,${alpha.toFixed(2)})`;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1.4, 2.2 * p.scale);
+    ctx.lineCap = 'round';
+    // Halka — reddedilen kesişimi çevreler.
+    const ringR = Math.max(3, CELL * 0.26) * p.scale;
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, ringR, 0, Math.PI * 2); ctx.stroke();
+    // Çarpı — renk-bağımsız ikinci işaret (bkz. fonksiyon başı notu).
+    const arm = CELL * 0.16;
+    const pL = project(wx - arm, Y, wz - arm), pR = project(wx + arm, Y, wz + arm);
+    const pU = project(wx + arm, Y, wz - arm), pD = project(wx - arm, Y, wz + arm);
+    ctx.beginPath(); ctx.moveTo(pL.sx, pL.sy); ctx.lineTo(pR.sx, pR.sy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pU.sx, pU.sy); ctx.lineTo(pD.sx, pD.sy); ctx.stroke();
+    ctx.restore();
+  }
+
+  /**
+   * "Yasak noktaları göster" ipucunun GÖRSEL işareti — bulunmamış curriculum
+   * hedeflerini işaret eder (bkz. showIllegalHints). Bulunmuş `drawIllegalMark`
+   * ile YALNIZ renkle/opaklıkla DEĞİL, ŞEKİLLE de ayırt edilir (bkz. görev
+   * talimatı Bölüm 6: "renk tek başına ayrım aracı olmamalı") — çarpı YOK,
+   * yalnız ince, düşük yoğunluklu (statik) bir halka. Taş silüeti EKLEMEZ,
+   * board state'e dokunmaz (bkz. showIllegalHints notu).
+   */
+  function drawIllegalHint(gx, gz, t) {
+    const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
+    const Y = -BOARD_H / 2 - .3;
+    const p = project(wx, Y, wz);
+    if (p.scale < 0.12) return;
+    const e = reduceMotion ? 1 : easeInOutCubic(Math.min(1, t));
+    const alpha = 0.38 * e; // drawIllegalMark'ın (0.82) YARISINDAN AZ — "düşük yoğunluklu"
+    ctx.save();
+    ctx.strokeStyle = `rgba(214,92,58,${alpha.toFixed(2)})`;
+    ctx.lineWidth = Math.max(1, 1.4 * p.scale);
+    ctx.setLineDash([Math.max(2, 3 * p.scale), Math.max(2, 3 * p.scale)]); // kesikli — ŞEKİL FARKI, yalnız opaklık DEĞİL
+    const ringR = Math.max(3, CELL * 0.26) * p.scale;
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, ringR, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+
   /** Tek noktalı, çok sade pointer hover geri bildirimi — kesişimlerin
       TÜMÜNÜ işaretlemez, yalnız imlecin en yakın olduğu kesişimi. */
   function drawHoverPoint(gx, gz) {
@@ -681,6 +785,12 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     if (inputEnabled && hoverPoint && !movePreview) drawHoverPoint(hoverPoint.gx, hoverPoint.gz);
     for (const l of libertyPoints) drawLibertyMark(l.gx, l.gz, l.t);
     if (movePreview) drawMovePreview(movePreview.gx, movePreview.gz, movePreview.color);
+    // İpuçları ÖNCE (bulunmamış hedefler) — bulunmuş işaretler her zaman
+    // ÜSTTE (bir nokta hem hint hem found OLAMAZ zaten, bkz. scene08
+    // İllegalMoves.js hint listesi hesaplaması, ama katman sırası yine de
+    // öngörülebilir kalsın).
+    for (const h of illegalHints) drawIllegalHint(h.gx, h.gz, h.t);
+    for (const m of illegalMarks) drawIllegalMark(m.gx, m.gz, m.t);
     const sorted = [...visualStones].sort((a, b) => project(-HALF + a.gx * CELL, 0, -HALF + a.gz * CELL).z - project(-HALF + b.gx * CELL, 0, -HALF + b.gz * CELL).z);
     for (const s of sorted) {
       const scale = reduceMotion ? 1 : easeInOutCubic(Math.min(1, s.t));
@@ -705,6 +815,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     if (!reduceMotion) {
       for (const s of visualStones) if (s.t < 1) s.t = Math.min(1, s.t + dt / STONE_ANIM_DUR);
       for (const l of libertyPoints) if (l.t < 1) l.t = Math.min(1, l.t + dt / LIBERTY_FADE_DUR);
+      for (const m of illegalMarks) if (m.t < 1) m.t = Math.min(1, m.t + dt / LIBERTY_FADE_DUR);
+      for (const h of illegalHints) if (h.t < 1) h.t = Math.min(1, h.t + dt / LIBERTY_FADE_DUR);
     }
     render();
     rafId = requestAnimationFrame(loop);
@@ -773,6 +885,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       visualStones = [];
       libertyPoints = [];
       movePreview = null;
+      illegalMarks = [];
+      illegalHints = [];
       hoverPoint = null;
     },
     reset() {
@@ -780,6 +894,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       visualStones = [];
       libertyPoints = [];
       movePreview = null;
+      illegalMarks = [];
+      illegalHints = [];
       hoverPoint = null;
     },
     focus(presetName) {
@@ -828,6 +944,18 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
      */
     isLegalMove({ row, col, color }) {
       return isValidMove(boardSt, col, row, color).valid;
+    },
+
+    /**
+     * (row,col) noktasında GERÇEK bir taş var mı — `isLegalMove()`'un
+     * AKSİNE "dolu" ile "boş ama intihar" durumunu AYIRT EDER (bkz. v0.18
+     * notu, görev talimatı Bölüm 8: hover silüetinin yasak bir hedef
+     * üzerinde de — yalnız GERÇEKTEN boşsa — gösterilebilmesi gerekir).
+     * @param {{row:number,col:number}} point
+     * @returns {boolean}
+     */
+    isOccupied({ row, col }) {
+      return boardSt.isOccupied(col, row);
     },
 
     /**
@@ -923,6 +1051,55 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     },
     clearMovePreview() {
       movePreview = null;
+    },
+
+    /**
+     * Reddedilen hamle denemelerinin GÖRSEL işaretlerini (kehribar-kırmızı
+     * halka + çarpı) gösterir — bkz. drawIllegalMark, v0.19 notu. Çağrı
+     * mevcut listeyi TAMAMEN DEĞİŞTİRİR (birikimli EKLEME değil) — sahne
+     * modülü hangi noktaların "bulunmuş" olduğuna dair KENDİ durumunu
+     * (ör. bir Set) tutar ve her güncellemede GÜNCEL TAM listeyi verir;
+     * adaptör kaç hedef olduğunu/hangi sahneye ait olduğunu BİLMEZ. Hamlenin
+     * GERÇEKTEN yasak olup olmadığına adaptör KARAR VERMEZ — çağıran bunu
+     * ÖNCE `playMove()`'un `{ok:false,reason}` sonucundan (veya kendi saf
+     * policy'sinden) belirler. Board State'e dokunmaz, yalnız görsel.
+     * @param {Array<{row:number,col:number}>} points
+     */
+    showIllegalMoves(points) {
+      illegalMarks = (points || []).map(p => ({ gx: p.col, gz: p.row, t: reduceMotion ? 1 : 0 }));
+    },
+    clearIllegalMoves() {
+      illegalMarks = [];
+    },
+
+    /**
+     * "Yasak noktaları göster" ipucunun GÖRSEL listesi — bkz. drawIllegalHint.
+     * `showIllegalMoves()` İLE AYNI "tam listeyi değiştir" sözleşmesi, AYRI
+     * bir görsel katmanda (renk AYNI ama şekil/opaklık FARKLI — bkz.
+     * drawIllegalHint notu: "renk tek başına ayrım aracı olmamalı"). Taş
+     * silüeti EKLEMEZ, board state'e dokunmaz.
+     * @param {Array<{row:number,col:number}>} points
+     */
+    showIllegalHints(points) {
+      illegalHints = (points || []).map(p => ({ gx: p.col, gz: p.row, t: reduceMotion ? 1 : 0 }));
+    },
+    clearIllegalHints() {
+      illegalHints = [];
+    },
+
+    /**
+     * Salt-okunur GÖZLEM — YALNIZ test amaçlı (bkz. getFocusPointsResult
+     * AYNI disiplin): o an EKRANDA GERÇEKTEN kaç/hangi bulunmuş-yasak
+     * marker'ın aynı anda göründüğünü, iç state'i (`illegalMarks`) MUTATE
+     * ETMEDEN {row,col} listesine çevirip döner. Üretim davranışını
+     * ETKİLEMEZ.
+     */
+    getIllegalMoves() {
+      return illegalMarks.map(m => ({ row: m.gz, col: m.gx }));
+    },
+    /** getIllegalMoves() İLE AYNI disiplin — ipucu katmanı için. */
+    getIllegalHints() {
+      return illegalHints.map(h => ({ row: h.gz, col: h.gx }));
     },
 
     /**
@@ -1066,6 +1243,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       hoverHandlers.clear();
       libertyPoints = [];
       movePreview = null;
+      illegalMarks = [];
+      illegalHints = [];
       visualStones = [];
     },
   };
