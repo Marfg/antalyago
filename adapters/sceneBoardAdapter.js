@@ -48,7 +48,16 @@
  *   board.clearIllegalHints();
  *   board.getIllegalMoves();           // GÜNCEL bulunmuş-marker listesi — salt-okunur, YALNIZ test/gözlem amaçlı
  *   board.getIllegalHints();           // GÜNCEL ipucu-marker listesi — salt-okunur, YALNIZ test/gözlem amaçlı
+ *   board.showKoFree(points);          // "ko noktası artık serbest" — YEŞİL "neon" halka+✓ (bkz. v0.20, drawKoFree)
+ *   board.clearKoFree();
+ *   board.getKoFree();                 // GÜNCEL serbest-ko marker listesi — salt-okunur, YALNIZ test/gözlem amaçlı
  *   board.destroy();                   // RAF/resize/click listener'ı + tüm durumu temizler
+ *
+ * v0.20 — Sahne #9'un ("Ko Kuralı") "artık serbest" göstergesi için YENİ,
+ * izole `showKoFree()`/`clearKoFree()` eklendi — `showIllegalMoves()`/
+ * `showIllegalHints()` (v0.19) İLE AYNI "adapter kaç hedef/hangi sahne
+ * bilmez, yalnız güncel liste" deseni. Mevcut HİÇBİR fonksiyon
+ * değiştirilmedi (bkz. drawKoFree, TEK yeni çizim fonksiyonu).
  *
  * v0.20 — kök neden düzeltmesi (bkz. görev talimatı: "görünmeyen ipucu"):
  * `drawIllegalHint`'in ESKİ tasarımı (kesikli, İNCE, alpha:0.38, glow YOK)
@@ -292,6 +301,17 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // desen, ayrı ve GÖRSEL/erişilebilir olarak FARKLI çizilir (bkz.
   // drawIllegalHint). Board state'e dokunmaz, taş silüeti EKLEMEZ.
   let illegalHints = [];
+  // v0.20 — Sahne #9'un ("Ko Kuralı") "ko noktası artık serbest" göstergesi
+  // — illegalMarks/illegalHints İLE AYNI desen (ÇOKLU liste, `t` 0→1 fade),
+  // ama TAMAMEN AYRI bir görsel katman: kehribar-kırmızı DEĞİL, YEŞİL "neon"
+  // glow (bkz. drawKoFree — drawLibertyMark'ın turkuaz neon TEKNİĞİYLE aynı,
+  // renk ve şekil (✓, çarpının TERSİ) FARKLI — "renk tek başına ayrım aracı
+  // olmamalı" ilkesiyle tutarlı, kullanıcı isteğiyle "neon efekt"). Board
+  // state'e dokunmaz, taş silüeti EKLEMEZ. Adapter kaç hedef olduğunu/hangi
+  // sahneye ait olduğunu BİLMEZ — yalnız "şu an gösterilecek serbest-ko
+  // noktaları listesi budur" bilgisini tutar (illegalMarks/illegalHints İLE
+  // AYNI "kaç hedef bilmiyorum" ilkesi).
+  let koFreeMarks = [];
   let inputEnabled = false;
   const tapHandlers = new Set();
   const hoverHandlers = new Set();
@@ -799,6 +819,46 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     ctx.restore();
   }
 
+  /**
+   * v0.20 — "Ko noktası artık serbest" göstergesi (bkz. scenes/
+   * scene09KoRule.js). `drawLibertyMark()`'ın turkuaz "neon nefes noktası"
+   * TEKNİĞİYLE (glow: `shadowColor`+`shadowBlur`) AYNI, ama YEŞİL ve net
+   * biçimde FARKLI bir şekil (halka + ✓ işareti — `drawIllegalMark()`'ın
+   * çarpısının TERSİ) kullanır. `drawIllegalMark`'ın kehribar-kırmızısıyla
+   * KARIŞTIRILMASIN diye BİLEREK farklı bir RGB üçlüsü (`--green` CSS
+   * token'ıyla tutarlı, ~62,207,128) seçildi. Büyük bloom/pulse YOK — tek
+   * seferlik sakin bir fade-in (`t` 0→1), tam görünür olduktan sonra
+   * STATİK kalır (Sahne #7/#8'in nefes/yasak işaretleriyle AYNI disiplin).
+   */
+  function drawKoFree(gx, gz, t) {
+    const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
+    const Y = -BOARD_H / 2 - .3;
+    const p = project(wx, Y, wz);
+    if (p.scale < 0.12) return;
+    const e = reduceMotion ? 1 : easeInOutCubic(Math.min(1, t));
+    const alpha = 0.82 * e;
+    const color = `rgba(62,207,128,${alpha.toFixed(2)})`;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1.4, 2.2 * p.scale);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(62,207,128,.6)';
+    ctx.shadowBlur = 3 * p.scale; // "neon" glow — drawLibertyMark İLE AYNI teknik
+    // Halka — serbest kesişimi çevreler (drawIllegalMark İLE AYNI yarıçap oranı).
+    const ringR = Math.max(3, CELL * 0.26) * p.scale;
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, ringR, 0, Math.PI * 2); ctx.stroke();
+    // ✓ işareti — renk-bağımsız ikinci işaret, drawIllegalMark'ın çarpısının TERSİ.
+    ctx.shadowBlur = 1.6 * p.scale;
+    const armS = CELL * 0.11, armL = CELL * 0.2;
+    const pStart = project(wx - armS, Y, wz + armS * .2);
+    const pMid = project(wx - armS * .15, Y, wz + armL * .55);
+    const pEnd = project(wx + armL * .6, Y, wz - armL * .5);
+    ctx.beginPath(); ctx.moveTo(pStart.sx, pStart.sy); ctx.lineTo(pMid.sx, pMid.sy); ctx.lineTo(pEnd.sx, pEnd.sy); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
   /** Tek noktalı, çok sade pointer hover geri bildirimi — kesişimlerin
       TÜMÜNÜ işaretlemez, yalnız imlecin en yakın olduğu kesişimi. */
   function drawHoverPoint(gx, gz) {
@@ -830,6 +890,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     // öngörülebilir kalsın).
     for (const h of illegalHints) drawIllegalHint(h.gx, h.gz, h.t);
     for (const m of illegalMarks) drawIllegalMark(m.gx, m.gz, m.t);
+    for (const k of koFreeMarks) drawKoFree(k.gx, k.gz, k.t);
     const sorted = [...visualStones].sort((a, b) => project(-HALF + a.gx * CELL, 0, -HALF + a.gz * CELL).z - project(-HALF + b.gx * CELL, 0, -HALF + b.gz * CELL).z);
     for (const s of sorted) {
       const scale = reduceMotion ? 1 : easeInOutCubic(Math.min(1, s.t));
@@ -856,6 +917,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       for (const l of libertyPoints) if (l.t < 1) l.t = Math.min(1, l.t + dt / LIBERTY_FADE_DUR);
       for (const m of illegalMarks) if (m.t < 1) m.t = Math.min(1, m.t + dt / LIBERTY_FADE_DUR);
       for (const h of illegalHints) if (h.t < 1) h.t = Math.min(1, h.t + dt / LIBERTY_FADE_DUR);
+      for (const k of koFreeMarks) if (k.t < 1) k.t = Math.min(1, k.t + dt / LIBERTY_FADE_DUR);
     }
     render();
     rafId = requestAnimationFrame(loop);
@@ -926,6 +988,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       movePreview = null;
       illegalMarks = [];
       illegalHints = [];
+      koFreeMarks = [];
       hoverPoint = null;
     },
     reset() {
@@ -935,6 +998,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       movePreview = null;
       illegalMarks = [];
       illegalHints = [];
+      koFreeMarks = [];
       hoverPoint = null;
     },
     focus(presetName) {
@@ -1138,6 +1202,27 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     },
 
     /**
+     * v0.20 — "Ko noktası artık serbest" YEŞİL "neon" göstergesi (bkz.
+     * drawKoFree, scenes/scene09KoRule.js). `showIllegalMoves()` İLE AYNI
+     * "tam listeyi değiştir" sözleşmesi (birikimli EKLEME değil), AYRI bir
+     * görsel katmanda (renk VE şekil farklı — bkz. drawKoFree notu). Hamlenin
+     * GERÇEKTEN serbest olup olmadığına adaptör KARAR VERMEZ — çağıran bunu
+     * ÖNCE kendi policy'sinden (core/ruleEngine.js sonucundan) belirler.
+     * Board State'e dokunmaz, yalnız görsel.
+     * @param {Array<{row:number,col:number}>} points
+     */
+    showKoFree(points) {
+      koFreeMarks = (points || []).map(p => ({ gx: p.col, gz: p.row, t: reduceMotion ? 1 : 0 }));
+    },
+    clearKoFree() {
+      koFreeMarks = [];
+    },
+    /** getIllegalMoves() İLE AYNI disiplin — YALNIZ gözlem/test amaçlı. */
+    getKoFree() {
+      return koFreeMarks.map(k => ({ row: k.gz, col: k.gx }));
+    },
+
+    /**
      * Salt-okunur GÖZLEM — YALNIZ test amaçlı (bkz. getFocusPointsResult
      * AYNI disiplin): o an EKRANDA GERÇEKTEN kaç/hangi bulunmuş-yasak
      * marker'ın aynı anda göründüğünü, iç state'i (`illegalMarks`) MUTATE
@@ -1295,6 +1380,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       movePreview = null;
       illegalMarks = [];
       illegalHints = [];
+      koFreeMarks = [];
       visualStones = [];
     },
   };
