@@ -53,6 +53,7 @@ import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v
 import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-09-01.1';
 import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-01.1';
 import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-01.1';
+import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-09-01.1';
 import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-01.1';
 import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-01.1';
 import { EventLog } from './core/eventLog.js?v=2026-09-01.1';
@@ -168,7 +169,7 @@ const canvas = document.getElementById('ls-canvas');
 const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
 const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19 });
 
-const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene07CapturePractice, scene08IllegalMoves]);
+const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene07CapturePractice, scene08IllegalMoves, scene09KoRule]);
 
 const searchParams = new URLSearchParams(location.search);
 
@@ -203,6 +204,11 @@ if (searchParams.get('exposeBoardAdapter') === '1') {
     getFocusPointsResult: () => boardAdapter.getFocusPointsResult(),
     getIllegalMoves: () => boardAdapter.getIllegalMoves(),
     getIllegalHints: () => boardAdapter.getIllegalHints(),
+    // v4 — getKoFree eklendi: Sahne #9'un "ko noktası artık serbest" YEŞİL
+    // neon göstergesinin (bkz. adapters/sceneBoardAdapter.js v0.20
+    // showKoFree/drawKoFree) testlerin adaptörün kendi çizim durumundan
+    // doğrudan okuyabilmesi için (getIllegalMoves İLE AYNI gerekçe).
+    getKoFree: () => boardAdapter.getKoFree(),
   };
 }
 

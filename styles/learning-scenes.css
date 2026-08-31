@@ -305,7 +305,7 @@ body {
    kaldırıyor) `#ls-scene-host`u üstten hizalar; taşma varsa artık YALNIZ
    aşağıya (kaydırılabilir `#ls-narration` alanına) doğru olur. Sahne #1-4
    BU KURALDAN ETKİLENMEZ (sınıf yalnız Sahne #5'e özgü). */
-#ls-scene-host.s05-scene-host, #ls-scene-host.s06-scene-host, #ls-scene-host.s07-scene-host, #ls-scene-host.s08-scene-host { align-self: flex-start; justify-content: flex-start; }
+#ls-scene-host.s05-scene-host, #ls-scene-host.s06-scene-host, #ls-scene-host.s07-scene-host, #ls-scene-host.s08-scene-host, #ls-scene-host.s09-scene-host { align-self: flex-start; justify-content: flex-start; }
 
 /* ── Sahne #5 — değerlendirme aşamaları (bkz. scenes/scene05LibertyAssessment.js) ──
    v0.19 — kök neden düzeltmesi: #s05-assess, miras aldığı `.ls-strip-row`nun
@@ -391,6 +391,13 @@ body {
 .s08-hint-btn--active {
   border-color: rgba(214, 92, 58, .55); background: rgba(214, 92, 58, .14); color: #d65c3a;
 }
+/* Sahne #9 — ko noktası durum etiketi (bkz. scenes/scene09KoRule.js
+   `#s09-ko-status`, adapters/sceneBoardAdapter.js drawIllegalMark/drawKoFree).
+   Renk TEK BAŞINA bilgi taşımaz — bu etiket her zaman rengin YANINDA açık
+   Türkçe metinle (bkz. KO_STATUS_RED/KO_STATUS_GREEN) birlikte görünür;
+   burada yalnız o metnin rengini tahtadaki işaretle EŞLER. */
+.s09-ko-status--red { color: #d65c3a; font-weight: 600; }
+.s09-ko-status--green { color: var(--green); font-weight: 600; }
 .s05-feedback { margin: 0; font-size: .8rem; font-weight: 600; line-height: 1.1; min-height: 1.1em; text-align: center; }
 .s05-feedback--ok { color: var(--green); }
 .s05-feedback--err { color: #e2726b; }
