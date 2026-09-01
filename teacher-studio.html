@@ -216,7 +216,7 @@
 </div>
 
 <script type="module">
-import { CURRICULUM } from './core/curriculum.js?v=2026-08-29.1';
+import { CURRICULUM } from './core/curriculum.js?v=2026-09-01.1';
 import { classifyCurriculumStep, responseTypeOf, stripMarkup, isAssessmentLesson } from './core/learningContext.js';
 import { KNOWN_CONCEPTS } from './core/conceptMap.js';
 import { createStudentModel, hydrateStudentModel, getConceptState } from './core/studentModel.js';
@@ -225,54 +225,55 @@ import { CONTENT_PURPOSES, CONTENT_STUDENT_STATUSES, CONTENT_STAGES, validateCon
 import { mergeContentOverrides, applyOverride, OVERRIDABLE_FIELDS } from './core/contentOverrides.js';
 import { teacherContentOverrides } from './adapters/teacherContentOverrides.js';
 import { buildRetrievalQuery, retrieveContent } from './core/contentRetriever.js';
-import { EventLog } from './core/eventLog.js?v=2026-08-29.1';
+import { EventLog } from './core/eventLog.js?v=2026-09-01.1';
 import { buildAiReviewEvent } from './core/teacherAssistant.js';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-08-29.1';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-08-29.1';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-08-29.1';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-08-29.1';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-08-29.1';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-08-29.1';
-import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-08-29.1';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-08-29.1';
-import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-08-29.1';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-01.1';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-01.1';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-01.1';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-01.1';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-01.1';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-01.1';
+import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-09-01.1';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-01.1';
+import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-01.1';
 import {
   getAssessmentSteps as getLibertyAssessmentSteps,
   computeChoiceCorrectIndex as computeLibertyChoiceCorrectIndex,
   computeTapTargets as computeLibertyTapTargets,
   computeResultAfterMove as computeLibertyResultAfterMove,
   ASSESSMENT_STEP_INDICES as LIBERTY_ASSESSMENT_STEP_INDICES,
-} from './scenes/libertyAssessmentPolicy.js?v=2026-08-29.1';
+} from './scenes/libertyAssessmentPolicy.js?v=2026-09-01.1';
 import {
   getCaptureMoments,
   isValidCapturePoint as isValidCaptureMomentPoint,
   computeCaptureResult,
   MOMENT_STEP_INDICES as CAPTURE_MOMENT_STEP_INDICES,
-} from './scenes/capturePolicy.js?v=2026-08-29.1';
+} from './scenes/capturePolicy.js?v=2026-09-01.1';
 import {
   getCapturePracticeMoments,
   isValidCapturePoint as isValidPracticePoint,
   computePracticeResult,
   isKnownHintMode,
   MOMENT_STEP_INDICES as PRACTICE_MOMENT_STEP_INDICES,
-} from './scenes/capturePracticePolicy.js?v=2026-08-29.1';
+} from './scenes/capturePracticePolicy.js?v=2026-09-01.1';
 import {
   getIllegalMoveMoments,
   evaluateAttempt as evaluateIllegalMoveAttempt,
   boardSignature as illegalMoveBoardSignature,
+  resolveCaptureExampleMoment,
   isKnownMomentKind,
   MOMENT_KINDS as ILLEGAL_MOVE_KINDS,
   MOMENT_STEP_INDICES as ILLEGAL_MOVE_STEP_INDICES,
   CONCEPT as ILLEGAL_MOVE_CONCEPT,
-} from './scenes/illegalMovePolicy.js?v=2026-08-29.1';
-import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-08-29.1';
-import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-08-29.1';
-import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-08-29.1';
-import { BoardState } from './core/boardState.js?v=2026-08-29.1';
-import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-08-29.1';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-08-29.1';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-08-29.1';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-08-29.1';
+} from './scenes/illegalMovePolicy.js?v=2026-09-01.1';
+import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-09-01.1';
+import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-09-01.1';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-09-01.1';
+import { BoardState } from './core/boardState.js?v=2026-09-01.1';
+import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-09-01.1';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-01.1';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-01.1';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-01.1';
 
 /* ── Sürüm/cache bekçisi — learning-scenes.html İLE AYNI mekanizma ────
    (bkz. o dosyadaki dosya başı notu, KRİTİK DÜZELTME: SCENE_RELEASE artık
@@ -563,6 +564,12 @@ function renderCurriculumDetail() {
     <div class="pre-box">${escapeHtml(stripMarkup(step.text || ''))}</div>
     <h3 style="margin-top:.7rem;">Board Seed</h3>
     <div class="pre-box">${escapeHtml(JSON.stringify(step.board || [], null, 2))}</div>
+    ${Array.isArray(step.moves) && step.moves.length ? `
+    <h3 style="margin-top:.7rem;">Moves (${step.moves.length})</h3>
+    <div class="pre-box">${escapeHtml(JSON.stringify(step.moves, null, 2))}</div>` : ''}
+    ${Array.isArray(step.forbidden) && step.forbidden.length ? `
+    <h3 style="margin-top:.7rem;">Forbidden (${step.forbidden.length})</h3>
+    <div class="pre-box">${escapeHtml(JSON.stringify(step.forbidden, null, 2))}</div>` : ''}
   `;
 }
 
@@ -606,6 +613,22 @@ function renderCurriculumScenes() {
           const detail = detailList.find(a => a.curriculumStepIndex === r.stepIndex);
           const conceptLabel = detail ? detail.assessmentConcept : r.concept;
           const resultSuffix = detail?.expectedResultConcept ? `→${detail.expectedResultConcept}` : '';
+          // Sahne #8 An 2 (`legal_capture`) — bkz. görev talimatı Bölüm 13:
+          // "İkinci adımın bütün gerçek formasyon örnekleri, her örneğin
+          // source index'i, hedef hamlesi, beklenen capture sayısı" GÖRÜLEBİLİR
+          // olmalı — TEK bir özet ("2. adım") YETERSİZ, HER örnek AYRI listelenir.
+          // v2 — renk normalizasyonu TERK EDİLDİ (bkz. görev talimatı: "ikinci
+          // formasyonun curriculum'da yazıldığı gerçek taş renklerini koru").
+          // "[renk-normalize]" notu KALDIRILDI — artık her örneğin GERÇEK
+          // authored `moveColor`/`capturedColor`'ı ('B'/'W') doğrudan gösterilir,
+          // eksen adı (row/col — runtime) AÇIKÇA etiketlenir.
+          if (Array.isArray(detail?.legalCaptureExamples) && detail.legalCaptureExamples.length) {
+            const colorWord = c => c === 'W' ? 'beyaz' : 'siyah';
+            const exampleList = detail.legalCaptureExamples.map(ex =>
+              `#${ex.sourceIndex}: ${colorWord(ex.moveColor)} oynar (row:${ex.targetPoint.row},col:${ex.targetPoint.col}) → ${ex.expectedCapturedCount} ${colorWord(ex.capturedColor)} taş alınır`,
+            ).join(', ');
+            return `adım ${r.stepIndex + 1}(${conceptLabel}${resultSuffix}) [${detail.legalCaptureExamples.length} örnek: ${exampleList}]`;
+          }
           return `adım ${r.stepIndex + 1}(${conceptLabel}${resultSuffix})`;
         }).join(', ')}`
       : '—';
@@ -1475,6 +1498,13 @@ function renderSceneDiagnostics() {
     }
 
     const seenKinds = new Set();
+    // Bağımsız formasyon örneklerinin (bkz. illegalMovePolicy.js "Model B —
+    // ayrı seed") board seed'leri ARASINDA ortak taş OLMAMALI — sahne
+    // katmanının "her örnek KENDİ taze seed'iyle gelir" tercihinin kanıtı
+    // (bkz. görev talimatı Bölüm 13: "örnekler bağımsız/ayrı-seed tercihi
+    // doğrulanıyor").
+    const allExampleCoordKeys = new Map(); // "x,y" -> ilk gören örneğin etiketi
+
     illegalMoments.forEach(m => {
       if (!isKnownMomentKind(m.kind)) {
         rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>UNKNOWN_MOMENT_KIND:step=${m.curriculumStepIndex} kind=${m.kind}</td></tr>`);
@@ -1487,68 +1517,149 @@ function renderSceneDiagnostics() {
       if (ref && ref.concept !== m.assessmentConcept) {
         rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>CURRICULUM_REF_CONCEPT_MISMATCH:step=${m.curriculumStepIndex} ref.concept=${ref.concept} policy.assessmentConcept=${m.assessmentConcept}</td></tr>`);
       }
-      if (!m.targetPoints || !m.targetPoints.length) {
-        rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>MOMENT_NO_TARGET_POINTS:step=${m.curriculumStepIndex}</td></tr>`);
-      }
-      // v2 — An 1 ("rejected") curriculum'un KENDİ metnine göre ("4 farklı
-      // yasak nokta var") TAM DÖRT benzersiz hedef taşımalı — kamera/test
-      // kolaylığı gerekçesiyle TEK hedefe indirilmiş OLMAMALI (bkz. görev
-      // talimatı: "içeriği tek hedefe indirme").
-      if (m.kind === ILLEGAL_MOVE_KINDS.REJECTED && (m.targetPoints || []).length !== 4) {
-        rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>REJECTED_MOMENT_TARGET_COUNT_MISMATCH:step=${m.curriculumStepIndex} count=${(m.targetPoints || []).length} beklenen=4</td></tr>`);
-      }
-      {
+
+      if (m.kind === ILLEGAL_MOVE_KINDS.REJECTED) {
+        if (!m.targetPoints || !m.targetPoints.length) {
+          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>MOMENT_NO_TARGET_POINTS:step=${m.curriculumStepIndex}</td></tr>`);
+        }
+        // v2 — An 1 ("rejected") curriculum'un KENDİ metnine göre ("4 farklı
+        // yasak nokta var") TAM DÖRT benzersiz hedef taşımalı — kamera/test
+        // kolaylığı gerekçesiyle TEK hedefe indirilmiş OLMAMALI (bkz. görev
+        // talimatı: "içeriği tek hedefe indirme").
+        if ((m.targetPoints || []).length !== 4) {
+          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>REJECTED_MOMENT_TARGET_COUNT_MISMATCH:step=${m.curriculumStepIndex} count=${(m.targetPoints || []).length} beklenen=4</td></tr>`);
+        }
         const seen = new Set();
         (m.targetPoints || []).forEach(pt => {
           const key = `${pt.row},${pt.col}`;
           if (seen.has(key)) rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>DUPLICATE_TARGET_POINT:step=${m.curriculumStepIndex} point=(${pt.row},${pt.col})</td></tr>`);
           seen.add(key);
         });
-      }
 
-      // HER hedef noktanın GERÇEK RuleEngine sonucu bu anın `kind`iyle
-      // uyuşuyor mu — 'rejected' TÜM hedeflerde yasak, 'legal_capture'
-      // hedefte GERÇEKTEN kabul + curriculum'un beklediği taş sayısını
-      // yakalıyor mu.
-      (m.targetPoints || []).forEach(pt => {
-        const result = evaluateIllegalMoveAttempt(m, pt);
-        if (!result.isCurriculumTarget) {
-          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>TARGET_POINT_NOT_SELF_RECOGNIZED:step=${m.curriculumStepIndex} point=(${pt.row},${pt.col})</td></tr>`);
-        }
-        if (m.kind === ILLEGAL_MOVE_KINDS.REJECTED) {
+        // HER hedef noktanın GERÇEK RuleEngine sonucu 'rejected' TÜM
+        // hedeflerde beklenen reason'la eşleşiyor mu.
+        (m.targetPoints || []).forEach(pt => {
+          const result = evaluateIllegalMoveAttempt(m, pt);
+          if (!result.isCurriculumTarget) {
+            rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>TARGET_POINT_NOT_SELF_RECOGNIZED:step=${m.curriculumStepIndex} point=(${pt.row},${pt.col})</td></tr>`);
+          }
           if (result.legal) {
             rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>REJECTED_TARGET_ACTUALLY_LEGAL:step=${m.curriculumStepIndex} point=(${pt.row},${pt.col})</td></tr>`);
           } else if (result.reason !== m.expectedReason) {
             rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>UNEXPECTED_REASON:step=${m.curriculumStepIndex} point=(${pt.row},${pt.col}) reason=${result.reason} beklenen=${m.expectedReason}</td></tr>`);
           }
-        } else if (m.kind === ILLEGAL_MOVE_KINDS.LEGAL_CAPTURE) {
-          if (!result.legal) {
-            rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>LEGAL_CAPTURE_TARGET_ACTUALLY_ILLEGAL:step=${m.curriculumStepIndex} point=(${pt.row},${pt.col}) reason=${result.reason}</td></tr>`);
-          } else if (result.capturedCount !== m.expectedCapturedCount) {
-            rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>CAPTURED_COUNT_MISMATCH:step=${m.curriculumStepIndex} captured=${result.capturedCount} beklenen=${m.expectedCapturedCount}</td></tr>`);
+        });
+
+        // Board'un GERÇEKTEN değişmediği — reddedilen bir denemenin (An 1)
+        // simülasyonu, moment.board'un imzasını (öncesi/sonrası) DEĞİŞTİRMEZ
+        // (evaluateAttempt her zaman TAZE bir BoardState kurar, moment.board'u
+        // ASLA mutate etmez — bkz. görev talimatı Bölüm 10: "board signature
+        // değişmiyor" kanıtı).
+        const sigBefore = illegalMoveBoardSignature(m.board);
+        for (const pt of m.targetPoints || []) evaluateIllegalMoveAttempt(m, pt);
+        const sigAfter = illegalMoveBoardSignature(m.board);
+        if (sigBefore !== sigAfter) {
+          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>MOMENT_BOARD_MUTATED_BY_EVALUATION:step=${m.curriculumStepIndex}</td></tr>`);
+        }
+
+        // Hedef-dışı GERÇEK bir kesişim (tahtanın boş bir köşesi) bu anın
+        // hedef kümesinde YANLIŞLIKLA yer almamalı.
+        const farCorner = { row: 8, col: 0 };
+        if (evaluateIllegalMoveAttempt(m, farCorner).isCurriculumTarget
+          && !m.targetPoints.some(p => p.row === farCorner.row && p.col === farCorner.col)) {
+          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>WRONG_POINT_ACCEPTED:step=${m.curriculumStepIndex}</td></tr>`);
+        }
+        return;
+      }
+
+      // ── An 2 (`legal_capture`) — bkz. görev talimatı Bölüm 13: "bütün
+      // curriculum örnekleri listeleniyor, hiçbir örnek sessizce
+      // atlanmıyor" + her örneğin bağımsız doğrulaması. ──
+      const examples = m.legalCaptureExamples ?? [];
+      const rawStep = l4ForIllegal?.steps?.[m.curriculumStepIndex];
+      const rawMoveCount = Array.isArray(rawStep?.moves) ? rawStep.moves.length : 0;
+      if (!examples.length) {
+        rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>MOMENT_NO_TARGET_POINTS:step=${m.curriculumStepIndex}</td></tr>`);
+      }
+      if (examples.length !== rawMoveCount) {
+        rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>LEGAL_CAPTURE_EXAMPLE_COUNT_MISMATCH:step=${m.curriculumStepIndex} count=${examples.length} curriculum_moves=${rawMoveCount} (bir örnek sessizce ATLANMIŞ olabilir)</td></tr>`);
+      }
+      const seenSourceIndices = new Set();
+      examples.forEach((ex, exampleIndex) => {
+        if (seenSourceIndices.has(ex.sourceIndex)) {
+          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>DUPLICATE_SOURCE_INDEX:step=${m.curriculumStepIndex} sourceIndex=${ex.sourceIndex}</td></tr>`);
+        }
+        seenSourceIndices.add(ex.sourceIndex);
+
+        // AUTHORED renk/koordinat doğrulaması (bkz. görev talimatı Bölüm 10:
+        // "authored board renkleri korunuyor, authored moveColor korunuyor,
+        // hedef coordinate dönüşümü doğru") — renk normalizasyonu TERK
+        // EDİLDİĞİ için burada artık DOĞRUDAN ham curriculum verisiyle
+        // karşılaştırılır, normalize edilmiş bir ara-değer GÜVENİLMEZ.
+        const rawMove = rawStep?.moves?.[ex.sourceIndex];
+        if (rawMove) {
+          if (ex.moveColor !== rawMove.color) {
+            rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>MOVE_COLOR_NOT_AUTHORED:step=${m.curriculumStepIndex} exampleIndex=${exampleIndex} moveColor=${ex.moveColor} authored=${rawMove.color}</td></tr>`);
+          }
+          if (ex.targetPoint.row !== rawMove.y || ex.targetPoint.col !== rawMove.x) {
+            rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>TARGET_COORD_TRANSFORM_WRONG:step=${m.curriculumStepIndex} exampleIndex=${exampleIndex} runtime=(${ex.targetPoint.row},${ex.targetPoint.col}) beklenen row:y=${rawMove.y} col:x=${rawMove.x}</td></tr>`);
+          }
+          const rawNearBoard = (rawStep.board || []).filter(s => Math.abs(s.y - rawMove.y) <= 2);
+          const rawSig = rawNearBoard.map(s => `${s.color}${s.x},${s.y}`).sort().join('|');
+          const exSig = ex.board.map(s => `${s.color}${s.x},${s.y}`).sort().join('|');
+          if (rawSig !== exSig) {
+            rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>BOARD_COLORS_NOT_AUTHORED:step=${m.curriculumStepIndex} exampleIndex=${exampleIndex} (renk değiştirilmiş olabilir)</td></tr>`);
           }
         }
+
+        const resolved = resolveCaptureExampleMoment(m, exampleIndex);
+        const pt = resolved.targetPoints[0];
+        if (!pt) {
+          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>MOMENT_NO_TARGET_POINTS:step=${m.curriculumStepIndex} exampleIndex=${exampleIndex}</td></tr>`);
+          return;
+        }
+        const result = evaluateIllegalMoveAttempt(resolved, pt);
+        if (!result.isCurriculumTarget) {
+          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>TARGET_POINT_NOT_SELF_RECOGNIZED:step=${m.curriculumStepIndex} exampleIndex=${exampleIndex} point=(${pt.row},${pt.col})</td></tr>`);
+        }
+        if (!result.legal) {
+          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>LEGAL_CAPTURE_TARGET_ACTUALLY_ILLEGAL:step=${m.curriculumStepIndex} exampleIndex=${exampleIndex} point=(${pt.row},${pt.col}) reason=${result.reason}</td></tr>`);
+        } else if (result.capturedCount !== resolved.expectedCapturedCount) {
+          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>CAPTURED_COUNT_MISMATCH:step=${m.curriculumStepIndex} exampleIndex=${exampleIndex} captured=${result.capturedCount} beklenen=${resolved.expectedCapturedCount}</td></tr>`);
+        } else if (result.capturedCount < 1) {
+          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>LEGAL_CAPTURE_ZERO_CAPTURE:step=${m.curriculumStepIndex} exampleIndex=${exampleIndex}</td></tr>`);
+        }
+        if (resolved.expectedResultConcept !== 'capture') {
+          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>UNEXPECTED_RESULT_CONCEPT:step=${m.curriculumStepIndex} exampleIndex=${exampleIndex} resultConcept=${resolved.expectedResultConcept}</td></tr>`);
+        }
+
+        // Board'un GERÇEKTEN değişmediği (bkz. REJECTED ile AYNI disiplin).
+        const sigBefore = illegalMoveBoardSignature(resolved.board);
+        evaluateIllegalMoveAttempt(resolved, pt);
+        const sigAfter = illegalMoveBoardSignature(resolved.board);
+        if (sigBefore !== sigAfter) {
+          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>MOMENT_BOARD_MUTATED_BY_EVALUATION:step=${m.curriculumStepIndex} exampleIndex=${exampleIndex}</td></tr>`);
+        }
+
+        // Hedef-dışı GERÇEK bir kesişim bu örneğin hedef kümesinde
+        // YANLIŞLIKLA yer almamalı.
+        const farCorner = { row: 8, col: 0 };
+        if (evaluateIllegalMoveAttempt(resolved, farCorner).isCurriculumTarget
+          && !(farCorner.row === pt.row && farCorner.col === pt.col)) {
+          rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>WRONG_POINT_ACCEPTED:step=${m.curriculumStepIndex} exampleIndex=${exampleIndex}</td></tr>`);
+        }
+
+        // Bağımsızlık — bu örneğin board'undaki HİÇBİR taş, DAHA ÖNCE
+        // GÖRÜLMÜŞ başka bir örneğin board'unda ZATEN yoktu.
+        for (const s of resolved.board) {
+          const key = `${s.x},${s.y}`;
+          const label = `step${m.curriculumStepIndex}-example${exampleIndex}`;
+          if (allExampleCoordKeys.has(key) && allExampleCoordKeys.get(key) !== label) {
+            rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>LEGAL_CAPTURE_EXAMPLES_SHARE_STONE:${allExampleCoordKeys.get(key)} & ${label} @ (${s.x},${s.y})</td></tr>`);
+          }
+          allExampleCoordKeys.set(key, label);
+        }
       });
-
-      // Board'un GERÇEKTEN değişmediği — reddedilen bir denemenin (An 1)
-      // simülasyonu, moment.board'un imzasını (öncesi/sonrası) DEĞİŞTİRMEZ
-      // (evaluateAttempt her zaman TAZE bir BoardState kurar, moment.board'u
-      // ASLA mutate etmez — bkz. görev talimatı Bölüm 10: "board signature
-      // değişmiyor" kanıtı).
-      const sigBefore = illegalMoveBoardSignature(m.board);
-      for (const pt of m.targetPoints || []) evaluateIllegalMoveAttempt(m, pt);
-      const sigAfter = illegalMoveBoardSignature(m.board);
-      if (sigBefore !== sigAfter) {
-        rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>MOMENT_BOARD_MUTATED_BY_EVALUATION:step=${m.curriculumStepIndex}</td></tr>`);
-      }
-
-      // Hedef-dışı GERÇEK bir kesişim (tahtanın boş bir köşesi) bu anın
-      // hedef kümesinde YANLIŞLIKLA yer almamalı.
-      const farCorner = { row: 8, col: 0 };
-      if (evaluateIllegalMoveAttempt(m, farCorner).isCurriculumTarget
-        && !m.targetPoints.some(p => p.row === farCorner.row && p.col === farCorner.col)) {
-        rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>WRONG_POINT_ACCEPTED:step=${m.curriculumStepIndex}</td></tr>`);
-      }
     });
     // İki an FARKLI `kind` taşımalı — sahne "iki durumu ayırt et" pedagojik
     // hedefinin GERÇEKTEN iki farklı senaryo sunduğunun kanıtı (bkz. görev

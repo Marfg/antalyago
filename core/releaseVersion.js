@@ -31,5 +31,16 @@
  * v6 (2026-08-29.1) — Sahne #8 ("Yasak Hamleler") ve TEK yeni yardımcı
  * modülü (scenes/illegalMovePolicy.js) eklendi (bkz. scripts/
  * stamp-scene-release.mjs GRAPH_BASENAMES).
+ * v7 (2026-09-01.1) — Sahne #8'in iki gerçek eksikliği düzeltildi (bkz.
+ * görev talimatı): (1) "Yasak noktaları göster" ipucu marker'ı — kök neden
+ * gerçek piksel örneklemesiyle "teknik olarak çiziliyor ama görünmeyecek
+ * kadar zayıf" olarak KANITLANDI, `drawLibertyMark` İLE AYNI çapraz+nokta+
+ * glow tekniği (farklı renk) kullanan bir tasarıma geçildi (bkz. adapters/
+ * sceneBoardAdapter.js drawIllegalHint v0.20); (2) An 2'nin (`legal_capture`)
+ * curriculum'un GERÇEK İKİ formasyon örneğinden yalnız İLKİNİ (üst) gösterip
+ * ikinciyi (alt) SESSİZCE ATLAMASI — artık `legalCaptureExamples[]`
+ * (bkz. scenes/illegalMovePolicy.js) HER GERÇEK örneği taşıyor, kullanıcı
+ * ikisini de ayrı taze seed'lerle deneyimliyor. Kullanıcıya görünür davranış
+ * değişikliği (yeni ipucu marker tasarımı + ikinci formasyonun eklenmesi).
  */
-export const SCENE_RELEASE = '2026-08-29.1';
+export const SCENE_RELEASE = '2026-09-01.1';

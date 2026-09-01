@@ -40,8 +40,8 @@
  * özet + [Bu konuyu tekrar et]/[Sonraki konu] gösterir.
  */
 
-import { pickDeterministicWhiteMove } from './turnPolicy.js?v=2026-08-29.1';
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-08-29.1';
+import { pickDeterministicWhiteMove } from './turnPolicy.js?v=2026-09-01.1';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-01.1';
 
 const SUMMARY_TEXT = "Go'da oyuncular sırayla taş yerleştirir.";
 

@@ -33,35 +33,46 @@
  *     RuleEngine reddeder, taş yerleşmez. → `kind:'rejected'`.
  *
  *   - `steps[1]` ("yakalama istisnası" / capture exception): curriculum'un
- *     kendi `moves[0]` hamlesi (siyah `(4,0)`) İNTİHAR GİBİ GÖRÜNÜR (tüm
- *     komşular beyazla dolu) AMA GERÇEKTE YASALDIR — çünkü aynı anda 5
- *     beyaz taşı YAKALAR (`computeCaptures`'ın "önce yakalama, sonra
- *     intihar" sırası — bkz. core/ruleEngine.js `isValidMove`). Bu,
- *     BİRİNCİ durumun kendi curriculum metnindeki İSTİSNASIdır ("İstisna:
- *     intihar gibi görünen hamle rakip grubu yakalıyorsa geçerlidir").
- *     Kullanıcı bu noktayı dener, RuleEngine KABUL eder, taş yerleşir ve
- *     GERÇEKTEN 5 taş alınır. → `kind:'legal_capture'`.
+ *     `moves` dizisi TAM OLARAK İKİ GERÇEK formasyon/örnek taşır (bkz. v2
+ *     revizyonu — önceki revizyon `moves.find(m=>m.color==='B')` ile
+ *     YALNIZ İLKİNİ (üst formasyonu) alıyordu, ikinciyi (alt formasyonu)
+ *     SESSİZCE atlıyordu; bu YANLIŞ bir daralmaydı ve TERK EDİLDİ):
+ *       moves[0]: siyah `(4,0)` İNTİHAR GİBİ GÖRÜNÜR (üst formasyon, tüm
+ *       komşular beyazla dolu) AMA GERÇEKTE YASALDIR — 5 beyaz taşı YAKALAR.
+ *       moves[1]: beyaz `(4,8)` AYNI örüntünün simetrik ikizi (alt
+ *       formasyon) — 5 siyah taşı YAKALAR.
+ *     Board'un TAMAMI (24 taş) bu iki formasyonun AYRIK birleşimidir —
+ *     y∈{0,1,2} (12 taş) ve y∈{6,7,8} (12 taş), aralarında SIFIR ortak taş
+ *     (bağımsızlık RuleEngine ile doğrulandı, bkz. deriveLegalCaptureExamples
+ *     notu). `computeCaptures`'ın "önce yakalama, sonra intihar" sırası
+ *     (bkz. core/ruleEngine.js `isValidMove`) HER İKİSİNİ de yasal kılar.
+ *     Kullanıcı HER İKİ noktayı da (ayrı ayrı, taze seed'lerle) dener,
+ *     RuleEngine KABUL eder, taş yerleşir ve GERÇEKTEN 5 taş alınır. →
+ *     `kind:'legal_capture'`, `legalCaptureExamples[2]`.
+ *
+ *     AUTHORED RENKLER KORUNUR (bkz. görev talimatı: "ikinci formasyonun
+ *     curriculum'da yazıldığı gerçek taş renklerini koruyacak şekilde
+ *     düzelt"). ÖNCEKİ revizyon `moves[1]`'in (beyazın hamlesi) formasyonunu
+ *     renk-TERS ÇEVİRİP (B↔W) kullanıcıya HER ZAMAN siyah oynatıyordu — bu
+ *     curriculum'un GERÇEKTEN yazdığı içerikle ÇELİŞEN, yanlış bir
+ *     basitleştirmeydi ve TERK EDİLDİ. Artık `board` HİÇ dokunulmadan
+ *     authored haliyle kalır; her örneğin `moveColor`'ı (`'B'`|`'W'`)
+ *     DOĞRUDAN `moves[sourceIndex].color`'dan gelir — sahne katmanı bu
+ *     rengi GERÇEKTEN oynatır (bkz. scenes/scene08IllegalMoves.js
+ *     `activeMoveColor`). Örnek 0'da kullanıcı siyah, örnek 1'de GERÇEKTEN
+ *     beyaz oynar — adapter zaten renk-agnostik olduğu için (bkz.
+ *     adapters/sceneBoardAdapter.js playMove/setMovePreview, `color`
+ *     parametresini DOĞRUDAN RuleEngine'e iletir) bu YENİ bir etkileşim
+ *     paradigması GEREKTİRMEZ, yalnız sahnenin ÖNCEDEN her yerde hard-code
+ *     ettiği `'black'` değerini aktif örneğin GERÇEK `moveColor`'ıyla
+ *     değiştirir. `capturedColor` da GERÇEK yakalanan taşların board'daki
+ *     ÖZGÜN (authored) rengi taranıp doğrulanarak türetilir (varsayılmaz).
  *
  * Sahnenin pedagojik akışı ("kuralı gör → hedefi dene → taşın yerleşmediğini
  * gözlemle → nedeni öğren → ikinci yasak duruma geç → iki durumu ayırt et")
  * bu GERÇEK ayrımla birebir örtüşür — iki an FARKLI beklenen sonuç
  * (`kind`/`expectedReason`/`expectedResultConcept`) taşır; ikisi de tek bir
  * "hep reddedilir" kalıbına ZORLANMADI (bkz. scenes/scene08IllegalMoves.js).
- *
- * `steps[1]`'in board'u İKİ simetrik formasyon içerir (siyah üstte 5
- * beyazı yakalar, beyaz altta 5 siyahı yakalar — curriculum'un KENDİ
- * "yakalama istisnasını izle" auto-demo'su ikisini de oynatır). Bu sahne
- * — diğer tüm sahneler gibi — YALNIZ siyah/kullanıcı perspektifini
- * kullanır (bkz. görev talimatı: kullanıcı her zaman siyah oynar), bu
- * yüzden `normalizeLegalCaptureMoment` YALNIZ hedef hamleye YAKIN
- * (`|y - targetMove.y| <= 2`) GERÇEK taşları board seed'ine alır — alt
- * (beyazın kendi simetrik yakalaması) formasyon kullanıcı etkileşimiyle
- * İLGİSİZ, dahil EDİLMEZ. Bu bir koordinat İCADI DEĞİL — yalnız hedefe
- * yakın GERÇEK taşların bir alt-kümesi; doğruluğu aşağıda GERÇEK
- * `applyMove` sonucunun curriculum'un kendi authored `capture` alanıyla
- * TAM eşleştiği doğrulanarak KANITLANIR (uyuşmazsa açık bir Error fırlatılır
- * — sessizce yanlış bir alt-küme KULLANILMAZ, bkz. capturePracticePolicy.js
- * AYNI "throw over silent guess" disiplini).
  *
  * KAVRAM (bkz. görev talimatı Bölüm 13): scene-seviyesi concept
  * `'forbidden_move'` — KASITLI olarak `core/conceptMap.js`'in
@@ -73,9 +84,9 @@
  * `KNOWN_CONCEPTS`'te olan, doğrulanmış bir kavramdır (capturePracticePolicy.js
  * ile AYNI ilke).
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-08-29.1';
-import { BoardState } from '../core/boardState.js?v=2026-08-29.1';
-import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-08-29.1';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-09-01.1';
+import { BoardState } from '../core/boardState.js?v=2026-09-01.1';
+import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-09-01.1';
 
 const LESSON_ID = 'l4';
 const BOARD_SIZE = 9;
@@ -210,50 +221,168 @@ export function normalizeRejectedMoment(step, curriculumStepIndex, momentIndex) 
   };
 }
 
-/** `steps[1]` — "yakalama istisnası". Bkz. dosya başı not: yalnız hedef
-    hamleye yakın GERÇEK taşlar board seed'ine alınır (alt/beyaz simetrik
-    formasyon HARİÇ), doğruluğu GERÇEK `applyMove` sonucunun curriculum'un
-    kendi authored `capture` alanıyla TAM eşleştiği doğrulanarak
-    KANITLANIR. */
-function normalizeLegalCaptureMoment(step, curriculumStepIndex, momentIndex) {
+/** `'B'|'W'` (curriculum'un KENDİ authored renk kısaltması) → RuleEngine'in
+    beklediği `'black'|'white'` — TEK kanonik dönüştürücü, export edildi ki
+    scenes/scene08IllegalMoves.js (setMovePreview/playMove için) AYNI
+    fonksiyonu kullansın, KENDİ dağınık string karşılaştırmasını YAZMASIN
+    (bkz. görev talimatı Bölüm 5). `undefined`/tanınmayan girdi güvenle
+    `'black'`'a düşer (An 1 — REJECTED anlar `moveColor` alanı TAŞIMAZ,
+    curriculum'un KENDİ metnine göre HER ZAMAN siyahtır). */
+export function toRuntimeColor(c) { return c === 'W' ? 'white' : 'black'; }
+
+/** `steps[1]`'in GERÇEK `moves` dizisindeki HER formasyonu (curriculum'da
+    kaç tane VARSA — sabit "ilk/tek" varsayımı YOK) bağımsız, doğrulanmış bir
+    "yakalama istisnası" örneğine dönüştürür — curriculum'un AUTHORED
+    renkleriyle (bkz. dosya başı not: renk normalizasyonu TERK EDİLDİ). Her
+    örnek:
+      1) Yalnız o hamleye YAKIN (`|y-move.y|<=2`) GERÇEK taşları alır (diğer
+         formasyona HİÇ dokunmaz — bağımsızlığı RuleEngine'in AYNI board'da
+         iki formasyonun ortak taş PAYLAŞMADIĞINI doğrulamasıyla kanıtlanır,
+         bkz. testler). Taşların renk etiketi HİÇ DEĞİŞTİRİLMEZ.
+      2) Hamle curriculum'un KENDİ `moves[sourceIndex].color`'ıyla ('B'
+         veya 'W') GERÇEKTEN oynanır — `isValidMove`/`applyMove` authored
+         rengi alır, sahte bir 'black' varsayımı YOK.
+      3) Yakalanan taş SAYISI VE KOORDİNATLARI curriculum'un kendi authored
+         `capture` alanıyla TAM eşleştiği doğrulanır — uyuşmazsa AÇIK Error
+         (sessizce yanlış bir alt-küme KULLANILMAZ). En az 1 taş
+         yakalamıyorsa da AÇIK Error.
+      4) Yakalanan taşların board'daki ÖZGÜN (authored) rengi taranır — HEPSİ
+         AYNI (rakip) renk olmalı, varsayılmaz; tutarsızsa AÇIK Error.
+      5) Duplicate (aynı board+hedef) örnek AÇIK Error üretir — sessizce
+         yutulmaz. */
+export function deriveLegalCaptureExamples(step, curriculumStepIndex) {
   const rawMoves = Array.isArray(step.moves) ? step.moves : [];
-  const targetMove = rawMoves.find(m => m.color === 'B');
-  if (!targetMove) {
-    throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] siyah 'moves' hamlesi bulunamadı — 'legal_capture' anı bunu gerektirir`);
+  if (!rawMoves.length) {
+    throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] 'moves' dizisi boş/yok — 'legal_capture' anı GERÇEK formasyon örnekleri gerektirir`);
   }
   const size = step.size ?? BOARD_SIZE;
   const fullBoard = normalizeBoardSeed(step.board);
-  const board = fullBoard.filter(s => Math.abs(s.y - targetMove.y) <= 2);
-  const bs = seedBoardState(board, size);
-  const check = isValidMove(bs, targetMove.x, targetMove.y, 'black');
-  if (!check.valid) {
-    throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] hedef hamle (${targetMove.x},${targetMove.y}) RuleEngine'e göre yasal DEĞİL: ${check.reason} — 'legal_capture' anı yasal olmasını gerektirir`);
-  }
-  const { captured: capturedRaw } = applyMove(bs, targetMove.x, targetMove.y, 'black');
-  const capturedKeys = new Set(capturedRaw.map(c => `${c.x},${c.y}`));
-  const expectedCaptureRaw = Array.isArray(targetMove.capture) ? targetMove.capture : [];
-  const expectedKeys = new Set(expectedCaptureRaw.map(c => `${c.x},${c.y}`));
-  const matches = capturedRaw.length === expectedCaptureRaw.length
-    && [...expectedKeys].every(k => capturedKeys.has(k));
-  if (!matches) {
-    throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] GERÇEK capture sonucu curriculum'un authored 'capture' alanıyla eşleşmiyor — filtrelenmiş board seed'i (yalnız hedefe yakın formasyon) yanlış olabilir`);
-  }
+  const seenSignatures = new Set();
+  const examples = [];
+  rawMoves.forEach((mv, sourceIndex) => {
+    if (mv.color !== 'B' && mv.color !== 'W') {
+      throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] moves[${sourceIndex}] geçersiz renk: ${JSON.stringify(mv.color)}`);
+    }
+    if (!Number.isInteger(mv.x) || !Number.isInteger(mv.y)) {
+      throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] moves[${sourceIndex}] geçersiz hedef koordinatı: ${JSON.stringify(mv)}`);
+    }
+    const board = fullBoard.filter(s => Math.abs(s.y - mv.y) <= 2);
+    if (!board.length) {
+      throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] moves[${sourceIndex}] (${mv.x},${mv.y}) için hiçbir GERÇEK bağlamsal taş bulunamadı`);
+    }
+    const runtimeMoveColor = toRuntimeColor(mv.color);
+    const bs = seedBoardState(board, size);
+    const check = isValidMove(bs, mv.x, mv.y, runtimeMoveColor);
+    if (!check.valid) {
+      throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] moves[${sourceIndex}] hedef hamle (${mv.x},${mv.y}, renk:${mv.color}) RuleEngine'e göre yasal DEĞİL: ${check.reason} — 'legal_capture' örneği yasal olmasını gerektirir`);
+    }
+    const { captured: capturedRaw } = applyMove(bs, mv.x, mv.y, runtimeMoveColor);
+    if (capturedRaw.length < 1) {
+      throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] moves[${sourceIndex}] hedef hamle (${mv.x},${mv.y}) hiçbir taş YAKALAMIYOR — 'legal_capture' örneği en az bir yakalama gerektirir`);
+    }
+    const capturedKeys = new Set(capturedRaw.map(c => `${c.x},${c.y}`));
+    const expectedCaptureRaw = Array.isArray(mv.capture) ? mv.capture : [];
+    const expectedKeys = new Set(expectedCaptureRaw.map(c => `${c.x},${c.y}`));
+    const matches = capturedRaw.length === expectedCaptureRaw.length
+      && [...expectedKeys].every(k => capturedKeys.has(k));
+    if (!matches) {
+      throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] moves[${sourceIndex}] GERÇEK capture sonucu curriculum'un authored 'capture' alanıyla eşleşmiyor — filtrelenmiş board seed'i yanlış olabilir`);
+    }
+    // Yakalanan taşların board'daki ÖZGÜN (authored) rengi — varsayılmaz,
+    // taranır (bkz. görev talimatı: "authored taş renkleriyle birebir").
+    const capturedColors = new Set(capturedRaw.map(c => {
+      const orig = board.find(s => s.x === c.x && s.y === c.y);
+      return orig?.color;
+    }));
+    if (capturedColors.size !== 1 || capturedColors.has(undefined)) {
+      throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] moves[${sourceIndex}] yakalanan taşların authored rengi tutarsız/bulunamadı: ${JSON.stringify([...capturedColors])}`);
+    }
+    const capturedColor = [...capturedColors][0];
+    if (capturedColor === mv.color) {
+      throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] moves[${sourceIndex}] yakalanan taşlar hamleyle AYNI renkte (${capturedColor}) — rakip taş olmalı`);
+    }
+    const signature = `${boardSignature(board)}|target:${mv.x},${mv.y}|color:${mv.color}`;
+    if (seenSignatures.has(signature)) {
+      throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] moves[${sourceIndex}] ÖNCEKİ bir örnekle DUPLICATE (aynı board+hedef+renk) — sessizce yutulmadı`);
+    }
+    seenSignatures.add(signature);
+    examples.push({
+      sourceIndex,
+      board, // authored renklerle, HİÇ DEĞİŞTİRİLMEDEN
+      size,
+      targetPoint: { row: mv.y, col: mv.x }, // runtime (row,col) — row=y, col=x
+      targetPointXY: { x: mv.x, y: mv.y }, // authored (x,y), curriculum'un KENDİ eksen adlandırması
+      moveColor: mv.color, // 'B'|'W' — authored, DÖNÜŞTÜRÜLMEDİ
+      capturedColor, // 'B'|'W' — GERÇEK yakalanan taşlardan türetildi
+      cameraPreset: cameraPresetName(step.camera),
+      expectedCapturedCount: capturedRaw.length,
+      assessmentConcept: CONCEPT,
+      resultConcept: 'capture',
+    });
+  });
+  return examples;
+}
+
+/** `steps[1]` — "yakalama istisnası". `legalCaptureExamples`'daki HER GERÇEK
+    formasyon örneği (bkz. deriveLegalCaptureExamples) korunur; tek bir
+    "ilk/tek örnek" özetine İNDİRGENMEZ (bkz. görev talimatı: "ikinci anı
+    bütün curriculum örneklerine dönüştür"). Sahne katmanı bu momenti
+    `resolveCaptureExampleMoment()` ile TEK-örnek "çözümlenmiş" bir görünüme
+    çevirip render/etkileşim eder (bkz. scenes/scene08IllegalMoves.js) —
+    policy KENDİSİ hangi örneğin "aktif" olduğunu BİLMEZ/TUTMAZ
+    (durum-bilgisiz kalır, dosya başı ilkeyle AYNI). */
+function normalizeLegalCaptureMoment(step, curriculumStepIndex, momentIndex) {
+  const legalCaptureExamples = deriveLegalCaptureExamples(step, curriculumStepIndex);
   return {
     momentIndex,
     curriculumStepIndex,
     kind: MOMENT_KINDS.LEGAL_CAPTURE,
-    board,
-    size,
-    cameraPreset: cameraPresetName(step.camera),
     promptText: step.text,
-    targetPoints: [{ row: targetMove.y, col: targetMove.x }],
-    expectedReason: null,
-    expectedCapturedCount: capturedRaw.length,
     assessmentConcept: CONCEPT,
     // Alan adı KASITLI olarak capturePracticePolicy.js/capturePolicy.js'in
     // moment-seviyesi `expectedResultConcept`'iyle AYNI (event payload'ının
     // KENDİ `resultConcept` alanından AYRI — bkz. scenes/scene08IllegalMoves.js).
+    // TÜM örnekler için AYNI ('capture') — kolaylık alanı, examples[i]'de de var.
     expectedResultConcept: 'capture',
+    legalCaptureExamples,
+  };
+}
+
+/** `moment.legalCaptureExamples[exampleIndex]`'i, ESKİ tek-hedef moment
+    şekliyle (board/size/cameraPreset/targetPoints/expectedCapturedCount/
+    expectedResultConcept) AYNI alan adlarını taşıyan bir "çözümlenmiş"
+    görünüme çevirir — `evaluateAttempt`/`boardSignature` gibi mevcut TÜM
+    fonksiyonlar DEĞİŞMEDEN bu görünüm üzerinde çalışabilir (bkz. görev
+    talimatı: "Alan adlarını mevcut stile göre seç"). `exampleIndex`/
+    `exampleCount`/`sourceIndex`/`moveColor`/`capturedColor`/
+    `targetPointXY` sahne katmanının progress/event/preview alanları için
+    EKLENİR — `moveColor` ('B'|'W') `evaluateAttempt`'in HANGİ rengi
+    oynatacağını da belirler (bkz. aşağıda). */
+export function resolveCaptureExampleMoment(moment, exampleIndex) {
+  const examples = moment.legalCaptureExamples;
+  const ex = examples[exampleIndex];
+  if (!ex) {
+    throw new Error(`illegalMovePolicy: geçersiz legalCaptureExamples index'i: ${exampleIndex} (toplam: ${examples.length})`);
+  }
+  return {
+    momentIndex: moment.momentIndex,
+    curriculumStepIndex: moment.curriculumStepIndex,
+    kind: moment.kind,
+    board: ex.board,
+    size: ex.size,
+    cameraPreset: ex.cameraPreset,
+    promptText: moment.promptText,
+    targetPoints: [ex.targetPoint],
+    targetPointXY: ex.targetPointXY,
+    expectedReason: null,
+    expectedCapturedCount: ex.expectedCapturedCount,
+    assessmentConcept: ex.assessmentConcept,
+    expectedResultConcept: ex.resultConcept,
+    sourceIndex: ex.sourceIndex,
+    exampleIndex,
+    exampleCount: examples.length,
+    moveColor: ex.moveColor,
+    capturedColor: ex.capturedColor,
   };
 }
 
@@ -263,14 +392,16 @@ function normalizeMoment(step, curriculumStepIndex, momentIndex) {
   if (Array.isArray(step.forbidden) && step.forbidden.length) {
     return normalizeRejectedMoment(step, curriculumStepIndex, momentIndex);
   }
-  if (Array.isArray(step.moves) && step.moves.some(m => m.color === 'B')) {
+  if (Array.isArray(step.moves) && step.moves.length) {
     return normalizeLegalCaptureMoment(step, curriculumStepIndex, momentIndex);
   }
-  throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] ne 'forbidden' ne siyah içeren 'moves' taşıyor — bilinen iki an türünden hiçbiriyle eşleşmiyor`);
+  throw new Error(`illegalMovePolicy: steps[${curriculumStepIndex}] ne 'forbidden' ne 'moves' taşıyor — bilinen iki an türünden hiçbiriyle eşleşmiyor`);
 }
 
 /** İki anı curriculum'daki GERÇEK sırayla, normalize edilmiş biçimde
-    döner. */
+    döner. `legal_capture` anı KENDİ İÇİNDE `legalCaptureExamples[]`
+    taşır — sahne katmanı bunları `resolveCaptureExampleMoment()` ile
+    tek tek "çözümler" (bkz. yukarıdaki not). */
 export function getIllegalMoveMoments() {
   const lesson = getLesson();
   return MOMENT_STEP_INDICES.map((idx, i) => normalizeMoment(lesson.steps[idx], idx, i));
@@ -300,19 +431,24 @@ export function pointKey(point) {
  * eder (core/ruleEngine.js isValidMove/applyMove) — koordinat
  * KARŞILAŞTIRMASI DEĞİL. Hem curriculum hedefi hem hedef-dışı herhangi bir
  * gerçek kesişim için çağrılabilir (bkz. görev talimatı Bölüm 9: "gerçek
- * reason analiz edilebilir").
+ * reason analiz edilebilir"). Hangi RENGİN oynadığı `moment.moveColor`'dan
+ * (bkz. resolveCaptureExampleMoment) gelir — REJECTED anlar (An 1) bu
+ * alanı HİÇ TAŞIMAZ, `toRuntimeColor(undefined)` güvenle `'black'`'a
+ * düşer (An 1 curriculum'un KENDİ metnine göre HER ZAMAN siyahtır,
+ * davranış DEĞİŞMEDİ).
  * @param {object} moment
  * @param {{row:number,col:number}} point
  * @returns {{legal:boolean, reason:string|null, captured:Array<{row:number,col:number}>, capturedCount:number, isCurriculumTarget:boolean}}
  */
 export function evaluateAttempt(moment, point) {
   const bs = seedBoardState(moment.board, moment.size);
-  const check = isValidMove(bs, point.col, point.row, 'black');
+  const runtimeColor = toRuntimeColor(moment.moveColor);
+  const check = isValidMove(bs, point.col, point.row, runtimeColor);
   const isCurriculumTarget = isTargetPoint(moment, point);
   if (!check.valid) {
     return { legal: false, reason: check.reason, captured: [], capturedCount: 0, isCurriculumTarget };
   }
-  const { captured: capturedRaw } = applyMove(bs, point.col, point.row, 'black');
+  const { captured: capturedRaw } = applyMove(bs, point.col, point.row, runtimeColor);
   const captured = capturedRaw.map(c => ({ row: c.y, col: c.x }));
   return { legal: true, reason: null, captured, capturedCount: captured.length, isCurriculumTarget };
 }

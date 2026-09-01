@@ -12,6 +12,7 @@ import {
   MOMENT_STEP_INDICES, MOMENT_COUNT, MOMENT_KINDS, CONCEPT,
   getIllegalMoveMoments, normalizeBoardSeed, isTargetPoint, evaluateAttempt,
   boardSignature, reasonLabelTr, isKnownMomentKind, pointKey, normalizeRejectedMoment,
+  deriveLegalCaptureExamples, resolveCaptureExampleMoment, toRuntimeColor,
 } from '../scenes/illegalMovePolicy.js';
 import { CURRICULUM } from '../core/curriculum.js';
 import { BoardState } from '../core/boardState.js';
@@ -112,36 +113,209 @@ test('An 1: board seed curriculum\'un TAM 14 taşlı board\'uyla BİREBİR aynı
   equal(m0.board.length, 14);
 });
 
-test('An 2: hedef nokta curriculum\'un KENDİ ham moves[0] (siyah) hamlesiyle BİREBİR aynı', () => {
+test('An 2: legalCaptureExamples curriculum\'un GERÇEK moves[] dizisindeki HER hedefi (2) — yalnız İLK/siyah hamle DEĞİL (bkz. v3 revizyonu: alt/beyaz formasyon artık SESSİZCE ATLANMIYOR)', () => {
   const moments = getIllegalMoveMoments();
   const m1 = moments[1];
-  const rawTarget = l4.steps[1].moves.find(mv => mv.color === 'B');
-  equal(m1.targetPoints, [{ row: rawTarget.y, col: rawTarget.x }]);
+  equal(m1.legalCaptureExamples.length, l4.steps[1].moves.length);
+  equal(m1.legalCaptureExamples.length, 2);
+  const rawTargets = l4.steps[1].moves.map(mv => ({ row: mv.y, col: mv.x }));
+  const resolvedTargets = m1.legalCaptureExamples.map((_, i) => resolveCaptureExampleMoment(m1, i).targetPoints[0]);
+  equal(resolvedTargets, rawTargets);
 });
 
-test('An 2: hedef hamle bağımsız core/ruleEngine.js ile GERÇEKTEN yasal ve curriculum\'un authored capture listesiyle BİREBİR eşleşen 5 taşı yakalıyor', () => {
+test('An 2: HER örnek (sourceIndex 0 VE 1) KENDİ AUTHORED renginde bağımsız core/ruleEngine.js ile GERÇEKTEN yasal ve curriculum\'un authored capture listesiyle BİREBİR eşleşen 5 taşı yakalıyor', () => {
   const moments = getIllegalMoveMoments();
   const m1 = moments[1];
-  const bs = seedBoard(m1.board, m1.size);
-  const target = m1.targetPoints[0];
-  const check = isValidMove(bs, target.col, target.row, 'black');
+  m1.legalCaptureExamples.forEach((ex, i) => {
+    const resolved = resolveCaptureExampleMoment(m1, i);
+    const bs = seedBoard(resolved.board, resolved.size);
+    const target = resolved.targetPoints[0];
+    const runtimeColor = toRuntimeColor(resolved.moveColor);
+    const check = isValidMove(bs, target.col, target.row, runtimeColor);
+    equal(check.valid, true, `örnek ${i} (renk:${resolved.moveColor}) yasal ÇIKMALI`);
+    const { captured } = applyMove(bs, target.col, target.row, runtimeColor);
+    equal(captured.length, 5, `örnek ${i} 5 taş yakalamalı`);
+    const rawMove = l4.steps[1].moves[ex.sourceIndex];
+    const capturedKeys = new Set(captured.map(c => `${c.x},${c.y}`));
+    for (const c of rawMove.capture) {
+      ok(capturedKeys.has(`${c.x},${c.y}`), `örnek ${i}: curriculum'un authored capture noktası (${c.x},${c.y}) GERÇEK sonuçta yok`);
+    }
+    equal(resolved.expectedCapturedCount, 5, `örnek ${i}`);
+    equal(resolved.expectedResultConcept, 'capture', `örnek ${i}`);
+  });
+});
+
+test('An 2: HER örnek board seed\'i YALNIZ KENDİ formasyonunu içerir — sourceIndex 0 (üst, y<=2) İLE sourceIndex 1 (alt, y>=6) HİÇ TAŞ PAYLAŞMAZ', () => {
+  const moments = getIllegalMoveMoments();
+  const m1 = moments[1];
+  const ex0 = resolveCaptureExampleMoment(m1, 0);
+  const ex1 = resolveCaptureExampleMoment(m1, 1);
+  ok(ex0.board.every(s => s.y <= 2), 'örnek 0 (üst) board seedinde y>2 taş OLMAMALI');
+  ok(ex1.board.every(s => s.y >= 6), 'örnek 1 (alt) board seedinde y<6 taş OLMAMALI');
+  equal(ex0.board.length, 12);
+  equal(ex1.board.length, 12);
+  const keys0 = new Set(ex0.board.map(s => `${s.x},${s.y}`));
+  const keys1 = new Set(ex1.board.map(s => `${s.x},${s.y}`));
+  for (const k of keys0) ok(!keys1.has(k), `örnek 0/1 ORTAK taş paylaşıyor: ${k}`);
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   AUTHORED RENK KORUNUMU (bkz. görev talimatı Bölüm 13, 20 madde) —
+   renk normalizasyonu TERK EDİLDİ: her örnek curriculum'da yazıldığı
+   GERÇEK renklerle çalışır.
+   ══════════════════════════════════════════════════════════════════ */
+
+test('1) İki legal-capture örneği vardır', () => {
+  const [, m1] = getIllegalMoveMoments();
+  equal(m1.legalCaptureExamples.length, 2);
+});
+
+test('2) sourceIndex\'ler 0,1', () => {
+  const [, m1] = getIllegalMoveMoments();
+  equal(m1.legalCaptureExamples.map(e => e.sourceIndex), [0, 1]);
+});
+
+test('3) Örnek 0 authored moveColor SİYAH (\'B\')', () => {
+  const [, m1] = getIllegalMoveMoments();
+  equal(m1.legalCaptureExamples[0].moveColor, 'B');
+  equal(l4.steps[1].moves[0].color, 'B'); // curriculum'un KENDİ verisiyle çapraz doğrulama
+});
+
+test('4) Örnek 1 authored moveColor BEYAZ (\'W\') — renk-ters-çevirme YOK', () => {
+  const [, m1] = getIllegalMoveMoments();
+  equal(m1.legalCaptureExamples[1].moveColor, 'W');
+  equal(l4.steps[1].moves[1].color, 'W'); // curriculum'un KENDİ verisiyle çapraz doğrulama
+});
+
+test('5) Örnek 0 board renkleri curriculum ile BİREBİR (üst formasyon: 5 beyaz hedef + 7 siyah duvar)', () => {
+  const [, m1] = getIllegalMoveMoments();
+  const ex0 = m1.legalCaptureExamples[0];
+  const rawNear = l4.steps[1].board.filter(s => Math.abs(s.y - l4.steps[1].moves[0].y) <= 2);
+  const sig = arr => arr.map(s => `${s.color}${s.x},${s.y}`).sort().join('|');
+  equal(sig(ex0.board), sig(rawNear));
+  equal(ex0.board.filter(s => s.color === 'W').length, 5);
+  equal(ex0.board.filter(s => s.color === 'B').length, 7);
+});
+
+test('6) Örnek 1 board renkleri curriculum ile BİREBİR (alt formasyon: 7 beyaz duvar + 5 siyah hedef) — RENK TERS ÇEVRİLMEMİŞ', () => {
+  const [, m1] = getIllegalMoveMoments();
+  const ex1 = m1.legalCaptureExamples[1];
+  const rawNear = l4.steps[1].board.filter(s => Math.abs(s.y - l4.steps[1].moves[1].y) <= 2);
+  const sig = arr => arr.map(s => `${s.color}${s.x},${s.y}`).sort().join('|');
+  equal(sig(ex1.board), sig(rawNear));
+  equal(ex1.board.filter(s => s.color === 'W').length, 7);
+  equal(ex1.board.filter(s => s.color === 'B').length, 5);
+});
+
+test('7) Hiçbir örnekte color inversion YOK — `colorInverted`/`invertStoneColor` policy\'de mevcut DEĞİL', () => {
+  const [, m1] = getIllegalMoveMoments();
+  ok(!('colorInverted' in m1.legalCaptureExamples[0]));
+  ok(!('colorInverted' in m1.legalCaptureExamples[1]));
+  const src = deriveLegalCaptureExamples.toString();
+  ok(!/invertStoneColor|colorInverted/.test(src), 'deriveLegalCaptureExamples kaynağında renk-ters-çevirme kalıntısı OLMAMALI');
+});
+
+test('8) Örnek 0 hedef x/y → row/col dönüşümü doğru (row=y, col=x)', () => {
+  const [, m1] = getIllegalMoveMoments();
+  const ex0 = m1.legalCaptureExamples[0];
+  equal(ex0.targetPointXY, { x: 4, y: 0 });
+  equal(ex0.targetPoint, { row: 0, col: 4 });
+});
+
+test('9) Örnek 1 hedef x/y → row/col dönüşümü doğru (row=y, col=x)', () => {
+  const [, m1] = getIllegalMoveMoments();
+  const ex1 = m1.legalCaptureExamples[1];
+  equal(ex1.targetPointXY, { x: 4, y: 8 });
+  equal(ex1.targetPoint, { row: 8, col: 4 });
+});
+
+test('10) Örnek 0 hamlesi legal (GERÇEK RuleEngine, authored siyah rengiyle)', () => {
+  const [, m1] = getIllegalMoveMoments();
+  const resolved = resolveCaptureExampleMoment(m1, 0);
+  const bs = seedBoard(resolved.board, resolved.size);
+  const check = isValidMove(bs, resolved.targetPoints[0].col, resolved.targetPoints[0].row, toRuntimeColor(resolved.moveColor));
   equal(check.valid, true);
-  const { captured } = applyMove(bs, target.col, target.row, 'black');
-  equal(captured.length, 5);
-  const rawTarget = l4.steps[1].moves.find(mv => mv.color === 'B');
-  const capturedKeys = new Set(captured.map(c => `${c.x},${c.y}`));
-  for (const c of rawTarget.capture) {
-    ok(capturedKeys.has(`${c.x},${c.y}`), `curriculum'un authored capture noktası (${c.x},${c.y}) GERÇEK sonuçta yok`);
-  }
-  equal(m1.expectedCapturedCount, 5);
-  equal(m1.expectedResultConcept, 'capture');
 });
 
-test('An 2: board seed YALNIZ üst (siyah/kullanıcı) formasyonu içerir — alt (beyaz) simetrik formasyon YOK', () => {
-  const moments = getIllegalMoveMoments();
-  const m1 = moments[1];
-  ok(m1.board.every(s => s.y <= 2), 'An 2 board seedinde y>2 (alt formasyon) taş OLMAMALI');
-  equal(m1.board.length, 12);
+test("11) Örnek 1 hamlesi legal (GERÇEK RuleEngine, authored BEYAZ rengiyle — 'black' varsayılmadan)", () => {
+  const [, m1] = getIllegalMoveMoments();
+  const resolved = resolveCaptureExampleMoment(m1, 1);
+  equal(toRuntimeColor(resolved.moveColor), 'white');
+  const bs = seedBoard(resolved.board, resolved.size);
+  const check = isValidMove(bs, resolved.targetPoints[0].col, resolved.targetPoints[0].row, 'white');
+  equal(check.valid, true);
+});
+
+test('12) Örnek 0, 5 BEYAZ taş yakalar (capturedColor:\'W\')', () => {
+  const [, m1] = getIllegalMoveMoments();
+  const ex0 = m1.legalCaptureExamples[0];
+  equal(ex0.capturedColor, 'W');
+  equal(ex0.expectedCapturedCount, 5);
+});
+
+test('13) Örnek 1, 5 SİYAH taş yakalar (capturedColor:\'B\')', () => {
+  const [, m1] = getIllegalMoveMoments();
+  const ex1 = m1.legalCaptureExamples[1];
+  equal(ex1.capturedColor, 'B');
+  equal(ex1.expectedCapturedCount, 5);
+});
+
+test('14) Her iki örnekte DOĞRU taş rengi board\'da kalır (yeni yerleşen taş authored moveColor\'ıyla AYNI, GERÇEK applyMove sonrası)', () => {
+  const [, m1] = getIllegalMoveMoments();
+  m1.legalCaptureExamples.forEach((ex, i) => {
+    const resolved = resolveCaptureExampleMoment(m1, i);
+    const bs = seedBoard(resolved.board, resolved.size);
+    const runtimeColor = toRuntimeColor(resolved.moveColor);
+    const { newState } = applyMove(bs, resolved.targetPoints[0].col, resolved.targetPoints[0].row, runtimeColor);
+    const placedColor = newState.colorAt(resolved.targetPoints[0].col, resolved.targetPoints[0].row);
+    equal(placedColor, runtimeColor, `örnek ${i}: yerleşen taş ${runtimeColor} olmalı`);
+  });
+});
+
+test('15) Her iki örnekte resultConcept \'capture\'', () => {
+  const [, m1] = getIllegalMoveMoments();
+  for (const ex of m1.legalCaptureExamples) equal(ex.resultConcept, 'capture');
+});
+
+test('16) Policy seed\'i mutate ETMEZ (renk normalizasyonu KALDIRILDIKTAN SONRA da AYNI disiplin)', () => {
+  const [, m1] = getIllegalMoveMoments();
+  m1.legalCaptureExamples.forEach((ex, i) => {
+    const before = boardSignature(ex.board);
+    const resolved = resolveCaptureExampleMoment(m1, i);
+    evaluateAttempt(resolved, resolved.targetPoints[0]);
+    equal(boardSignature(ex.board), before, `örnek ${i}: board seed DEĞİŞMEMELİ`);
+  });
+});
+
+test('17) Örnek sırası deterministik (art arda iki çağrı AYNI sourceIndex/moveColor sırasını üretir)', () => {
+  const a = getIllegalMoveMoments()[1].legalCaptureExamples;
+  const b = getIllegalMoveMoments()[1].legalCaptureExamples;
+  equal(a.map(e => [e.sourceIndex, e.moveColor]), b.map(e => [e.sourceIndex, e.moveColor]));
+});
+
+test('18) Eksik/invalid moveColor issue üretir (deriveLegalCaptureExamples AÇIK Error fırlatır)', () => {
+  const step = { text: 'test', size: 9, board: [], moves: [{ color: 'X', x: 4, y: 4, capture: [] }] };
+  throws(() => deriveLegalCaptureExamples(step, 1), /geçersiz renk/);
+});
+
+test('19) Authored renk ile runtime renk farklıysa issue üretir (sentetik: yakalanan taş hamleyle AYNI renkte olursa Error)', () => {
+  // (4,4) beyaz — SİYAH oynarsa GERÇEKTE yasal DEĞİL (intihar), bu yüzden
+  // yerine GERÇEKTEN capture yapan ama "capture" alanı BİLEREK YANLIŞ
+  // authored bir senaryo kullanılır — GERÇEK sonuç authored'la eşleşmez.
+  const step = {
+    text: 'test', size: 9,
+    board: [{ color: 'W', x: 6, y: 1 }, { color: 'B', x: 5, y: 1 }, { color: 'B', x: 7, y: 1 }, { color: 'B', x: 6, y: 0 }],
+    moves: [{ color: 'B', x: 6, y: 2, capture: [{ x: 9, y: 9 }] }], // GERÇEKTE (6,1) yakalanır, authored liste YANLIŞ
+  };
+  throws(() => deriveLegalCaptureExamples(step, 1), /authored 'capture' alanıyla eşleşmiyor/);
+});
+
+test('20) Event metadata için gerekli renkler policy\'den doğru okunur (resolveCaptureExampleMoment moveColor/capturedColor taşır — sahne bunları event payload\'ına DOĞRUDAN kopyalar)', () => {
+  const [, m1] = getIllegalMoveMoments();
+  const resolved0 = resolveCaptureExampleMoment(m1, 0);
+  const resolved1 = resolveCaptureExampleMoment(m1, 1);
+  equal(resolved0.moveColor, 'B'); equal(resolved0.capturedColor, 'W');
+  equal(resolved1.moveColor, 'W'); equal(resolved1.capturedColor, 'B');
 });
 
 test('assessmentConcept HER İKİ anda "forbidden_move" — export edilen CONCEPT sabitiyle AYNI', () => {
@@ -249,25 +423,33 @@ test('evaluateAttempt: An 1 hedef-dışı DOLU bir kesişim → legal:false, rea
   equal(result.isCurriculumTarget, false);
 });
 
-test('17/18/19) An 2 hedef noktası → legal:true, capturedCount:5, isCurriculumTarget:true, resultConcept "capture" (An 1\'in çoklu-hedef mekanizması SIZMADI — TEK hedef kalır)', () => {
+test('17/18/19) An 2 HER örneğin (çözümlenmiş) hedef noktası → legal:true, capturedCount:5, isCurriculumTarget:true, resultConcept "capture" (An 1\'in çoklu-hedef mekanizması SIZMADI — HER örnek TEK hedef taşır)', () => {
   const moments = getIllegalMoveMoments();
   const m1 = moments[1];
-  equal(m1.targetPoints.length, 1, 'An 2 TEK hedef olmalı');
-  const result = evaluateAttempt(m1, m1.targetPoints[0]);
-  equal(result.legal, true);
-  equal(result.capturedCount, 5);
-  equal(result.isCurriculumTarget, true);
-  equal(m1.expectedResultConcept, 'capture');
+  m1.legalCaptureExamples.forEach((ex, i) => {
+    const resolved = resolveCaptureExampleMoment(m1, i);
+    equal(resolved.targetPoints.length, 1, `örnek ${i}: TEK hedef olmalı`);
+    const result = evaluateAttempt(resolved, resolved.targetPoints[0]);
+    equal(result.legal, true, `örnek ${i}`);
+    equal(result.capturedCount, 5, `örnek ${i}`);
+    equal(result.isCurriculumTarget, true, `örnek ${i}`);
+    equal(resolved.expectedResultConcept, 'capture', `örnek ${i}`);
+  });
 });
 
-test('20) evaluateAttempt: moment.board ASLA mutate edilmez — art arda iki farklı deneme sonrası board signature AYNI kalır', () => {
+test('20) evaluateAttempt: moment.board ASLA mutate edilmez — art arda iki farklı deneme sonrası board signature AYNI kalır (An 1 + An 2\'nin HER örneği)', () => {
   const moments = getIllegalMoveMoments();
   for (const m of moments) {
-    const before = boardSignature(m.board);
-    evaluateAttempt(m, m.targetPoints[0]);
-    evaluateAttempt(m, { row: 8, col: 0 });
-    const after = boardSignature(m.board);
-    equal(after, before, `step=${m.curriculumStepIndex}: moment.board DEĞİŞMEMELİ`);
+    const resolvedList = m.kind === MOMENT_KINDS.LEGAL_CAPTURE
+      ? m.legalCaptureExamples.map((_, i) => resolveCaptureExampleMoment(m, i))
+      : [m];
+    for (const r of resolvedList) {
+      const before = boardSignature(r.board);
+      evaluateAttempt(r, r.targetPoints[0]);
+      evaluateAttempt(r, { row: 8, col: 0 });
+      const after = boardSignature(r.board);
+      equal(after, before, `step=${r.curriculumStepIndex}: moment.board DEĞİŞMEMELİ`);
+    }
   }
 });
 
@@ -381,6 +563,134 @@ test('EDGE: normalizeRejectedMoment — forbidden noktası GERÇEKTE yasalsa (cu
 test('EDGE: normalizeRejectedMoment — forbidden noktası dolu bir kesişimi işaret ederse (reason SUICIDE değil, OCCUPIED) açık Error fırlatır', () => {
   const step = { text: 'test', size: 9, board: [{ color: 'W', x: 4, y: 4 }], forbidden: [{ x: 4, y: 4 }] }; // hedefin KENDİSİ dolu
   throws(() => normalizeRejectedMoment(step, 0, 0), /beklenmeyen reddetme nedeni/);
+});
+
+/* ── deriveLegalCaptureExamples (export edildi — bkz. görev talimatı Bölüm
+   14: "eksik formasyon issue üretiyor", "capture yapmayan örnek issue
+   üretiyor", "bir örnek sessizce filtrelenemiyor"). İKİ BAĞIMSIZ (y=0-2 VE
+   y=6-8, curriculum'un GERÇEK yerleşimiyle AYNI ilke — bkz. dosya başı
+   not) sentetik formasyon kullanır: her ikisi de tek-taş atari yakalaması,
+   GERÇEK isValidMove/applyMove ile bağımsızca doğrulanabilir. ── */
+const TWO_ZONE_CAPTURE_BOARD = [
+  { color: 'W', x: 6, y: 1 }, { color: 'B', x: 5, y: 1 }, { color: 'B', x: 7, y: 1 }, { color: 'B', x: 6, y: 0 },
+  { color: 'W', x: 6, y: 7 }, { color: 'B', x: 5, y: 7 }, { color: 'B', x: 7, y: 7 }, { color: 'B', x: 6, y: 8 },
+];
+const TWO_ZONE_CAPTURE_MOVES = [
+  { color: 'B', x: 6, y: 2, capture: [{ x: 6, y: 1 }] },
+  { color: 'B', x: 6, y: 6, capture: [{ x: 6, y: 7 }] },
+];
+
+test('21) deriveLegalCaptureExamples: gerçek curriculum örnek sayısı doğru (l4.steps[1].moves.length ile BİREBİR) VE bütün sourceIndex\'ler korunur — hiçbir örnek sessizce filtrelenmez', () => {
+  const step = { text: 'test', size: 9, board: TWO_ZONE_CAPTURE_BOARD, moves: TWO_ZONE_CAPTURE_MOVES };
+  const examples = deriveLegalCaptureExamples(step, 1);
+  equal(examples.length, 2);
+  equal(examples.map(e => e.sourceIndex), [0, 1]);
+});
+
+test('22) deriveLegalCaptureExamples: örnek SIRASI deterministik — art arda iki çağrı AYNI sırayı üretir', () => {
+  const step = { text: 'test', size: 9, board: TWO_ZONE_CAPTURE_BOARD, moves: TWO_ZONE_CAPTURE_MOVES };
+  const a = deriveLegalCaptureExamples(step, 1);
+  const b = deriveLegalCaptureExamples(step, 1);
+  equal(a.map(e => e.targetPoint), b.map(e => e.targetPoint));
+});
+
+test('23) deriveLegalCaptureExamples: HER örneğin board seed\'i geçerli, hedefi tahta içinde VE boş, hamlesi GERÇEKTEN yasal, GERÇEKTEN capture yapıyor, capturedCount doğru', () => {
+  const step = { text: 'test', size: 9, board: TWO_ZONE_CAPTURE_BOARD, moves: TWO_ZONE_CAPTURE_MOVES };
+  const examples = deriveLegalCaptureExamples(step, 1);
+  for (const ex of examples) {
+    const bs = seedBoard(ex.board, ex.size);
+    ok(bs.isInBounds(ex.targetPoint.col, ex.targetPoint.row), 'hedef tahta içinde olmalı');
+    ok(!bs.isOccupied(ex.targetPoint.col, ex.targetPoint.row), 'hedef boş olmalı');
+    const check = isValidMove(bs, ex.targetPoint.col, ex.targetPoint.row, 'black');
+    equal(check.valid, true);
+    const { captured } = applyMove(bs, ex.targetPoint.col, ex.targetPoint.row, 'black');
+    equal(captured.length, 1);
+    equal(ex.expectedCapturedCount, 1);
+    equal(ex.resultConcept, 'capture');
+  }
+});
+
+test('24) deriveLegalCaptureExamples: policy hiçbir seed\'i mutate ETMEZ — iki örneği art arda değerlendirmek board imzalarını DEĞİŞTİRMEZ', () => {
+  const step = { text: 'test', size: 9, board: TWO_ZONE_CAPTURE_BOARD, moves: TWO_ZONE_CAPTURE_MOVES };
+  const examples = deriveLegalCaptureExamples(step, 1);
+  const sigsBefore = examples.map(e => boardSignature(e.board));
+  for (const ex of examples) {
+    const bs = seedBoard(ex.board, ex.size);
+    applyMove(bs, ex.targetPoint.col, ex.targetPoint.row, 'black'); // bs kendi KOPYASI — ex.board'a dokunmaz
+  }
+  const sigsAfter = examples.map(e => boardSignature(e.board));
+  equal(sigsAfter, sigsBefore);
+});
+
+test('25) deriveLegalCaptureExamples: örneklerin BAĞIMSIZLIĞI — sırayı TERSİNE çevirmek (örnek1 önce değerlendirilse) SONUCU DEĞİŞTİRMEZ (iki hamle sırasıyla doğrulama)', () => {
+  const step = { text: 'test', size: 9, board: TWO_ZONE_CAPTURE_BOARD, moves: TWO_ZONE_CAPTURE_MOVES };
+  const examples = deriveLegalCaptureExamples(step, 1);
+  const evalInOrder = (order) => order.map(i => {
+    const ex = examples[i];
+    const bs = seedBoard(ex.board, ex.size);
+    const { captured } = applyMove(bs, ex.targetPoint.col, ex.targetPoint.row, 'black');
+    return captured.length;
+  });
+  equal(evalInOrder([0, 1]), evalInOrder([1, 0]), 'sıra SONUCU etkilememeli — örnekler bağımsız');
+});
+
+test('26) deriveLegalCaptureExamples: "moves" dizisi boş/yok → açık Error (eksik formasyon SESSİZCE geçilmez)', () => {
+  const step = { text: 'test', size: 9, board: [], moves: [] };
+  throws(() => deriveLegalCaptureExamples(step, 1), /'moves' dizisi boş\/yok/);
+});
+
+test('27) deriveLegalCaptureExamples: hedef hamle GERÇEKTE yasal DEĞİLSE (SUICIDE) açık Error fırlatır', () => {
+  // (4,4) dört siyahla çevrili boş nokta — beyaz oynarsa GERÇEK intihar (yakalama YOK).
+  const step = {
+    text: 'test', size: 9,
+    board: [{ color: 'B', x: 4, y: 3 }, { color: 'B', x: 3, y: 4 }, { color: 'B', x: 5, y: 4 }, { color: 'B', x: 4, y: 5 }],
+    moves: [{ color: 'W', x: 4, y: 4, capture: [] }],
+  };
+  throws(() => deriveLegalCaptureExamples(step, 1), /yasal DEĞİL/);
+});
+
+test('28) deriveLegalCaptureExamples: hedef hamle yasal AMA hiçbir taş YAKALAMIYORSA açık Error fırlatır ("legal_capture" en az bir yakalama gerektirir)', () => {
+  const step = {
+    text: 'test', size: 9,
+    // (0,4) uzak, İLGİSİZ bir beyaz taş — yalnız "bağlamsal taş VAR" koşulunu
+    // sağlamak için (bkz. deriveLegalCaptureExamples "hiçbir GERÇEK bağlamsal
+    // taş bulunamadı" ön koşulu), hedefe KOMŞU DEĞİL, yakalanmaz.
+    board: [{ color: 'W', x: 0, y: 4 }],
+    moves: [{ color: 'B', x: 4, y: 4, capture: [] }], // normal hamle — capture YOK
+  };
+  throws(() => deriveLegalCaptureExamples(step, 1), /hiçbir taş YAKALAMIYOR/);
+});
+
+test('29) deriveLegalCaptureExamples: GERÇEK capture sonucu curriculum\'un authored "capture" alanıyla eşleşmiyorsa açık Error fırlatır (yanlış/eksik authored liste sessizce KABUL edilmez)', () => {
+  const step = {
+    text: 'test', size: 9,
+    board: TWO_ZONE_CAPTURE_BOARD,
+    moves: [{ color: 'B', x: 6, y: 2, capture: [{ x: 9, y: 9 }] }], // GERÇEKTE (6,1) yakalanıyor, authored liste YANLIŞ
+  };
+  throws(() => deriveLegalCaptureExamples(step, 1), /authored 'capture' alanıyla eşleşmiyor/);
+});
+
+test('30) deriveLegalCaptureExamples: duplicate (aynı board+hedef) örnek açık Error fırlatır — sessizce yutulmaz', () => {
+  const step = {
+    text: 'test', size: 9,
+    board: [{ color: 'W', x: 6, y: 1 }, { color: 'B', x: 5, y: 1 }, { color: 'B', x: 7, y: 1 }, { color: 'B', x: 6, y: 0 }],
+    moves: [
+      { color: 'B', x: 6, y: 2, capture: [{ x: 6, y: 1 }] },
+      { color: 'B', x: 6, y: 2, capture: [{ x: 6, y: 1 }] }, // BİREBİR aynı hedef+formasyon tekrar
+    ],
+  };
+  throws(() => deriveLegalCaptureExamples(step, 1), /DUPLICATE/);
+});
+
+test('31) deriveLegalCaptureExamples: geçersiz renk (ne B ne W) açık Error fırlatır', () => {
+  const step = { text: 'test', size: 9, board: [], moves: [{ color: 'X', x: 4, y: 4, capture: [] }] };
+  throws(() => deriveLegalCaptureExamples(step, 1), /geçersiz renk/);
+});
+
+test('32) resolveCaptureExampleMoment: geçersiz exampleIndex açık Error fırlatır (sessizce undefined DÖNMEZ)', () => {
+  const moments = getIllegalMoveMoments();
+  const m1 = moments[1];
+  throws(() => resolveCaptureExampleMoment(m1, 99), /geçersiz legalCaptureExamples index/);
 });
 
 test('EDGE: evaluateAttempt — tahta dışı bir "answer" noktası OUT_OF_BOUNDS ile güvenle reddedilir (çökme YOK)', () => {

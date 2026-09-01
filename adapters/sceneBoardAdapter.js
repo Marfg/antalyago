@@ -44,12 +44,39 @@
  *   board.isOccupied({row,col});       // GERÇEK BoardState'ten — o kesişimde taş var mı (bkz. v0.18)
  *   board.showIllegalMoves(points);    // ÇOKLU kehribar-kırmızı halka/çarpı — TAM listeyi DEĞİŞTİRİR (bkz. v0.19)
  *   board.clearIllegalMoves();
- *   board.showIllegalHints(points);    // "ipucu" — ince, kesikli, düşük yoğunluklu halka (bkz. v0.19, drawIllegalHint)
+ *   board.showIllegalHints(points);    // "ipucu" — ortogonal çapraz+merkez nokta+glow, kehribar-kırmızı (bkz. v0.20, drawIllegalHint)
  *   board.clearIllegalHints();
  *   board.getIllegalMoves();           // GÜNCEL bulunmuş-marker listesi — salt-okunur, YALNIZ test/gözlem amaçlı
  *   board.getIllegalHints();           // GÜNCEL ipucu-marker listesi — salt-okunur, YALNIZ test/gözlem amaçlı
  *   board.destroy();                   // RAF/resize/click listener'ı + tüm durumu temizler
  *
+ * v0.20 — kök neden düzeltmesi (bkz. görev talimatı: "görünmeyen ipucu"):
+ * `drawIllegalHint`'in ESKİ tasarımı (kesikli, İNCE, alpha:0.38, glow YOK)
+ * gerçek canvas piksel örneklemesiyle ÖLÇÜLDÜ — teknik olarak ÇİZİLİYORDU
+ * (state/adapter kancası boş DEĞİLDİ) ama görsel AĞIRLIĞI, tahtanın kendi
+ * sıcak ahşap dokusunun DOĞAL ton değişkenliğinin İÇİNDE kayboluyordu
+ * (ölçülen amber-piksel sinyali: ipucu YOKKEN yerel ahşap-doku "gürültüsü"
+ * ~167-168, ipucu AÇIKKEN yalnız ~185-199'a çıkıyordu — konfirme edilmiş
+ * (bulunmuş) işaretin AYNI ölçümde ~247'ye çıkmasıyla TEZAT). Kök neden
+ * "state yanlış" veya "projeksiyon yanlış" DEĞİL, saf GÖRSEL AĞIRLIK
+ * yetersizliğiydi. Düzeltme: `drawIllegalHint` artık `drawLibertyMark`
+ * İLE AYNI ÇİZİM TEKNİĞİNİ (ortogonal çapraz kol + dolu merkez nokta +
+ * `shadowBlur` glow, bkz. görev talimatı: "turkuaz neon imlecin görsel
+ * diline benzeyen... imleç") kullanır — YALNIZ RENK kehribar-kırmızı
+ * (214,92,58) kalır, turkuaz (91,210,195) HİÇ kullanılmaz. Konfirme edilmiş
+ * `drawIllegalMark` (halka+DİYAGONAL çarpı) ile ŞEKİLCE de ayrışır — ayrım
+ * YALNIZ RENK veya YALNIZ opaklıkla DEĞİL (bkz. görev talimatı Bölüm 4):
+ *   - confirmed (`illegalMarks`):  halka + diyagonal X, alpha 0.82, glow YOK
+ *   - hint (`illegalHints`):       ortogonal çapraz + merkez nokta, alpha
+ *                                  0.80, glow VAR (liberty tekniği)
+ *   - liberty (`libertyPoints`):   ortogonal çapraz + merkez nokta, alpha
+ *                                  0.78, glow VAR, RENK turkuaz
+ * Ayrıca `showIllegalHints()`'in HER çağrıda TÜM noktaları `t:0`'a
+ * sıfırlaması (bir tıklama AYNI hint listesini yeniden hesaplattığında
+ * ZATEN tam görünür bir hint'i yeniden söndürüp söndürmeden yeniden
+ * başlatıyordu — kısa ama gereksiz bir "titreme") düzeltildi: artık ÖNCEKİ
+ * listede AYNI koordinatta olan noktaların `t`'si KORUNUR, yalnız GERÇEKTEN
+ * yeni bir nokta `t:0`'dan başlar.
  * v0.19 — Sahne #8'in serbest-sıralı ÇOKLU hedef akışı (curriculum'un 4
  * GERÇEK öz-yakalama noktası, TEK hedef DEĞİL — bkz. görev talimatı: "kamera
  * veya test kolaylığı gerekçesiyle içeriği tek hedefe indirme") için
@@ -170,9 +197,9 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-08-29.1';
-import { BoardState } from '../core/boardState.js?v=2026-08-29.1';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-08-29.1';
+import { CAM } from '../core/curriculum.js?v=2026-09-01.1';
+import { BoardState } from '../core/boardState.js?v=2026-09-01.1';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-09-01.1';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -738,11 +765,14 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
 
   /**
    * "Yasak noktaları göster" ipucunun GÖRSEL işareti — bulunmamış curriculum
-   * hedeflerini işaret eder (bkz. showIllegalHints). Bulunmuş `drawIllegalMark`
-   * ile YALNIZ renkle/opaklıkla DEĞİL, ŞEKİLLE de ayırt edilir (bkz. görev
-   * talimatı Bölüm 6: "renk tek başına ayrım aracı olmamalı") — çarpı YOK,
-   * yalnız ince, düşük yoğunluklu (statik) bir halka. Taş silüeti EKLEMEZ,
-   * board state'e dokunmaz (bkz. showIllegalHints notu).
+   * hedeflerini işaret eder (bkz. showIllegalHints). v0.20 kök neden
+   * düzeltmesi (bkz. dosya başı v0.20 notu): `drawLibertyMark` İLE AYNI
+   * ÇİZİM TEKNİĞİ (ortogonal çapraz kol + dolu merkez nokta + hafif glow) —
+   * yalnız RENK kehribar-kırmızı (turkuaz DEĞİL). Bulunmuş `drawIllegalMark`
+   * (halka+DİYAGONAL çarpı) ile ŞEKİLCE ayrışır — ayrım yalnız renk/opaklıkla
+   * DEĞİL (bkz. görev talimatı Bölüm 4/6). Taş silüeti EKLEMEZ, board
+   * state'e dokunmaz (bkz. showIllegalHints notu). Sürekli pulse YOK — TEK
+   * seferlik `t` fade-in (drawLibertyMark ile AYNI disiplin), "statik".
    */
   function drawIllegalHint(gx, gz, t) {
     const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
@@ -750,13 +780,22 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     const p = project(wx, Y, wz);
     if (p.scale < 0.12) return;
     const e = reduceMotion ? 1 : easeInOutCubic(Math.min(1, t));
-    const alpha = 0.38 * e; // drawIllegalMark'ın (0.82) YARISINDAN AZ — "düşük yoğunluklu"
+    const arm = CELL * 0.20; // drawLibertyMark'ın 0.22'sine YAKIN — AYNI görsel ağırlık sınıfı
+    const alpha = 0.80 * e; // drawLibertyMark (0.78) ile KIYASLANABİLİR — "aşırı soluk olmamalı"
     ctx.save();
     ctx.strokeStyle = `rgba(214,92,58,${alpha.toFixed(2)})`;
-    ctx.lineWidth = Math.max(1, 1.4 * p.scale);
-    ctx.setLineDash([Math.max(2, 3 * p.scale), Math.max(2, 3 * p.scale)]); // kesikli — ŞEKİL FARKI, yalnız opaklık DEĞİL
-    const ringR = Math.max(3, CELL * 0.26) * p.scale;
-    ctx.beginPath(); ctx.arc(p.sx, p.sy, ringR, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = Math.max(1.3, 2.0 * p.scale);
+    ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(214,92,58,.5)';
+    ctx.shadowBlur = 2.2 * p.scale; // drawLibertyMark İLE AYNI TEKNİK, farklı renk — "turkuaz dile benzer"
+    const pL = project(wx - arm, Y, wz), pR = project(wx + arm, Y, wz);
+    ctx.beginPath(); ctx.moveTo(pL.sx, pL.sy); ctx.lineTo(pR.sx, pR.sy); ctx.stroke();
+    const pU = project(wx, Y, wz - arm), pD = project(wx, Y, wz + arm);
+    ctx.beginPath(); ctx.moveTo(pU.sx, pU.sy); ctx.lineTo(pD.sx, pD.sy); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, Math.max(1.1, 1.7 * p.scale), 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(214,92,58,${Math.min(1, alpha + .12).toFixed(2)})`;
+    ctx.fill();
     ctx.restore();
   }
 
@@ -1075,13 +1114,24 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     /**
      * "Yasak noktaları göster" ipucunun GÖRSEL listesi — bkz. drawIllegalHint.
      * `showIllegalMoves()` İLE AYNI "tam listeyi değiştir" sözleşmesi, AYRI
-     * bir görsel katmanda (renk AYNI ama şekil/opaklık FARKLI — bkz.
-     * drawIllegalHint notu: "renk tek başına ayrım aracı olmamalı"). Taş
-     * silüeti EKLEMEZ, board state'e dokunmaz.
+     * bir görsel katmanda (renk AYNI ama ŞEKİL FARKLI — bkz. v0.20 notu:
+     * "renk tek başına ayrım aracı olmamalı"). Taş silüeti EKLEMEZ, board
+     * state'e dokunmaz.
+     * v0.20 — kök neden düzeltmesi: ÖNCEKİ listede AYNI koordinatta olan bir
+     * noktanın `t`'si (fade-in ilerlemesi) KORUNUR — her çağrıda TÜMÜNÜ
+     * `t:0`'a sıfırlamak, zaten tam görünür bir hint'i (bir tıklama AYNI
+     * listeyi yeniden hesaplattığında) gereksiz yere yeniden söndürüp
+     * başlatıyordu (kısa bir "titreme"). Yalnız GERÇEKTEN yeni bir nokta
+     * `t:0`'dan başlar.
      * @param {Array<{row:number,col:number}>} points
      */
     showIllegalHints(points) {
-      illegalHints = (points || []).map(p => ({ gx: p.col, gz: p.row, t: reduceMotion ? 1 : 0 }));
+      const prevT = new Map(illegalHints.map(h => [`${h.gx},${h.gz}`, h.t]));
+      illegalHints = (points || []).map(p => {
+        const key = `${p.col},${p.row}`;
+        const existing = prevT.get(key);
+        return { gx: p.col, gz: p.row, t: existing !== undefined ? existing : (reduceMotion ? 1 : 0) };
+      });
     },
     clearIllegalHints() {
       illegalHints = [];

@@ -30,7 +30,8 @@ import { getAssessmentSteps, computeTapTargets } from '../scenes/libertyAssessme
 import { getCaptureMoments } from '../scenes/capturePolicy.js';
 import { getCapturePracticeMoments, HINT_MODES } from '../scenes/capturePracticePolicy.js';
 import {
-  getIllegalMoveMoments, evaluateAttempt as evaluateIllegalMoveAttempt, MOMENT_KINDS as ILLEGAL_MOVE_KINDS,
+  getIllegalMoveMoments, evaluateAttempt as evaluateIllegalMoveAttempt, resolveCaptureExampleMoment,
+  MOMENT_KINDS as ILLEGAL_MOVE_KINDS,
 } from '../scenes/illegalMovePolicy.js';
 import { CAM } from '../core/curriculum.js';
 
@@ -5406,17 +5407,88 @@ async function attemptAllForbiddenTargets(page, moment, order = [2, 0, 3, 1]) {
   }
   return true;
 }
+/** An 2'nin (`kind:'legal_capture'`) AKTİF örneğini "Yakalama istisnası N/M"
+    alt-ilerleme metninden okuyup illegalMovePolicy.js'in AYNI çözümlenmiş
+    (resolved) görünümünü döner — sabit index varsayımı YOK (bkz.
+    scenes/scene08IllegalMoves.js renderMomentItem). `outerMoment` verilmezse
+    kendi çözer. */
+async function currentS08CaptureExample(page, outerMoment) {
+  const moment = outerMoment || await currentS08Moment(page);
+  await page.waitForTimeout(80);
+  const progressText = (await page.locator('#s08-capture-progress').textContent())?.trim() || '';
+  // "Yakalama istisnası N / M" — currentS08Moment'in "N / M" (ÖNEKSİZ)
+  // metninden FARKLI olarak burada bir metin ÖNEKİ var; naif
+  // `split('/')[0]` parseInt'e uygun DEĞİL (bkz. hata ayıklaması: "Yakalama
+  // istisnası 1" parseInt ile NaN verir) — sayıyı regex'le ayıklıyoruz.
+  const match = progressText.match(/(\d+)\s*\/\s*(\d+)/);
+  const idx1 = match ? parseInt(match[1], 10) : NaN;
+  if (!match) throw new Error(`currentS08CaptureExample: "#s08-capture-progress" metni beklenmeyen biçimde: "${progressText}"`);
+  return resolveCaptureExampleMoment(moment, idx1 - 1);
+}
+/** An 2'nin (`kind:'legal_capture'`) GERÇEK HER curriculum örneğini SIRAYLA
+    tamamlar — ara örneklerde (SON HARİÇ) kendi İÇ "Devam"ını da tıklar
+    (bkz. scenes/scene08IllegalMoves.js advanceToNextExample: outer
+    `currentIndex` DEĞİŞMEZ, yalnız `currentExampleIndex` ilerler). SON
+    örnekte "Devam"a TIKLAMAZ — çağıran (bkz. answerCurrentS08Item'ın
+    kendi çağıranları, L11/L12 kalıbı İLE AYNI sözleşme) OUTER moment'in
+    kendi ilerlemesi için kendi `goToNextS08Item()`'ını çağırır. */
+async function attemptAllCaptureExamples(page, outerMoment) {
+  const count = outerMoment.legalCaptureExamples.length;
+  for (let i = 0; i < count; i++) {
+    const resolved = await currentS08CaptureExample(page, outerMoment);
+    const ok = await tapS08Target(page, resolved, 0);
+    if (!ok) return false;
+    await page.waitForTimeout(350);
+    if (i < count - 1) {
+      await goToNextS08Item(page);
+      await page.waitForTimeout(600);
+    }
+  }
+  return true;
+}
 async function answerCurrentS08Item(page) {
   const moment = await currentS08Moment(page);
   if (!moment) return false;
   if (moment.kind === ILLEGAL_MOVE_KINDS.REJECTED) {
     return attemptAllForbiddenTargets(page, moment);
   }
-  return tapS08Target(page, moment, 0);
+  return attemptAllCaptureExamples(page, moment);
 }
 async function goToNextS08Item(page) {
   await page.click('#s08-continue');
   await page.waitForTimeout(400);
+}
+/** (cssX,cssY) etrafındaki bir bölgeyi (`canvasPixelAt`'ın TEK piksel
+    sabit-ofset yaklaşımından FARKLI olarak — bkz. görev talimatı Bölüm 6:
+    "gerçek kırmızı/kehribar piksel kümesi bulunmalı") tarayıp verilen hedef
+    RGB'ye en YAKIN pikselin "yakınlık skorunu" (0-255, yüksek=yakın) döner
+    — kehribar-kırmızı (214,92,58) ile turkuaz (91,210,195) AYNI ANDA
+    ölçülür (bkz. görev talimatı: "turkuaz marker pikselleri bulunmamalı"
+    negatif kontrolü). Marker'ın GERÇEKTEN o kesişimde olup olmadığını
+    (geometri) kanıtlamak için `findScreenPointFor`'un GERÇEK hit-test
+    sonucu kullanılır — sabit piksel offseti YOK. */
+async function sampleMarkerColorsAround(page, cssX, cssY, radius = 18) {
+  return page.evaluate(({ cssX, cssY, radius }) => {
+    const canvas = document.getElementById('ls-canvas');
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext('2d');
+    const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+    const cx = Math.round((cssX - rect.left) * scaleX), cy = Math.round((cssY - rect.top) * scaleY);
+    const r = Math.round(radius * Math.max(scaleX, scaleY));
+    const x0 = Math.max(0, cx - r), y0 = Math.max(0, cy - r);
+    const w = Math.min(canvas.width - x0, r * 2), h = Math.min(canvas.height - y0, r * 2);
+    if (w <= 0 || h <= 0) return { amberMax: 0, turquoiseMax: 0 };
+    const data = ctx.getImageData(x0, y0, w, h).data;
+    let amberMax = 0, turquoiseMax = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const rr = data[i], gg = data[i + 1], bb = data[i + 2];
+      const amberDist = Math.abs(rr - 214) + Math.abs(gg - 92) + Math.abs(bb - 58);
+      if (amberDist < 90 && rr > gg + 30 && rr > bb + 30) amberMax = Math.max(amberMax, 255 - amberDist);
+      const turqDist = Math.abs(rr - 91) + Math.abs(gg - 210) + Math.abs(bb - 195);
+      if (turqDist < 90 && gg > rr + 30) turquoiseMax = Math.max(turquoiseMax, 255 - turqDist);
+    }
+    return { amberMax, turquoiseMax };
+  }, { cssX, cssY, radius });
 }
 
 addTest('L1) Sahne #7 → Sahne #8 GERÇEK topic-end geçişi: Sahne #7 artık son sahne DEĞİL, board/narration bbox <1px stabil, tek scene_started', async () => {
@@ -5610,6 +5682,73 @@ addTest('L4c) "Yasak noktaları göster" ipucu: başlangıçta cevap ÜRETMEZ; a
   } finally { await s.close(); }
 });
 
+addTest('L4d) Kırmızı neon ipucu marker\'ı GERÇEK canvas pikselinde ÖLÇÜLEBİLİR görünür — kök neden düzeltmesi (bkz. görev talimatı Bölüm 1-2): pozitif/negatif kontrol + turkuazla KARIŞMADIĞININ kanıtı', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    const moment = await currentS08Moment(s.page);
+    // Dört hedefin GERÇEK ekran konumları — hint açılmadan ÖNCE bulunur
+    // (geometri kontrolü: marker'ın GERÇEKTEN o kesişimde olduğunun kanıtı).
+    const screenPts = [];
+    for (const tp of moment.targetPoints) {
+      const pt = await findScreenPointFor(s.page, tp);
+      ensure(pt, `hedef (${tp.row},${tp.col}) ekranda bulunamadı`);
+      screenPts.push({ tp, pt });
+    }
+
+    // NEGATİF KONTROL — hint KAPALIYKEN aynı dört hedef çevresinde GÜÇLÜ
+    // bir kehribar sinyali OLMAMALI (bkz. görev talimatı Bölüm 6).
+    const negatives = [];
+    for (const { pt } of screenPts) {
+      const sample = await sampleMarkerColorsAround(s.page, pt.x, pt.y);
+      negatives.push(sample.amberMax);
+      ensure(sample.turquoiseMax === 0, `hint kapalıyken turkuaz piksel OLMAMALI: ${JSON.stringify(sample)}`);
+    }
+
+    await s.page.click('#s08-hint');
+    await s.page.waitForTimeout(500); // LIBERTY_FADE_DUR (0.25s)'den fazla — fade-in TAMAMLANMIŞ olmalı
+
+    // POZİTİF — dört hedefin HER BİRİNDE GERÇEK, GÜÇLÜ kırmızı/kehribar
+    // piksel kümesi bulunmalı; turkuaz KARIŞMAMALI; siyah taş ghost diski
+    // (getMovePreview) OLUŞMAMALI.
+    for (let i = 0; i < screenPts.length; i++) {
+      const { tp, pt } = screenPts[i];
+      const sample = await sampleMarkerColorsAround(s.page, pt.x, pt.y);
+      ensure(sample.amberMax >= 200, `(${tp.row},${tp.col}): ipucu GÜÇLÜ kırmızı/kehribar piksel içermeli (kök neden: eski tasarım görünmeyecek kadar zayıftı), bulunan amberMax=${sample.amberMax}`);
+      ensure(sample.amberMax > negatives[i] + 20, `(${tp.row},${tp.col}): ipucu negatif kontrolden BELİRGİN güçlü olmalı, önce=${negatives[i]} sonra=${sample.amberMax}`);
+      ensure(sample.turquoiseMax === 0, `(${tp.row},${tp.col}): ipucu turkuazla KARIŞMAMALI (nefes noktası dili değil), bulunan: ${JSON.stringify(sample)}`);
+    }
+    // `findScreenPointFor`in kendisi tarama sırasında mouse'u tahta üzerinde
+    // GERÇEK/GEÇERLİ (boş) bir kesişime bırakabilir — bu NORMAL hover-ghost
+    // davranışıdır (hint MEKANİZMASIYLA İLGİSİZ). "İpucu KENDİSİ silüet
+    // EKLEMEZ" iddiasını temiz ölçmek için imleç GERÇEK, DOLU bir kesişime
+    // (mevcut bir taşın üstüne) taşınır — `handleHover`'ın `isOccupied()`
+    // dalı zaten silüeti KESİN olarak temizler (bkz. scenes/
+    // scene08IllegalMoves.js handleHover).
+    const occupiedStone = moment.board[0];
+    const occupiedPt = await findScreenPointFor(s.page, { row: occupiedStone.y, col: occupiedStone.x });
+    ensure(occupiedPt, 'dolu bir kesişim (mevcut taş) ekranda bulunamadı');
+    await s.page.mouse.move(occupiedPt.x, occupiedPt.y);
+    await s.page.waitForTimeout(150);
+    const preview = await s.page.evaluate(() => window.__lsTestBoardAdapter.getMovePreview());
+    ensure(preview === null, 'ipucu siyah taş ghost diski OLUŞTURMAMALI (imleç dolu bir kesişimdeyken)');
+
+    // Bir hedef GERÇEKTEN bulunduğunda hint→confirmed marker'a DÖNÜŞÜR —
+    // GERÇEK piksel şiddeti confirmed (0.80 alpha benzeri) seviyesine çıkar
+    // VE geri kalan 3 hint'in kalıcılığı BOZULMAZ.
+    const first = screenPts[0];
+    await s.page.mouse.click(first.pt.x, first.pt.y);
+    await s.page.waitForTimeout(400);
+    const confirmedSample = await sampleMarkerColorsAround(s.page, first.pt.x, first.pt.y);
+    ensure(confirmedSample.amberMax >= 200, `bulunan hedef confirmed marker'a dönüşmeli, amberMax=${confirmedSample.amberMax}`);
+    for (let i = 1; i < screenPts.length; i++) {
+      const sample = await sampleMarkerColorsAround(s.page, screenPts[i].pt.x, screenPts[i].pt.y);
+      ensure(sample.amberMax >= 200, `bulunmamış hedef ${i} hint olarak GÖRÜNÜR kalmalı, amberMax=${sample.amberMax}`);
+    }
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
 addTest('L5) An 1: aynı hedefe hızlı çift tıklama TEK illegal-attempt event\'i üretir', async () => {
   const s = await openScenesPage({ query: PREVIEW_QUERY });
   try {
@@ -5657,7 +5796,7 @@ addTest('L7) An 1: başka GERÇEK yasal (hedef-dışı) bir noktaya dokunmak boa
   } finally { await s.close(); }
 });
 
-addTest('L8) An 2 GERÇEK curriculum seed\'iyle açılır (stepIndex:1, kind:"legal_capture"); hedef GERÇEKTEN yasal — doğru deneme GERÇEK taşı yerleştirir ve GERÇEKTEN yakalar, feedback An 1\'den FARKLIDIR', async () => {
+addTest('L8) An 2 örnek 0 GERÇEK curriculum seed\'iyle açılır (stepIndex:1, kind:"legal_capture", moveColor:\'B\'); "Siyah oynuyor." görev metni; hover preview GERÇEKTEN siyah; hedef GERÇEKTEN yasal — doğru deneme GERÇEK taşı yerleştirir ve GERÇEKTEN yakalar, feedback An 1\'den FARKLIDIR', async () => {
   const s = await openScenesPage({ query: PREVIEW_QUERY });
   try {
     await advanceToScene8Moment1Settled(s.page);
@@ -5666,23 +5805,242 @@ addTest('L8) An 2 GERÇEK curriculum seed\'iyle açılır (stepIndex:1, kind:"le
     const feedback1 = (await s.page.locator('#s08-feedback').textContent())?.trim() || '';
     await goToNextS08Item(s.page);
     await s.page.waitForTimeout(900);
-    const moment = await currentS08Moment(s.page);
-    ensure(moment && moment.curriculumStepIndex === 1 && moment.kind === ILLEGAL_MOVE_KINDS.LEGAL_CAPTURE, `An 2 stepIndex:1/kind:legal_capture olmalı, bulunan: ${JSON.stringify(moment)}`);
+    const outerMoment = await currentS08Moment(s.page);
+    ensure(outerMoment && outerMoment.curriculumStepIndex === 1 && outerMoment.kind === ILLEGAL_MOVE_KINDS.LEGAL_CAPTURE, `An 2 stepIndex:1/kind:legal_capture olmalı, bulunan: ${JSON.stringify(outerMoment)}`);
+    ensure(outerMoment.legalCaptureExamples.length === 2, `An 2 GERÇEK 2 örnek taşımalı, bulunan: ${outerMoment.legalCaptureExamples.length}`);
+    const moment = await currentS08CaptureExample(s.page, outerMoment);
+    ensure(moment.moveColor === 'B', `örnek 0 authored moveColor 'B' olmalı, bulunan: ${moment.moveColor}`);
+    const colorLabel = (await s.page.locator('#s08-capture-color').textContent())?.trim();
+    ensure(colorLabel === 'Siyah oynuyor.', `bulunan: "${colorLabel}"`);
     const target = moment.targetPoints[0];
     const expected = evaluateIllegalMoveAttempt(moment, target);
     ensure(expected.legal === true && expected.capturedCount === 5, `ön koşul: hedef GERÇEKTEN yasal + 5 taş yakalamalı, bulunan: ${JSON.stringify(expected)}`);
-    const ok = await tapS08Target(s.page, moment, 0);
-    ensure(ok, 'An 2 GERÇEK hedefi ekranda bulunamadı');
+    const pt = await findScreenPointFor(s.page, target);
+    ensure(pt, 'An 2 örnek 0 GERÇEK hedefi ekranda bulunamadı');
+    await s.page.mouse.move(pt.x, pt.y);
+    await s.page.waitForTimeout(200);
+    const preview = await s.page.evaluate(() => window.__lsTestBoardAdapter.getMovePreview());
+    ensure(preview?.color === 'black', `örnek 0 hover preview rengi 'black' olmalı, bulunan: ${JSON.stringify(preview)}`);
+    await s.page.mouse.click(pt.x, pt.y);
     await s.page.waitForTimeout(400);
     const events = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_illegal_move_attempted');
     const an2Event = events.find(e => e.payload.stepIndex === 1);
     ensure(an2Event, 'An 2 deneme event\'i üretilmedi');
     ensure(an2Event.payload.legal === true && an2Event.payload.boardChanged === true && an2Event.payload.capturedCount === 5,
       `An 2 payload beklenen: legal:true,boardChanged:true,capturedCount:5 — bulunan: ${JSON.stringify(an2Event.payload)}`);
+    ensure(an2Event.payload.color === 'B' && an2Event.payload.capturedColor === 'W',
+      `An 2 örnek 0 payload beklenen: color:'B',capturedColor:'W' — bulunan: ${JSON.stringify(an2Event.payload)}`);
     ensure(an2Event.payload.stoneCountAfter === an2Event.payload.stoneCountBefore + 1 - 5,
       `taş sayısı GERÇEK yakalamayı yansıtmalı: ${JSON.stringify(an2Event.payload)}`);
     const feedback2 = (await s.page.locator('#s08-feedback').textContent())?.trim() || '';
     ensure(feedback2 !== feedback1 && /yakalıyor|yasal/i.test(feedback2), `An 2 feedback An 1'den FARKLI ve yakalama-özgü olmalı: an1="${feedback1}" an2="${feedback2}"`);
+  } finally { await s.close(); }
+});
+
+addTest('L8b) An 2: curriculum\'un GERÇEK İKİ formasyon örneğinin TAMAMI AUTHORED renkleriyle (örnek 0 siyah, örnek 1 GERÇEKTEN beyaz) ayrı taze seed\'lerle sunulur — "Yakalama istisnası 1/2→2/2", ilk örnek TEK BAŞINA sahneyi bitirmez, GERÇEK örnekler-arası advanced eventi (SAHTE son-örnek advance YOK), her örnek arasında board/marker/preview SIFIRLANIR, İKİNCİ formasyon GERÇEK beyaz hamleyle yasal + 5 SİYAH taş yakalıyor', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    ensure(await answerCurrentS08Item(s.page), 'An 1 cevaplanamadı');
+    await goToNextS08Item(s.page);
+    await s.page.waitForTimeout(900);
+
+    const outerMoment = await currentS08Moment(s.page);
+    ensure(outerMoment.kind === ILLEGAL_MOVE_KINDS.LEGAL_CAPTURE && outerMoment.legalCaptureExamples.length === 2,
+      `An 2 GERÇEK 2 örnek taşımalı, bulunan: ${JSON.stringify(outerMoment)}`);
+
+    // ── Örnek 0 (üst formasyon, authored moveColor:'B') ──
+    const progress0 = (await s.page.locator('#s08-capture-progress').textContent())?.trim();
+    ensure(progress0 === 'Yakalama istisnası 1 / 2', `bulunan: "${progress0}"`);
+    const ex0 = await currentS08CaptureExample(s.page, outerMoment);
+    ensure(ex0.board.length === 12, `örnek 0 board seed'i 12 taş olmalı, bulunan: ${ex0.board.length}`);
+    ensure(ex0.moveColor === 'B', `örnek 0 authored moveColor 'B' olmalı, bulunan: ${ex0.moveColor}`);
+    ensure(await tapS08Target(s.page, ex0, 0), 'örnek 0 hedefi bulunamadı');
+    await s.page.waitForTimeout(500);
+    const feedback0 = (await s.page.locator('#s08-feedback').textContent())?.trim() || '';
+    ensure(/5 taş yakal/i.test(feedback0), `örnek 0 feedback'i 5 taş yakalamayı bildirmeli: "${feedback0}"`);
+
+    // TEK örnek sahneyi BİTİRMEMELİ.
+    const topicEndAfterEx0 = await s.page.locator('.ls-topic-end').count();
+    ensure(topicEndAfterEx0 === 0, 'İLK örnek sonrası topic-end AÇILMAMALI (tek örnek sahneyi bitirmez)');
+    const tabindexAfterEx0 = await s.page.locator('#s08-continue').getAttribute('tabindex');
+    ensure(tabindexAfterEx0 === '0', 'örnek 0 sonrası Devam açık olmalı (sıradaki örneğe geçmek için)');
+
+    const eventsBeforeAdvance = await getEventLog(s.page);
+    await goToNextS08Item(s.page);
+    await s.page.waitForTimeout(900);
+    const eventsAfterAdvance = await getEventLog(s.page);
+    const advancedEvents = eventsFor(eventsAfterAdvance.slice(eventsBeforeAdvance.length), S08_ID).filter(e => e.type === 'scene_assessment_advanced');
+    ensure(advancedEvents.length === 1, `örnekler arası GEÇİŞTE tek scene_assessment_advanced üretilmeli, bulunan: ${advancedEvents.length}`);
+    ensure(advancedEvents[0].payload.fromExampleIndex === 0 && advancedEvents[0].payload.toExampleIndex === 1
+      && advancedEvents[0].payload.fromAssessmentIndex === advancedEvents[0].payload.toAssessmentIndex,
+      `GERÇEK örnek-geçiş payload'ı beklenmedik: ${JSON.stringify(advancedEvents[0].payload)}`);
+
+    // ── Örnek 1 (alt formasyon, authored moveColor:'W' — GERÇEK beyaz) — TAZE seed. ──
+    const progress1 = (await s.page.locator('#s08-capture-progress').textContent())?.trim();
+    ensure(progress1 === 'Yakalama istisnası 2 / 2', `bulunan: "${progress1}"`);
+    const colorLabel1 = (await s.page.locator('#s08-capture-color').textContent())?.trim();
+    ensure(colorLabel1 === 'Bu kez beyaz oynuyor.', `bulunan: "${colorLabel1}"`);
+    const ex1 = await currentS08CaptureExample(s.page, outerMoment);
+    ensure(ex1.board.length === 12, `örnek 1 board seed'i 12 taş olmalı, bulunan: ${ex1.board.length}`);
+    ensure(ex1.moveColor === 'W', `örnek 1 authored moveColor 'W' olmalı (renk-ters-çevirme YOK), bulunan: ${ex1.moveColor}`);
+    ensure(JSON.stringify(ex1.targetPoints) !== JSON.stringify(ex0.targetPoints), 'örnek 1 hedefi örnek 0\'dan FARKLI olmalı');
+    const previewBetween = await s.page.evaluate(() => window.__lsTestBoardAdapter.getMovePreview());
+    ensure(previewBetween === null, 'örnekler arasında ÖNCEKİ silüet SIZMAMALI');
+    const marksBetween = await s.page.evaluate(() => window.__lsTestBoardAdapter.getIllegalMoves());
+    ensure(marksBetween.length === 0, `örnekler arasında ÖNCEKİ illegal-marker SIZMAMALI, bulunan: ${marksBetween.length}`);
+
+    const pt1 = await findScreenPointFor(s.page, ex1.targetPoints[0]);
+    ensure(pt1, 'örnek 1 hedefi ekranda bulunamadı');
+    await s.page.mouse.move(pt1.x, pt1.y);
+    await s.page.waitForTimeout(200);
+    const preview1 = await s.page.evaluate(() => window.__lsTestBoardAdapter.getMovePreview());
+    ensure(preview1?.color === 'white', `örnek 1 hover preview rengi GERÇEKTEN 'white' olmalı, bulunan: ${JSON.stringify(preview1)}`);
+    await s.page.mouse.click(pt1.x, pt1.y);
+    await s.page.waitForTimeout(500);
+    const feedback1 = (await s.page.locator('#s08-feedback').textContent())?.trim() || '';
+    ensure(/5 taş yakal/i.test(feedback1), `örnek 1 (GERÇEK beyaz formasyon) DA gerçekten 5 taş yakalamalı: "${feedback1}"`);
+    const ex1Events = eventsFor(await getEventLog(s.page), S08_ID).filter(e => e.type === 'scene_illegal_move_attempted' && e.payload.exampleIndex === 1 && e.payload.legal === true);
+    ensure(ex1Events.length === 1 && ex1Events[0].payload.color === 'W' && ex1Events[0].payload.capturedColor === 'B',
+      `örnek 1 event payload beklenen: color:'W',capturedColor:'B' — bulunan: ${JSON.stringify(ex1Events[0]?.payload)}`);
+
+    // SON örnekte "Devam" tıklanınca — SAHTE bir advance event ÜRETİLMEMELİ,
+    // doğrudan topic-end açılmalı (bkz. görev talimatı: "{from:last,to:last}
+    // advanced eventi üretme").
+    const eventsBeforeFinal = await getEventLog(s.page);
+    await s.page.click('#s08-continue');
+    await s.page.waitForTimeout(700);
+    const eventsAfterFinal = await getEventLog(s.page);
+    const fakeAdvance = eventsFor(eventsAfterFinal.slice(eventsBeforeFinal.length), S08_ID).filter(e => e.type === 'scene_assessment_advanced');
+    ensure(fakeAdvance.length === 0, `SON örnekten SONRA sahte bir advanced eventi ÜRETİLMEMELİ, bulunan: ${fakeAdvance.length}`);
+    const topicEndAfterEx1 = await s.page.locator('.ls-topic-end').count();
+    ensure(topicEndAfterEx1 > 0, 'İKİ örnek de tamamlanınca topic-end AÇILMALI');
+    const completed = eventsFor(eventsAfterFinal, S08_ID).filter(e => e.type === 'scene_completed');
+    ensure(completed.length === 1, `scene_completed TAM BİR KEZ, bulunan: ${completed.length}`);
+    const unlocked = eventsFor(eventsAfterFinal, S08_ID).filter(e => e.type === 'scene_completion_unlocked');
+    ensure(unlocked.length === 1, `completion TAM BİR KEZ (son örnekten SONRA) açılmalı, bulunan: ${unlocked.length}`);
+  } finally { await s.close(); }
+});
+
+/** `findScreenPointFor`'un GERÇEK hedef nokta çevresinde döndürdüğü ekran
+    konumu, `boardCenterXY`'nin sabit/kalibre edilmiş ofsetinin AKSİNE, yalnız
+    "GERÇEK row/col hit-test'i doğru sonucu verir" toleransıyla bulunur —
+    pikselin taşın/ghost'un TAM GEOMETRİK merkezinde olduğu GARANTİ DEĞİLDİR.
+    Bu yüzden TEK piksel yerine küçük bir komşuluk taranır, board'dan EN ÇOK
+    sapan piksel seçilir (bkz. görev talimatı hata ayıklaması: tek-piksel
+    örnekleme merkez-dışı inişte board dokusuna YAKINSIYORDU). */
+/** @param {'brighter'|'darker'} direction — hangi YÖNDE sapmanın arandığı.
+    "max |delta|" YERİNE yönlü arama kullanılır — hedef kesişim tıklı
+    formasyonlarda (bkz. görev talimatı hata ayıklaması) KOMŞU GERÇEK bir
+    taş (ters renkte) "en çok sapan" pikseli KAPABİLİR; yönlü arama bu
+    yanlış-yön komşuyu DOĞAL olarak ELER (beyaz ararken en KOYU komşu asla
+    "en PARLAK" yarışını KAZANAMAZ). */
+async function sampleStoneRegionPeak(page, relX, relY, direction) {
+  let best = null, bestLum = direction === 'brighter' ? -Infinity : Infinity;
+  for (let dx = -6; dx <= 6; dx += 3) {
+    for (let dy = -6; dy <= 6; dy += 3) {
+      const px = await canvasPixelAt(page, relX, relY, dx, dy);
+      const lum = pixelLuminance(px);
+      const better = direction === 'brighter' ? lum > bestLum : lum < bestLum;
+      if (better) { bestLum = lum; best = px; }
+    }
+  }
+  return best;
+}
+
+addTest('L8c) Örnek 1\'in beyaz hover preview\'i GERÇEK canvas piksellerinde okunabilir — açık taş gövdesi (yüksek luminance), yarı-saydamlık (gerçek beyaz taştan DAHA DÜŞÜK kontrast), koyu taş diski YOK (bkz. görev talimatı: "yalnız internal state\'le doğrulama")', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    ensure(await answerCurrentS08Item(s.page), 'An 1 cevaplanamadı');
+    await goToNextS08Item(s.page);
+    await s.page.waitForTimeout(900);
+    const outerMoment = await currentS08Moment(s.page);
+    const ex0 = await currentS08CaptureExample(s.page, outerMoment);
+
+    // `canvasPixelAt` CANVAS-RELATİF (CSS) koordinat bekler —
+    // `findScreenPointFor`'un PAGE-ABSOLUTE `pt.x/pt.y` değerlerinden
+    // `box.x/box.y` ÇIKARILARAK dönüştürülür (bkz. dosya başı E-serisi AYNI
+    // kural: `canvasPixelAt` her zaman canvas-içi ofset alır).
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const toCanvasRel = pt => ({ x: pt.x - box.x, y: pt.y - box.y });
+    const boardRef = await canvasPixelAt(s.page, box.width * 0.5, box.height * 0.75, 0, 0);
+    const boardLum = pixelLuminance(boardRef);
+
+    // Örnek 0'ın SİYAH preview'ini de aynı yöntemle ölç — beyaz preview'le
+    // DOĞRUDAN karşılaştırma için (aynı alpha/teknik, YALNIZ renk farklı).
+    const ex0Pt = await findScreenPointFor(s.page, ex0.targetPoints[0]);
+    ensure(ex0Pt, 'örnek 0 hedefi ekranda bulunamadı');
+    await s.page.mouse.move(ex0Pt.x, ex0Pt.y);
+    await s.page.waitForTimeout(200);
+    const ex0PreviewState = await s.page.evaluate(() => window.__lsTestBoardAdapter.getMovePreview());
+    ensure(ex0PreviewState?.color === 'black', `ön koşul: örnek 0 preview 'black' olmalı, bulunan: ${JSON.stringify(ex0PreviewState)}`);
+    const ex0Rel = toCanvasRel(ex0Pt);
+    const blackPreviewPx = await sampleStoneRegionPeak(s.page, ex0Rel.x, ex0Rel.y, 'darker');
+    const blackPreviewLum = pixelLuminance(blackPreviewPx);
+
+    ensure(await tapS08Target(s.page, ex0, 0), 'örnek 0 hedefi bulunamadı');
+    await s.page.waitForTimeout(500);
+    await goToNextS08Item(s.page);
+    await s.page.waitForTimeout(900);
+
+    const ex1 = await currentS08CaptureExample(s.page, outerMoment);
+    const targetPt = await findScreenPointFor(s.page, ex1.targetPoints[0]);
+    ensure(targetPt, 'örnek 1 hedefi ekranda bulunamadı');
+
+    // GERÇEK bir beyaz taşın (örnek 1'in KENDİ duvarından — board authored
+    // renkleriyle GERÇEKTEN mevcut) referans kontrastı — "ghost'un gerçek
+    // taştan DAHA AZ opak" karşılaştırması için (bkz. E3 İLE AYNI disiplin).
+    const realWhiteStone = ex1.board.find(s2 => s2.color === 'W');
+    ensure(realWhiteStone, 'örnek 1 board\'unda GERÇEK bir beyaz taş bulunamadı');
+    const realWhitePt = await findScreenPointFor(s.page, { row: realWhiteStone.y, col: realWhiteStone.x });
+    ensure(realWhitePt, 'gerçek beyaz taş ekranda bulunamadı');
+    const realWhiteRel = toCanvasRel(realWhitePt);
+    const realWhitePx = await sampleStoneRegionPeak(s.page, realWhiteRel.x, realWhiteRel.y, 'brighter');
+    const realWhiteContrast = Math.hypot(realWhitePx.r - boardRef.r, realWhitePx.g - boardRef.g, realWhitePx.b - boardRef.b);
+    ensure(realWhiteContrast > 20, `ön koşul: gerçek beyaz taş board'dan ayırt edilebilir olmalı, bulunan kontrast=${realWhiteContrast.toFixed(1)}`);
+
+    // Hover — beyaz ghost preview'i tetikle.
+    await s.page.mouse.move(targetPt.x, targetPt.y);
+    await s.page.waitForTimeout(250);
+    const previewState = await s.page.evaluate(() => window.__lsTestBoardAdapter.getMovePreview());
+    ensure(previewState?.color === 'white', `ön koşul: preview state 'white' olmalı, bulunan: ${JSON.stringify(previewState)}`);
+    const targetRel = toCanvasRel(targetPt);
+    const previewPx = await sampleStoneRegionPeak(s.page, targetRel.x, targetRel.y, 'brighter');
+    const previewLum = pixelLuminance(previewPx);
+    const previewContrast = Math.hypot(previewPx.r - boardRef.r, previewPx.g - boardRef.g, previewPx.b - boardRef.b);
+
+    // 1) AÇIK taş gövdesi — luminance yüksek (beyaz taş ailesi — drawStone
+    // beyaz gradient'i #fbf8f2→#efe8da→#d8d0c2, hepsi AÇIK tonlar), tahtanın
+    // KENDİ luminance'ından da belirgin YÜKSEK (koyu bir disk DEĞİL).
+    ensure(previewLum > boardLum + 10, `beyaz preview luminance'ı board'dan BELİRGİN YÜKSEK olmalı (AÇIK taş gövdesi) — board=${boardLum.toFixed(1)} preview=${previewLum.toFixed(1)}`);
+    // Mutlak eşik — GERÇEK ölçümle kalibre edildi (alpha:0.42 beyaz ghost,
+    // sıcak ahşap board'a karışınca ~130-150 luminance bandına düşüyor; saf
+    // beyaz drawStone gradyanı #fbf8f2 tek başına çok daha yüksek olurdu,
+    // ama alpha karışımı beklenen). 120 — hem "AÇIK taş" iddiasını hem de
+    // KOYU (siyah drawStone gradyanı #050508-#4e5c70, AYNI alpha'da çok
+    // daha düşük bir luminance üretir) bir diskle KARIŞTIRILMAMASINI
+    // kanıtlamaya yeter; keyfi/aşırı sıkı bir üst sınır DEĞİL.
+    ensure(previewLum > 120, `beyaz preview luminance'ı MUTLAK olarak yüksek olmalı (koyu taş diski DEĞİL), bulunan: ${previewLum.toFixed(1)}`);
+    // DOĞRUDAN karşılaştırma — AYNI teknik/alpha ile çizilen örnek 0'ın
+    // SİYAH preview'inden BELİRGİN parlak olmalı (siyah/beyaz ghost'un
+    // GERÇEKTEN farklı renklerde render edildiğinin kanıtı — yalnız state
+    // farklı değil, PİKSEL de farklı).
+    ensure(previewLum > blackPreviewLum + 30, `beyaz preview siyah preview'den BELİRGİN parlak olmalı — siyah=${blackPreviewLum.toFixed(1)} beyaz=${previewLum.toFixed(1)}`);
+
+    // 2) Yarı-saydamlık — GERÇEK beyaz taştan DAHA DÜŞÜK kontrast (E3 İLE
+    // AYNI ilke: ghost her zaman gerçek taştan daha az opak).
+    ensure(previewContrast > 15, `beyaz preview board'dan AYIRT EDİLEMİYOR (görünmez), kontrast=${previewContrast.toFixed(1)}`);
+    ensure(previewContrast < realWhiteContrast, `beyaz preview GERÇEK taştan DAHA AZ opak (düşük kontrastlı) olmalı — preview=${previewContrast.toFixed(1)} gerçek=${realWhiteContrast.toFixed(1)}`);
+
+    // 3) Kırmızı/turkuaz concept renkleriyle KARIŞMAMALI (bkz. görev
+    // talimatı Bölüm 7: "kırmızı/turkuaz halka ekleyerek concept renklerini
+    // karıştırma").
+    const isReddish = previewPx.r > previewPx.g + 30 && previewPx.r > previewPx.b + 30;
+    const isTeal = previewPx.g > previewPx.r + 30;
+    ensure(!isReddish && !isTeal, `beyaz preview kırmızı/turkuaz concept rengiyle KARIŞMIŞ olabilir: ${JSON.stringify(previewPx)}`);
+
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
   } finally { await s.close(); }
 });
 
@@ -5693,10 +6051,10 @@ addTest('L9) An 2: başka GERÇEK yasal (hedef-dışı) bir noktaya dokunmak GER
     ensure(await answerCurrentS08Item(s.page), 'An 1 cevaplanamadı');
     await goToNextS08Item(s.page);
     await s.page.waitForTimeout(900);
-    const moment = await currentS08Moment(s.page);
-    const farLegal = { row: 8, col: 8 };
+    const moment = await currentS08CaptureExample(s.page);
+    const farLegal = { row: 8, col: 0 };
     const check = evaluateIllegalMoveAttempt(moment, farLegal);
-    ensure(check.legal === true && check.isCurriculumTarget === false, `ön koşul: (8,8) An 2'de yasal VE hedef-dışı olmalı, bulunan: ${JSON.stringify(check)}`);
+    ensure(check.legal === true && check.isCurriculumTarget === false, `ön koşul: (8,0) An 2 örnek0'da yasal VE hedef-dışı olmalı, bulunan: ${JSON.stringify(check)}`);
     const pt = await findScreenPointFor(s.page, farLegal);
     ensure(pt, 'An 2 yasal hedef-dışı nokta ekranda bulunamadı');
     await s.page.mouse.click(pt.x, pt.y);
@@ -5891,6 +6249,49 @@ addTest('L15) Kamera/görünürlük: 1280×720/768×1024/390×844/360×800/844×
   } finally { await s.close(); }
 });
 
+addTest('L15b) Kamera/görünürlük: An 2\'nin İKİ GERÇEK örneğinin HER BİRİ 1280×720/768×1024/390×844/360×800/844×390 viewport\'larının HEPSİNDE safe:true, worstViolationPx<=0, hedef GERÇEKTEN tıklanabilir', async () => {
+  const s = await openScenesPage({ viewport: { width: 1280, height: 720 }, hasTouch: true, query: PREVIEW_QUERY });
+  try {
+    await advanceToScene8Moment1Settled(s.page);
+    ensure(await answerCurrentS08Item(s.page), 'An 1 cevaplanamadı');
+    await goToNextS08Item(s.page);
+    await s.page.waitForTimeout(900);
+    const outerMoment = await currentS08Moment(s.page);
+    ensure(outerMoment.kind === ILLEGAL_MOVE_KINDS.LEGAL_CAPTURE, 'An 2\'de olunmalı');
+
+    for (let exampleIndex = 0; exampleIndex < outerMoment.legalCaptureExamples.length; exampleIndex++) {
+      if (exampleIndex > 0) {
+        // Örnek 0'ı GERÇEKTEN tamamlayıp örnek 1'e geç (taze seed) — sabit
+        // varsayım YOK, GERÇEK etkileşimle ilerler.
+        const ex0 = await currentS08CaptureExample(s.page, outerMoment);
+        ensure(await tapS08Target(s.page, ex0, 0), 'örnek 0 hedefi bulunamadı (örnek 1\'e geçmeden önce)');
+        await s.page.waitForTimeout(500);
+        await goToNextS08Item(s.page);
+        await s.page.waitForTimeout(900);
+      }
+      const resolved = await currentS08CaptureExample(s.page, outerMoment);
+      for (const viewport of [{ width: 1280, height: 720 }, { width: 768, height: 1024 }, VIEWPORTS.mobile, { width: 360, height: 800 }, { width: 844, height: 390 }]) {
+        await s.page.setViewportSize(viewport);
+        await s.page.waitForTimeout(900);
+        const { result } = await getCameraDiag(s.page);
+        ensure(result === null || result.safe === true, `örnek ${exampleIndex} @ ${viewport.width}x${viewport.height}: safe:true olmalı, bulunan: ${JSON.stringify(result)}`);
+        if (result) ensure(!(result.worstViolationPx > 0), `örnek ${exampleIndex} @ ${viewport.width}x${viewport.height}: worstViolationPx<=0 olmalı, bulunan: ${result.worstViolationPx}`);
+        const overflow = await s.page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+        ensure(!overflow, `örnek ${exampleIndex} @ ${viewport.width}x${viewport.height}: yatay taşma var`);
+        const pt = await findScreenPointFor(s.page, resolved.targetPoints[0]);
+        ensure(pt, `örnek ${exampleIndex} @ ${viewport.width}x${viewport.height}: hedef ekranda BULUNAMADI`);
+        ensure(pt.x >= 0 && pt.x <= viewport.width && pt.y >= 0 && pt.y <= viewport.height,
+          `örnek ${exampleIndex} @ ${viewport.width}x${viewport.height}: hedef viewport dışında: ${JSON.stringify(pt)}`);
+      }
+      // Sıradaki tur için masaüstüne dön (findScreenPointFor'un GERÇEK grid
+      // taraması masaüstünde daha güvenilir/hızlı).
+      await s.page.setViewportSize({ width: 1280, height: 720 });
+      await s.page.waitForTimeout(500);
+    }
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
 addTest('L16) Teacher Studio Sahne #8\'i görür (Curriculum + Diagnostics), ham İngilizce reason Studio metninde de sızmaz, console/pageerror sıfır', async () => {
   const context = await (await launchChromium()).newContext();
   const consoleErrors = [];
@@ -5911,11 +6312,24 @@ addTest('L16) Teacher Studio Sahne #8\'i görür (Curriculum + Diagnostics), ham
     await page.waitForTimeout(200);
     const curriculumText = await page.locator('#tab-curriculum').innerText();
     ensure(/Yasak Hamleler/.test(curriculumText), 'Curriculum panelinde Sahne #8 başlığı görünmüyor');
+    const sceneTableText = await page.locator('#curriculum-scene-table').innerText();
+    ensure(/2 örnek/.test(sceneTableText), `Curriculum panelinde An 2'nin İKİ GERÇEK örneği görünmüyor: "${sceneTableText}"`);
+    ensure(/#0:/.test(sceneTableText) && /#1:/.test(sceneTableText), `Curriculum panelinde her örneğin sourceIndex/hedef/capturedCount detayı görünmüyor: "${sceneTableText}"`);
+    // AUTHORED renkler — bkz. görev talimatı Bölüm 10: "İki örneği authored
+    // hâliyle göster" — "siyah oynar"/"beyaz oynar" GÖRÜLEBİLİR olmalı,
+    // "[renk-normalize]" etiketi TAMAMEN kaldırılmış olmalı.
+    ensure(/siyah oynar/.test(sceneTableText), `Curriculum panelinde örnek 0'ın "siyah oynar" etiketi görünmüyor: "${sceneTableText}"`);
+    ensure(/beyaz oynar/.test(sceneTableText), `Curriculum panelinde örnek 1'in "beyaz oynar" etiketi görünmüyor: "${sceneTableText}"`);
+    ensure(!/renk-normalize/.test(sceneTableText), `"[renk-normalize]" etiketi TAMAMEN kaldırılmış olmalı: "${sceneTableText}"`);
     await page.click('[data-tab="diagnostics"]');
     await page.waitForTimeout(200);
     const diagText = await page.locator('#diag-scene-table').innerText();
     ensure(!/scene-08-illegal-moves.*REGISTRY_ORDER_INVALID|scene-08-illegal-moves.*NEXT_SCENE_NOT/i.test(diagText), `Sahne #8 registry sırası hatası: "${diagText}"`);
     ensure(!/SUICIDE|OUT_OF_BOUNDS\b/.test(diagText), `ham RuleEngine reason kodu Diagnostics'in kullanıcıya-dönük metnine sızmamalı: "${diagText}"`);
+    ensure(!/LEGAL_CAPTURE_EXAMPLE_COUNT_MISMATCH|CAPTURED_COUNT_MISMATCH|LEGAL_CAPTURE_TARGET_ACTUALLY_ILLEGAL|LEGAL_CAPTURE_EXAMPLES_SHARE_STONE/.test(diagText),
+      `An 2'nin çoklu-örnek Diagnostics kontrolleri hata bildiriyor: "${diagText}"`);
+    ensure(!/MOVE_COLOR_NOT_AUTHORED|TARGET_COORD_TRANSFORM_WRONG|BOARD_COLORS_NOT_AUTHORED/.test(diagText),
+      `Diagnostics authored-renk kontrolleri hata bildiriyor (renk normalizasyon kalıntısı olabilir): "${diagText}"`);
     ensure(consoleErrors.length === 0, `Teacher Studio konsol/pageerror sıfır olmalı: ${JSON.stringify(consoleErrors)}`);
   } finally { await context.close(); }
 });

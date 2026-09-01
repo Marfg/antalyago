@@ -23,11 +23,27 @@
  *     SERBEST sırada bulup dener — `attemptedForbiddenPoints` bir
  *     `Set<pointKey>`'dir, sıra ÖNEMSİZDİR. Her GERÇEK curriculum hedefi
  *     RuleEngine tarafından reddedilir, taş yerleşmez, board DEĞİŞMEZ.
- *   An 2 (`moment.kind === 'legal_capture'`): curriculum'un kendi hedef
- *     hamlesi İNTİHAR GİBİ GÖRÜNÜR ama GERÇEKTE yasaldır (5 taş yakalar) —
- *     bu anın PEDAGOJİK BAŞARISI hamlenin GERÇEKTEN oynanıp taşın
- *     tahtaya yerleşmesi ve yakalamanın gerçekleşmesidir. TEK hedeftir,
- *     An 1'in çoklu-hedef mekanizması BURAYA SIZMAZ.
+ *   An 2 (`moment.kind === 'legal_capture'`): curriculum'un `moves`
+ *     dizisindeki HER GERÇEK formasyon örneği İNTİHAR GİBİ GÖRÜNÜR ama
+ *     GERÇEKTE yasaldır (5 taş yakalar) — bu anın PEDAGOJİK BAŞARISI
+ *     hamlenin GERÇEKTEN oynanıp taşın tahtaya yerleşmesi ve yakalamanın
+ *     gerçekleşmesidir. v3 revizyonu (bkz. görev talimatı: "ikinci anı
+ *     bütün curriculum örneklerine dönüştür") — ÖNCEKİ revizyon
+ *     `moves.find(m=>m.color==='B')` ile YALNIZ İLK formasyonu (üst) alıp
+ *     ikinciyi (alt) SESSİZCE atlıyordu; bu YANLIŞ bir daralmaydı ve TERK
+ *     EDİLDİ. An 2 artık curriculum'un `legalCaptureExamples[]`'indeki HER
+ *     örneği (şu an 2 — `illegalMovePolicy.js`'in KENDİSİ sayıyı SAYAR,
+ *     burada hard-code EDİLMEZ) taze bir seed'le, sırayla, "Yakalama
+ *     istisnası N/M" alt-ilerlemesiyle sunar (bkz. `currentExampleIndex`,
+ *     `resolveCaptureExampleMoment`) — An 1'in çoklu-HEDEF (serbest sıra,
+ *     TEK board) mekanizmasından FARKLI bir desendir: her örnek KENDİ taze
+ *     board seed'iyle gelir (bkz. görev talimatı Bölüm 8: "ayrı-seed"
+ *     modeli — iki formasyon GEOMETRİK/RuleEngine olarak TAM bağımsız
+ *     olduğu için Model A [aynı board] da GÜVENLİ olurdu, ama Model B ayrı
+ *     seed her zaman "hangi formasyon şu an aktif" belirsizliğini YAPISAL
+ *     olarak imkânsız kılar — bkz. görev talimatı: "daha güvenli varsayılan
+ *     yaklaşım"). Topic-end YALNIZ SON örnek başarıyla tamamlandıktan
+ *     SONRA açılır (bkz. handleLegalCaptureTap `isLastExample`).
  * İki an FARKLI beklenen sonuç taşır (`moment.kind`) — TEK bir "hep
  * reddedilir" kalıbına zorlanmadı (bkz. görev talimatı: "iki durumu
  * ayırt et").
@@ -51,24 +67,32 @@
  *
  * KONTROLLÜ İPUCU (bkz. görev talimatı Bölüm 6): "Yasak noktaları göster"
  * düğmesi (yalnız An 1'de, `hintRevealed` — an başına bir kez açılabilir)
- * HENÜZ BULUNMAMIŞ hedefleri AYRI, düşük-yoğunluklu/kesikli bir halka
- * katmanıyla (`showIllegalHints`, bkz. adapters/sceneBoardAdapter.js
- * drawIllegalHint) gösterir — taş silüeti eklemez, board state'i
- * değiştirmez, ilerleme eklemez, noktaları "bulundu" SAYMAZ, `scene_hint_
- * revealed` DIŞINDA yeni event üretmez (mevcut genel event yeniden
- * kullanıldı — bkz. scenes/scene07CapturePractice.js AYNI event).
+ * HENÜZ BULUNMAMIŞ hedefleri AYRI bir görsel katmanla (`showIllegalHints`,
+ * bkz. adapters/sceneBoardAdapter.js drawIllegalHint v0.20 — kök neden
+ * düzeltmesi: ESKİ kesikli/düşük-alpha tasarım gerçek piksel örneklemesiyle
+ * "teknik olarak çiziliyor ama görünmeyecek kadar zayıf" ÖLÇÜLDÜ, artık
+ * `drawLibertyMark` İLE AYNI çapraz+nokta+glow TEKNİĞİ, farklı renk)
+ * gösterir — taş silüeti eklemez, board state'i değiştirmez, ilerleme
+ * eklemez, noktaları "bulundu" SAYMAZ, `scene_hint_revealed` DIŞINDA yeni
+ * event üretmez (mevcut genel event yeniden kullanıldı — bkz.
+ * scenes/scene07CapturePractice.js AYNI event).
  *
- * KAMERA/GÖRÜNÜRLÜK (bkz. görev talimatı Bölüm 7): her an ÖNCE curriculum
- * kamera preset'ini uygular (`board.focus`), SONRA Sahne #7 an 1'in AYNI
- * genel, sahne/adım BİLMEYEN `board.focusPoints()` katmanını (bkz. seedMoment)
- * — hedefler zaten güvenliyse NO-OP, değilse minimum düzeltme. An 1'de
- * DÖRT hedefin TAMAMI + TÜM 14 bağlamsal taş (curriculum'un GERÇEK board'u
- * — dört formasyonun birleşimi zaten bu 14 taşın TAMAMI, bkz.
- * illegalMovePolicy.js) framing listesine verilir; `minZoom:160` (bkz.
+ * KAMERA/GÖRÜNÜRLÜK (bkz. görev talimatı Bölüm 7/11): her an (VE An 2'nin
+ * HER örneği — `seedMoment` `currentResolvedMoment()`'in GERÇEK board/hedef
+ * çiftini alır) ÖNCE curriculum kamera preset'ini uygular (`board.focus`),
+ * SONRA Sahne #7 an 1'in AYNI genel, sahne/adım BİLMEYEN `board.focusPoints()`
+ * katmanını (bkz. seedMoment) — hedefler zaten güvenliyse NO-OP, değilse
+ * minimum düzeltme. An 1'de DÖRT hedefin TAMAMI + TÜM 14 bağlamsal taş
+ * (curriculum'un GERÇEK board'u — dört formasyonun birleşimi zaten bu 14
+ * taşın TAMAMI, bkz. illegalMovePolicy.js) framing listesine verilir. An
+ * 2'nin HER örneğinde yalnız O ÖRNEĞİN 12 taşı (hedefin saldıran duvarı +
+ * yakalanacak grup) + hedef verilir — diğer örneğe HİÇ dokunulmaz (bkz.
+ * illegalMovePolicy.js deriveLegalCaptureExamples). `minZoom:160` (bkz.
  * seedMoment notu) ile 1280×720/768×1024/390×844/360×800/844×390
- * viewport'larının HEPSİNDE `safe:true, worstViolationPx:0` ÖLÇÜLDÜ.
+ * viewport'larının HEPSİNDE An 1 VE An 2'nin HER İKİ örneği için AYRI AYRI
+ * `safe:true, worstViolationPx:0` ÖLÇÜLDÜ.
  *
- * EVENT SÖZLEŞMESİ (bkz. görev talimatı Bölüm 9): mevcut
+ * EVENT SÖZLEŞMESİ (bkz. görev talimatı Bölüm 9/12): mevcut
  * `scene_intro_confirmed/scene_assessment_presented/scene_assessment_advanced/
  * scene_completion_unlocked/scene_hint_revealed` YENİDEN KULLANILDI. Uygun
  * mevcut bir event "yasak hamle denemesi" anlamını taşımadığı için TEK
@@ -81,17 +105,24 @@
  * yansıtır (yalnız An 1'de anlamlı; An 2'de `isCurriculumTarget:true` TEK
  * hedefi işaret eder, `legal:true`/`boardChanged:true`/`capturedCount:5`
  * ile GERÇEK yakalama semantiği taşır — reddedilen bir denemeyle
- * KARIŞTIRILMAZ, bkz. `legal` alanı).
+ * KARIŞTIRILMAZ, bkz. `legal` alanı). An 2'nin HER örneği ayrıca
+ * `exampleIndex`/`exampleCount`/`sourceIndex` taşır — `assessmentIndex` bu
+ * SIRADA SABİT kalır (dış an değişmiyor, yalnız İÇ örnek ilerliyor, bkz.
+ * advanceToNextExample); örnekler arası geçişte GERÇEK bir
+ * `scene_assessment_advanced` üretilir (`fromExampleIndex`/`toExampleIndex`
+ * ile) ama SON örnekte ÜRETİLMEZ (bkz. görev talimatı: "sahte
+ * {from:last,to:last} advanced eventi" yasağı).
  *
  * KAVRAM (bkz. illegalMovePolicy.js dosya başı notu): `concept:'forbidden_move'`
  * KASITLI olarak core/conceptMap.js'e eklenmedi — Teacher Studio Diagnostics
  * bunu bilinen-olmayan concept olarak raporlar (bilinçli, gizlenmeyen boşluk).
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-08-29.1';
-import { assessmentTransition } from './assessmentTransition.js?v=2026-08-29.1';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-01.1';
+import { assessmentTransition } from './assessmentTransition.js?v=2026-09-01.1';
 import {
-  getIllegalMoveMoments, evaluateAttempt, reasonLabelTr, pointKey, MOMENT_KINDS, CONCEPT,
-} from './illegalMovePolicy.js?v=2026-08-29.1';
+  getIllegalMoveMoments, evaluateAttempt, reasonLabelTr, pointKey, resolveCaptureExampleMoment, toRuntimeColor,
+  MOMENT_KINDS, CONCEPT,
+} from './illegalMovePolicy.js?v=2026-09-01.1';
 
 const STATE = { INTRO: 'intro', PLAYING: 'playing' };
 
@@ -102,6 +133,21 @@ const LEGAL_CAPTURE_TAP_HINT = 'İşaretli hamleyi dene — intihar gibi görün
 const HINT_BUTTON_LABEL = 'Yasak noktaları göster';
 const OFF_TARGET_ILLEGAL_HINT = 'Bu, alıştırmanın hedeflerinden biri değil — başka bir kesişimi dene.';
 const OFF_TARGET_LEGAL_HINT = 'Bu nokta yasal ama alıştırmanın hedefi değil — işaretli/ilgili kesişimi dene.';
+// An 2'nin (legal_capture) hedef-dışı denemesi için AYRI, örneğe-özgü
+// yönlendirme (bkz. görev talimatı Bölüm 10) — An 1'in genel
+// OFF_TARGET_*_HINT'inden BİLEREK FARKLI, "bu ÖRNEKTE" diyerek çok-örnekli
+// bağlamı netleştirir.
+const CAPTURE_OFF_TARGET_HINT = 'Bu örnekte yakalamayı sağlayan kesişimi yeniden ara.';
+
+/** An 2'nin AKTİF örneğinin GERÇEK authored hamle rengini SÖZ OLARAK da
+    belirtir (bkz. görev talimatı Bölüm 4: "hamle rengi yalnız taş
+    renginden anlaşılmaya bırakılmamalı; görev metni/erişilebilir açıklama
+    da rengi belirtmeli"). `moveColor:'B'` (curriculum'un authored kısaltması)
+    için nötr "Siyah oynuyor.", `'W'` için "Bu kez beyaz oynuyor." — İKİNCİ
+    örneğin RENK DEĞİŞİKLİĞİNİ kullanıcıya açıkça vurgular. */
+function captureColorLabelTr(moveColor) {
+  return moveColor === 'W' ? 'Bu kez beyaz oynuyor.' : 'Siyah oynuyor.';
+}
 const SUMMARY_TEXT = 'Bazı kesişimlere taş konamayacağını ve görünüşte yasak bir hamlenin bazen yakalama istisnasıyla geçerli olabileceğini gerçek RuleEngine sonuçlarıyla gördün.';
 // Aynı NOKTAYA hızlı çift tıklama TEK bir denemeye sayılmalı (bkz. görev
 // talimatı Bölüm 4/12: "hızlı çift tıklama tek deneme/tek event üretir") —
@@ -111,6 +157,7 @@ const TAP_DEBOUNCE_MS = 400;
 let state = STATE.INTRO;
 let moments = [];
 let currentIndex = 0;
+let currentExampleIndex = 0; // YALNIZ An 2 (legal_capture) için anlamlı — legalCaptureExamples[] içindeki aktif örnek
 let answeredCorrectly = [];
 let attemptCount = [];
 let lastTap = null; // {row, col, at}
@@ -131,6 +178,7 @@ function resetState() {
   state = STATE.INTRO;
   moments = getIllegalMoveMoments();
   currentIndex = 0;
+  currentExampleIndex = 0;
   answeredCorrectly = new Array(moments.length).fill(false);
   attemptCount = new Array(moments.length).fill(0);
   lastTap = null;
@@ -143,6 +191,17 @@ function resetState() {
   topicEnd = null;
   unsubscribeTap = null;
   unsubscribeHover = null;
+}
+
+/** Aktif dış anı ("moments[currentIndex]") render/etkileşim için "çözümlenmiş"
+    tek-örnek görünümüne çevirir — An 1 (rejected) için moment DEĞİŞMEDEN
+    döner (birden fazla örneği yok), An 2 (legal_capture) için
+    `currentExampleIndex`teki GERÇEK örneği taşıyan görünümü döner (bkz.
+    scenes/illegalMovePolicy.js resolveCaptureExampleMoment). */
+function currentResolvedMoment() {
+  const moment = moments[currentIndex];
+  if (moment.kind !== MOMENT_KINDS.LEGAL_CAPTURE) return moment;
+  return resolveCaptureExampleMoment(moment, currentExampleIndex);
 }
 
 function on(el, type, handler) {
@@ -235,7 +294,12 @@ function handleHover(context, hit) {
     context.boardAdapter.clearMovePreview();
     return;
   }
-  context.boardAdapter.setMovePreview({ row: hit.row, col: hit.col, color: 'black' });
+  // AKTİF anın/örneğin GERÇEK oynayacağı renk — An 1 HER ZAMAN siyah
+  // (moveColor alanı yok, toRuntimeColor(undefined)='black'), An 2'nin HER
+  // örneği KENDİ authored `moveColor`'ını kullanır (bkz. görev talimatı:
+  // "Hover preview aktif örneğin gerçek moveColor'ını kullanmalı").
+  const moment = currentResolvedMoment();
+  context.boardAdapter.setMovePreview({ row: hit.row, col: hit.col, color: toRuntimeColor(moment.moveColor) });
 }
 
 /** An 1'in (`kind:'rejected'`) bulunmuş/ipucu marker listelerini
@@ -344,17 +408,28 @@ function handleRejectedTap(context, moment, hit, attempt) {
   }
 }
 
-/** An 2 (`kind:'legal_capture'`) — TEK hedef, An 1'in çoklu-marker
-    mekanizması BURAYA SIZMAZ. Hedef GERÇEKTEN yasalsa (RuleEngine'e göre)
-    hamle GERÇEKTEN oynanır, taş yerleşir, GERÇEK yakalama olur. */
+/** An 2 (`kind:'legal_capture'`) — `moment` HER ZAMAN `currentResolvedMoment()`
+    üzerinden gelen, TEK GERÇEK örneği taşıyan "çözümlenmiş" görünümdür (bkz.
+    handleTap) — An 1'in çoklu-marker mekanizması BURAYA SIZMAZ. Hedef
+    GERÇEKTEN yasalsa (RuleEngine'e göre) hamle GERÇEKTEN oynanır, taş
+    yerleşir, GERÇEK yakalama olur. Topic-end'i açan `answeredCorrectly`
+    YALNIZ SON örnekte set edilir (bkz. görev talimatı: "tek örnek
+    tamamlandığında sahne bitmemeli") — ama "Devam" HER başarılı örnekte
+    açılır (sıradaki örneğe veya — son örnekse — topic-end'e geçmek için,
+    bkz. goToNextItem). */
 function handleLegalCaptureTap(context, moment, hit, attempt) {
   const isSuccess = attempt.isCurriculumTarget && attempt.legal;
+  // Bu örneğin GERÇEK authored hamle rengi (bkz. görev talimatı Bölüm 4:
+  // "her formasyon curriculum'da yazıldığı renklerle birebir gösterilmeli")
+  // — 'B' ise siyah, 'W' ise GERÇEKTEN beyaz oynanır, sahte bir 'black'
+  // varsayımı YOK.
+  const runtimeColor = toRuntimeColor(moment.moveColor);
   let playResult = null;
   if (isSuccess) {
     // Hızlı çift tıklama guard'ı — girdi GERÇEK commit/emit'ten ÖNCE
     // kapatılır (bkz. scenes/scene07CapturePractice.js AYNI disiplin).
     context.boardAdapter.setInputEnabled(false);
-    playResult = context.boardAdapter.playMove({ row: hit.row, col: hit.col, color: 'black' });
+    playResult = context.boardAdapter.playMove({ row: hit.row, col: hit.col, color: runtimeColor });
     if (!playResult.ok) return; // savunma amaçlı — policy zaten yasallığı doğruladı.
   }
   const boardChanged = !!(playResult && playResult.ok);
@@ -362,9 +437,18 @@ function handleLegalCaptureTap(context, moment, hit, attempt) {
   context.emit('scene_illegal_move_attempted', {
     assessmentIndex: currentIndex,
     stepIndex: moment.curriculumStepIndex,
+    exampleIndex: moment.exampleIndex,
+    exampleCount: moment.exampleCount,
+    sourceIndex: moment.sourceIndex,
     row: hit.row,
     col: hit.col,
-    color: 'black',
+    // 'B'|'W' — curriculum'un KENDİ authored kısaltması (bkz. görev
+    // talimatı Bölüm 9) — An 1'in `color:'black'` (kelime biçimi, HER ZAMAN
+    // siyah, değişmedi) sözleşmesinden BİLEREK FARKLI: An 2'nin HER örneği
+    // GERÇEKTEN farklı bir renk oynayabildiği için ham authored kısaltma
+    // daha doğru bir sözleşmedir.
+    color: moment.moveColor,
+    capturedColor: moment.capturedColor,
     legal: attempt.legal,
     reason: attempt.reason,
     isCurriculumTarget: attempt.isCurriculumTarget,
@@ -378,7 +462,8 @@ function handleLegalCaptureTap(context, moment, hit, attempt) {
   });
 
   if (isSuccess) {
-    answeredCorrectly[currentIndex] = true;
+    const isLastExample = moment.exampleIndex === moment.exampleCount - 1;
+    if (isLastExample) answeredCorrectly[currentIndex] = true;
     context.boardAdapter.clearMovePreview();
     context.boardAdapter.clearIllegalMoves();
     setFeedback(`Doğru. Bu hamle görünüşe rağmen yasal — çünkü ${attempt.capturedCount} taş yakalıyor.`, 'ok');
@@ -390,22 +475,26 @@ function handleLegalCaptureTap(context, moment, hit, attempt) {
   if (!attempt.legal) {
     context.boardAdapter.clearMovePreview();
     context.boardAdapter.showIllegalMoves([hit]);
-    setFeedback(`${reasonLabelTr(attempt.reason)} ${OFF_TARGET_ILLEGAL_HINT}`, 'err');
+    setFeedback(`${reasonLabelTr(attempt.reason)} ${CAPTURE_OFF_TARGET_HINT}`, 'err');
   } else {
     context.boardAdapter.clearIllegalMoves();
-    setFeedback(OFF_TARGET_LEGAL_HINT, 'err');
+    setFeedback(CAPTURE_OFF_TARGET_HINT, 'err');
   }
 }
 
 /**
  * TEK, birleşik dokunuş işleyicisi — `moment.kind`'a göre dallanır, HANGİ
  * momentIndex olduğuna göre DEĞİL (bkz. görev talimatı: içeriğe göre değil
- * gerçek veri şekline göre karar ver). Her tıklama GERÇEK
- * `evaluateAttempt()` (core/ruleEngine.js) sonucuyla değerlendirilir.
+ * gerçek veri şekline göre karar ver). `moment` HER ZAMAN `currentResolvedMoment()`
+ * ile TAZE türetilir — bir önceki render'dan gelen KAPANMIŞ (stale) bir
+ * closure'a GÜVENİLMEZ (bkz. görev talimatı: An 2 örnekleri arasında geçiş
+ * sırasında board/hedef DEĞİŞİR). Her tıklama GERÇEK `evaluateAttempt()`
+ * (core/ruleEngine.js) sonucuyla değerlendirilir.
  */
-function handleTap(context, moment, hit) {
+function handleTap(context, hit) {
   if (awaitingContinue || transitioning) return;
 
+  const moment = currentResolvedMoment();
   const attempt = evaluateAttempt(moment, hit);
 
   const now = Date.now();
@@ -439,9 +528,15 @@ function renderMomentItem(context, moment) {
       revealForbiddenHint(context, moment);
     });
   } else {
+    // An 2 — birden fazla GERÇEK örnek olabileceği için (bkz. görev talimatı
+    // Bölüm 9) AYRI bir "Yakalama istisnası N/M" alt-ilerleme metni (an
+    // seviyesindeki ana "N/M" nokta göstergesinden — buildProgressHtml —
+    // BAĞIMSIZ, o hep sabit 2 kalır: An1/An2).
     els.contentEl.innerHTML = `
       <div class="s05-item">
+        <p class="s05-tap-hint" id="s08-capture-progress">Yakalama istisnası ${moment.exampleIndex + 1} / ${moment.exampleCount}</p>
         <div class="s05-prompt">${moment.promptText}</div>
+        <p class="s05-tap-hint" id="s08-capture-color"><strong>${captureColorLabelTr(moment.moveColor)}</strong></p>
         <p class="s05-tap-hint">${LEGAL_CAPTURE_TAP_HINT}</p>
       </div>
     `;
@@ -449,7 +544,7 @@ function renderMomentItem(context, moment) {
     els.forbiddenProgressEl = null;
   }
   context.boardAdapter.setInputEnabled(true);
-  unsubscribeTap = context.boardAdapter.onIntersectionTap(hit => handleTap(context, moment, hit));
+  unsubscribeTap = context.boardAdapter.onIntersectionTap(hit => handleTap(context, hit));
   unsubscribeHover = context.boardAdapter.onIntersectionHover(hit => handleHover(context, hit));
   return els.hintBtn || els.contentEl.querySelector('.s05-tap-hint');
 }
@@ -472,7 +567,7 @@ function showContinueControl(context) {
 }
 
 function renderCurrentItem(context) {
-  const moment = moments[currentIndex];
+  const moment = currentResolvedMoment();
   els.progressEl.innerHTML = buildProgressHtml(currentIndex);
   els.feedbackEl.textContent = '';
   els.feedbackEl.classList.remove('s05-feedback--ok', 's05-feedback--err');
@@ -489,6 +584,7 @@ async function loadItem(context, index, { withTransition }) {
   clearItemListeners();
   context.boardAdapter.setInputEnabled(false);
   currentIndex = index;
+  currentExampleIndex = 0; // YENİ dış ana geçiliyor — An 2 ise İLK örnekten başlar.
   if (!withTransition) {
     renderCurrentItem(context);
     presentCurrentMoment(context);
@@ -505,11 +601,49 @@ async function loadItem(context, index, { withTransition }) {
   presentCurrentMoment(context);
 }
 
+/** An 2 (`legal_capture`) İÇİNDE sıradaki GERÇEK curriculum örneğine geçer
+    — dış `currentIndex` DEĞİŞMEZ (bkz. görev talimatı Bölüm 12:
+    "assessmentIndex:1" sabit kalır, yalnız `exampleIndex` değişir), yalnız
+    `currentExampleIndex` ilerler ve o örneğin TAZE seed'i kurulur (bkz.
+    dosya başı "Model B — ayrı seed" notu). Son örnekte ÇAĞRILMAZ (bkz.
+    goToNextItem) — "sahte {from:last,to:last} advanced eventi" ÜRETİLMEZ. */
+async function advanceToNextExample(context, outerMoment, toExampleIndex) {
+  clearItemListeners();
+  context.boardAdapter.setInputEnabled(false);
+  transitioning = true;
+  context.emit('scene_assessment_advanced', {
+    fromAssessmentIndex: currentIndex,
+    toAssessmentIndex: currentIndex, // AYNI dış an — yalnız iç örnek ilerliyor.
+    fromExampleIndex: currentExampleIndex,
+    toExampleIndex,
+    exampleCount: outerMoment.legalCaptureExamples.length,
+    concept: CONCEPT,
+    assessmentConcept: outerMoment.assessmentConcept,
+    resultConcept: outerMoment.expectedResultConcept,
+  });
+  let firstFocusable = null;
+  await assessmentTransition({
+    container: els.contentEl,
+    renderNext: () => { currentExampleIndex = toExampleIndex; firstFocusable = renderCurrentItem(context); },
+    focusTarget: () => firstFocusable,
+  });
+  transitioning = false;
+  presentCurrentMoment(context);
+}
+
 async function goToNextItem(context) {
   if (!awaitingContinue || transitioning) return;
+  const completedMoment = moments[currentIndex];
+  // An 2'nin SON ÖRNEĞİNDEN önceki bir örnekteyse — dış anı DEĞİŞTİRMEDEN
+  // yalnız sıradaki curriculum örneğine geç (bkz. görev talimatı: "tek
+  // örnek tamamlandığında sahne bitmemeli").
+  if (completedMoment.kind === MOMENT_KINDS.LEGAL_CAPTURE
+    && currentExampleIndex < completedMoment.legalCaptureExamples.length - 1) {
+    await advanceToNextExample(context, completedMoment, currentExampleIndex + 1);
+    return;
+  }
   const fromIndex = currentIndex;
   const toIndex = currentIndex + 1;
-  const completedMoment = moments[fromIndex];
   if (toIndex < moments.length) {
     context.emit('scene_assessment_advanced', {
       fromAssessmentIndex: fromIndex,
@@ -527,7 +661,7 @@ async function goToNextItem(context) {
 }
 
 function presentCurrentMoment(context) {
-  const moment = moments[currentIndex];
+  const moment = currentResolvedMoment();
   context.emit('scene_assessment_presented', {
     assessmentIndex: currentIndex,
     assessmentCount: moments.length,
@@ -537,6 +671,9 @@ function presentCurrentMoment(context) {
     assessmentConcept: moment.assessmentConcept,
     mode: moment.kind,
     ...(moment.kind === MOMENT_KINDS.REJECTED ? { totalCurriculumTargets: moment.targetPoints.length } : {}),
+    ...(moment.kind === MOMENT_KINDS.LEGAL_CAPTURE
+      ? { exampleIndex: moment.exampleIndex, exampleCount: moment.exampleCount, sourceIndex: moment.sourceIndex }
+      : {}),
   });
 }
 
@@ -589,7 +726,7 @@ function buildDom(context) {
 
 export const scene08IllegalMoves = {
   id: 'scene-08-illegal-moves',
-  version: 2,
+  version: 3,
   title: 'Yasak Hamleler',
   curriculumRef: { lessonId: 'l4', concept: CONCEPT, stepIndex: 0 },
   // Geriye uyumlu TEKİL curriculumRef korunurken, bu sahnenin GERÇEKTEN
