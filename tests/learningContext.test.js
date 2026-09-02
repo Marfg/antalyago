@@ -37,8 +37,11 @@ test('müfredatın tamamı sınıflandırılır', () => {
   equal(audit.summary.chapters, 3);
   equal(audit.summary.lessons, 18);
   // v0.5.1: l2'ye 2 yeni saf nefes-noktası alıştırması eklendi (109→111).
-  equal(audit.summary.steps, 111);
-  equal(audit.items.length, 111);
+  // fix/two-eyes-curriculum: l7 ("Canlı Gruplar — İki Göz") 8 ayrı gerçek
+  // kavramı (bkz. görev talimatı Bölüm 4) 7 bozuk/çakışan adımla
+  // karşılayamadığı için 1 adım eklendi (111→112) — gerekçe PR açıklamasında.
+  equal(audit.summary.steps, 112);
+  equal(audit.items.length, 112);
 });
 
 test('uygulama ve değerlendirme adımları ayrıdır', () => {
