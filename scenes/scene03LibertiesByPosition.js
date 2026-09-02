@@ -77,8 +77,8 @@
  *      zaman gerçek hamle üretmez — ayrı bir koruma GEREKMEZ.
  */
 
-import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './boardZones.js?v=2026-09-01.1';
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-01.1';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './boardZones.js?v=2026-09-02.1';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-02.1';
 
 const STATE = {
   INTRO: 'intro',

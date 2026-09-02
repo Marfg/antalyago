@@ -33,6 +33,9 @@ import {
   getIllegalMoveMoments, evaluateAttempt as evaluateIllegalMoveAttempt, resolveCaptureExampleMoment,
   MOMENT_KINDS as ILLEGAL_MOVE_KINDS,
 } from '../scenes/illegalMovePolicy.js';
+import {
+  getKoRuleMoments, evaluateKoAttempt, isSuccessfulAttempt as isSuccessfulKoAttempt, MOMENT_KINDS as KO_MOMENT_KINDS,
+} from '../scenes/koRulePolicy.js';
 import { CAM } from '../core/curriculum.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -51,6 +54,7 @@ const S05_ID = 'scene-05-liberty-assessment';
 const S06_ID = 'scene-06-capture-basics';
 const S07_ID = 'scene-07-capture-practice';
 const S08_ID = 'scene-08-illegal-moves';
+const S09_ID = 'scene-09-ko-rule';
 // Sahne #2'nin beyaz cevap gecikmesini sıfırlayan query — YALNIZ turn-loop
 // testlerinin gerçek zamanlı beklemesini önler (bkz. learning-scenes.html
 // dosya başı test-hook notu). Sahne #3'ün artık HİÇBİR zamanlayıcısı yok
@@ -837,24 +841,25 @@ addTest('C15) reload: ilk hamleden sonra ama "Sonraki konu"ya basmadan → temiz
   } finally { await s.close(); }
 });
 
-addTest('C16) reload: tüm konular tamamlanmışken SON konu (Sahne #8) REPLAY modunda açılır (teknik final ekranı YOK)', async () => {
+addTest('C16) reload: tüm konular tamamlanmışken SON konu (Sahne #9) REPLAY modunda açılır (teknik final ekranı YOK)', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
-    // v6 — Sahne #8 ("Yasak Hamleler") kayıtlı olduğu için registry
-    // sırasındaki GERÇEK son sahne artık S08'dir (bkz. görev talimatı:
-    // registry sırası tamamlanma sırasıdır — Sahne #7'nin KENDİ kodu
-    // DEĞİŞMEDEN, yalnız registry sırasının genişlemesiyle doğal olarak
-    // değişen davranış).
+    // v7 — Sahne #9 ("Ko Kuralı") kayıtlı olduğu için registry sırasındaki
+    // GERÇEK son sahne artık S09'dur (bkz. görev talimatı: registry sırası
+    // tamamlanma sırasıdır — Sahne #8'in KENDİ kodu DEĞİŞMEDEN, yalnız
+    // registry sırasının genişlemesiyle doğal olarak değişen davranış; bu
+    // test daha önce v6'da Sahne #7→#8 GENİŞLEMESİNDE de AYNI şekilde
+    // güncellenmişti).
     await s.page.evaluate((ids) => {
       localStorage.setItem('go_scene_progress_v1', JSON.stringify({
-        version: 1, activeSceneId: ids[7], completedSceneIds: ids, sceneState: {},
+        version: 1, activeSceneId: ids[8], completedSceneIds: ids, sceneState: {},
       }));
-    }, [S01_ID, S02_ID, S03_ID, S04_ID, S05_ID, S06_ID, S07_ID, S08_ID]);
+    }, [S01_ID, S02_ID, S03_ID, S04_ID, S05_ID, S06_ID, S07_ID, S08_ID, S09_ID]);
     await s.page.reload({ waitUntil: 'networkidle' });
     await s.page.waitForTimeout(300);
-    ensure(await s.page.locator('#s08-intro').isVisible(), 'son konu (Sahne #8) replay modunda açılmadı');
+    ensure(await s.page.locator('#s09-intro').isVisible(), 'son konu (Sahne #9) replay modunda açılmadı');
     const events = await getEventLog(s.page);
-    ensure(events.some(e => e.type === 'scene_replay_started' && e.stepId === S08_ID), 'boot replay\'i scene_replay_started üretmedi');
+    ensure(events.some(e => e.type === 'scene_replay_started' && e.stepId === S09_ID), 'boot replay\'i scene_replay_started üretmedi');
     ensure(await s.page.locator('#ls-error').isHidden(), 'hata/final ekranı yanlışlıkla gösterildi');
   } finally { await s.close(); }
 });
@@ -6087,7 +6092,7 @@ addTest('L10) Yasak-hamle işareti (kehribar-kırmızı halka/çarpı) bir sonra
   } finally { await s.close(); }
 });
 
-addTest('L11) İki hedef de başarıyla denendikten SONRA completion TAM BİR KEZ açılır, final kontrol "Konular", "Sahne tamamlandı" YOK, ham İngilizce reason kullanıcıya SIZMAZ', async () => {
+addTest('L11) İki hedef de başarıyla denendikten SONRA completion TAM BİR KEZ açılır, final kontrol "Sonraki konu" (Sahne #9 eklendiğinden BERİ Sahne #8 artık son sahne DEĞİL), "Sahne tamamlandı" YOK, ham İngilizce reason kullanıcıya SIZMAZ', async () => {
   const s = await openScenesPage({ query: PREVIEW_QUERY });
   try {
     await advanceToScene8Moment1Settled(s.page);
@@ -6100,7 +6105,13 @@ addTest('L11) İki hedef de başarıyla denendikten SONRA completion TAM BİR KE
     }
     await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
     const label = (await s.page.locator('.ls-topic-end [data-action="advance"]').textContent())?.trim();
-    ensure(label === 'Konular', `Sahne #8 son sahne — "Konular" olmalı, bulunan: "${label}"`);
+    // v7 — Sahne #9 ("Ko Kuralı") kayıtlı olduğu için Sahne #8 ARTIK son
+    // sahne DEĞİL; "Sonraki konu" göstermeli (bkz. context.hasNextScene,
+    // scenes/topicEndControls.js — Sahne #8'in KENDİ kodu DEĞİŞMEDEN, yalnız
+    // registry sırasının GENİŞLEMESİYLE doğal olarak değişen davranış; bu
+    // test daha önce v6'da Sahne #7→#8 genişlemesinde J9'un AYNI şekilde
+    // güncellenmesiyle emsal oluşturmuştu).
+    ensure(label === 'Sonraki konu', `Sahne #8 (artık son sahne DEĞİL) "Sonraki konu" göstermeli, bulunan: "${label}"`);
     const bodyText = await s.page.locator('#ls-scene-host').innerText();
     ensure(!/sahne\s*tamamlandı|scene.?completed|scene-08|registry|runtime/i.test(bodyText), `teknik dil sızmış: "${bodyText}"`);
     ensure(!/SUICIDE|OCCUPIED|OUT_OF_BOUNDS\b/.test(bodyText), `ham RuleEngine reason kodu kullanıcıya sızmış: "${bodyText}"`);
@@ -6335,6 +6346,380 @@ addTest('L16) Teacher Studio Sahne #8\'i görür (Curriculum + Diagnostics), ham
 });
 
 addTest('L17) ogren-3d.html Sahne #8 eklenmesinden ETKİLENMEZ — regresyonsuz açılır, canvas render eder', async () => {
+  const context = await (await launchChromium()).newContext();
+  const consoleErrors = [];
+  try {
+    await context.route(`${BASE}/**`, async route => {
+      const url = new URL(route.request().url());
+      const pathname = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
+      const filePath = absPath(pathname || 'ogren-3d.html');
+      try { await route.fulfill({ status: 200, contentType: mime(filePath), body: fs.readFileSync(filePath) }); }
+      catch { await route.abort(); }
+    });
+    const page = await context.newPage();
+    page.on('pageerror', e => consoleErrors.push('pageerror: ' + e.message));
+    page.on('console', m => { if (m.type() === 'error') consoleErrors.push('console: ' + m.text()); });
+    const resp = await page.goto(`${BASE}/ogren-3d.html`, { waitUntil: 'networkidle' });
+    ensure(resp && resp.status() === 200, `ogren-3d.html HTTP ${resp?.status()}`);
+    await page.waitForTimeout(600);
+    ensure(await page.locator('canvas').count() > 0, 'ogren-3d.html canvas render etmiyor');
+    ensure(consoleErrors.length === 0, `ogren-3d.html konsol/pageerror sıfır olmalı: ${JSON.stringify(consoleErrors)}`);
+  } finally { await context.close(); }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   Sahne #9 ("Ko Kuralı") akış yardımcıları
+   ══════════════════════════════════════════════════════════════════ */
+async function completeScene8(page) {
+  await advanceToScene8AndIntro(page);
+  for (let i = 0; i < 2; i++) {
+    const ok = await answerCurrentS08Item(page);
+    ensure(ok, `Sahne #8 an ${i + 1} doğru cevaplanamadı (Sahne #9'a ilerlerken)`);
+    await goToNextS08Item(page);
+  }
+  await page.waitForSelector('.ls-topic-end [data-action="advance"]');
+}
+async function advanceToScene9(page) {
+  await completeScene8(page);
+  await page.click('.ls-topic-end [data-action="advance"]');
+  await page.waitForTimeout(400);
+}
+async function confirmS09Intro(page) {
+  await page.waitForSelector('#s09-confirm');
+  await page.click('#s09-confirm');
+  await page.waitForTimeout(300);
+}
+/** Sahne #9'un anları, girdi açılmadan ÖNCE kısa bir otomatik/scripted
+    diziyi (yakalama / tehdit+yanıt) oynatır (bkz. scenes/scene09KoRule.js
+    `runMomentIntro`) — sabit bir timeout yerine, GERÇEK DOM durumunu
+    (ipucu metni artık "Diziliş oynatılıyor…" DEĞİL) bekler; bu yüzden
+    reduced-motion/normal ortamlarda AYNI şekilde güvenilir. */
+async function waitForS09Interactive(page, timeoutMs = 4000) {
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#s09-tap-hint');
+    return !!el && el.textContent && el.textContent !== 'Diziliş oynatılıyor…';
+  }, { timeout: timeoutMs });
+}
+async function advanceToScene9AndIntro(page) {
+  await advanceToScene9(page);
+  await confirmS09Intro(page);
+  await waitForS09Interactive(page);
+}
+/** "N / 2" ilerleme göstergesinden AKTİF anın GERÇEK curriculumStepIndex'ini
+    okuyup koRulePolicy.js'in AYNI momentini döner — sabit index varsayımı
+    YOK (bkz. scenes/scene08IllegalMoves.js currentS08Moment İLE AYNI ilke). */
+async function currentS09Moment(page) {
+  await page.waitForTimeout(80);
+  const progressText = (await page.locator('#s09-progress .s05-progress-text').textContent())?.trim() || '';
+  const idx1 = parseInt(progressText.split('/')[0].trim(), 10);
+  const moments = getKoRuleMoments();
+  return moments[idx1 - 1] || null;
+}
+/** Bu anın GERÇEK ko noktasına dokunur — hedef curriculum'un GERÇEK
+    yakalama/geri-alma hamlelerinden türetilmiştir (bkz. scenes/
+    koRulePolicy.js), sabit piksel/koordinat varsayımı YOK. */
+async function tapS09Target(page, moment) {
+  const pt = await findScreenPointFor(page, moment.koPoint);
+  if (!pt) return false;
+  await page.mouse.click(pt.x, pt.y);
+  return true;
+}
+async function answerCurrentS09Item(page) {
+  await waitForS09Interactive(page);
+  const moment = await currentS09Moment(page);
+  if (!moment) return false;
+  return tapS09Target(page, moment);
+}
+async function goToNextS09Item(page) {
+  await page.click('#s09-continue');
+  await page.waitForTimeout(400);
+}
+
+addTest('M1) Sahne #8 → Sahne #9 GERÇEK topic-end geçişi: Sahne #8 artık son sahne DEĞİL, board/narration bbox <1px stabil, tek scene_started', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await completeScene8(s.page);
+    const s8Label = (await s.page.locator('.ls-topic-end [data-action="advance"]').textContent())?.trim();
+    ensure(s8Label === 'Sonraki konu', `Sahne #8 (artık son sahne DEĞİL) "Sonraki konu" göstermeli, bulunan: "${s8Label}"`);
+    const boardBefore = await s.page.locator('#ls-canvas').boundingBox();
+    const narrBefore = await s.page.locator('#ls-narration').boundingBox();
+    await s.page.click('.ls-topic-end [data-action="advance"]');
+    await s.page.waitForSelector('#s09-confirm');
+    const boardAfter = await s.page.locator('#ls-canvas').boundingBox();
+    const narrAfter = await s.page.locator('#ls-narration').boundingBox();
+    ensure(Math.abs(boardBefore.width - boardAfter.width) < 1 && Math.abs(boardBefore.height - boardAfter.height) < 1, 'geçişte board bbox değişti');
+    ensure(Math.abs(narrBefore.width - narrAfter.width) < 1, 'geçişte narrasyon bbox değişti');
+    const events = eventsFor(await getEventLog(s.page), S09_ID);
+    ensure(events.filter(e => e.type === 'scene_started').length === 1, `tek scene_started olmalı, bulunan: ${events.filter(e => e.type === 'scene_started').length}`);
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('M2) An 1 (ko_reject): intro-dizisi (GERÇEK yakalama) bitince ko noktası KIRMIZI işaretlenir (adaptör + metin etiketi), progress "1 / 2"', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene9AndIntro(s.page);
+    const moment = await currentS09Moment(s.page);
+    ensure(moment.kind === KO_MOMENT_KINDS.REJECT, `An 1 kind:"ko_reject" olmalı, bulunan: ${moment.kind}`);
+    const progressText = (await s.page.locator('#s09-progress .s05-progress-text').textContent())?.trim();
+    ensure(progressText === '1 / 2', `progress "1 / 2" olmalı, bulunan: "${progressText}"`);
+    const statusText = (await s.page.locator('#s09-ko-status').textContent())?.trim() || '';
+    ensure(/yasak/i.test(statusText) && /kırmızı/i.test(statusText), `ko-status kırmızı/yasak metnini içermeli, bulunan: "${statusText}"`);
+    const marks = await s.page.evaluate(() => window.__lsTestBoardAdapter.getIllegalMoves());
+    ensure(marks.length === 1 && marks[0].row === moment.koPoint.row && marks[0].col === moment.koPoint.col,
+      `adaptörde TEK kırmızı işaret, ko noktasında olmalı — bulunan: ${JSON.stringify(marks)}`);
+  } finally { await s.close(); }
+});
+
+addTest('M3) An 1: ko noktasına BEYAZ oynama denemesi GERÇEK RuleEngine KO reddiyle sonuçlanır — görev talimatının BİREBİR istediği Türkçe geri bildirim gösterilir, board DEĞİŞMEZ, "Devam" açılır', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene9AndIntro(s.page);
+    const moment = await currentS09Moment(s.page);
+    const expected = evaluateKoAttempt(moment, moment.koPoint);
+    ensure(!expected.legal && expected.reason === 'KO', `ön koşul: ko noktası GERÇEKTEN KO ile reddedilmeli, bulunan: ${JSON.stringify(expected)}`);
+    ensure((await s.page.locator('#s09-continue').getAttribute('tabindex')) === '-1', 'Devam denemeden ÖNCE zaten aktif olmamalı');
+    const ok = await tapS09Target(s.page, moment);
+    ensure(ok, 'GERÇEK ko noktası ekranda bulunamadı');
+    await s.page.waitForTimeout(300);
+    const feedback = (await s.page.locator('#s09-feedback').textContent())?.trim() || '';
+    ensure(feedback === 'Ko kuralı — bu hamle tahtayı önceki pozisyona döndürür; hemen oynanamaz.',
+      `feedback görev talimatının BİREBİR istediği metin olmalı, bulunan: "${feedback}"`);
+    const events = eventsFor(await getEventLog(s.page), S09_ID).filter(e => e.type === 'scene_ko_attempt');
+    ensure(events.length === 1, `tek deneme event'i, bulunan: ${events.length}`);
+    const payload = events[0].payload;
+    ensure(payload.legal === false && payload.reason === 'KO' && payload.isTarget === true && payload.boardChanged === false,
+      `payload beklenen: legal:false,reason:KO,isTarget:true,boardChanged:false — bulunan: ${JSON.stringify(payload)}`);
+    ensure(payload.color === 'white', `deneme rengi 'white' olmalı, bulunan: ${payload.color}`);
+    const tabindex = await s.page.locator('#s09-continue').getAttribute('tabindex');
+    ensure(tabindex === '0', `KO reddi başarılı sayılmalı, Devam AÇIK olmalı, tabindex: ${tabindex}`);
+  } finally { await s.close(); }
+});
+
+addTest('M4) An 1: başka GERÇEK yasal (hedef-dışı) bir noktaya dokunmak board\'u DEĞİŞTİRMEZ, ilerletmez, "Devam" kapalı kalır', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene9AndIntro(s.page);
+    const moment = await currentS09Moment(s.page);
+    const farCorner = { row: 8, col: 0 };
+    const expected = evaluateKoAttempt(moment, farCorner);
+    ensure(expected.legal && !expected.isTarget, `ön koşul: (8,0) hedef-dışı GERÇEK yasal bir nokta olmalı, bulunan: ${JSON.stringify(expected)}`);
+    const pt = await findScreenPointFor(s.page, farCorner);
+    ensure(pt, 'hedef-dışı nokta ekranda bulunamadı');
+    await s.page.mouse.click(pt.x, pt.y);
+    await s.page.waitForTimeout(300);
+    const tabindex = await s.page.locator('#s09-continue').getAttribute('tabindex');
+    ensure(tabindex === '-1', `hedef-dışı dokunma Devam'ı AÇMAMALI, tabindex: ${tabindex}`);
+    const events = eventsFor(await getEventLog(s.page), S09_ID).filter(e => e.type === 'scene_ko_attempt');
+    ensure(events.length === 1 && events[0].payload.boardChanged === false, `hedef-dışı deneme board'u DEĞİŞTİRMEMELİ: ${JSON.stringify(events[0]?.payload)}`);
+  } finally { await s.close(); }
+});
+
+addTest('M5) An 2 (ko_retake): tehdit+yanıt dizisi bitince ko noktası YEŞİL neon\'a döner; BEYAZ geri alma GERÇEKTEN kabul edilir ve doğru taşı yakalar', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene9AndIntro(s.page);
+    ensure(await answerCurrentS09Item(s.page), 'An 1 cevaplanamadı (An 2\'ye ilerlerken)');
+    await s.page.waitForTimeout(300);
+    await goToNextS09Item(s.page);
+    await waitForS09Interactive(s.page);
+
+    const moment = await currentS09Moment(s.page);
+    ensure(moment.kind === KO_MOMENT_KINDS.RETAKE, `An 2 kind:"ko_retake" olmalı, bulunan: ${moment.kind}`);
+    const statusText = (await s.page.locator('#s09-ko-status').textContent())?.trim() || '';
+    ensure(/serbest/i.test(statusText) && /yeşil/i.test(statusText), `ko-status yeşil/serbest metnini içermeli, bulunan: "${statusText}"`);
+    const freeMarks = await s.page.evaluate(() => window.__lsTestBoardAdapter.getKoFree());
+    ensure(freeMarks.length === 1 && freeMarks[0].row === moment.koPoint.row && freeMarks[0].col === moment.koPoint.col,
+      `adaptörde TEK yeşil "serbest" işareti, ko noktasında olmalı — bulunan: ${JSON.stringify(freeMarks)}`);
+    const redMarksAfterFree = await s.page.evaluate(() => window.__lsTestBoardAdapter.getIllegalMoves());
+    ensure(redMarksAfterFree.length === 0, `serbest kaldıktan SONRA kırmızı işaret KALMAMALI, bulunan: ${JSON.stringify(redMarksAfterFree)}`);
+
+    const expected = evaluateKoAttempt(moment, moment.koPoint);
+    ensure(expected.legal && expected.capturedCount === moment.expectedCapturedCount, `ön koşul: geri alma GERÇEKTEN yasal ve ${moment.expectedCapturedCount} taş yakalamalı, bulunan: ${JSON.stringify(expected)}`);
+    const ok = await tapS09Target(s.page, moment);
+    ensure(ok, 'GERÇEK ko noktası ekranda bulunamadı');
+    await s.page.waitForTimeout(300);
+    const events = eventsFor(await getEventLog(s.page), S09_ID).filter(e => e.type === 'scene_ko_attempt');
+    const last = events[events.length - 1].payload;
+    ensure(last.legal === true && last.boardChanged === true && last.capturedCount === moment.expectedCapturedCount,
+      `geri alma payload'ı legal:true,boardChanged:true,capturedCount:${moment.expectedCapturedCount} taşımalı — bulunan: ${JSON.stringify(last)}`);
+    const feedback = (await s.page.locator('#s09-feedback').textContent())?.trim() || '';
+    ensure(/geri alabilir/i.test(feedback) && feedback.includes(String(moment.expectedCapturedCount)), `feedback GERÇEK yakalanan sayıyı içermeli, bulunan: "${feedback}"`);
+  } finally { await s.close(); }
+});
+
+addTest('M6) İki an da başarıyla tamamlanınca completion TAM BİR KEZ açılır, final kontrol "Konular" (Sahne #9 artık son sahne), "Sahne tamamlandı"/ham reason kodu YOK', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene9AndIntro(s.page);
+    for (let i = 0; i < 2; i++) {
+      ensure(await answerCurrentS09Item(s.page), `An ${i + 1} cevaplanamadı`);
+      await s.page.waitForTimeout(300);
+      await goToNextS09Item(s.page);
+      if (i === 0) await waitForS09Interactive(s.page);
+    }
+    await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
+    const label = (await s.page.locator('.ls-topic-end [data-action="advance"]').textContent())?.trim();
+    ensure(label === 'Konular', `Sahne #9 son sahne — "Konular" olmalı, bulunan: "${label}"`);
+    const events = eventsFor(await getEventLog(s.page), S09_ID);
+    ensure(events.filter(e => e.type === 'scene_completion_unlocked').length === 1, 'completion TAM BİR KEZ açılmalı');
+    const bodyText = await s.page.locator('#ls-scene-host').innerText();
+    ensure(!/sahne\s*tamamlandı|scene.?completed|scene-09|registry|runtime|\bKO\b(?!\s*kural)/i.test(bodyText), `teknik dil/ham reason sızmış: "${bodyText}"`);
+  } finally { await s.close(); }
+});
+
+addTest('M7) An 1: aynı ko noktasına hızlı çift tıklama TEK scene_ko_attempt event\'i üretir (debounce)', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene9AndIntro(s.page);
+    const moment = await currentS09Moment(s.page);
+    const pt = await findScreenPointFor(s.page, moment.koPoint);
+    ensure(pt, 'ko noktası ekranda bulunamadı');
+    await s.page.mouse.click(pt.x, pt.y);
+    await s.page.mouse.click(pt.x, pt.y); // hızlı ikinci tıklama — debounce penceresi İÇİNDE
+    await s.page.waitForTimeout(300);
+    const events = eventsFor(await getEventLog(s.page), S09_ID).filter(e => e.type === 'scene_ko_attempt');
+    ensure(events.length === 1, `hızlı çift tıklama TEK event üretmeli, bulunan: ${events.length}`);
+  } finally { await s.close(); }
+});
+
+addTest('M8) Reload: An 1 cevaplanmış ama Devam\'a basılmadan → temiz başlangıca döner; go_scene_progress_v1 kullanılır, go_done_3d DEĞİŞMEZ', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene9AndIntro(s.page);
+    ensure(await answerCurrentS09Item(s.page), 'An 1 cevaplanamadı');
+    await s.page.waitForTimeout(300);
+    await s.page.reload({ waitUntil: 'networkidle' });
+    await s.page.waitForSelector('#s09-confirm');
+    const progress = await s.page.evaluate(() => JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null'));
+    ensure(!progress?.completedSceneIds?.includes(S09_ID), 'yarım kalan Sahne #9 yanlışlıkla tamamlanmış sayıldı');
+    const legacy = await s.page.evaluate(() => localStorage.getItem('go_done_3d'));
+    ensure(legacy == null, `go_done_3d DEĞİŞMEMELİ, bulunan: ${legacy}`);
+  } finally { await s.close(); }
+});
+
+addTest('M9) Replay Sahne #9\'u TEMİZ (yalnız intro+An 1) başlatır, completion geçmişini çoğaltmaz', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene9AndIntro(s.page);
+    for (let i = 0; i < 2; i++) {
+      ensure(await answerCurrentS09Item(s.page), `An ${i + 1} cevaplanamadı`);
+      await s.page.waitForTimeout(300);
+      await goToNextS09Item(s.page);
+      if (i === 0) await waitForS09Interactive(s.page);
+    }
+    await s.page.waitForSelector('.ls-topic-end [data-action="replay"]');
+    await s.page.click('.ls-topic-end [data-action="replay"]');
+    await s.page.waitForSelector('#s09-confirm');
+    const completions = eventsFor(await getEventLog(s.page), S09_ID).filter(e => e.type === 'scene_completion_unlocked');
+    ensure(completions.length === 1, `replay completion geçmişini ÇOĞALTMAMALI, bulunan: ${completions.length}`);
+  } finally { await s.close(); }
+});
+
+addTest('M10) Konular paneli açıkken board input kilitlenir (deneme üretmez), kapanınca eski duruma döner', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene9AndIntro(s.page);
+    const before = eventsFor(await getEventLog(s.page), S09_ID).filter(e => e.type === 'scene_ko_attempt').length;
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForSelector('#ls-topics-panel:not([hidden])');
+    // bkz. scenes/scene08IllegalMoves.js L14 İLE AYNI desen — panel açıkken
+    // girdi kilitli olduğu için hedefin EKRANDA TAM olarak nerede olduğu
+    // önemsiz, board'un ORTASINA tıklamak yeterli (hover hiçbir zaman
+    // çözülmeyeceği için findScreenPointFor burada anlamsız/gereksiz yavaş
+    // olurdu — bkz. adapters/sceneBoardAdapter.js handleMove: inputEnabled
+    // false iken hoverPoint HER ZAMAN null).
+    const canvasBox = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
+    await s.page.waitForTimeout(150);
+    const duringOpen = eventsFor(await getEventLog(s.page), S09_ID).filter(e => e.type === 'scene_ko_attempt').length;
+    ensure(duringOpen === before, 'Konular paneli açıkken canvas tıklaması scene_ko_attempt üretti — input yanlış kilitli');
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(200);
+    const moment = await currentS09Moment(s.page);
+    const ok = await tapS09Target(s.page, moment);
+    ensure(ok, 'panel kapandıktan SONRA ko noktası ekranda bulunamadı');
+    await s.page.waitForTimeout(300);
+    const events = eventsFor(await getEventLog(s.page), S09_ID).filter(e => e.type === 'scene_ko_attempt');
+    ensure(events.length === before + 1, `panel kapandıktan SONRA girdi normal çalışmalı, bulunan: ${events.length}`);
+  } finally { await s.close(); }
+});
+
+// M11/M12 — kurulum (Sahne #1-9 boyunca oynama) BİLEREK masaüstü boyut/
+// touch-siz context'te yapılır (bkz. M1-M10 — GÜVENİLİR, kanıtlanmış yol);
+// yalnız Sahne #9'a ULAŞTIKTAN SONRA viewport mobil boyuta küçültülür. Kök
+// neden: Sahne #7/#8'in KENDİ çok-hedefli (6/4 hedef) hover-tabanlı
+// `findScreenPointFor` akışı, `hasTouch:true` + 390×844 ile AÇILAN TAZE bir
+// context'te bu ortamda GÜVENİLMEZ/yavaş davranıyor (gözlemlendi: `#s07-
+// continue`/`#s08-continue` "not visible" timeout'u — Sahne #7/#8'in KENDİ
+// koduna görev talimatı gereği DOKUNULMADI, bu yüzden kök neden orada
+// düzeltilmiyor). Sahne #9'un KENDİSİ hiçbir YENİ dokunma/hover kodu
+// YAZMAZ — `onIntersectionTap`/`onIntersectionHover` üzerinden AYNI
+// adaptör mekanizmasını kullanır (bu mekanizma L6/D11 gibi testlerde
+// `hasTouch:true` ile ZATEN doğrulanmış) — bu yüzden burada asıl doğrulanan
+// "Sahne #9 mobil VIEWPORT BOYUTUNDA da taşmadan/kesişmeden çalışır ve
+// tıklama ile ilerler" — genel touch-event semantiği AYRICA test EDİLMEZ.
+addTest('M11) Mobil viewport boyutu (390×844): tek tıklama/dokunuş An 1\'in KO reddini gerçekleştirir', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene9AndIntro(s.page);
+    await s.page.setViewportSize(VIEWPORTS.mobile);
+    await s.page.waitForTimeout(250); // resize sonrası yeniden kadrajlama
+    const moment = await currentS09Moment(s.page);
+    const ok = await tapS09Target(s.page, moment);
+    ensure(ok, 'mobil viewport boyutunda ko noktası bulunamadı');
+    await s.page.waitForTimeout(300);
+    const tabindex = await s.page.locator('#s09-continue').getAttribute('tabindex');
+    ensure(tabindex === '0', `mobil viewportta tek tıklama sonrası Devam AÇIK olmalı, tabindex: ${tabindex}`);
+  } finally { await s.close(); }
+});
+
+addTest('M12) Masaüstü/tablet/mobil viewport boyutlarında Sahne #9 board/narration taşma veya kesişme ÜRETMEZ', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene9AndIntro(s.page);
+    for (const [name, viewport] of Object.entries(VIEWPORTS)) {
+      await s.page.setViewportSize(viewport);
+      await s.page.waitForTimeout(250);
+      const boardBox = await s.page.locator('#ls-canvas').boundingBox();
+      const narrBox = await s.page.locator('#ls-narration').boundingBox();
+      ensure(!boxesIntersect(boardBox, narrBox), `${name}: board/narration kesişiyor`);
+      const scrollWidth = await s.page.evaluate(() => document.documentElement.scrollWidth);
+      const clientWidth = await s.page.evaluate(() => document.documentElement.clientWidth);
+      ensure(scrollWidth <= clientWidth + 1, `${name}: yatay taşma var (scrollWidth=${scrollWidth} clientWidth=${clientWidth})`);
+    }
+  } finally { await s.close(); }
+});
+
+addTest('M13) Teacher Studio Sahne #9\'u görür (Curriculum + Diagnostics), console/pageerror sıfır', async () => {
+  const context = await (await launchChromium()).newContext();
+  const consoleErrors = [];
+  try {
+    await context.route(`${BASE}/**`, async route => {
+      const url = new URL(route.request().url());
+      const pathname = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
+      const filePath = absPath(pathname || 'teacher-studio.html');
+      try { await route.fulfill({ status: 200, contentType: mime(filePath), body: fs.readFileSync(filePath) }); }
+      catch { await route.abort(); }
+    });
+    const page = await context.newPage();
+    page.on('pageerror', e => consoleErrors.push('pageerror: ' + e.message));
+    page.on('console', m => { if (m.type() === 'error') consoleErrors.push('console: ' + m.text()); });
+    const resp = await page.goto(`${BASE}/teacher-studio.html`, { waitUntil: 'networkidle' });
+    ensure(resp && resp.status() === 200, `teacher-studio.html HTTP ${resp?.status()}`);
+    await page.click('[data-tab="curriculum"]');
+    await page.waitForTimeout(200);
+    const curriculumText = await page.locator('#tab-curriculum').innerText();
+    ensure(/Ko Kuralı/.test(curriculumText), 'Curriculum panelinde Sahne #9 başlığı görünmüyor');
+    await page.click('[data-tab="diagnostics"]');
+    await page.waitForTimeout(200);
+    const diagText = await page.locator('#diag-scene-table').innerText();
+    ensure(!/scene-09-ko-rule.*REGISTRY_ORDER_INVALID|scene-09-ko-rule.*NEXT_SCENE_NOT|scene-08-illegal-moves.*NEXT_SCENE_NOT_SCENE09/i.test(diagText), `Sahne #9 registry sırası hatası: "${diagText}"`);
+    ensure(consoleErrors.length === 0, `Teacher Studio konsol/pageerror sıfır olmalı: ${JSON.stringify(consoleErrors)}`);
+  } finally { await context.close(); }
+});
+
+addTest('M14) ogren-3d.html Sahne #9 eklenmesinden ETKİLENMEZ — regresyonsuz açılır, canvas render eder', async () => {
   const context = await (await launchChromium()).newContext();
   const consoleErrors = [];
   try {

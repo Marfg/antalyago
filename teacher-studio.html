@@ -216,7 +216,7 @@
 </div>
 
 <script type="module">
-import { CURRICULUM } from './core/curriculum.js?v=2026-09-01.1';
+import { CURRICULUM } from './core/curriculum.js?v=2026-09-02.1';
 import { classifyCurriculumStep, responseTypeOf, stripMarkup, isAssessmentLesson } from './core/learningContext.js';
 import { KNOWN_CONCEPTS } from './core/conceptMap.js';
 import { createStudentModel, hydrateStudentModel, getConceptState } from './core/studentModel.js';
@@ -225,37 +225,38 @@ import { CONTENT_PURPOSES, CONTENT_STUDENT_STATUSES, CONTENT_STAGES, validateCon
 import { mergeContentOverrides, applyOverride, OVERRIDABLE_FIELDS } from './core/contentOverrides.js';
 import { teacherContentOverrides } from './adapters/teacherContentOverrides.js';
 import { buildRetrievalQuery, retrieveContent } from './core/contentRetriever.js';
-import { EventLog } from './core/eventLog.js?v=2026-09-01.1';
+import { EventLog } from './core/eventLog.js?v=2026-09-02.1';
 import { buildAiReviewEvent } from './core/teacherAssistant.js';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-01.1';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-01.1';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-01.1';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-01.1';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-01.1';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-01.1';
-import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-09-01.1';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-01.1';
-import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-01.1';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-02.1';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-02.1';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-02.1';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-02.1';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-02.1';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-02.1';
+import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-09-02.1';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-02.1';
+import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-02.1';
+import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-09-02.1';
 import {
   getAssessmentSteps as getLibertyAssessmentSteps,
   computeChoiceCorrectIndex as computeLibertyChoiceCorrectIndex,
   computeTapTargets as computeLibertyTapTargets,
   computeResultAfterMove as computeLibertyResultAfterMove,
   ASSESSMENT_STEP_INDICES as LIBERTY_ASSESSMENT_STEP_INDICES,
-} from './scenes/libertyAssessmentPolicy.js?v=2026-09-01.1';
+} from './scenes/libertyAssessmentPolicy.js?v=2026-09-02.1';
 import {
   getCaptureMoments,
   isValidCapturePoint as isValidCaptureMomentPoint,
   computeCaptureResult,
   MOMENT_STEP_INDICES as CAPTURE_MOMENT_STEP_INDICES,
-} from './scenes/capturePolicy.js?v=2026-09-01.1';
+} from './scenes/capturePolicy.js?v=2026-09-02.1';
 import {
   getCapturePracticeMoments,
   isValidCapturePoint as isValidPracticePoint,
   computePracticeResult,
   isKnownHintMode,
   MOMENT_STEP_INDICES as PRACTICE_MOMENT_STEP_INDICES,
-} from './scenes/capturePracticePolicy.js?v=2026-09-01.1';
+} from './scenes/capturePracticePolicy.js?v=2026-09-02.1';
 import {
   getIllegalMoveMoments,
   evaluateAttempt as evaluateIllegalMoveAttempt,
@@ -265,15 +266,25 @@ import {
   MOMENT_KINDS as ILLEGAL_MOVE_KINDS,
   MOMENT_STEP_INDICES as ILLEGAL_MOVE_STEP_INDICES,
   CONCEPT as ILLEGAL_MOVE_CONCEPT,
-} from './scenes/illegalMovePolicy.js?v=2026-09-01.1';
-import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-09-01.1';
-import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-09-01.1';
-import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-09-01.1';
-import { BoardState } from './core/boardState.js?v=2026-09-01.1';
-import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-09-01.1';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-01.1';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-01.1';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-01.1';
+} from './scenes/illegalMovePolicy.js?v=2026-09-02.1';
+import {
+  getKoRuleMoments,
+  evaluateKoAttempt,
+  isSuccessfulAttempt as isSuccessfulKoAttempt,
+  boardSignature as koBoardSignature,
+  isKnownMomentKind as isKnownKoMomentKind,
+  MOMENT_KINDS as KO_MOMENT_KINDS,
+  MOMENT_STEP_INDICES as KO_STEP_INDICES,
+  CONCEPT as KO_CONCEPT,
+} from './scenes/koRulePolicy.js?v=2026-09-02.1';
+import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-09-02.1';
+import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-09-02.1';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-09-02.1';
+import { BoardState } from './core/boardState.js?v=2026-09-02.1';
+import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-09-02.1';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-02.1';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-02.1';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-02.1';
 
 /* ── Sürüm/cache bekçisi — learning-scenes.html İLE AYNI mekanizma ────
    (bkz. o dosyadaki dosya başı notu, KRİTİK DÜZELTME: SCENE_RELEASE artık
@@ -341,7 +352,7 @@ function showStudioStaleReleaseUI() {
    yalnız statik metadata'larını (id/version/curriculumRef) registry
    üzerinden okur — mevcut Curriculum/Diagnostics/Event Log panelleri
    genişletildi, yeni bir dashboard YOK. */
-const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene07CapturePractice, scene08IllegalMoves]);
+const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene07CapturePractice, scene08IllegalMoves, scene09KoRule]);
 
 /* ── localStorage erişimi — ogren-3d.html İLE AYNI anahtarlar ──────
    Studio kendi core mantığını YAZMAZ; yalnızca aynı adaptör deseniyle
@@ -599,11 +610,14 @@ function renderCurriculumScenes() {
   try { practiceDetail = getCapturePracticeMoments(); } catch { /* Diagnostics zaten kendi hata satırını üretir */ }
   let illegalMoveDetail = [];
   try { illegalMoveDetail = getIllegalMoveMoments(); } catch { /* Diagnostics zaten kendi hata satırını üretir */ }
+  let koRuleDetail = [];
+  try { koRuleDetail = getKoRuleMoments(); } catch { /* Diagnostics zaten kendi hata satırını üretir */ }
   const detailByScene = {
     [scene05LibertyAssessment.id]: libertyAssessmentDetail,
     [scene06CaptureBasics.id]: captureDetail,
     [scene07CapturePractice.id]: practiceDetail,
     [scene08IllegalMoves.id]: illegalMoveDetail,
+    [scene09KoRule.id]: koRuleDetail,
   };
   const rows = sceneRegistry.list().map(scene => {
     const refs = Array.isArray(scene.curriculumRefs) ? scene.curriculumRefs : null;
@@ -1666,6 +1680,119 @@ function renderSceneDiagnostics() {
     // talimatı Bölüm 4).
     if (seenKinds.size !== 2) {
       rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>MOMENTS_NOT_DISTINCT_KINDS:${[...seenKinds].join(',')}</td></tr>`);
+    }
+  }
+
+  // Sahne #9 — "Ko Kuralı" (core/curriculum.js l5'in kullanıcıya görünen 1.
+  // ve 2. adımları, steps[0..1] — bkz. scenes/koRulePolicy.js, TEK doğruluk
+  // kaynağı; scenes/illegalMovePolicy.js/scene08IllegalMoves.js'e görev
+  // gereği DOKUNULMADI/import EDİLMEDİ). Studio burada sahneyi mount
+  // ETMEDEN, saf koRulePolicy.js + core/ruleEngine.js üzerinden: registry
+  // sırası scene08'den sonra geldiğini, scene08'in ARTIK son sahne
+  // OLMADIĞINI, scene09'un GERÇEKTEN son sahne olduğunu, curriculumRefs'in
+  // gerçek l5 adımlarına gittiğini, HER iki anın GERÇEK RuleEngine
+  // sonucuyla beklenen `kind`i taşıdığını, hedef-dışı GERÇEK bir noktanın
+  // kabul edilmediğini, değerlendirmenin board'u MUTATE ETMEDİĞİNİ ve
+  // `concept`in (bilinçli olarak, Sahne #8/forbidden_move İLE AYNI desen)
+  // Student Model'e KAYITLI OLMADIĞINI doğrular.
+  {
+    const order = sceneRegistry.list().map(s => s.id);
+    const idx8 = order.indexOf(scene08IllegalMoves.id);
+    const idx9 = order.indexOf(scene09KoRule.id);
+    if (idx9 !== idx8 + 1) {
+      rows.push(`<tr><td>${scene09KoRule.id}</td><td>REGISTRY_ORDER_INVALID:scene08 index=${idx8} scene09 index=${idx9}</td></tr>`);
+    }
+    // Sahne #8 ARTIK son sahne DEĞİL — "Sonraki konu" scene09'a gitmeli
+    // (bkz. görev talimatı: "Mevcut Sahne #8'i değiştirme" — bu satır
+    // scene08IllegalMoves.js'in KENDİ kodu DEĞİŞMEDEN, yalnız registry
+    // sırasının GENİŞLEMESİYLE doğal olarak değişen bir runtime davranışıdır).
+    if (sceneRegistry.next(scene08IllegalMoves.id)?.id !== scene09KoRule.id) {
+      rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>NEXT_SCENE_NOT_SCENE09</td></tr>`);
+    }
+    if (sceneRegistry.next(scene09KoRule.id) != null) {
+      rows.push(`<tr><td>${scene09KoRule.id}</td><td>UNEXPECTED_NEXT_SCENE:son sahne olmalıydı</td></tr>`);
+    }
+
+    const refs9 = scene09KoRule.curriculumRefs ?? [];
+    if (refs9.length !== KO_STEP_INDICES.length) {
+      rows.push(`<tr><td>${scene09KoRule.id}</td><td>CURRICULUM_REFS_COUNT_MISMATCH:${refs9.length} (beklenen ${KO_STEP_INDICES.length})</td></tr>`);
+    }
+    const l5ForKo = ALL_LESSONS.find(x => x.lesson.id === 'l5')?.lesson;
+    refs9.forEach((ref, i) => {
+      const expectedIdx = KO_STEP_INDICES[i];
+      if (ref.stepIndex !== expectedIdx) {
+        rows.push(`<tr><td>${scene09KoRule.id}</td><td>CURRICULUM_REF_INDEX_MISMATCH:ref[${i}]=${ref.stepIndex} beklenen=${expectedIdx}</td></tr>`);
+      }
+      if (!l5ForKo?.steps?.[ref.stepIndex]) {
+        rows.push(`<tr><td>${scene09KoRule.id}</td><td>UNKNOWN_CURRICULUM_STEP:stepIndex=${ref.stepIndex}</td></tr>`);
+      }
+    });
+
+    let koMoments = [];
+    try { koMoments = getKoRuleMoments(); }
+    catch (e) { rows.push(`<tr><td>${scene09KoRule.id}</td><td>MOMENTS_THREW:${e.message}</td></tr>`); }
+
+    // v0.1 (bkz. koRulePolicy.js dosya başı notu): concept'in KENDİSİ
+    // bilinçli olarak KNOWN_CONCEPTS'te DEĞİL — bu satır bunu SESSİZCE
+    // geçmez, açık bir "bilinen değil" issue'su üretir (Sahne #8/
+    // forbidden_move İLE AYNI desen).
+    if (!KNOWN_CONCEPTS.includes(KO_CONCEPT)) {
+      rows.push(`<tr><td>${scene09KoRule.id}</td><td>CONCEPT_NOT_YET_IN_STUDENT_MODEL:concept=${KO_CONCEPT} (bilinçli — bkz. scenes/koRulePolicy.js dosya başı notu)</td></tr>`);
+    }
+
+    const seenKoKinds = new Set();
+    koMoments.forEach(m => {
+      if (!isKnownKoMomentKind(m.kind)) {
+        rows.push(`<tr><td>${scene09KoRule.id}</td><td>UNKNOWN_MOMENT_KIND:step=${m.curriculumStepIndex} kind=${m.kind}</td></tr>`);
+      }
+      seenKoKinds.add(m.kind);
+      if (m.assessmentConcept !== KO_CONCEPT) {
+        rows.push(`<tr><td>${scene09KoRule.id}</td><td>UNEXPECTED_ASSESSMENT_CONCEPT:step=${m.curriculumStepIndex} concept=${m.assessmentConcept}</td></tr>`);
+      }
+      const ref = refs9[m.momentIndex];
+      if (ref && ref.concept !== m.assessmentConcept) {
+        rows.push(`<tr><td>${scene09KoRule.id}</td><td>CURRICULUM_REF_CONCEPT_MISMATCH:step=${m.curriculumStepIndex} ref.concept=${ref.concept} policy.assessmentConcept=${m.assessmentConcept}</td></tr>`);
+      }
+      if (!m.koPoint) {
+        rows.push(`<tr><td>${scene09KoRule.id}</td><td>MOMENT_NO_KO_POINT:step=${m.curriculumStepIndex}</td></tr>`);
+        return;
+      }
+
+      // Ko noktasındaki GERÇEK RuleEngine sonucu bu anın `kind`iyle uyuşuyor
+      // mu — 'ko_reject' hedefte KO reddi, 'ko_retake' hedefte GERÇEKTEN
+      // kabul + curriculum'un beklediği taş sayısını yakalıyor mu.
+      const result = evaluateKoAttempt(m, m.koPoint);
+      if (!isSuccessfulKoAttempt(m, result)) {
+        rows.push(`<tr><td>${scene09KoRule.id}</td><td>MOMENT_TARGET_NOT_SUCCESSFUL:step=${m.curriculumStepIndex} kind=${m.kind} legal=${result.legal} reason=${result.reason} captured=${result.capturedCount}</td></tr>`);
+      }
+      if (m.kind === KO_MOMENT_KINDS.REJECT && result.reason !== 'KO') {
+        rows.push(`<tr><td>${scene09KoRule.id}</td><td>REJECT_MOMENT_UNEXPECTED_REASON:step=${m.curriculumStepIndex} reason=${result.reason} beklenen=KO</td></tr>`);
+      }
+      if (m.kind === KO_MOMENT_KINDS.RETAKE && result.capturedCount !== m.expectedCapturedCount) {
+        rows.push(`<tr><td>${scene09KoRule.id}</td><td>CAPTURED_COUNT_MISMATCH:step=${m.curriculumStepIndex} captured=${result.capturedCount} beklenen=${m.expectedCapturedCount}</td></tr>`);
+      }
+
+      // Board'un GERÇEKTEN değişmediği — `evaluateKoAttempt` her zaman TAZE
+      // bir BoardState kurar, `moment.boardAfterSetup`'ı ASLA mutate etmez.
+      const sigBefore = koBoardSignature(m.boardAfterSetup);
+      evaluateKoAttempt(m, m.koPoint);
+      const sigAfter = koBoardSignature(m.boardAfterSetup);
+      if (sigBefore !== sigAfter) {
+        rows.push(`<tr><td>${scene09KoRule.id}</td><td>MOMENT_BOARD_MUTATED_BY_EVALUATION:step=${m.curriculumStepIndex}</td></tr>`);
+      }
+
+      // Hedef-dışı GERÇEK bir kesişim (tahtanın boş bir köşesi) bu anın
+      // hedefi OLARAK yanlışlıkla kabul edilmemeli.
+      const farCorner = { row: 8, col: 0 };
+      const farResult = evaluateKoAttempt(m, farCorner);
+      if (isSuccessfulKoAttempt(m, farResult) && !(m.koPoint.row === farCorner.row && m.koPoint.col === farCorner.col)) {
+        rows.push(`<tr><td>${scene09KoRule.id}</td><td>WRONG_POINT_ACCEPTED:step=${m.curriculumStepIndex}</td></tr>`);
+      }
+    });
+    // İki an FARKLI `kind` taşımalı — "hemen geri alma reddi" ile "tehdit
+    // sonrası geri alma" GERÇEKTEN iki farklı senaryo sunduğunun kanıtı.
+    if (seenKoKinds.size !== 2) {
+      rows.push(`<tr><td>${scene09KoRule.id}</td><td>MOMENTS_NOT_DISTINCT_KINDS:${[...seenKoKinds].join(',')}</td></tr>`);
     }
   }
 

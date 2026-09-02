@@ -63,6 +63,8 @@ const GRAPH_BASENAMES = [
   // v6 (2026-08-29.1) — Sahne #8 ("Yasak Hamleler") ve TEK yeni yardımcı
   // modülü.
   'scene08IllegalMoves.js', 'illegalMovePolicy.js',
+  // v7 (2026-08-31.1) — Sahne #9 ("Ko Kuralı") ve TEK yeni yardımcı modülü.
+  'scene09KoRule.js', 'koRulePolicy.js',
 ];
 
 /** Import satırı içerebilecek, graph'a dahil dosyalar + HTML entry point'leri. */
@@ -85,6 +87,8 @@ const SCAN_FILES = [
   'scenes/capturePracticePolicy.js',
   'scenes/scene08IllegalMoves.js',
   'scenes/illegalMovePolicy.js',
+  'scenes/scene09KoRule.js',
+  'scenes/koRulePolicy.js',
 ];
 
 const importLineRe = /(from\s+['"])(\.[\w./-]+\.js)(\?[^'"]*)?(['"])/g;
