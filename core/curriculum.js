@@ -331,7 +331,21 @@ export const CURRICULUM = [
   { id:'c2', title:'Temel Teknikler', lessons:[
 
     { id:'l7', title:'Canlı Gruplar (İki Göz)', steps:[
-      { text:`<p>Bir grup <strong>iki göze</strong> sahipse asla yakalanamaz — <em>ölümsüzdür.</em></p><p><span class="term">Göz</span> = grubun içindeki boş nokta. <strong>Yeşil halkalar</strong> tahtadaki tüm canlı grupları gösteriyor — her biri iki göze sahip.</p>`, size:19, board:[
+      // ── 1) 19×19: farklı canlı grup örnekleri + GERÇEK göz noktaları ──
+      // Taş verisi commit 6143810 (19x19 iki göz: SGF formasyon geri yüklendi)
+      // ile BİREBİR aynı — board hiç değiştirilmedi. Yalnız groupIndicators
+      // düzeltildi: 5508c99 sırasında orijinal △(triangle)/□(square) "ikisi
+      // de göz" işaretleri yeşil/kırmız renklere aktarılırken kırmızı yanlış
+      // biçimde "iki gözsüz, ölümlü nokta" anlamına dönüştürülmüştü — oysa
+      // orijinal metin ikisinin de göz olduğunu söylüyordu. Burada her
+      // noktanın GERÇEKTEN o grubun kendi göz noktası olup olmadığı
+      // core/boardState.js + core/ruleEngine.js ile tek tek doğrulandı
+      // (bkz. görev talimatı Bölüm 2/5): yalnız tek bir siyah grup tarafından
+      // dört yönden çevrili VE çapraz kontrolü sağlayan (bkz. l7 concept 3)
+      // noktalar yeşil işaretlendi. Board üzerindeki diğer siyah kümeler bu
+      // testten geçmediği (bir başka gruba bitişik veya beyazla doğrudan
+      // temas ediyor) için işaretlenmedi — metin bunu iddia etmiyor.
+      { text:`<p>Bir grup <strong>iki göze</strong> sahipse asla yakalanamaz — <em>ölümsüzdür.</em></p><p><span class="term">Göz</span> = grubun içindeki boş nokta. <strong>Yeşil işaretler</strong>, bu tahtadaki iki farklı canlı grubun DOĞRULANMIŞ gerçek göz noktalarını gösteriyor — her biri iki göze sahip.</p>`, size:19, board:[
         {color:'W',x:2,y:0},{color:'W',x:6,y:0},{color:'W',x:12,y:0},{color:'W',x:15,y:0},
         {color:'W',x:2,y:1},{color:'W',x:6,y:1},{color:'W',x:12,y:1},{color:'W',x:15,y:1},
         {color:'W',x:2,y:2},{color:'W',x:6,y:2},{color:'W',x:7,y:2},{color:'W',x:8,y:2},{color:'W',x:9,y:2},{color:'W',x:10,y:2},{color:'W',x:11,y:2},{color:'W',x:12,y:2},{color:'W',x:15,y:2},
@@ -359,24 +373,62 @@ export const CURRICULUM = [
         {color:'B',x:0,y:17},{color:'B',x:1,y:17},{color:'B',x:2,y:17},{color:'B',x:3,y:17},{color:'B',x:7,y:17},{color:'B',x:8,y:17},{color:'B',x:9,y:17},{color:'B',x:10,y:17},{color:'B',x:11,y:17},{color:'B',x:16,y:17},
         {color:'B',x:3,y:18},{color:'B',x:7,y:18},{color:'B',x:11,y:18},{color:'B',x:16,y:18},{color:'B',x:17,y:18},
       ], groupIndicators:[
-        {x:0,y:0,color:'green'},{x:8,y:0,color:'green'},{x:10,y:0,color:'green'},{x:18,y:0,color:'green'},
-        {x:17,y:1,color:'green'},{x:0,y:2,color:'green'},
-        {x:9,y:9,color:'green'},{x:8,y:10,color:'green'},
-        {x:17,y:17,color:'red'},
-        {x:0,y:18,color:'red'},{x:2,y:18,color:'red'},{x:8,y:18,color:'red'},{x:10,y:18,color:'red'},{x:18,y:18,color:'red'},
-      ], auto:true, camera:CAM.board19, fb:{t:'Yeşil çapraz = canlı grup gözü · Kırmızı çapraz = iki gözsüz, ölümlü nokta',c:'info'} },
-      { text:`<p><strong>Sahte göz</strong> — rakip tarafından doldurulabilecek nokta gerçek göz değildir.</p><div class="highlight-box">İki gerçek göz = ölümsüz grup. Go'nun en temel kavramlarından biridir.</div>`, board:[{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:2,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:4}], groupIndicators:[{x:3,y:3,color:'red'}], auto:true, size:9, fb:{t:'Kırmızı halka = tek göz, ölümlü grup — yakalanabilir!',c:'info'} },
+        {x:0,y:0,color:'green'},{x:0,y:2,color:'green'},
+        {x:8,y:0,color:'green'},{x:10,y:0,color:'green'},
+      ], auto:true, camera:CAM.board19, fb:{t:'Yeşil işaret = doğrulanmış gerçek göz noktası (her grup için iki tane).',c:'info'} },
 
-      // ── Alıştırma ──
-      { text:`<p>★ <strong>Alıştırma:</strong> Bu siyah grup canlı mı, ölü mü?</p>`, board:[{color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:1,y:2},{color:'B',x:3,y:2},{color:'B',x:1,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:3}], groupIndicators:[{x:2,y:2,color:'green'}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Bu grup canlı mı?',options:[{text:'Canlı — iki gözü var',correct:false,feedback:'Hayır — tek bir boş iç nokta var. Tek göz = ölümlü.'},{text:'Ölümlü — tek göz',correct:true,feedback:'Doğru! Tek göz yetmez. Beyaz ortaya oynayıp grubu öldürebilir.'}]}, fb:{t:'Kaç göz var? Say.',c:'info'} },
+      // ── 2) Tek gerçek göz ──────────────────────────────────────────────
+      { text:`<p>★ <strong>Alıştırma:</strong> Bu siyah grup canlı mı, ölü mü?</p>`, board:[{color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:1,y:2},{color:'B',x:3,y:2},{color:'B',x:1,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:3}], groupIndicators:[{x:2,y:2,color:'green'}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Bu grup canlı mı?',options:[{text:'Canlı — iki gözü var',correct:false,feedback:'Hayır — tek bir boş iç nokta var. (2,2) GERÇEK bir göz olsa bile tek göz = henüz ölümlü.'},{text:'Ölümlü — tek göz',correct:true,feedback:'Doğru! (2,2) tam bir gerçek göz (dört yön + dört çapraz siyahla çevrili) ama tek başına yetmez.'}]}, fb:{t:'Kaç göz var? Say.',c:'info'} },
 
-      { text:`<p>★★ <strong>Alıştırma:</strong> İkinci gözü tamamla — grubu kurtar.</p>`, board:[{color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:4,y:1},{color:'B',x:1,y:2},{color:'B',x:4,y:2},{color:'B',x:1,y:3},{color:'B',x:4,y:3},{color:'B',x:1,y:4},{color:'B',x:2,y:4},{color:'B',x:4,y:4},{color:'W',x:3,y:3}], answer:{x:3,y:4}, turn:'black', size:9, camera:CAM.center, fb:{t:'İkinci göz için nereye oyna?',c:'info'}, fb_ok:'İki göz tamamlandı — grup artık ölümsüz!', fb_err:'Grubun içini ikiye böl — iki ayrı boş alan oluştur.' },
+      // ── 3) Gerçek sahte göz ──────────────────────────────────────────
+      // Doğrulama: (4,4) dört yönden (3,4)/(5,4)/(4,3)/(4,5) tek bir siyah
+      // grupla çevrili — göz ADAYI. Ama dört çaprazından ikisi ((5,3) ve
+      // (5,5)) hâlâ boş/açık — sahte göz kuralı: iç noktalar en az 3/4
+      // çaprazı kontrol etmeli (kenar/köşede 2/2, 1/1). Burada 2/4 → SAHTE.
+      { text:`<p><strong>Sahte göz</strong> — bir nokta dört yönden aynı renk taşla çevrili görünse bile, çapraz noktalardan yeterince fazlası rakibe açıksa bu göz <strong>gerçek değildir</strong>: iç noktalarda en az 3/4 çaprazın, kenarda 2/2'sinin, köşede 1/1'inin aynı renk kontrolünde olması gerekir.</p>`, board:[
+        {color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:3,y:5},{color:'B',x:4,y:3},{color:'B',x:4,y:5},
+        {color:'B',x:4,y:2},{color:'B',x:5,y:2},{color:'B',x:6,y:2},{color:'B',x:7,y:2},{color:'B',x:7,y:3},{color:'B',x:7,y:4},{color:'B',x:6,y:4},{color:'B',x:5,y:4},
+      ], groupIndicators:[{x:4,y:4,color:'red'}], auto:true, size:9, camera:CAM.center, fb:{t:'Kırmızı işaret gerçek olmayan göz adayı — iki çapraz nokta ((5,3) ve (5,5)) hâlâ açık.',c:'info'} },
 
-      { text:`<p>★★★ <strong>Alıştırma:</strong> Beyaz bu grubu öldürebilir mi? Kritik noktaya oyna.</p>`, board:[{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:4,y:1},{color:'B',x:2,y:2},{color:'B',x:4,y:2},{color:'B',x:2,y:3},{color:'B',x:3,y:3},{color:'B',x:4,y:3}], answer:{x:3,y:2}, turn:'white', size:9, camera:CAM.center, fb:{t:'Sahte gözün kritik noktasını bul!',c:'info'}, fb_ok:'Evet! Tek göz yıkıldı — siyah grup ölümlü.', fb_err:'Grubun tek boş iç noktasına oyna.' },
+      // ── 4) Tek gözlü grubun neden henüz koşulsuz canlı değil ──────────
+      // (3,3) GERÇEK bir göz (4/4 çapraz) — ama grubun TEK nefesi. Beyaz
+      // oraya oynadığında bu intihar DEĞİL, grubun son nefesini alan
+      // GERÇEK bir yakalama olur (applyMove → 8 taş yakalanır).
+      { text:`<p><strong>★★ Alıştırma:</strong> Bu grubun TEK nefesi kendi gerçek gözü — başka hiçbir boş komşusu yok. Beyaz olarak o noktaya oyna.</p>`, board:[
+        {color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:2,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:4},
+        {color:'W',x:1,y:1},{color:'W',x:2,y:1},{color:'W',x:3,y:1},{color:'W',x:4,y:1},{color:'W',x:5,y:1},
+        {color:'W',x:1,y:5},{color:'W',x:2,y:5},{color:'W',x:3,y:5},{color:'W',x:4,y:5},{color:'W',x:5,y:5},
+        {color:'W',x:1,y:2},{color:'W',x:1,y:3},{color:'W',x:1,y:4},
+        {color:'W',x:5,y:2},{color:'W',x:5,y:3},{color:'W',x:5,y:4},
+      ], answer:{x:3,y:3}, turn:'white', size:9, camera:CAM.center, fb:{t:'Grubun tek boş iç noktasına (gerçek gözüne) oyna.',c:'info'}, fb_ok:'Evet! (3,3) tam bir gerçek gözdü — ama grubun son nefesiydi. Beyaz orayı doldurunca sekiz siyah taş birden yakalandı: gerçek bir göz bile TEK başına grubu kurtarmaz.', fb_err:'Bu hamle burada intihar değil — grubun son nefesini alan bir yakalama. Ortadaki boş noktaya oyna.' },
 
-      { text:`<p>★★ <strong>Alıştırma:</strong> Bu siyah grup canlı mı?</p>`, board:[{color:'B',x:0,y:3},{color:'B',x:1,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:3},{color:'B',x:4,y:3},{color:'B',x:0,y:4},{color:'B',x:2,y:4},{color:'B',x:4,y:4},{color:'B',x:0,y:5},{color:'B',x:1,y:5},{color:'B',x:2,y:5},{color:'B',x:3,y:5},{color:'B',x:4,y:5}], groupIndicators:[{x:1,y:4,color:'green'},{x:3,y:4,color:'green'}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Bu siyah grup canlı mı?',options:[{text:'Canlı — iki ayrı göz var',correct:true,feedback:'Doğru! (1,4) ve (3,4) iki ayrı gerçek göz — dört siyah taşla çevrili, ölümsüz.'},{text:'Ölümlü — tek göz',correct:false,feedback:'Hayır — iki ayrı boş iç nokta sayıyoruz; her biri kendi etrafındaki siyahlarla çevrilmiş.'}]}, fb:{t:'Yeşil halkalar = iki ayrı göz noktası.',c:'info'} },
-
+      // ── 5) Bir hamleyle iç alanı iki ayrı gerçek göze bölme ───────────
       { text:`<p>★★★ <strong>Alıştırma:</strong> İç alanı ikiye bölerek iki göz yap — grubu kurtar.</p>`, board:[{color:'B',x:0,y:4},{color:'B',x:1,y:4},{color:'B',x:2,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:4},{color:'B',x:0,y:5},{color:'B',x:4,y:5},{color:'B',x:0,y:6},{color:'B',x:1,y:6},{color:'B',x:2,y:6},{color:'B',x:3,y:6},{color:'B',x:4,y:6}], answer:{x:2,y:5}, turn:'black', size:9, camera:CAM.center, fb:{t:'Ortadaki üç boşluğu ikiye ayır — her parça ayrı göz olsun.',c:'info'}, fb_ok:'İki göz tamamlandı — (1,5) ve (3,5) artık iki ayrı göz. Grup ölümsüz!', fb_err:'Orta noktaya (C6) oyna — iç alanı sola ve sağa böl.' },
+
+      // ── 6) Rakibin sahte gözü bozabildiği gerçek ve yasal örnek ───────
+      // Aynı sahte-göz formasyonu (bkz. adım 3) — beyaz şimdi açık
+      // çapraz noktalardan birine (5,3) oynuyor. isValidMove: legal:true
+      // (o noktanın tek nefesi (6,3) — intihar değil). Bu hamleden sonra
+      // (4,4) kalıcı olarak sahte kalır; siyah onu artık asla gerçek göze
+      // çeviremez.
+      { text:`<p><strong>★★ Alıştırma:</strong> Bu sahte göz henüz kesinleşmedi. Beyaz olarak açık çapraz noktalardan birine oynayarak onu kalıcı olarak sahteleştir.</p>`, board:[
+        {color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:3,y:5},{color:'B',x:4,y:3},{color:'B',x:4,y:5},
+        {color:'B',x:4,y:2},{color:'B',x:5,y:2},{color:'B',x:6,y:2},{color:'B',x:7,y:2},{color:'B',x:7,y:3},{color:'B',x:7,y:4},{color:'B',x:6,y:4},{color:'B',x:5,y:4},
+      ], answer:{x:5,y:3}, turn:'white', size:9, camera:CAM.center, fb:{t:'Sahte gözün yanındaki açık çapraz noktaya oyna.',c:'info'}, fb_ok:'Doğru! Bu çapraz nokta artık kalıcı olarak beyazın — siyah (4,4) noktasını bundan sonra hiçbir zaman gerçek göze çeviremez.', fb_err:'Kırmızı işaretli noktanın kendisine değil, onun açık çapraz köşesine ((5,3)) oyna.' },
+
+      // ── 7) Hazır iki gerçek gözü bulunan koşulsuz canlı grup ──────────
+      { text:`<p>★★ <strong>Alıştırma:</strong> Bu siyah grup canlı mı?</p>`, board:[{color:'B',x:0,y:3},{color:'B',x:1,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:3},{color:'B',x:4,y:3},{color:'B',x:0,y:4},{color:'B',x:2,y:4},{color:'B',x:4,y:4},{color:'B',x:0,y:5},{color:'B',x:1,y:5},{color:'B',x:2,y:5},{color:'B',x:3,y:5},{color:'B',x:4,y:5}], groupIndicators:[{x:1,y:4,color:'green'},{x:3,y:4,color:'green'}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Bu siyah grup canlı mı?',options:[{text:'Canlı — iki ayrı göz var',correct:true,feedback:'Doğru! (1,4) ve (3,4) iki ayrı gerçek göz — dört siyah taşla çevrili, koşulsuz canlı.'},{text:'Ölümlü — tek göz',correct:false,feedback:'Hayır — iki ayrı boş iç nokta sayıyoruz; her biri kendi etrafındaki siyahlarla çevrilmiş.'}]}, fb:{t:'Yeşil işaretler = iki ayrı göz noktası.',c:'info'} },
+
+      // ── 8) Kapanış: doğru hamleyle iki göz oluştur ────────────────────
+      // Bükülü (L şekilli) 3 noktalık boş alan — (2,2) kavşak noktası.
+      // answer sonrası (3,2) ve (2,3) BİRBİRİNDEN BAĞIMSIZ, her biri 3/4
+      // çapraz kontrollü GERÇEK göz olur (applyMove ile doğrulandı).
+      { text:`<p>★★★ <strong>Kapanış alıştırması:</strong> Bükülü boş alanı ikiye böl — iki ayrı gerçek göz oluştur.</p>`, board:[
+        {color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:4,y:1},
+        {color:'B',x:1,y:2},{color:'B',x:4,y:2},
+        {color:'B',x:1,y:3},{color:'B',x:4,y:3},{color:'B',x:3,y:3},
+        {color:'B',x:1,y:4},{color:'B',x:2,y:4},{color:'B',x:3,y:4},
+      ], answer:{x:2,y:2}, turn:'black', size:9, camera:CAM.center, fb:{t:'Bükülü alanın kavşak noktasına oyna — iki kolu birbirinden ayır.',c:'info'}, fb_ok:'İki göz tamamlandı — (3,2) ve (2,3) artık birbirinden bağımsız iki gerçek göz. Grup koşulsuz canlı!', fb_err:'Kavşak (köşe) noktasına oyna — bir kolu değil, ikisini birden ayıran noktayı bul.' },
     ]},
 
     { id:'l8', title:'Kesme ve Bağlama', steps:[
