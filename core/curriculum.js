@@ -331,21 +331,48 @@ export const CURRICULUM = [
   { id:'c2', title:'Temel Teknikler', lessons:[
 
     { id:'l7', title:'Canlı Gruplar (İki Göz)', steps:[
-      // ── 1) 19×19: farklı canlı grup örnekleri + GERÇEK göz noktaları ──
-      // Taş verisi commit 6143810 (19x19 iki göz: SGF formasyon geri yüklendi)
-      // ile BİREBİR aynı — board hiç değiştirilmedi. Yalnız groupIndicators
-      // düzeltildi: 5508c99 sırasında orijinal △(triangle)/□(square) "ikisi
-      // de göz" işaretleri yeşil/kırmız renklere aktarılırken kırmızı yanlış
-      // biçimde "iki gözsüz, ölümlü nokta" anlamına dönüştürülmüştü — oysa
-      // orijinal metin ikisinin de göz olduğunu söylüyordu. Burada her
-      // noktanın GERÇEKTEN o grubun kendi göz noktası olup olmadığı
-      // core/boardState.js + core/ruleEngine.js ile tek tek doğrulandı
-      // (bkz. görev talimatı Bölüm 2/5): yalnız tek bir siyah grup tarafından
-      // dört yönden çevrili VE çapraz kontrolü sağlayan (bkz. l7 concept 3)
-      // noktalar yeşil işaretlendi. Board üzerindeki diğer siyah kümeler bu
-      // testten geçmediği (bir başka gruba bitişik veya beyazla doğrudan
-      // temas ediyor) için işaretlenmedi — metin bunu iddia etmiyor.
-      { text:`<p>Bir grup <strong>iki göze</strong> sahipse asla yakalanamaz — <em>ölümsüzdür.</em></p><p><span class="term">Göz</span> = grubun içindeki boş nokta. <strong>Yeşil işaretler</strong>, bu tahtadaki iki farklı canlı grubun DOĞRULANMIŞ gerçek göz noktalarını gösteriyor — her biri iki göze sahip.</p>`, size:19, board:[
+      // ── 1) 19×19: BEŞ farklı canlı grup örneği + GERÇEK göz noktaları ──
+      // Taş verisi commit 6143810 (19x19 iki göz: SGF formasyon geri
+      // yüklendi) / orijinal formations/b2-temel-teknikler/l7-canli-gruplar/
+      // "1. adım.sgf" ile — üç istisna DIŞINDA — BİREBİR aynı. 5508c99
+      // sırasında orijinal △(triangle)/□(square) "ikisi de göz" işaretleri
+      // yeşil/kırmızı renklere aktarılırken kırmızı yanlış biçimde "iki
+      // gözsüz, ölümlü nokta" anlamına dönüştürülmüştü; bu YALNIZ marker
+      // ANLAMINI bozmuştu, ama SGF'in kendisi 5 grup için tam iki gerçek
+      // göz üretmiyordu (hiç doğrulanmamıştı) — kural motoruyla denetlenince
+      // 5 hedef gruptan 3'ünün (sol üst/△, üst orta/△, sağ üst/△+kod
+      // düzeltmesi — bkz. aşağı) zaten TAM olarak iki gerçek göze sahip
+      // olduğu, 2'sinin ise SGF'teki bir authoring kusuru yüzünden
+      // GERÇEKTEN eksik olduğu kanıtlandı:
+      //   • "merkez" grup (△ (9,9)/(8,10)): SGF'te bu iki nokta aslında
+      //     hedef gruba DEĞİL, 3 taşlık ayrı/işaretsiz bir "dolgu" kümesine
+      //     ((8,8)(8,9)(9,8)) de bitişikti — yani gerçekte KİMSENİN gözü
+      //     değildi. Minimum düzeltme: dolgu kümesini hedef gruba bağlayan
+      //     VE (9,9)'un çapraz kontrolünü tamamlayan İKİ yeni taş — (7,9)
+      //     ve (10,8) — eklendi (silme/birleştirme yerine EKLEME — SGF'in
+      //     "dolgu" niyetini korur, yalnız hedef gruba dahil eder).
+      //   • "alt bölge" grup (□ (8,18)/(10,18)): SGF'te (9,18) TEK BAŞINA,
+      //     hiçbir başka beyaz taşa bağlı olmayan (0 dost komşulu) İZOLE
+      //     bir beyaz taş — tam da iki □ noktasının ortasında oturup
+      //     ikisinin de sınırını bozuyordu. Minimum düzeltme: bu tek taş
+      //     beyazdan siyaha RENKLENDİRİLDİ (silinmedi — silinseydi üç boş
+      //     nokta TEK bağlı bölgeye birleşir, iki AYRI göz oluşmazdı);
+      //     böylece hedef grubun kendi duvarına dahil oldu.
+      // "Sağ üst" grubun köşe noktası (18,0) ise taş DEĞİŞTİRİLMEDEN, genel
+      // ve standart bir Go kuralıyla ("komşu-göz istisnası" — bkz.
+      // core/eyeAnalysis.js::resolveGroupTrueEyes) doğru sınıflandırılıyor:
+      // tek çaprazı (17,1) zaten AYNI grubun kendi gerçek gözü olduğundan
+      // rakip oraya asla giremez, dolayısıyla köşe de gerçek göz sayılır —
+      // bu köşe/kenar "bükülü iki göz" için standart teoridir, tek bir
+      // koordinat için özel durum DEĞİLDİR.
+      // "Sol alt" ve "sağ alt" kümelerindeki İKİŞER benzer izole beyaz taş
+      // ((1,18) ve (18,17)) BİLEREK dokunulmadı — bu iki küme "5 hedef
+      // grup" iddiasının parçası değil (metin/marker onları hiç
+      // kullanmıyor), taşları aynen tarihsel haliyle arka planda duruyor.
+      // Üç hedef-dışı küme ((8,8)-bölgesi artık grubun parçası, sol alt,
+      // sağ alt) toplamda tahtada GÖRÜNMEYE devam ediyor — kompozisyon
+      // mümkün olduğunca korunuyor, yalnız 5 CLAIM edilen grup net.
+      { text:`<p>Bir grup <strong>iki göze</strong> sahipse asla yakalanamaz — <em>ölümsüzdür.</em></p><p><span class="term">Göz</span> = grubun içindeki boş nokta. <strong>Yeşil işaretler</strong>, bu tahtadaki BEŞ farklı canlı grubun DOĞRULANMIŞ gerçek göz noktalarını gösteriyor — her biri iki göze sahip.</p>`, size:19, board:[
         {color:'W',x:2,y:0},{color:'W',x:6,y:0},{color:'W',x:12,y:0},{color:'W',x:15,y:0},
         {color:'W',x:2,y:1},{color:'W',x:6,y:1},{color:'W',x:12,y:1},{color:'W',x:15,y:1},
         {color:'W',x:2,y:2},{color:'W',x:6,y:2},{color:'W',x:7,y:2},{color:'W',x:8,y:2},{color:'W',x:9,y:2},{color:'W',x:10,y:2},{color:'W',x:11,y:2},{color:'W',x:12,y:2},{color:'W',x:15,y:2},
@@ -360,22 +387,25 @@ export const CURRICULUM = [
         {color:'W',x:15,y:15},{color:'W',x:16,y:15},{color:'W',x:17,y:15},{color:'W',x:18,y:15},
         {color:'W',x:0,y:16},{color:'W',x:1,y:16},{color:'W',x:2,y:16},{color:'W',x:3,y:16},{color:'W',x:4,y:16},{color:'W',x:6,y:16},{color:'W',x:7,y:16},{color:'W',x:8,y:16},{color:'W',x:9,y:16},{color:'W',x:10,y:16},{color:'W',x:11,y:16},{color:'W',x:12,y:16},{color:'W',x:15,y:16},
         {color:'W',x:4,y:17},{color:'W',x:6,y:17},{color:'W',x:12,y:17},{color:'W',x:15,y:17},{color:'W',x:18,y:17},
-        {color:'W',x:1,y:18},{color:'W',x:4,y:18},{color:'W',x:6,y:18},{color:'W',x:9,y:18},{color:'W',x:12,y:18},{color:'W',x:15,y:18},
+        {color:'W',x:1,y:18},{color:'W',x:4,y:18},{color:'W',x:6,y:18},{color:'W',x:12,y:18},{color:'W',x:15,y:18},
         {color:'B',x:1,y:0},{color:'B',x:7,y:0},{color:'B',x:9,y:0},{color:'B',x:11,y:0},{color:'B',x:16,y:0},{color:'B',x:17,y:0},
         {color:'B',x:0,y:1},{color:'B',x:1,y:1},{color:'B',x:7,y:1},{color:'B',x:8,y:1},{color:'B',x:9,y:1},{color:'B',x:10,y:1},{color:'B',x:11,y:1},{color:'B',x:16,y:1},{color:'B',x:18,y:1},
         {color:'B',x:1,y:2},{color:'B',x:16,y:2},{color:'B',x:17,y:2},{color:'B',x:18,y:2},
         {color:'B',x:0,y:3},{color:'B',x:1,y:3},
         {color:'B',x:8,y:8},{color:'B',x:9,y:8},
-        {color:'B',x:8,y:9},{color:'B',x:10,y:9},
-        {color:'B',x:7,y:10},{color:'B',x:9,y:10},{color:'B',x:10,y:10},
+        {color:'B',x:7,y:9},{color:'B',x:8,y:9},{color:'B',x:10,y:9},
+        {color:'B',x:7,y:10},{color:'B',x:9,y:10},{color:'B',x:10,y:10},{color:'B',x:10,y:8},
         {color:'B',x:7,y:11},{color:'B',x:8,y:11},{color:'B',x:9,y:11},
         {color:'B',x:16,y:16},{color:'B',x:17,y:16},{color:'B',x:18,y:16},
         {color:'B',x:0,y:17},{color:'B',x:1,y:17},{color:'B',x:2,y:17},{color:'B',x:3,y:17},{color:'B',x:7,y:17},{color:'B',x:8,y:17},{color:'B',x:9,y:17},{color:'B',x:10,y:17},{color:'B',x:11,y:17},{color:'B',x:16,y:17},
-        {color:'B',x:3,y:18},{color:'B',x:7,y:18},{color:'B',x:11,y:18},{color:'B',x:16,y:18},{color:'B',x:17,y:18},
+        {color:'B',x:3,y:18},{color:'B',x:7,y:18},{color:'B',x:9,y:18},{color:'B',x:11,y:18},{color:'B',x:16,y:18},{color:'B',x:17,y:18},
       ], groupIndicators:[
         {x:0,y:0,color:'green'},{x:0,y:2,color:'green'},
         {x:8,y:0,color:'green'},{x:10,y:0,color:'green'},
-      ], auto:true, camera:CAM.board19, fb:{t:'Yeşil işaret = doğrulanmış gerçek göz noktası (her grup için iki tane).',c:'info'} },
+        {x:18,y:0,color:'green'},{x:17,y:1,color:'green'},
+        {x:9,y:9,color:'green'},{x:8,y:10,color:'green'},
+        {x:8,y:18,color:'green'},{x:10,y:18,color:'green'},
+      ], auto:true, camera:CAM.board19, fb:{t:'Yeşil işaret = doğrulanmış gerçek göz noktası (beş grubun her biri için iki tane — toplam 10).',c:'info'} },
 
       // ── 2) Tek gerçek göz ──────────────────────────────────────────────
       { text:`<p>★ <strong>Alıştırma:</strong> Bu siyah grup canlı mı, ölü mü?</p>`, board:[{color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:1,y:2},{color:'B',x:3,y:2},{color:'B',x:1,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:3}], groupIndicators:[{x:2,y:2,color:'green'}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Bu grup canlı mı?',options:[{text:'Canlı — iki gözü var',correct:false,feedback:'Hayır — tek bir boş iç nokta var. (2,2) GERÇEK bir göz olsa bile tek göz = henüz ölümlü.'},{text:'Ölümlü — tek göz',correct:true,feedback:'Doğru! (2,2) tam bir gerçek göz (dört yön + dört çapraz siyahla çevrili) ama tek başına yetmez.'}]}, fb:{t:'Kaç göz var? Say.',c:'info'} },

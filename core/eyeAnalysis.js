@@ -166,9 +166,15 @@ export function classifySinglePointEye(board, x, y) {
  * tarar ve `color` rengine ait olanları grup kimliğine göre gruplar.
  * "Bu grubun kaç gerçek gözü var?" sorusunu cevaplamak için kullanılır.
  *
+ * Her nokta için hem `isTrue` (bkz. diagonalControl — TEK noktaya bakan,
+ * komşu göz noktalarından habersiz KATI kontrol) hem `isTrueEffective`
+ * (bkz. resolveGroupTrueEyes — "komşu-göz istisnası" uygulanmış GERÇEK
+ * sonuç) döner. Curriculum/test kodu `isTrueEffective`'i kullanmalı;
+ * `isTrue` yalnız hata ayıklama/raporlama için tutuluyor.
+ *
  * @param {import('./boardState.js').BoardState} board
  * @param {'black'|'white'} color
- * @returns {Map<string, {x:number,y:number,isTrue:boolean}[]>} groupId -> eye noktaları
+ * @returns {Map<string, {x:number,y:number,isTrue:boolean,isTrueEffective:boolean,viaSiblingException:boolean}[]>} groupId -> eye noktaları
  */
 export function scanSinglePointEyesByGroup(board, color) {
   const seen = new Set();
@@ -189,5 +195,76 @@ export function scanSinglePointEyesByGroup(board, color) {
       byGroup.get(cls.groupId).push({ x, y, isTrue: cls.isTrue });
     }
   }
+
+  // İkinci geçiş: her grup için komşu-göz istisnasını uygula.
+  for (const [groupId, points] of byGroup) {
+    const resolved = resolveGroupTrueEyes(board, points);
+    for (const p of points) {
+      const r = resolved.get(`${p.x},${p.y}`);
+      p.isTrueEffective = r.isTrue;
+      p.viaSiblingException = r.viaSiblingException;
+    }
+  }
+
   return byGroup;
+}
+
+/**
+ * "Komşu-göz istisnası" (sibling-eye exception) — standart Go kuralı.
+ *
+ * diagonalControl() TEK bir noktaya bakar ve boş bir çaprazı HER ZAMAN
+ * "kontrolsüz" sayar. Ama gerçek kuralda: bir çapraz nokta boşsa VE bu
+ * nokta AYNI grubun kendi başka bir gerçek gözüyse, rakip o noktaya
+ * ASLA giremez (kendi grubunun tek yaşam alanına dokunmadığı sürece
+ * kendi gözünü doldurmak intihar olur) — dolayısıyla bu çapraz fiilen
+ * "kontrollü" sayılmalıdır. Bu, köşe/kenardaki standart "bükülü iki
+ * göz" (bent-two) yaşam şeklinin GENEL kuralıdır — belirli bir
+ * koordinat için özel durum (whitelist) DEĞİLDİR; herhangi bir grubun
+ * herhangi bir köşe/kenar çiftinde aynı şekilde uygulanır.
+ *
+ * Algoritma (iki geçiş, döngüsel referans olmadan):
+ *  1. Her noktanın KATI (diagonalControl) sonucu zaten `points` içinde var.
+ *  2. KATI olarak FALSE olan her nokta için: kontrolsüz sayılan çapraz
+ *     noktaların TAMAMI ya dost taş ya da AYNI kümedeki (aynı grubun)
+ *     KATI-TRUE bir kardeş göz ise → istisna uygulanır, nokta TRUE olur.
+ *  3. Zincirleme (bir istisna noktasının kendisi başka bir noktanın
+ *     istisnasına temel olması) KASITLI OLARAK desteklenmiyor — bu,
+ *     yalnızca doğrudan komşu iki göz için standart olan basit/güvenli
+ *     bir uygulamadır; daha karmaşık çok-adımlı zincirler için genel
+ *     "eye shape" teorisi gerekir ve bu modülün kapsamı DIŞINDADIR
+ *     (bkz. dosya başı not).
+ *
+ * @param {import('./boardState.js').BoardState} board
+ * @param {{x:number,y:number,isTrue:boolean}[]} groupPoints — AYNI gruba ait, classifySinglePointEye ile üretilmiş KATI sonuçlar
+ * @returns {Map<string, {x:number,y:number,isTrue:boolean,viaSiblingException:boolean}>}
+ */
+export function resolveGroupTrueEyes(board, groupPoints) {
+  const byKey = new Map(groupPoints.map(p => [`${p.x},${p.y}`, p]));
+  const result = new Map();
+
+  for (const p of groupPoints) {
+    if (p.isTrue) {
+      result.set(`${p.x},${p.y}`, { x: p.x, y: p.y, isTrue: true, viaSiblingException: false });
+      continue;
+    }
+    // KATI sonuç FALSE — hangi rengin sahibi olduğunu bul (grup rengi).
+    const color = board.colorAt(
+      board.neighbors(p.x, p.y).find(n => board.colorAt(n.x, n.y))?.x,
+      board.neighbors(p.x, p.y).find(n => board.colorAt(n.x, n.y))?.y,
+    );
+    const diagonals = [
+      { x: p.x - 1, y: p.y - 1 }, { x: p.x + 1, y: p.y - 1 },
+      { x: p.x - 1, y: p.y + 1 }, { x: p.x + 1, y: p.y + 1 },
+    ].filter(d => board.isInBounds(d.x, d.y));
+
+    const allControlled = diagonals.every(d => {
+      if (board.colorAt(d.x, d.y) === color) return true; // doğrudan dost taş
+      const sibling = byKey.get(`${d.x},${d.y}`);
+      return !!(sibling && sibling.isTrue); // AYNI grubun KATI-TRUE kardeş gözü
+    });
+
+    result.set(`${p.x},${p.y}`, { x: p.x, y: p.y, isTrue: allControlled, viaSiblingException: allControlled });
+  }
+
+  return result;
 }
