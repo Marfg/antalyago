@@ -51,7 +51,21 @@
  *   board.showKoFree(points);          // "ko noktası artık serbest" — YEŞİL "neon" halka+✓ (bkz. v0.20, drawKoFree)
  *   board.clearKoFree();
  *   board.getKoFree();                 // GÜNCEL serbest-ko marker listesi — salt-okunur, YALNIZ test/gözlem amaçlı
+ *   board.showRegionMarks(points);     // {row,col,color} — RENK-AGNOSTİK bölge göstergesi, elmas halka+nokta (bkz. v0.21, drawRegionMark)
+ *   board.clearRegionMarks();
+ *   board.getRegionMarks();            // GÜNCEL bölge-marker listesi — salt-okunur, YALNIZ test/gözlem amaçlı
  *   board.destroy();                   // RAF/resize/click listener'ı + tüm durumu temizler
+ *
+ * v0.21 — Sahne #10'un ("Oyun Sonu ve Sayım") siyah/beyaz BÖLGE göstergesi
+ * için YENİ, RENK-AGNOSTİK `showRegionMarks()`/`clearRegionMarks()`/
+ * `getRegionMarks()` eklendi — `showKoFree()` (v0.20) İLE AYNI "adapter kaç
+ * hedef/hangi sahne bilmez, yalnız güncel liste" deseninin BİR ADIM ÖTESİ:
+ * bu kez adapter RENGİ DE bilmez, her noktanın `color`ı çağırandan gelir
+ * (bkz. görev talimatı Bölüm 5: "sahneye özel siyah/beyaz hard-code'u
+ * adapter içine gömme" — mevcut showKoFree/showIllegalHints gibi TEK sabit
+ * renkli API'ler bu ihtiyacı temiz karşılamadığı için YENİ, genel bir bölge
+ * API'si eklendi). TEK yeni çizim fonksiyonu `drawRegionMark(gx,gz,t,color)`
+ * — mevcut HİÇBİR fonksiyon değiştirilmedi.
  *
  * v0.20 — Sahne #9'un ("Ko Kuralı") "artık serbest" göstergesi için YENİ,
  * izole `showKoFree()`/`clearKoFree()` eklendi — `showIllegalMoves()`/
@@ -206,9 +220,9 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-09-02.1';
-import { BoardState } from '../core/boardState.js?v=2026-09-02.1';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-09-02.1';
+import { CAM } from '../core/curriculum.js?v=2026-09-02.2';
+import { BoardState } from '../core/boardState.js?v=2026-09-02.2';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-09-02.2';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -312,6 +326,14 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // noktaları listesi budur" bilgisini tutar (illegalMarks/illegalHints İLE
   // AYNI "kaç hedef bilmiyorum" ilkesi).
   let koFreeMarks = [];
+  // v0.21 — Sahne #10'un ("Oyun Sonu ve Sayım") RENK-AGNOSTİK bölge
+  // göstergesi — koFreeMarks/illegalMarks İLE AYNI desen (ÇOKLU liste, `t`
+  // 0→1 fade), ama HER NOKTA kendi `color`ını taşır (bkz. showRegionMarks) —
+  // adapter hangi sahnenin/renklerin "siyah bölge" mi "beyaz bölge" mi
+  // olduğunu HİÇ BİLMEZ, yalnız "şu an gösterilecek {row,col,color} listesi
+  // budur" bilgisini tutar (bkz. drawRegionMark — TEK çizim fonksiyonu, İKİ
+  // renk varyantı, sahneye özel hard-code YOK).
+  let regionMarks = [];
   let inputEnabled = false;
   const tapHandlers = new Set();
   const hoverHandlers = new Set();
@@ -859,6 +881,58 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     ctx.restore();
   }
 
+  /**
+   * v0.21 — Sahne #10'un ("Oyun Sonu ve Sayım") siyah/beyaz BÖLGE göstergesi
+   * — TEK geometrik dil (elmas/döndürülmüş kare halka + merkez nokta), İKİ
+   * renk varyantı (bkz. görev talimatı Bölüm 5: "Aynı geometrik görsel
+   * dilin renk varyantları olmalı"). Mevcut hiçbir markerla (turkuaz nefes
+   * `drawLibertyMark`, kehribar-kırmızı `drawIllegalMark`/`drawIllegalHint`,
+   * yeşil `drawKoFree`) renk VEYA şekil olarak KARIŞMAZ:
+   *   - siyah bölge: KOYU lacivert-gri kalem (46,52,66) + AÇIK gümüş-gri
+   *     dış parıltı (196,202,214) — görev talimatının önerdiği "koyu merkez
+   *     + açık/gri dış parıltı" birebir.
+   *   - beyaz bölge: AÇIK fildişi-beyaz kalem (244,247,250) + ince SOĞUK
+   *     mavi-gri parıltı (150,180,210) — "yalnız düz beyaz dolgu" YASAĞINA
+   *     uyar (bkz. görev talimatı): dolgu YOK, yalnız ince kontrastlı
+   *     çevre/halka + glow, ahşap üzerinde net okunur.
+   * Gerçek taş silüeti (drawStone) DEĞİLDİR — dolu bir daire değil, ince bir
+   * elmas HALKA + küçük merkez noktası (drawMovePreview'ın yarı-saydam
+   * taşıyla da KARIŞTIRILMAZ). Sürekli pulse YOK — `t` yalnız TEK seferlik
+   * 0→1 sakin bir fade-in (libertyPoints/koFreeMarks İLE AYNI disiplin).
+   * @param {number} gx @param {number} gz @param {number} t
+   * @param {'black'|'white'} color
+   */
+  function drawRegionMark(gx, gz, t, color) {
+    const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
+    const Y = -BOARD_H / 2 - .3;
+    const p = project(wx, Y, wz);
+    if (p.scale < 0.12) return;
+    const e = reduceMotion ? 1 : easeInOutCubic(Math.min(1, t));
+    const isBlackRegion = color === 'black';
+    const strokeRGB = isBlackRegion ? '46,52,66' : '244,247,250';
+    const glowRGB = isBlackRegion ? '196,202,214' : '150,180,210';
+    const alpha = 0.80 * e;
+    ctx.save();
+    ctx.strokeStyle = `rgba(${strokeRGB},${alpha.toFixed(2)})`;
+    ctx.lineWidth = Math.max(1.3, 2.0 * p.scale);
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = `rgba(${glowRGB},.55)`;
+    ctx.shadowBlur = 2.4 * p.scale;
+    const half = CELL * 0.19; // elmasın yarı-köşegeni — liberty/hint kollarıyla KIYASLANABİLİR ağırlık sınıfı
+    const pT = project(wx, Y, wz - half), pR = project(wx + half, Y, wz);
+    const pB = project(wx, Y, wz + half), pL = project(wx - half, Y, wz);
+    ctx.beginPath();
+    ctx.moveTo(pT.sx, pT.sy); ctx.lineTo(pR.sx, pR.sy); ctx.lineTo(pB.sx, pB.sy); ctx.lineTo(pL.sx, pL.sy);
+    ctx.closePath(); ctx.stroke();
+    ctx.shadowBlur = 0;
+    // Merkez nokta — "koyu merkez"/"beyaz taşla karışmayan açık ton"
+    // gereksinimini kalemle AYNI renkte, küçük bir dolu daireyle taşır.
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, Math.max(1.0, 1.5 * p.scale), 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${strokeRGB},${Math.min(1, alpha + .12).toFixed(2)})`;
+    ctx.fill();
+    ctx.restore();
+  }
+
   /** Tek noktalı, çok sade pointer hover geri bildirimi — kesişimlerin
       TÜMÜNÜ işaretlemez, yalnız imlecin en yakın olduğu kesişimi. */
   function drawHoverPoint(gx, gz) {
@@ -891,6 +965,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     for (const h of illegalHints) drawIllegalHint(h.gx, h.gz, h.t);
     for (const m of illegalMarks) drawIllegalMark(m.gx, m.gz, m.t);
     for (const k of koFreeMarks) drawKoFree(k.gx, k.gz, k.t);
+    for (const r of regionMarks) drawRegionMark(r.gx, r.gz, r.t, r.color);
     const sorted = [...visualStones].sort((a, b) => project(-HALF + a.gx * CELL, 0, -HALF + a.gz * CELL).z - project(-HALF + b.gx * CELL, 0, -HALF + b.gz * CELL).z);
     for (const s of sorted) {
       const scale = reduceMotion ? 1 : easeInOutCubic(Math.min(1, s.t));
@@ -918,6 +993,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       for (const m of illegalMarks) if (m.t < 1) m.t = Math.min(1, m.t + dt / LIBERTY_FADE_DUR);
       for (const h of illegalHints) if (h.t < 1) h.t = Math.min(1, h.t + dt / LIBERTY_FADE_DUR);
       for (const k of koFreeMarks) if (k.t < 1) k.t = Math.min(1, k.t + dt / LIBERTY_FADE_DUR);
+      for (const r of regionMarks) if (r.t < 1) r.t = Math.min(1, r.t + dt / LIBERTY_FADE_DUR);
     }
     render();
     rafId = requestAnimationFrame(loop);
@@ -989,6 +1065,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       illegalMarks = [];
       illegalHints = [];
       koFreeMarks = [];
+      regionMarks = [];
       hoverPoint = null;
     },
     reset() {
@@ -999,6 +1076,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       illegalMarks = [];
       illegalHints = [];
       koFreeMarks = [];
+      regionMarks = [];
       hoverPoint = null;
     },
     focus(presetName) {
@@ -1223,6 +1301,34 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     },
 
     /**
+     * v0.21 — Sahne #10'un ("Oyun Sonu ve Sayım") RENK-AGNOSTİK bölge
+     * göstergesi (bkz. drawRegionMark). `showIllegalMoves()`/`showKoFree()`
+     * İLE AYNI "tam listeyi değiştir" sözleşmesi — ama HER nokta kendi
+     * `color`ını ('black'|'white') taşır (adapter hangi rengin "siyah
+     * bölge" mi "beyaz bölge" mi olduğuna KARAR VERMEZ, yalnız çağıranın
+     * verdiği rengi çizer). `showIllegalHints()` İLE AYNI "önceki listede
+     * AYNI nokta+renk varsa `t`sini KORU" tekniği — bir güncelleme zaten
+     * tam görünür bir marker'ı gereksiz yere yeniden söndürüp başlatmaz.
+     * Board State'e dokunmaz, taş silüeti EKLEMEZ.
+     * @param {Array<{row:number,col:number,color:'black'|'white'}>} points
+     */
+    showRegionMarks(points) {
+      const prevT = new Map(regionMarks.map(r => [`${r.gx},${r.gz},${r.color}`, r.t]));
+      regionMarks = (points || []).map(p => {
+        const key = `${p.col},${p.row},${p.color}`;
+        const existing = prevT.get(key);
+        return { gx: p.col, gz: p.row, color: p.color, t: existing !== undefined ? existing : (reduceMotion ? 1 : 0) };
+      });
+    },
+    clearRegionMarks() {
+      regionMarks = [];
+    },
+    /** getIllegalMoves() İLE AYNI disiplin — YALNIZ gözlem/test amaçlı. */
+    getRegionMarks() {
+      return regionMarks.map(r => ({ row: r.gz, col: r.gx, color: r.color }));
+    },
+
+    /**
      * Salt-okunur GÖZLEM — YALNIZ test amaçlı (bkz. getFocusPointsResult
      * AYNI disiplin): o an EKRANDA GERÇEKTEN kaç/hangi bulunmuş-yasak
      * marker'ın aynı anda göründüğünü, iç state'i (`illegalMarks`) MUTATE
@@ -1381,6 +1487,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       illegalMarks = [];
       illegalHints = [];
       koFreeMarks = [];
+      regionMarks = [];
       visualStones = [];
     },
   };

@@ -305,7 +305,7 @@ body {
    kaldırıyor) `#ls-scene-host`u üstten hizalar; taşma varsa artık YALNIZ
    aşağıya (kaydırılabilir `#ls-narration` alanına) doğru olur. Sahne #1-4
    BU KURALDAN ETKİLENMEZ (sınıf yalnız Sahne #5'e özgü). */
-#ls-scene-host.s05-scene-host, #ls-scene-host.s06-scene-host, #ls-scene-host.s07-scene-host, #ls-scene-host.s08-scene-host, #ls-scene-host.s09-scene-host { align-self: flex-start; justify-content: flex-start; }
+#ls-scene-host.s05-scene-host, #ls-scene-host.s06-scene-host, #ls-scene-host.s07-scene-host, #ls-scene-host.s08-scene-host, #ls-scene-host.s09-scene-host, #ls-scene-host.s10-scene-host { align-self: flex-start; justify-content: flex-start; }
 
 /* ── Sahne #5 — değerlendirme aşamaları (bkz. scenes/scene05LibertyAssessment.js) ──
    v0.19 — kök neden düzeltmesi: #s05-assess, miras aldığı `.ls-strip-row`nun

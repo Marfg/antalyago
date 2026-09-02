@@ -51,5 +51,13 @@
  * sürümüyle (v7, 2026-09-01.1) birleştirilmesinin ardından damgalandı;
  * eski "2026-08-31.1" (dallanma anındaki taslak sürüm) hiçbir dosyada
  * kalmadı (bkz. tests/sceneRelease.test.js).
+ *
+ * v9 (2026-09-02.2) — Sahne #10 ("Oyun Sonu ve Sayım") ve TEK yeni yardımcı
+ * modülü (scenes/endgameCountingPolicy.js) eklendi (bkz. scripts/
+ * stamp-scene-release.mjs GRAPH_BASENAMES). adapters/sceneBoardAdapter.js'e
+ * izole bir ekleme (showRegionMarks/clearRegionMarks/getRegionMarks, v0.21)
+ * yapıldı — dosya zaten graph'ın parçası, yeni bir graph girişi GEREKMEDİ.
+ * AYRICA `core/curriculum.js`'in `l6.steps[0].fb.t` metnindeki ters siyah/
+ * beyaz tarifi düzeltildi (kullanıcıya görünür içerik değişikliği).
  */
-export const SCENE_RELEASE = '2026-09-02.1';
+export const SCENE_RELEASE = '2026-09-02.2';
