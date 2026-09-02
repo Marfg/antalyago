@@ -45,8 +45,8 @@
  * üzerinden getLibertiesAt) gerçek sonucudur — sabit metinden ÜRETİLMEZ.
  */
 
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-01.1';
-import { ANCHOR, MIN_GROUP_SIZE, MAX_GROUP_SIZE, shapeSignature, isConnectedSingleGroup } from './groupLibertyPolicy.js?v=2026-09-01.1';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-02.1';
+import { ANCHOR, MIN_GROUP_SIZE, MAX_GROUP_SIZE, shapeSignature, isConnectedSingleGroup } from './groupLibertyPolicy.js?v=2026-09-02.1';
 
 const STATE = {
   INTRO: 'intro',

@@ -43,12 +43,13 @@
  * ikisini de ayrı taze seed'lerle deneyimliyor. Kullanıcıya görünür davranış
  * değişikliği (yeni ipucu marker tasarımı + ikinci formasyonun eklenmesi).
  *
- * v8 — Sahne #9 ("Ko Kuralı") ve TEK yeni yardımcı modülü
+ * v8 (2026-09-02.1) — Sahne #9 ("Ko Kuralı") ve TEK yeni yardımcı modülü
  * (scenes/koRulePolicy.js) eklendi (bkz. scripts/stamp-scene-release.mjs
  * GRAPH_BASENAMES). adapters/sceneBoardAdapter.js'e izole bir ekleme
  * (showKoFree/clearKoFree, v0.20) yapıldı — dosya zaten graph'ın parçası,
- * yeni bir graph girişi GEREKMEDİ. (Sürüm numarası bu satırda BİLEREK
- * boş bırakıldı — scripts/stamp-scene-release.mjs'in bu birleştirmeden
- * SONRA çalıştırılan koşusu asıl SCENE_RELEASE değerini belirleyecek.)
+ * yeni bir graph girişi GEREKMEDİ. PR #1'in main'in güncel Sahne #8
+ * sürümüyle (v7, 2026-09-01.1) birleştirilmesinin ardından damgalandı;
+ * eski "2026-08-31.1" (dallanma anındaki taslak sürüm) hiçbir dosyada
+ * kalmadı (bkz. tests/sceneRelease.test.js).
  */
-export const SCENE_RELEASE = '2026-09-01.1';
+export const SCENE_RELEASE = '2026-09-02.1';

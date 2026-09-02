@@ -74,12 +74,12 @@
  * KASITLI olarak core/conceptMap.js'e eklenmedi — Teacher Studio Diagnostics
  * bunu bilinen-olmayan concept olarak raporlar (bilinçli, gizlenmeyen boşluk).
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-08-31.1';
-import { assessmentTransition } from './assessmentTransition.js?v=2026-08-31.1';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-02.1';
+import { assessmentTransition } from './assessmentTransition.js?v=2026-09-02.1';
 import {
   getKoRuleMoments, evaluateKoAttempt, isSuccessfulAttempt, reasonLabelTr, MOMENT_KINDS, CONCEPT,
   KO_ATTEMPT_COLOR,
-} from './koRulePolicy.js?v=2026-08-31.1';
+} from './koRulePolicy.js?v=2026-09-02.1';
 
 const STATE = { INTRO: 'intro', PLAYING: 'playing' };
 
@@ -90,9 +90,9 @@ const RETAKE_TAP_HINT = 'Ko noktası artık serbest — beyaz olarak yeşil işa
 const SEQUENCE_PLAYING_HINT = 'Diziliş oynatılıyor…';
 const OFF_TARGET_HINT = 'Bu, alıştırmanın hedefi değil — işaretli ko noktasını dene.';
 const KO_STATUS_RED = 'Ko noktası: şu an yasak (kırmızı) — hemen geri alınamaz.';
-const KO_STATUS_GREEN = 'Ko noktası: artık serbest (yeşil) — araya hamle girdi.';
+const KO_STATUS_GREEN = 'Ko noktası: artık serbest (yeşil) — beyaz başka yerde ko tehdidi yaptı, siyah cevap verdi.';
 const KO_STATUS_PENDING = 'Ko noktası hazırlanıyor…';
-const SUMMARY_TEXT = 'Ko kuralının aynı pozisyonun hemen tekrar oluşmasını engellediğini, ama bu yasağın kalıcı olmadığını — araya bir hamle girince geri almanın tekrar yasal hale geldiğini gerçek RuleEngine sonuçlarıyla gördün.';
+const SUMMARY_TEXT = 'Ko kuralının aynı pozisyonun hemen tekrar oluşmasını engellediğini, ama bu yasağın kalıcı olmadığını gördün: beyaz başka yerde bir tehdit hamlesi yaptı, siyah bu tehdide cevap verdikten sonra beyaz aynı noktayı gerçek RuleEngine sonuçlarıyla geri alabildi.';
 // AYNI NOKTAYA hızlı çift tıklama TEK bir denemeye sayılmalı — scenes/
 // scene07CapturePractice.js/scene08IllegalMoves.js İLE AYNI debounce penceresi.
 const TAP_DEBOUNCE_MS = 400;
@@ -323,7 +323,7 @@ function handleTap(context, moment, hit) {
       setFeedback(reasonLabelTr('KO'), 'ok');
       // Kırmızı işaret KALIR — hiçbir şey değişmedi, yasak HÂLÂ geçerli.
     } else {
-      setFeedback(`Doğru. Araya hamle girdiği için beyaz artık ko noktasını geri alabilir — ${attempt.capturedCount} taş yakalandı.`, 'ok');
+      setFeedback(`Doğru. Beyaz başka yerde bir ko tehdidi yaptı, siyah tehdide cevap verdi — şimdi beyaz ko noktasını geri alabilir, ${attempt.capturedCount} taş yakalandı.`, 'ok');
       // GERÇEK taş artık o noktada — yeşil "serbest" işareti temizlenir
       // (nokta artık dolu, "serbest boş nokta" göstergesi ANLAMSIZ kalırdı).
       context.boardAdapter.clearKoFree();
