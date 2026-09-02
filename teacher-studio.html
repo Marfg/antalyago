@@ -216,7 +216,7 @@
 </div>
 
 <script type="module">
-import { CURRICULUM } from './core/curriculum.js?v=2026-09-02.2';
+import { CURRICULUM } from './core/curriculum.js?v=2026-09-02.3';
 import { classifyCurriculumStep, responseTypeOf, stripMarkup, isAssessmentLesson } from './core/learningContext.js';
 import { KNOWN_CONCEPTS } from './core/conceptMap.js';
 import { createStudentModel, hydrateStudentModel, getConceptState } from './core/studentModel.js';
@@ -225,39 +225,39 @@ import { CONTENT_PURPOSES, CONTENT_STUDENT_STATUSES, CONTENT_STAGES, validateCon
 import { mergeContentOverrides, applyOverride, OVERRIDABLE_FIELDS } from './core/contentOverrides.js';
 import { teacherContentOverrides } from './adapters/teacherContentOverrides.js';
 import { buildRetrievalQuery, retrieveContent } from './core/contentRetriever.js';
-import { EventLog } from './core/eventLog.js?v=2026-09-02.2';
+import { EventLog } from './core/eventLog.js?v=2026-09-02.3';
 import { buildAiReviewEvent } from './core/teacherAssistant.js';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-02.2';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-02.2';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-02.2';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-02.2';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-02.2';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-02.2';
-import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-09-02.2';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-02.2';
-import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-02.2';
-import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-09-02.2';
-import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-09-02.2';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-02.3';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-02.3';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-02.3';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-02.3';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-02.3';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-02.3';
+import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-09-02.3';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-02.3';
+import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-02.3';
+import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-09-02.3';
+import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-09-02.3';
 import {
   getAssessmentSteps as getLibertyAssessmentSteps,
   computeChoiceCorrectIndex as computeLibertyChoiceCorrectIndex,
   computeTapTargets as computeLibertyTapTargets,
   computeResultAfterMove as computeLibertyResultAfterMove,
   ASSESSMENT_STEP_INDICES as LIBERTY_ASSESSMENT_STEP_INDICES,
-} from './scenes/libertyAssessmentPolicy.js?v=2026-09-02.2';
+} from './scenes/libertyAssessmentPolicy.js?v=2026-09-02.3';
 import {
   getCaptureMoments,
   isValidCapturePoint as isValidCaptureMomentPoint,
   computeCaptureResult,
   MOMENT_STEP_INDICES as CAPTURE_MOMENT_STEP_INDICES,
-} from './scenes/capturePolicy.js?v=2026-09-02.2';
+} from './scenes/capturePolicy.js?v=2026-09-02.3';
 import {
   getCapturePracticeMoments,
   isValidCapturePoint as isValidPracticePoint,
   computePracticeResult,
   isKnownHintMode,
   MOMENT_STEP_INDICES as PRACTICE_MOMENT_STEP_INDICES,
-} from './scenes/capturePracticePolicy.js?v=2026-09-02.2';
+} from './scenes/capturePracticePolicy.js?v=2026-09-02.3';
 import {
   getIllegalMoveMoments,
   evaluateAttempt as evaluateIllegalMoveAttempt,
@@ -267,7 +267,7 @@ import {
   MOMENT_KINDS as ILLEGAL_MOVE_KINDS,
   MOMENT_STEP_INDICES as ILLEGAL_MOVE_STEP_INDICES,
   CONCEPT as ILLEGAL_MOVE_CONCEPT,
-} from './scenes/illegalMovePolicy.js?v=2026-09-02.2';
+} from './scenes/illegalMovePolicy.js?v=2026-09-02.3';
 import {
   getKoRuleMoments,
   evaluateKoAttempt,
@@ -277,7 +277,7 @@ import {
   MOMENT_KINDS as KO_MOMENT_KINDS,
   MOMENT_STEP_INDICES as KO_STEP_INDICES,
   CONCEPT as KO_CONCEPT,
-} from './scenes/koRulePolicy.js?v=2026-09-02.2';
+} from './scenes/koRulePolicy.js?v=2026-09-02.3';
 import {
   getEndgameCountingMoment,
   evaluateRegionTap,
@@ -285,15 +285,15 @@ import {
   isKnownMomentKind as isKnownEndgameMomentKind,
   STEP_INDEX as ENDGAME_STEP_INDEX,
   CONCEPT as ENDGAME_CONCEPT,
-} from './scenes/endgameCountingPolicy.js?v=2026-09-02.2';
-import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-09-02.2';
-import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-09-02.2';
-import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-09-02.2';
-import { BoardState } from './core/boardState.js?v=2026-09-02.2';
-import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-09-02.2';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-02.2';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-02.2';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-02.2';
+} from './scenes/endgameCountingPolicy.js?v=2026-09-02.3';
+import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-09-02.3';
+import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-09-02.3';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-09-02.3';
+import { BoardState } from './core/boardState.js?v=2026-09-02.3';
+import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-09-02.3';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-02.3';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-02.3';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-02.3';
 
 /* ── Sürüm/cache bekçisi — learning-scenes.html İLE AYNI mekanizma ────
    (bkz. o dosyadaki dosya başı notu, KRİTİK DÜZELTME: SCENE_RELEASE artık
@@ -1499,8 +1499,15 @@ function renderSceneDiagnostics() {
     if (sceneRegistry.next(scene07CapturePractice.id)?.id !== scene08IllegalMoves.id) {
       rows.push(`<tr><td>${scene07CapturePractice.id}</td><td>NEXT_SCENE_NOT_SCENE08</td></tr>`);
     }
-    if (sceneRegistry.next(scene08IllegalMoves.id) != null) {
-      rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>UNEXPECTED_NEXT_SCENE:son sahne olmalıydı</td></tr>`);
+    // KÖK NEDEN DÜZELTMESİ (Sahne #10 doğrulaması sırasında bulundu — bu
+    // görevin kapsamı DIŞINDAN, Sahne #9'un PR#1 birleşmesinden kalma bir
+    // hata): Sahne #9 kayıtlı olduğu için Sahne #8 ARTIK son sahne DEĞİL —
+    // bu satır önceden "next() null olmalı" diye YANLIŞ bir sabit
+    // varsayıyordu, Diagnostics'te SAHTE bir UNEXPECTED_NEXT_SCENE satırı
+    // üretiyordu (bkz. scene09KoRule bloğundaki AYNI türde bulunan/
+    // düzeltilen hata İLE AYNI kök neden).
+    if (sceneRegistry.next(scene08IllegalMoves.id)?.id !== scene09KoRule.id) {
+      rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>NEXT_SCENE_NOT_SCENE09</td></tr>`);
     }
 
     const refs8 = scene08IllegalMoves.curriculumRefs ?? [];
@@ -1728,8 +1735,13 @@ function renderSceneDiagnostics() {
     if (sceneRegistry.next(scene08IllegalMoves.id)?.id !== scene09KoRule.id) {
       rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>NEXT_SCENE_NOT_SCENE09</td></tr>`);
     }
-    if (sceneRegistry.next(scene09KoRule.id) != null) {
-      rows.push(`<tr><td>${scene09KoRule.id}</td><td>UNEXPECTED_NEXT_SCENE:son sahne olmalıydı</td></tr>`);
+    // Sahne #10 kayıtlı olduğu için Sahne #9 ARTIK son sahne DEĞİL —
+    // "Sonraki konu" scene10'a gitmeli (bkz. scene10EndgameCounting
+    // Diagnostics bloğu altında scene09'un next()'inin GERÇEKTEN scene10
+    // olduğu AYRICA doğrulanır — burada yalnız Sahne #9'un KENDİSİ
+    // "beklenmedik biçimde son sahne DEĞİL" negatif kontrolü kalır).
+    if (sceneRegistry.next(scene09KoRule.id)?.id !== scene10EndgameCounting.id) {
+      rows.push(`<tr><td>${scene09KoRule.id}</td><td>NEXT_SCENE_NOT_SCENE10</td></tr>`);
     }
 
     const refs9 = scene09KoRule.curriculumRefs ?? [];
@@ -1887,7 +1899,15 @@ function renderSceneDiagnostics() {
       // KENDİ yapısı ayrıştırılıp GERÇEK sol/sağ bölge sahibi ve nokta
       // sayısıyla karşılaştırılır (bkz. görev talimatı: "cümlenin tamamının
       // board ile semantik olarak doğru olduğunu test et").
-      const infoMatch = /^(Siyah|Beyaz) sol \((\d+) puan\) · (Siyah|Beyaz) sağ \((\d+) puan\) — (Siyah|Beyaz) önde!$/.exec(endgameMoment.infoText || '');
+      // "önde!" ibaresinden ÖNCEKİ iki renk kelimesi (sol/sağ) cümle
+      // BAŞLARINDA olduğu için büyük harfle başlar ("Beyaz sol...", "Siyah
+      // sağ...") — em-tire SONRASI son kelime ("siyah önde!"/"beyaz önde!")
+      // GERÇEK, doğru Türkçe biçimde küçük harfle devam eder (cümlenin
+      // İÇİNDE, yeni bir cümle DEĞİL) — bu yüzden yalnız üçüncü grup
+      // case-insensitive eşleştirilir, ayrıştırma bunu SABİT bir hata
+      // SAYMAZ (bkz. görev talimatı: "cümlenin tamamının semantik olarak
+      // doğru olduğunu test et" — biçim değil, ANLAM doğrulanır).
+      const infoMatch = /^(Siyah|Beyaz) sol \((\d+) puan\) · (Siyah|Beyaz) sağ \((\d+) puan\) — (Siyah|Beyaz) önde!$/i.exec(endgameMoment.infoText || '');
       if (!infoMatch) {
         rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>INFO_TEXT_UNPARSEABLE:"${endgameMoment.infoText}"</td></tr>`);
       } else {
@@ -1905,7 +1925,7 @@ function renderSceneDiagnostics() {
           rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>INFO_TEXT_RIGHT_MISMATCH:metin="${rightWord} (${rightCount})" gerçek="${realRightWord} (${realRightCount})"</td></tr>`);
         }
         const realAheadWord = realLeftCount === realRightCount ? null : (realLeftCount > realRightCount ? realLeftWord : realRightWord);
-        if (realAheadWord && aheadWord !== realAheadWord) {
+        if (realAheadWord && aheadWord.toLowerCase() !== realAheadWord.toLowerCase()) {
           rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>INFO_TEXT_AHEAD_MISMATCH:metin="${aheadWord}" gerçek="${realAheadWord}"</td></tr>`);
         }
       }

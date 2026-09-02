@@ -59,5 +59,19 @@
  * yapıldı — dosya zaten graph'ın parçası, yeni bir graph girişi GEREKMEDİ.
  * AYRICA `core/curriculum.js`'in `l6.steps[0].fb.t` metnindeki ters siyah/
  * beyaz tarifi düzeltildi (kullanıcıya görünür içerik değişikliği).
+ *
+ * v10 (2026-09-02.3) — `origin/main`'e ayrı birleştirilen "İki Göz"
+ * düzeltmesi (PR #2, `fix/two-eyes-curriculum`) bu dala GERÇEK bir 3-way
+ * git merge ile taşındı: `core/curriculum.js`'in `l7` ("Canlı Gruplar (İki
+ * Göz)") bölümü SEKİZ adıma ve 19×19 BEŞ canlı grup örneğine düzeltildi,
+ * YENİ `core/eyeAnalysis.js` eklendi (bkz. tests/twoEyesCurriculum.test.js —
+ * bu modül şu an YALNIZ bu test dosyasından ve `ogren-3d.html`'in kendi
+ * çalışma-zamanı curriculum yorumlayıcısından kullanılıyor, versioned sahne
+ * graph'ının BİR PARÇASI DEĞİL — `learning-scenes.html`/`teacher-studio.html`
+ * hiçbir yerde import ETMİYOR, bu yüzden GRAPH_BASENAMES/SCAN_FILES'a
+ * EKLENMEDİ, bkz. görev talimatı: "kapsam kasıtlı dar"). Sahne #10'un
+ * kendi l6 düzeltmesiyle ÇAKIŞMADI — merge `core/curriculum.js` içinde
+ * TEK dosyada iki AYRI ders bölümünü (l6/l7) otomatik/temiz birleştirdi,
+ * çakışma işareti KALMADI.
  */
-export const SCENE_RELEASE = '2026-09-02.2';
+export const SCENE_RELEASE = '2026-09-02.3';

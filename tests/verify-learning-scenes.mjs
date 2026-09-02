@@ -419,27 +419,23 @@ addTest('A10) Konular listesi: registry sırası, kullanıcı başlıkları, tek
     await s.page.click('#ls-topics-open');
     await s.page.waitForTimeout(100);
     const items = s.page.locator('.ls-topic-item');
-    // v6 — Sahne #8 ("Yasak Hamleler") kayıtlı olduğu için artık SEKİZ
-    // konu var (bkz. görev talimatı: registry sırasına yeni Sahne #8
-    // eklendi).
-    ensure(await items.count() === 8, 'sekiz konu listelenmiyor');
+    // v7 — Sahne #9 ("Ko Kuralı") ve Sahne #10 ("Oyun Sonu ve Sayım") kayıtlı
+    // olduğu için artık ON konu var (bkz. görev talimatı: registry sırasına
+    // yeni Sahne #9/#10 eklendi).
+    ensure(await items.count() === 10, 'on konu listelenmiyor');
     const titles = await items.allTextContents();
     ensure(
       titles[0].includes('Tahtayı Tanı') && titles[1].includes('Sırayla Oyna') && titles[2].includes('Taşların Nefesi') &&
       titles[3].includes('Grubun Nefesi') && titles[4].includes('Nefes Noktalarını Değerlendir') &&
       titles[5].includes('Taş Alma') && !titles[5].includes('Uygulamaları') && titles[6].includes('Taş Alma Uygulamaları') &&
-      titles[7].includes('Yasak Hamleler'),
+      titles[7].includes('Yasak Hamleler') && titles[8].includes('Ko Kuralı') && titles[9].includes('Oyun Sonu ve Sayım'),
       `sıra/başlıklar yanlış: ${JSON.stringify(titles)}`);
-    ensure(!titles.some(t => /scene-0\d/.test(t)), 'teknik scene ID görünüyor');
+    ensure(!titles.some(t => /scene-\d\d/.test(t)), 'teknik scene ID görünüyor');
 
     ensure(await items.nth(0).getAttribute('aria-current') === 'true', 'ilk (aktif) konu işaretli değil');
-    ensure(await items.nth(1).isDisabled(), 'henüz açılmamış 2. konu disabled değil');
-    ensure(await items.nth(2).isDisabled(), 'henüz açılmamış 3. konu disabled değil');
-    ensure(await items.nth(3).isDisabled(), 'henüz açılmamış 4. konu disabled değil');
-    ensure(await items.nth(4).isDisabled(), 'henüz açılmamış 5. konu disabled değil');
-    ensure(await items.nth(5).isDisabled(), 'henüz açılmamış 6. konu disabled değil');
-    ensure(await items.nth(6).isDisabled(), 'henüz açılmamış 7. konu disabled değil');
-    ensure(await items.nth(7).isDisabled(), 'henüz açılmamış 8. konu disabled değil');
+    for (let i = 1; i < 10; i++) {
+      ensure(await items.nth(i).isDisabled(), `henüz açılmamış ${i + 1}. konu disabled değil`);
+    }
 
     // Renk TEK durum göstergesi olmamalı — glif farkı da olmalı.
     const mark0 = (await items.nth(0).locator('.ls-topic-mark').textContent())?.trim();
@@ -845,25 +841,25 @@ addTest('C15) reload: ilk hamleden sonra ama "Sonraki konu"ya basmadan → temiz
   } finally { await s.close(); }
 });
 
-addTest('C16) reload: tüm konular tamamlanmışken SON konu (Sahne #9) REPLAY modunda açılır (teknik final ekranı YOK)', async () => {
+addTest('C16) reload: tüm konular tamamlanmışken SON konu (Sahne #10) REPLAY modunda açılır (teknik final ekranı YOK)', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
-    // v7 — Sahne #9 ("Ko Kuralı") kayıtlı olduğu için registry sırasındaki
-    // GERÇEK son sahne artık S09'dur (bkz. görev talimatı: registry sırası
-    // tamamlanma sırasıdır — Sahne #8'in KENDİ kodu DEĞİŞMEDEN, yalnız
-    // registry sırasının genişlemesiyle doğal olarak değişen davranış; bu
-    // test daha önce v6'da Sahne #7→#8 GENİŞLEMESİNDE de AYNI şekilde
-    // güncellenmişti).
+    // v8 — Sahne #10 ("Oyun Sonu ve Sayım") kayıtlı olduğu için registry
+    // sırasındaki GERÇEK son sahne artık S10'dur (bkz. görev talimatı:
+    // registry sırası tamamlanma sırasıdır — Sahne #9'un KENDİ kodu
+    // DEĞİŞMEDEN, yalnız registry sırasının genişlemesiyle doğal olarak
+    // değişen davranış; bu test daha önce v7'de Sahne #8→#9 GENİŞLEMESİNDE
+    // de AYNI şekilde güncellenmişti).
     await s.page.evaluate((ids) => {
       localStorage.setItem('go_scene_progress_v1', JSON.stringify({
-        version: 1, activeSceneId: ids[8], completedSceneIds: ids, sceneState: {},
+        version: 1, activeSceneId: ids[9], completedSceneIds: ids, sceneState: {},
       }));
-    }, [S01_ID, S02_ID, S03_ID, S04_ID, S05_ID, S06_ID, S07_ID, S08_ID, S09_ID]);
+    }, [S01_ID, S02_ID, S03_ID, S04_ID, S05_ID, S06_ID, S07_ID, S08_ID, S09_ID, S10_ID]);
     await s.page.reload({ waitUntil: 'networkidle' });
     await s.page.waitForTimeout(300);
-    ensure(await s.page.locator('#s09-intro').isVisible(), 'son konu (Sahne #9) replay modunda açılmadı');
+    ensure(await s.page.locator('#s10-intro').isVisible(), 'son konu (Sahne #10) replay modunda açılmadı');
     const events = await getEventLog(s.page);
-    ensure(events.some(e => e.type === 'scene_replay_started' && e.stepId === S09_ID), 'boot replay\'i scene_replay_started üretmedi');
+    ensure(events.some(e => e.type === 'scene_replay_started' && e.stepId === S10_ID), 'boot replay\'i scene_replay_started üretmedi');
     ensure(await s.page.locator('#ls-error').isHidden(), 'hata/final ekranı yanlışlıkla gösterildi');
   } finally { await s.close(); }
 });
@@ -6552,7 +6548,7 @@ addTest('M5) An 2 (ko_retake): tehdit+yanıt dizisi bitince ko noktası YEŞİL 
   } finally { await s.close(); }
 });
 
-addTest('M6) İki an da başarıyla tamamlanınca completion TAM BİR KEZ açılır, final kontrol "Konular" (Sahne #9 artık son sahne), "Sahne tamamlandı"/ham reason kodu YOK', async () => {
+addTest('M6) İki an da başarıyla tamamlanınca completion TAM BİR KEZ açılır, final kontrol "Sonraki konu" (Sahne #10 eklendiğinden BERİ Sahne #9 artık son sahne DEĞİL), "Sahne tamamlandı"/ham reason kodu YOK', async () => {
   const s = await openScenesPage({ query: PREVIEW_QUERY });
   try {
     await advanceToScene9AndIntro(s.page);
@@ -6564,7 +6560,7 @@ addTest('M6) İki an da başarıyla tamamlanınca completion TAM BİR KEZ açıl
     }
     await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
     const label = (await s.page.locator('.ls-topic-end [data-action="advance"]').textContent())?.trim();
-    ensure(label === 'Konular', `Sahne #9 son sahne — "Konular" olmalı, bulunan: "${label}"`);
+    ensure(label === 'Sonraki konu', `Sahne #9 (artık son sahne DEĞİL) "Sonraki konu" göstermeli, bulunan: "${label}"`);
     const events = eventsFor(await getEventLog(s.page), S09_ID);
     ensure(events.filter(e => e.type === 'scene_completion_unlocked').length === 1, 'completion TAM BİR KEZ açılmalı');
     const bodyText = await s.page.locator('#ls-scene-host').innerText();
