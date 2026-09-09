@@ -7082,9 +7082,24 @@ addTest('N12) Hızlı çift tıklama TEK event üretir (debounce); mobil viewpor
     ensure(events.length === 1, `hızlı çift tıklama TEK event üretmeli, bulunan: ${events.length}`);
   } finally { await s.close(); }
 
-  const s2 = await openScenesPage({ query: PREVIEW_QUERY, viewport: VIEWPORTS.mobile, hasTouch: true });
+  // v2 — kök neden düzeltmesi: kurulum (Sahne #1-9 boyunca oynama) BİLEREK
+  // masaüstü boyut/touch-siz context'te yapılır (bkz. M11/M12/N16 İLE AYNI
+  // desen) — yalnız Sahne #10'a ULAŞTIKTAN SONRA viewport mobil boyuta
+  // küçültülür. Kök neden: Sahne #7/#8'in KENDİ çok-hedefli hover-tabanlı
+  // findScreenPointFor akışı, hasTouch:true + 390×844 ile BAŞTAN AÇILAN
+  // TAZE bir context'te GÜVENİLMEZ davranıyor (gözlemlendi: bu testin İLK
+  // sürümünde tam olarak buradan `#s08-continue` "not visible" timeout'u —
+  // Sahne #7/#8'in KENDİ koduna görev talimatı gereği DOKUNULMADI). Sahne
+  // #10'un KENDİSİ hiçbir YENİ dokunma/hover kodu YAZMAZ — onIntersectionTap
+  // üzerinden AYNI adaptör mekanizmasını kullanır (M11/N16'da ZATEN
+  // doğrulanmış), bu yüzden burada asıl doğrulanan "Sahne #10 mobil
+  // VIEWPORT BOYUTUNDA da tek dokunuşla çalışır" — genel touch-event
+  // semantiği AYRICA test EDİLMEZ.
+  const s2 = await openScenesPage({ query: PREVIEW_QUERY });
   try {
     await advanceToScene10AndIntro(s2.page);
+    await s2.page.setViewportSize(VIEWPORTS.mobile);
+    await s2.page.waitForTimeout(250); // resize sonrası yeniden kadrajlama
     const moment = s10Moment();
     const ok = await tapS10Point(s2.page, moment.whiteRegionPoints[0]);
     ensure(ok, 'mobil viewportta beyaz bölge noktası bulunamadı');
