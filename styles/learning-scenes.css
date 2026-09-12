@@ -451,3 +451,13 @@ body {
   .ls-strip-btn { width: 100%; }
   .ls-pill { min-width: 40px; padding: .35rem .5rem; }
 }
+
+/* İki göz: mevcut anlatım şeridinde kısa açıklama ve tahta alıştırması. */
+.s11-root { align-self: flex-start; }
+.s11-heading { font-size: .72rem; color: var(--gold2); margin-bottom: .25rem; }
+.s11-task { width: 100%; }
+.s11-task[hidden], .s11-root[hidden] { display: none; }
+.s11-task .ls-strip-text { font-size: .84rem; }
+#s11-feedback { font-size: .74rem; }
+#s11-next, #s11-sequence { width: auto; padding: .35rem .7rem; }
+#s11-info .ls-strip-text { font-size: .82rem; }

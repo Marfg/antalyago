@@ -330,136 +330,836 @@ export const CURRICULUM = [
 
   { id:'c2', title:'Temel Teknikler', lessons:[
 
-    { id:'l7', title:'Canlı Gruplar (İki Göz)', steps:[
-      // ── 1) 19×19: BEŞ farklı canlı grup örneği + GERÇEK göz noktaları ──
-      // Taş verisi commit 6143810 (19x19 iki göz: SGF formasyon geri
-      // yüklendi) / orijinal formations/b2-temel-teknikler/l7-canli-gruplar/
-      // "1. adım.sgf" ile — üç istisna DIŞINDA — BİREBİR aynı. 5508c99
-      // sırasında orijinal △(triangle)/□(square) "ikisi de göz" işaretleri
-      // yeşil/kırmızı renklere aktarılırken kırmızı yanlış biçimde "iki
-      // gözsüz, ölümlü nokta" anlamına dönüştürülmüştü; bu YALNIZ marker
-      // ANLAMINI bozmuştu, ama SGF'in kendisi 5 grup için tam iki gerçek
-      // göz üretmiyordu (hiç doğrulanmamıştı) — kural motoruyla denetlenince
-      // 5 hedef gruptan 3'ünün (sol üst/△, üst orta/△, sağ üst/△+kod
-      // düzeltmesi — bkz. aşağı) zaten TAM olarak iki gerçek göze sahip
-      // olduğu, 2'sinin ise SGF'teki bir authoring kusuru yüzünden
-      // GERÇEKTEN eksik olduğu kanıtlandı:
-      //   • "merkez" grup (△ (9,9)/(8,10)): SGF'te bu iki nokta aslında
-      //     hedef gruba DEĞİL, 3 taşlık ayrı/işaretsiz bir "dolgu" kümesine
-      //     ((8,8)(8,9)(9,8)) de bitişikti — yani gerçekte KİMSENİN gözü
-      //     değildi. Minimum düzeltme: dolgu kümesini hedef gruba bağlayan
-      //     VE (9,9)'un çapraz kontrolünü tamamlayan İKİ yeni taş — (7,9)
-      //     ve (10,8) — eklendi (silme/birleştirme yerine EKLEME — SGF'in
-      //     "dolgu" niyetini korur, yalnız hedef gruba dahil eder).
-      //   • "alt bölge" grup (□ (8,18)/(10,18)): SGF'te (9,18) TEK BAŞINA,
-      //     hiçbir başka beyaz taşa bağlı olmayan (0 dost komşulu) İZOLE
-      //     bir beyaz taş — tam da iki □ noktasının ortasında oturup
-      //     ikisinin de sınırını bozuyordu. Minimum düzeltme: bu tek taş
-      //     beyazdan siyaha RENKLENDİRİLDİ (silinmedi — silinseydi üç boş
-      //     nokta TEK bağlı bölgeye birleşir, iki AYRI göz oluşmazdı);
-      //     böylece hedef grubun kendi duvarına dahil oldu.
-      // "Sağ üst" grubun köşe noktası (18,0) ise taş DEĞİŞTİRİLMEDEN, genel
-      // ve standart bir Go kuralıyla ("komşu-göz istisnası" — bkz.
-      // core/eyeAnalysis.js::resolveGroupTrueEyes) doğru sınıflandırılıyor:
-      // tek çaprazı (17,1) zaten AYNI grubun kendi gerçek gözü olduğundan
-      // rakip oraya asla giremez, dolayısıyla köşe de gerçek göz sayılır —
-      // bu köşe/kenar "bükülü iki göz" için standart teoridir, tek bir
-      // koordinat için özel durum DEĞİLDİR.
-      // "Sol alt" ve "sağ alt" kümelerindeki İKİŞER benzer izole beyaz taş
-      // ((1,18) ve (18,17)) BİLEREK dokunulmadı — bu iki küme "5 hedef
-      // grup" iddiasının parçası değil (metin/marker onları hiç
-      // kullanmıyor), taşları aynen tarihsel haliyle arka planda duruyor.
-      // Üç hedef-dışı küme ((8,8)-bölgesi artık grubun parçası, sol alt,
-      // sağ alt) toplamda tahtada GÖRÜNMEYE devam ediyor — kompozisyon
-      // mümkün olduğunca korunuyor, yalnız 5 CLAIM edilen grup net.
-      { text:`<p>Bir grup <strong>iki göze</strong> sahipse asla yakalanamaz — <em>ölümsüzdür.</em></p><p><span class="term">Göz</span> = grubun içindeki boş nokta. <strong>Yeşil işaretler</strong>, bu tahtadaki BEŞ farklı canlı grubun DOĞRULANMIŞ gerçek göz noktalarını gösteriyor — her biri iki göze sahip.</p>`, size:19, board:[
-        {color:'W',x:2,y:0},{color:'W',x:6,y:0},{color:'W',x:12,y:0},{color:'W',x:15,y:0},
-        {color:'W',x:2,y:1},{color:'W',x:6,y:1},{color:'W',x:12,y:1},{color:'W',x:15,y:1},
-        {color:'W',x:2,y:2},{color:'W',x:6,y:2},{color:'W',x:7,y:2},{color:'W',x:8,y:2},{color:'W',x:9,y:2},{color:'W',x:10,y:2},{color:'W',x:11,y:2},{color:'W',x:12,y:2},{color:'W',x:15,y:2},
-        {color:'W',x:2,y:3},{color:'W',x:15,y:3},{color:'W',x:16,y:3},{color:'W',x:17,y:3},{color:'W',x:18,y:3},
-        {color:'W',x:0,y:4},{color:'W',x:1,y:4},{color:'W',x:2,y:4},
-        {color:'W',x:8,y:7},{color:'W',x:9,y:7},{color:'W',x:10,y:7},
-        {color:'W',x:7,y:8},{color:'W',x:11,y:8},
-        {color:'W',x:6,y:9},{color:'W',x:11,y:9},
-        {color:'W',x:6,y:10},{color:'W',x:11,y:10},
-        {color:'W',x:6,y:11},{color:'W',x:11,y:11},
-        {color:'W',x:6,y:12},{color:'W',x:7,y:12},{color:'W',x:8,y:12},{color:'W',x:9,y:12},{color:'W',x:10,y:12},
-        {color:'W',x:15,y:15},{color:'W',x:16,y:15},{color:'W',x:17,y:15},{color:'W',x:18,y:15},
-        {color:'W',x:0,y:16},{color:'W',x:1,y:16},{color:'W',x:2,y:16},{color:'W',x:3,y:16},{color:'W',x:4,y:16},{color:'W',x:6,y:16},{color:'W',x:7,y:16},{color:'W',x:8,y:16},{color:'W',x:9,y:16},{color:'W',x:10,y:16},{color:'W',x:11,y:16},{color:'W',x:12,y:16},{color:'W',x:15,y:16},
-        {color:'W',x:4,y:17},{color:'W',x:6,y:17},{color:'W',x:12,y:17},{color:'W',x:15,y:17},{color:'W',x:18,y:17},
-        {color:'W',x:1,y:18},{color:'W',x:4,y:18},{color:'W',x:6,y:18},{color:'W',x:12,y:18},{color:'W',x:15,y:18},
-        {color:'B',x:1,y:0},{color:'B',x:7,y:0},{color:'B',x:9,y:0},{color:'B',x:11,y:0},{color:'B',x:16,y:0},{color:'B',x:17,y:0},
-        {color:'B',x:0,y:1},{color:'B',x:1,y:1},{color:'B',x:7,y:1},{color:'B',x:8,y:1},{color:'B',x:9,y:1},{color:'B',x:10,y:1},{color:'B',x:11,y:1},{color:'B',x:16,y:1},{color:'B',x:18,y:1},
-        {color:'B',x:1,y:2},{color:'B',x:16,y:2},{color:'B',x:17,y:2},{color:'B',x:18,y:2},
-        {color:'B',x:0,y:3},{color:'B',x:1,y:3},
-        {color:'B',x:8,y:8},{color:'B',x:9,y:8},
-        {color:'B',x:7,y:9},{color:'B',x:8,y:9},{color:'B',x:10,y:9},
-        {color:'B',x:7,y:10},{color:'B',x:9,y:10},{color:'B',x:10,y:10},{color:'B',x:10,y:8},
-        {color:'B',x:7,y:11},{color:'B',x:8,y:11},{color:'B',x:9,y:11},
-        {color:'B',x:16,y:16},{color:'B',x:17,y:16},{color:'B',x:18,y:16},
-        {color:'B',x:0,y:17},{color:'B',x:1,y:17},{color:'B',x:2,y:17},{color:'B',x:3,y:17},{color:'B',x:7,y:17},{color:'B',x:8,y:17},{color:'B',x:9,y:17},{color:'B',x:10,y:17},{color:'B',x:11,y:17},{color:'B',x:16,y:17},
-        {color:'B',x:3,y:18},{color:'B',x:7,y:18},{color:'B',x:9,y:18},{color:'B',x:11,y:18},{color:'B',x:16,y:18},{color:'B',x:17,y:18},
-      ], groupIndicators:[
-        {x:0,y:0,color:'green'},{x:0,y:2,color:'green'},
-        {x:8,y:0,color:'green'},{x:10,y:0,color:'green'},
-        {x:18,y:0,color:'green'},{x:17,y:1,color:'green'},
-        {x:9,y:9,color:'green'},{x:8,y:10,color:'green'},
-        {x:8,y:18,color:'green'},{x:10,y:18,color:'green'},
-      ], auto:true, camera:CAM.board19, fb:{t:'Yeşil işaret = doğrulanmış gerçek göz noktası (beş grubun her biri için iki tane — toplam 10).',c:'info'} },
-
-      // ── 2) Tek gerçek göz ──────────────────────────────────────────────
-      { text:`<p>★ <strong>Alıştırma:</strong> Bu siyah grup canlı mı, ölü mü?</p>`, board:[{color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:1,y:2},{color:'B',x:3,y:2},{color:'B',x:1,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:3}], groupIndicators:[{x:2,y:2,color:'green'}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Bu grup canlı mı?',options:[{text:'Canlı — iki gözü var',correct:false,feedback:'Hayır — tek bir boş iç nokta var. (2,2) GERÇEK bir göz olsa bile tek göz = henüz ölümlü.'},{text:'Ölümlü — tek göz',correct:true,feedback:'Doğru! (2,2) tam bir gerçek göz (dört yön + dört çapraz siyahla çevrili) ama tek başına yetmez.'}]}, fb:{t:'Kaç göz var? Say.',c:'info'} },
-
-      // ── 3) Gerçek sahte göz ──────────────────────────────────────────
-      // Doğrulama: (4,4) dört yönden (3,4)/(5,4)/(4,3)/(4,5) tek bir siyah
-      // grupla çevrili — göz ADAYI. Ama dört çaprazından ikisi ((5,3) ve
-      // (5,5)) hâlâ boş/açık — sahte göz kuralı: iç noktalar en az 3/4
-      // çaprazı kontrol etmeli (kenar/köşede 2/2, 1/1). Burada 2/4 → SAHTE.
-      { text:`<p><strong>Sahte göz</strong> — bir nokta dört yönden aynı renk taşla çevrili görünse bile, çapraz noktalardan yeterince fazlası rakibe açıksa bu göz <strong>gerçek değildir</strong>: iç noktalarda en az 3/4 çaprazın, kenarda 2/2'sinin, köşede 1/1'inin aynı renk kontrolünde olması gerekir.</p>`, board:[
-        {color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:3,y:5},{color:'B',x:4,y:3},{color:'B',x:4,y:5},
-        {color:'B',x:4,y:2},{color:'B',x:5,y:2},{color:'B',x:6,y:2},{color:'B',x:7,y:2},{color:'B',x:7,y:3},{color:'B',x:7,y:4},{color:'B',x:6,y:4},{color:'B',x:5,y:4},
-      ], groupIndicators:[{x:4,y:4,color:'red'}], auto:true, size:9, camera:CAM.center, fb:{t:'Kırmızı işaret gerçek olmayan göz adayı — iki çapraz nokta ((5,3) ve (5,5)) hâlâ açık.',c:'info'} },
-
-      // ── 4) Tek gözlü grubun neden henüz koşulsuz canlı değil ──────────
-      // (3,3) GERÇEK bir göz (4/4 çapraz) — ama grubun TEK nefesi. Beyaz
-      // oraya oynadığında bu intihar DEĞİL, grubun son nefesini alan
-      // GERÇEK bir yakalama olur (applyMove → 8 taş yakalanır).
-      { text:`<p><strong>★★ Alıştırma:</strong> Bu grubun TEK nefesi kendi gerçek gözü — başka hiçbir boş komşusu yok. Beyaz olarak o noktaya oyna.</p>`, board:[
-        {color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:2},{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:2,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:4},
-        {color:'W',x:1,y:1},{color:'W',x:2,y:1},{color:'W',x:3,y:1},{color:'W',x:4,y:1},{color:'W',x:5,y:1},
-        {color:'W',x:1,y:5},{color:'W',x:2,y:5},{color:'W',x:3,y:5},{color:'W',x:4,y:5},{color:'W',x:5,y:5},
-        {color:'W',x:1,y:2},{color:'W',x:1,y:3},{color:'W',x:1,y:4},
-        {color:'W',x:5,y:2},{color:'W',x:5,y:3},{color:'W',x:5,y:4},
-      ], answer:{x:3,y:3}, turn:'white', size:9, camera:CAM.center, fb:{t:'Grubun tek boş iç noktasına (gerçek gözüne) oyna.',c:'info'}, fb_ok:'Evet! (3,3) tam bir gerçek gözdü — ama grubun son nefesiydi. Beyaz orayı doldurunca sekiz siyah taş birden yakalandı: gerçek bir göz bile TEK başına grubu kurtarmaz.', fb_err:'Bu hamle burada intihar değil — grubun son nefesini alan bir yakalama. Ortadaki boş noktaya oyna.' },
-
-      // ── 5) Bir hamleyle iç alanı iki ayrı gerçek göze bölme ───────────
-      { text:`<p>★★★ <strong>Alıştırma:</strong> İç alanı ikiye bölerek iki göz yap — grubu kurtar.</p>`, board:[{color:'B',x:0,y:4},{color:'B',x:1,y:4},{color:'B',x:2,y:4},{color:'B',x:3,y:4},{color:'B',x:4,y:4},{color:'B',x:0,y:5},{color:'B',x:4,y:5},{color:'B',x:0,y:6},{color:'B',x:1,y:6},{color:'B',x:2,y:6},{color:'B',x:3,y:6},{color:'B',x:4,y:6}], answer:{x:2,y:5}, turn:'black', size:9, camera:CAM.center, fb:{t:'Ortadaki üç boşluğu ikiye ayır — her parça ayrı göz olsun.',c:'info'}, fb_ok:'İki göz tamamlandı — (1,5) ve (3,5) artık iki ayrı göz. Grup ölümsüz!', fb_err:'Orta noktaya (C6) oyna — iç alanı sola ve sağa böl.' },
-
-      // ── 6) Rakibin sahte gözü bozabildiği gerçek ve yasal örnek ───────
-      // Aynı sahte-göz formasyonu (bkz. adım 3) — beyaz şimdi açık
-      // çapraz noktalardan birine (5,3) oynuyor. isValidMove: legal:true
-      // (o noktanın tek nefesi (6,3) — intihar değil). Bu hamleden sonra
-      // (4,4) kalıcı olarak sahte kalır; siyah onu artık asla gerçek göze
-      // çeviremez.
-      { text:`<p><strong>★★ Alıştırma:</strong> Bu sahte göz henüz kesinleşmedi. Beyaz olarak açık çapraz noktalardan birine oynayarak onu kalıcı olarak sahteleştir.</p>`, board:[
-        {color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:3,y:5},{color:'B',x:4,y:3},{color:'B',x:4,y:5},
-        {color:'B',x:4,y:2},{color:'B',x:5,y:2},{color:'B',x:6,y:2},{color:'B',x:7,y:2},{color:'B',x:7,y:3},{color:'B',x:7,y:4},{color:'B',x:6,y:4},{color:'B',x:5,y:4},
-      ], answer:{x:5,y:3}, turn:'white', size:9, camera:CAM.center, fb:{t:'Sahte gözün yanındaki açık çapraz noktaya oyna.',c:'info'}, fb_ok:'Doğru! Bu çapraz nokta artık kalıcı olarak beyazın — siyah (4,4) noktasını bundan sonra hiçbir zaman gerçek göze çeviremez.', fb_err:'Kırmızı işaretli noktanın kendisine değil, onun açık çapraz köşesine ((5,3)) oyna.' },
-
-      // ── 7) Hazır iki gerçek gözü bulunan koşulsuz canlı grup ──────────
-      { text:`<p>★★ <strong>Alıştırma:</strong> Bu siyah grup canlı mı?</p>`, board:[{color:'B',x:0,y:3},{color:'B',x:1,y:3},{color:'B',x:2,y:3},{color:'B',x:3,y:3},{color:'B',x:4,y:3},{color:'B',x:0,y:4},{color:'B',x:2,y:4},{color:'B',x:4,y:4},{color:'B',x:0,y:5},{color:'B',x:1,y:5},{color:'B',x:2,y:5},{color:'B',x:3,y:5},{color:'B',x:4,y:5}], groupIndicators:[{x:1,y:4,color:'green'},{x:3,y:4,color:'green'}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Bu siyah grup canlı mı?',options:[{text:'Canlı — iki ayrı göz var',correct:true,feedback:'Doğru! (1,4) ve (3,4) iki ayrı gerçek göz — dört siyah taşla çevrili, koşulsuz canlı.'},{text:'Ölümlü — tek göz',correct:false,feedback:'Hayır — iki ayrı boş iç nokta sayıyoruz; her biri kendi etrafındaki siyahlarla çevrilmiş.'}]}, fb:{t:'Yeşil işaretler = iki ayrı göz noktası.',c:'info'} },
-
-      // ── 8) Kapanış: doğru hamleyle iki göz oluştur ────────────────────
-      // Bükülü (L şekilli) 3 noktalık boş alan — (2,2) kavşak noktası.
-      // answer sonrası (3,2) ve (2,3) BİRBİRİNDEN BAĞIMSIZ, her biri 3/4
-      // çapraz kontrollü GERÇEK göz olur (applyMove ile doğrulandı).
-      { text:`<p>★★★ <strong>Kapanış alıştırması:</strong> Bükülü boş alanı ikiye böl — iki ayrı gerçek göz oluştur.</p>`, board:[
-        {color:'B',x:1,y:1},{color:'B',x:2,y:1},{color:'B',x:3,y:1},{color:'B',x:4,y:1},
-        {color:'B',x:1,y:2},{color:'B',x:4,y:2},
-        {color:'B',x:1,y:3},{color:'B',x:4,y:3},{color:'B',x:3,y:3},
-        {color:'B',x:1,y:4},{color:'B',x:2,y:4},{color:'B',x:3,y:4},
-      ], answer:{x:2,y:2}, turn:'black', size:9, camera:CAM.center, fb:{t:'Bükülü alanın kavşak noktasına oyna — iki kolu birbirinden ayır.',c:'info'}, fb_ok:'İki göz tamamlandı — (3,2) ve (2,3) artık birbirinden bağımsız iki gerçek göz. Grup koşulsuz canlı!', fb_err:'Kavşak (köşe) noktasına oyna — bir kolu değil, ikisini birden ayıran noktayı bul.' },
-    ]},
+    {
+  "id": "l7",
+  "title": "Canlı Gruplar (İki Göz)",
+  "steps": [
+    {
+      "title": "Göz, grubun iç nefesidir",
+      "kind": "observe",
+      "body": "Köşedeki A noktası siyah grubun içindedir. Siyahın dış nefesleri varken beyaz A’ya giremez: kendi taşının nefesi kalmaz.",
+      "prompt": "A noktasına dokun; beyazın neden oynayamadığını gör.",
+      "board": [
+        {"x": 0, "y": 7, "color": "B"},
+        {"x": 1, "y": 7, "color": "B"},
+        {"x": 1, "y": 8, "color": "B"}
+      ],
+      "size": 9,
+      "source": "Falling in Love with Baduk · PDF s.45 · Dia.01",
+      "targets": [
+        [0, 8]
+      ],
+      "turn": "white",
+      "eyes": [
+        [0, 8]
+      ],
+      "success": "A bir gerçek gözdür. Fakat tek göz, koşulsuz yaşam için yeterli değildir.",
+      "text": "<p><strong>Göz, grubun iç nefesidir</strong></p><p>Köşedeki A noktası siyah grubun içindedir. Siyahın dış nefesleri varken beyaz A’ya giremez: kendi taşının nefesi kalmaz.</p><p>A noktasına dokun; beyazın neden oynayamadığını gör.</p>",
+      "fb": {
+        "t": "A noktasına dokun; beyazın neden oynayamadığını gör.",
+        "c": "info"
+      },
+      "fb_ok": "A bir gerçek gözdür. Fakat tek göz, koşulsuz yaşam için yeterli değildir.",
+      "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+      "auto": true,
+      "miniQuestion": {
+        "text": "Bu grubun kaç gerçek gözü var?",
+        "options": [
+          {
+            "text": "0 gerçek göz",
+            "correct": false,
+            "feedback": "İç boşlukları say; ayrı gözleri ayırt et."
+          },
+          {
+            "text": "1 gerçek göz",
+            "correct": true,
+            "feedback": "A bir gerçek gözdür. Fakat tek göz, koşulsuz yaşam için yeterli değildir."
+          },
+          {
+            "text": "2 gerçek göz",
+            "correct": false,
+            "feedback": "İç boşlukları say; ayrı gözleri ayırt et."
+          }
+        ]
+      },
+      "groupIndicators": [
+        {"x": 0, "y": 8, "color": "green"}
+      ]
+    },
+    {
+      "title": "Tek göz son nefes olursa",
+      "kind": "capture",
+      "body": "Aynı siyah grup şimdi dıştan çevrili. Tek nefesi A. Beyaz A’ya oynadığında önce siyah taşlar kaldırılır; beyazın nefesi açılır.",
+      "prompt": "Beyaz olarak A’ya oyna ve üç siyah taşı yakala.",
+      "board": [
+        {"x": 0, "y": 7, "color": "B"},
+        {"x": 1, "y": 7, "color": "B"},
+        {"x": 1, "y": 8, "color": "B"},
+        {"x": 0, "y": 6, "color": "W"},
+        {"x": 1, "y": 6, "color": "W"},
+        {"x": 2, "y": 6, "color": "W"},
+        {"x": 2, "y": 7, "color": "W"},
+        {"x": 2, "y": 8, "color": "W"}
+      ],
+      "size": 9,
+      "source": "Falling in Love with Baduk · PDF s.45 · Dia.02",
+      "targets": [
+        [0, 8]
+      ],
+      "turn": "white",
+      "eyes": [
+        [0, 8]
+      ],
+      "capturedExpected": 3,
+      "success": "Üç siyah taş yakalandı. Tek göz, dış nefesler bitince grubu koruyamadı.",
+      "text": "<p><strong>Tek göz son nefes olursa</strong></p><p>Aynı siyah grup şimdi dıştan çevrili. Tek nefesi A. Beyaz A’ya oynadığında önce siyah taşlar kaldırılır; beyazın nefesi açılır.</p><p>Beyaz olarak A’ya oyna ve üç siyah taşı yakala.</p>",
+      "fb": {
+        "t": "Beyaz olarak A’ya oyna ve üç siyah taşı yakala.",
+        "c": "info"
+      },
+      "fb_ok": "Üç siyah taş yakalandı. Tek göz, dış nefesler bitince grubu koruyamadı.",
+      "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+      "answer": {
+        "x": 0,
+        "y": 8
+      },
+      "groupIndicators": [
+        {"x": 0, "y": 8, "color": "green"}
+      ]
+    },
+    {
+      "title": "İki ayrı göz grubu korur",
+      "kind": "observe",
+      "body": "Bu grubun dış nefesi yok, ama A ve B birbirinden ayrı iki iç nefes. Beyaz birine girmeye çalışınca diğer göz siyahın nefesi olarak kalır.",
+      "prompt": "A ve B noktalarını sırayla dene.",
+      "board": [
+        {"x": 0, "y": 7, "color": "B"},
+        {"x": 1, "y": 7, "color": "B"},
+        {"x": 2, "y": 7, "color": "B"},
+        {"x": 3, "y": 7, "color": "B"},
+        {"x": 1, "y": 8, "color": "B"},
+        {"x": 3, "y": 8, "color": "B"},
+        {"x": 0, "y": 6, "color": "W"},
+        {"x": 1, "y": 6, "color": "W"},
+        {"x": 2, "y": 6, "color": "W"},
+        {"x": 3, "y": 6, "color": "W"},
+        {"x": 4, "y": 6, "color": "W"},
+        {"x": 4, "y": 7, "color": "W"},
+        {"x": 4, "y": 8, "color": "W"}
+      ],
+      "size": 9,
+      "source": "Falling in Love with Baduk · PDF s.45 · Dia.03–04",
+      "targets": [
+        [0, 8],
+        [2, 8]
+      ],
+      "turn": "white",
+      "eyes": [
+        [0, 8],
+        [2, 8]
+      ],
+      "success": "Her iki deneme de intihar hamlesi. Siyah kendi gözlerini doldurmadığı sürece grup koşulsuz canlı.",
+      "text": "<p><strong>İki ayrı göz grubu korur</strong></p><p>Bu grubun dış nefesi yok, ama A ve B birbirinden ayrı iki iç nefes. Beyaz birine girmeye çalışınca diğer göz siyahın nefesi olarak kalır.</p><p>A ve B noktalarını sırayla dene.</p>",
+      "fb": {
+        "t": "A ve B noktalarını sırayla dene.",
+        "c": "info"
+      },
+      "fb_ok": "Her iki deneme de intihar hamlesi. Siyah kendi gözlerini doldurmadığı sürece grup koşulsuz canlı.",
+      "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+      "auto": true,
+      "miniQuestion": {
+        "text": "Bu grubun kaç gerçek gözü var?",
+        "options": [
+          {
+            "text": "0 gerçek göz",
+            "correct": false,
+            "feedback": "İç boşlukları say; ayrı gözleri ayırt et."
+          },
+          {
+            "text": "1 gerçek göz",
+            "correct": false,
+            "feedback": "İç boşlukları say; ayrı gözleri ayırt et."
+          },
+          {
+            "text": "2 gerçek göz",
+            "correct": true,
+            "feedback": "Her iki deneme de intihar hamlesi. Siyah kendi gözlerini doldurmadığı sürece grup koşulsuz canlı."
+          }
+        ]
+      },
+      "groupIndicators": [
+        {"x": 0, "y": 8, "color": "green"},
+        {"x": 2, "y": 8, "color": "green"}
+      ]
+    },
+    {
+      "title": "Gibi görünmesi yetmez",
+      "kind": "capture",
+      "body": "A çevresindeki siyah taşlar tek bir bağlı grup değil. Üstteki üç taşın son nefesi A; alttaki taşların başka nefesleri var.",
+      "prompt": "Beyaz olarak A’ya oyna. Hangi siyah taşlar gider?",
+      "board": [
+        {"x": 3, "y": 3, "color": "B"},
+        {"x": 4, "y": 3, "color": "B"},
+        {"x": 4, "y": 4, "color": "B"},
+        {"x": 2, "y": 4, "color": "B"},
+        {"x": 2, "y": 5, "color": "B"},
+        {"x": 3, "y": 5, "color": "B"},
+        {"x": 3, "y": 2, "color": "W"},
+        {"x": 4, "y": 2, "color": "W"},
+        {"x": 2, "y": 3, "color": "W"},
+        {"x": 5, "y": 3, "color": "W"},
+        {"x": 5, "y": 4, "color": "W"},
+        {"x": 4, "y": 5, "color": "W"}
+      ],
+      "size": 9,
+      "source": "How To Play Go · PDF s.8 · Diagram 2-6 · konumu taşınmış uyarlama",
+      "targets": [
+        [3, 4]
+      ],
+      "turn": "white",
+      "marks": [
+        [3, 4]
+      ],
+      "capturedExpected": 3,
+      "success": "Üstteki üç taş yakalandı. A bütün siyah taşların ortak, güvenli bir gözü değildi: sahte göz.",
+      "text": "<p><strong>Gibi görünmesi yetmez</strong></p><p>A çevresindeki siyah taşlar tek bir bağlı grup değil. Üstteki üç taşın son nefesi A; alttaki taşların başka nefesleri var.</p><p>Beyaz olarak A’ya oyna. Hangi siyah taşlar gider?</p>",
+      "fb": {
+        "t": "Beyaz olarak A’ya oyna. Hangi siyah taşlar gider?",
+        "c": "info"
+      },
+      "fb_ok": "Üstteki üç taş yakalandı. A bütün siyah taşların ortak, güvenli bir gözü değildi: sahte göz.",
+      "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+      "answer": {
+        "x": 3,
+        "y": 4
+      },
+      "groupIndicators": [
+        {"x": 3, "y": 4, "color": "red"}
+      ]
+    },
+    {
+      "title": "Üç boşluğu iki göze böl",
+      "kind": "move",
+      "body": "Siyahın içindeki üç boş nokta tek bir bağlı alan. Ortaya bir siyah taş koymak, sağ ve sol boşluğu birbirinden ayırır.",
+      "prompt": "Siyah olarak iki gerçek göz oluşturan hamleyi bul.",
+      "board": [
+        {"x": 2, "y": 3, "color": "B"},
+        {"x": 3, "y": 3, "color": "B"},
+        {"x": 4, "y": 3, "color": "B"},
+        {"x": 5, "y": 3, "color": "B"},
+        {"x": 6, "y": 3, "color": "B"},
+        {"x": 2, "y": 5, "color": "B"},
+        {"x": 3, "y": 5, "color": "B"},
+        {"x": 4, "y": 5, "color": "B"},
+        {"x": 5, "y": 5, "color": "B"},
+        {"x": 6, "y": 5, "color": "B"},
+        {"x": 2, "y": 4, "color": "B"},
+        {"x": 6, "y": 4, "color": "B"},
+        {"x": 2, "y": 2, "color": "W"},
+        {"x": 3, "y": 2, "color": "W"},
+        {"x": 4, "y": 2, "color": "W"},
+        {"x": 5, "y": 2, "color": "W"},
+        {"x": 6, "y": 2, "color": "W"},
+        {"x": 2, "y": 6, "color": "W"},
+        {"x": 3, "y": 6, "color": "W"},
+        {"x": 4, "y": 6, "color": "W"},
+        {"x": 5, "y": 6, "color": "W"},
+        {"x": 6, "y": 6, "color": "W"},
+        {"x": 1, "y": 3, "color": "W"},
+        {"x": 1, "y": 4, "color": "W"},
+        {"x": 1, "y": 5, "color": "W"},
+        {"x": 7, "y": 3, "color": "W"},
+        {"x": 7, "y": 4, "color": "W"},
+        {"x": 7, "y": 5, "color": "W"}
+      ],
+      "size": 9,
+      "source": "Falling in Love with Baduk · PDF s.49 · Dia.01–02",
+      "targets": [
+        [4, 4]
+      ],
+      "turn": "black",
+      "afterEyes": [
+        [3, 4],
+        [5, 4]
+      ],
+      "success": "İç alan ikiye ayrıldı. İki ayrı gerçek göz oluştu; siyah grup artık koşulsuz canlı.",
+      "text": "<p><strong>Üç boşluğu iki göze böl</strong></p><p>Siyahın içindeki üç boş nokta tek bir bağlı alan. Ortaya bir siyah taş koymak, sağ ve sol boşluğu birbirinden ayırır.</p><p>Siyah olarak iki gerçek göz oluşturan hamleyi bul.</p>",
+      "fb": {
+        "t": "Siyah olarak iki gerçek göz oluşturan hamleyi bul.",
+        "c": "info"
+      },
+      "fb_ok": "İç alan ikiye ayrıldı. İki ayrı gerçek göz oluştu; siyah grup artık koşulsuz canlı.",
+      "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+      "answer": {
+        "x": 4,
+        "y": 4
+      },
+      "examples": [
+        {
+          "title": "Üç boşluğu iki göze böl",
+          "kind": "move",
+          "body": "Alt çizgideki taş sırası kaldırıldı; kalan formasyon bir sıra aşağı indi. Üç boşluk artık tahta kenarında. Beyaz dış nefesleri kapatmış; alt sınırı tahta kenarı oluşturuyor.",
+          "prompt": "Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.",
+          "board": [
+            {"x": 2, "y": 7, "color": "B"},
+            {"x": 3, "y": 7, "color": "B"},
+            {"x": 4, "y": 7, "color": "B"},
+            {"x": 5, "y": 7, "color": "B"},
+            {"x": 6, "y": 7, "color": "B"},
+            {"x": 2, "y": 8, "color": "B"},
+            {"x": 6, "y": 8, "color": "B"},
+            {"x": 2, "y": 6, "color": "W"},
+            {"x": 3, "y": 6, "color": "W"},
+            {"x": 4, "y": 6, "color": "W"},
+            {"x": 5, "y": 6, "color": "W"},
+            {"x": 6, "y": 6, "color": "W"},
+            {"x": 1, "y": 7, "color": "W"},
+            {"x": 1, "y": 8, "color": "W"},
+            {"x": 7, "y": 7, "color": "W"},
+            {"x": 7, "y": 8, "color": "W"}
+          ],
+          "size": 9,
+          "source": "Falling in Love with Baduk · PDF s.49 · düz üç ilkesinden ikinci çizgi uyarlaması; kitap diyagramının birebir kopyası değildir",
+          "targets": [
+            [4, 8]
+          ],
+          "turn": "black",
+          "afterEyes": [
+            [3, 8],
+            [5, 8]
+          ],
+          "label": "Alt kenar",
+          "success": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
+          "text": "<p><strong>Üç boşluğu iki göze böl</strong></p><p>Alt çizgideki taş sırası kaldırıldı; kalan formasyon bir sıra aşağı indi. Üç boşluk artık tahta kenarında. Beyaz dış nefesleri kapatmış; alt sınırı tahta kenarı oluşturuyor.</p><p>Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.</p>",
+          "fb": {
+            "t": "Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.",
+            "c": "info"
+          },
+          "fb_ok": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
+          "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+          "answer": {
+            "x": 4,
+            "y": 8
+          }
+        },
+        {
+          "title": "Üç boşluğu iki göze böl",
+          "kind": "move",
+          "body": "Aynı yaşama fikri üst kenarda. Üç boşluk üstten ikinci çizgide; siyahın dış nefesi yok.",
+          "prompt": "Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.",
+          "board": [
+            {"x": 6, "y": 2, "color": "B"},
+            {"x": 5, "y": 2, "color": "B"},
+            {"x": 4, "y": 2, "color": "B"},
+            {"x": 3, "y": 2, "color": "B"},
+            {"x": 2, "y": 2, "color": "B"},
+            {"x": 6, "y": 0, "color": "B"},
+            {"x": 5, "y": 0, "color": "B"},
+            {"x": 4, "y": 0, "color": "B"},
+            {"x": 3, "y": 0, "color": "B"},
+            {"x": 2, "y": 0, "color": "B"},
+            {"x": 6, "y": 1, "color": "B"},
+            {"x": 2, "y": 1, "color": "B"},
+            {"x": 6, "y": 3, "color": "W"},
+            {"x": 5, "y": 3, "color": "W"},
+            {"x": 4, "y": 3, "color": "W"},
+            {"x": 3, "y": 3, "color": "W"},
+            {"x": 2, "y": 3, "color": "W"},
+            {"x": 7, "y": 2, "color": "W"},
+            {"x": 7, "y": 1, "color": "W"},
+            {"x": 7, "y": 0, "color": "W"},
+            {"x": 1, "y": 2, "color": "W"},
+            {"x": 1, "y": 1, "color": "W"},
+            {"x": 1, "y": 0, "color": "W"}
+          ],
+          "size": 9,
+          "source": "Falling in Love with Baduk · PDF s.49 · düz üç ilkesinden ikinci çizgi uyarlaması; kitap diyagramının birebir kopyası değildir",
+          "targets": [
+            [4, 1]
+          ],
+          "turn": "black",
+          "afterEyes": [
+            [5, 1],
+            [3, 1]
+          ],
+          "label": "Üst kenar",
+          "success": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
+          "text": "<p><strong>Üç boşluğu iki göze böl</strong></p><p>Aynı yaşama fikri üst kenarda. Üç boşluk üstten ikinci çizgide; siyahın dış nefesi yok.</p><p>Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.</p>",
+          "fb": {
+            "t": "Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.",
+            "c": "info"
+          },
+          "fb_ok": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
+          "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+          "answer": {
+            "x": 4,
+            "y": 1
+          }
+        },
+        {
+          "title": "Üç boşluğu iki göze böl",
+          "kind": "move",
+          "body": "Üç iç boşluk soldan ikinci çizgide, bu kez dikey. Beyaz çevreyi kapatmış; iç alanı iki göze ayır.",
+          "prompt": "Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.",
+          "board": [
+            {"x": 2, "y": 2, "color": "B"},
+            {"x": 2, "y": 3, "color": "B"},
+            {"x": 2, "y": 4, "color": "B"},
+            {"x": 2, "y": 5, "color": "B"},
+            {"x": 2, "y": 6, "color": "B"},
+            {"x": 0, "y": 2, "color": "B"},
+            {"x": 0, "y": 3, "color": "B"},
+            {"x": 0, "y": 4, "color": "B"},
+            {"x": 0, "y": 5, "color": "B"},
+            {"x": 0, "y": 6, "color": "B"},
+            {"x": 1, "y": 2, "color": "B"},
+            {"x": 1, "y": 6, "color": "B"},
+            {"x": 3, "y": 2, "color": "W"},
+            {"x": 3, "y": 3, "color": "W"},
+            {"x": 3, "y": 4, "color": "W"},
+            {"x": 3, "y": 5, "color": "W"},
+            {"x": 3, "y": 6, "color": "W"},
+            {"x": 2, "y": 1, "color": "W"},
+            {"x": 1, "y": 1, "color": "W"},
+            {"x": 0, "y": 1, "color": "W"},
+            {"x": 2, "y": 7, "color": "W"},
+            {"x": 1, "y": 7, "color": "W"},
+            {"x": 0, "y": 7, "color": "W"}
+          ],
+          "size": 9,
+          "source": "Falling in Love with Baduk · PDF s.49 · düz üç ilkesinden ikinci çizgi uyarlaması; kitap diyagramının birebir kopyası değildir",
+          "targets": [
+            [1, 4]
+          ],
+          "turn": "black",
+          "afterEyes": [
+            [1, 3],
+            [1, 5]
+          ],
+          "label": "Sol kenar",
+          "success": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
+          "text": "<p><strong>Üç boşluğu iki göze böl</strong></p><p>Üç iç boşluk soldan ikinci çizgide, bu kez dikey. Beyaz çevreyi kapatmış; iç alanı iki göze ayır.</p><p>Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.</p>",
+          "fb": {
+            "t": "Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.",
+            "c": "info"
+          },
+          "fb_ok": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
+          "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+          "answer": {
+            "x": 1,
+            "y": 4
+          }
+        },
+        {
+          "title": "Üç boşluğu iki göze böl",
+          "kind": "move",
+          "body": "Üç iç boşluk sağdan ikinci çizgide. Yön değişse de yaşama noktası, alanı iki ayrı göze bölen noktadır.",
+          "prompt": "Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.",
+          "board": [
+            {"x": 6, "y": 6, "color": "B"},
+            {"x": 6, "y": 5, "color": "B"},
+            {"x": 6, "y": 4, "color": "B"},
+            {"x": 6, "y": 3, "color": "B"},
+            {"x": 6, "y": 2, "color": "B"},
+            {"x": 8, "y": 6, "color": "B"},
+            {"x": 8, "y": 5, "color": "B"},
+            {"x": 8, "y": 4, "color": "B"},
+            {"x": 8, "y": 3, "color": "B"},
+            {"x": 8, "y": 2, "color": "B"},
+            {"x": 7, "y": 6, "color": "B"},
+            {"x": 7, "y": 2, "color": "B"},
+            {"x": 5, "y": 6, "color": "W"},
+            {"x": 5, "y": 5, "color": "W"},
+            {"x": 5, "y": 4, "color": "W"},
+            {"x": 5, "y": 3, "color": "W"},
+            {"x": 5, "y": 2, "color": "W"},
+            {"x": 6, "y": 7, "color": "W"},
+            {"x": 7, "y": 7, "color": "W"},
+            {"x": 8, "y": 7, "color": "W"},
+            {"x": 6, "y": 1, "color": "W"},
+            {"x": 7, "y": 1, "color": "W"},
+            {"x": 8, "y": 1, "color": "W"}
+          ],
+          "size": 9,
+          "source": "Falling in Love with Baduk · PDF s.49 · düz üç ilkesinden ikinci çizgi uyarlaması; kitap diyagramının birebir kopyası değildir",
+          "targets": [
+            [7, 4]
+          ],
+          "turn": "black",
+          "afterEyes": [
+            [7, 5],
+            [7, 3]
+          ],
+          "label": "Sağ kenar",
+          "success": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
+          "text": "<p><strong>Üç boşluğu iki göze böl</strong></p><p>Üç iç boşluk sağdan ikinci çizgide. Yön değişse de yaşama noktası, alanı iki ayrı göze bölen noktadır.</p><p>Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.</p>",
+          "fb": {
+            "t": "Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.",
+            "c": "info"
+          },
+          "fb_ok": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
+          "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+          "answer": {
+            "x": 7,
+            "y": 4
+          }
+        },
+        {
+          "title": "Üç boşluğu iki göze böl",
+          "kind": "move",
+          "body": "Bu grup ikinci çizgideki siyah duvarla köşeye yaslanıyor. Dış nefesleri kapalı. Köşede kalan üç boşluğu iki ayrı göze böl.",
+          "prompt": "Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.",
+          "board": [
+            {"x": 1, "y": 5, "color": "B"},
+            {"x": 1, "y": 6, "color": "B"},
+            {"x": 1, "y": 7, "color": "B"},
+            {"x": 1, "y": 8, "color": "B"},
+            {"x": 0, "y": 5, "color": "B"},
+            {"x": 0, "y": 4, "color": "W"},
+            {"x": 1, "y": 4, "color": "W"},
+            {"x": 2, "y": 5, "color": "W"},
+            {"x": 2, "y": 6, "color": "W"},
+            {"x": 2, "y": 7, "color": "W"},
+            {"x": 2, "y": 8, "color": "W"}
+          ],
+          "size": 9,
+          "source": "A Go Guide by a Beginner · PDF s.149 / basılı s.142 · düz üç köşe ilkesinden uyarlama",
+          "targets": [
+            [0, 7]
+          ],
+          "turn": "black",
+          "afterEyes": [
+            [0, 6],
+            [0, 8]
+          ],
+          "label": "Köşe",
+          "success": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
+          "text": "<p><strong>Üç boşluğu iki göze böl</strong></p><p>Bu grup ikinci çizgideki siyah duvarla köşeye yaslanıyor. Dış nefesleri kapalı. Köşede kalan üç boşluğu iki ayrı göze böl.</p><p>Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.</p>",
+          "fb": {
+            "t": "Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.",
+            "c": "info"
+          },
+          "fb_ok": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
+          "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+          "answer": {
+            "x": 0,
+            "y": 7
+          }
+        },
+        {
+          "title": "Üç boşluğu iki göze böl",
+          "kind": "move",
+          "body": "Kenara yaslanan bu grubun iç alanı bükülmüş. Boşlukların biri ikinci çizgide. Dış nefes yok; kavşağa oynayıp iki ayrı göz oluştur.",
+          "prompt": "Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.",
+          "board": [
+            {"x": 2, "y": 5, "color": "B"},
+            {"x": 3, "y": 5, "color": "B"},
+            {"x": 4, "y": 5, "color": "B"},
+            {"x": 5, "y": 5, "color": "B"},
+            {"x": 2, "y": 6, "color": "B"},
+            {"x": 5, "y": 6, "color": "B"},
+            {"x": 2, "y": 7, "color": "B"},
+            {"x": 4, "y": 7, "color": "B"},
+            {"x": 5, "y": 7, "color": "B"},
+            {"x": 2, "y": 8, "color": "B"},
+            {"x": 3, "y": 8, "color": "B"},
+            {"x": 4, "y": 8, "color": "B"},
+            {"x": 5, "y": 8, "color": "B"},
+            {"x": 2, "y": 4, "color": "W"},
+            {"x": 3, "y": 4, "color": "W"},
+            {"x": 4, "y": 4, "color": "W"},
+            {"x": 5, "y": 4, "color": "W"},
+            {"x": 1, "y": 5, "color": "W"},
+            {"x": 1, "y": 6, "color": "W"},
+            {"x": 1, "y": 7, "color": "W"},
+            {"x": 1, "y": 8, "color": "W"},
+            {"x": 6, "y": 5, "color": "W"},
+            {"x": 6, "y": 6, "color": "W"},
+            {"x": 6, "y": 7, "color": "W"},
+            {"x": 6, "y": 8, "color": "W"}
+          ],
+          "size": 9,
+          "source": "A Go Guide by a Beginner · PDF s.149 / basılı s.142 · bükülü üç ilkesinden kenar uyarlaması",
+          "targets": [
+            [3, 6]
+          ],
+          "turn": "black",
+          "afterEyes": [
+            [4, 6],
+            [3, 7]
+          ],
+          "label": "Bükülü kenar",
+          "success": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
+          "text": "<p><strong>Üç boşluğu iki göze böl</strong></p><p>Kenara yaslanan bu grubun iç alanı bükülmüş. Boşlukların biri ikinci çizgide. Dış nefes yok; kavşağa oynayıp iki ayrı göz oluştur.</p><p>Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.</p>",
+          "fb": {
+            "t": "Siyah olarak iki ayrı gerçek göz oluşturan hamleyi bul.",
+            "c": "info"
+          },
+          "fb_ok": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
+          "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+          "answer": {
+            "x": 3,
+            "y": 6
+          }
+        },
+        {
+          "title": "Üç boşluğu iki göze böl",
+          "kind": "move",
+          "body": "Siyahın içindeki üç boş nokta tek bir bağlı alan. Ortaya bir siyah taş koymak, sağ ve sol boşluğu birbirinden ayırır.",
+          "prompt": "Siyah olarak iki gerçek göz oluşturan hamleyi bul.",
+          "board": [
+            {"x": 2, "y": 3, "color": "B"},
+            {"x": 3, "y": 3, "color": "B"},
+            {"x": 4, "y": 3, "color": "B"},
+            {"x": 5, "y": 3, "color": "B"},
+            {"x": 6, "y": 3, "color": "B"},
+            {"x": 2, "y": 5, "color": "B"},
+            {"x": 3, "y": 5, "color": "B"},
+            {"x": 4, "y": 5, "color": "B"},
+            {"x": 5, "y": 5, "color": "B"},
+            {"x": 6, "y": 5, "color": "B"},
+            {"x": 2, "y": 4, "color": "B"},
+            {"x": 6, "y": 4, "color": "B"},
+            {"x": 2, "y": 2, "color": "W"},
+            {"x": 3, "y": 2, "color": "W"},
+            {"x": 4, "y": 2, "color": "W"},
+            {"x": 5, "y": 2, "color": "W"},
+            {"x": 6, "y": 2, "color": "W"},
+            {"x": 2, "y": 6, "color": "W"},
+            {"x": 3, "y": 6, "color": "W"},
+            {"x": 4, "y": 6, "color": "W"},
+            {"x": 5, "y": 6, "color": "W"},
+            {"x": 6, "y": 6, "color": "W"},
+            {"x": 1, "y": 3, "color": "W"},
+            {"x": 1, "y": 4, "color": "W"},
+            {"x": 1, "y": 5, "color": "W"},
+            {"x": 7, "y": 3, "color": "W"},
+            {"x": 7, "y": 4, "color": "W"},
+            {"x": 7, "y": 5, "color": "W"}
+          ],
+          "size": 9,
+          "source": "Falling in Love with Baduk · PDF s.49 · Dia.01–02",
+          "targets": [
+            [4, 4]
+          ],
+          "turn": "black",
+          "afterEyes": [
+            [3, 4],
+            [5, 4]
+          ],
+          "success": "İç alan ikiye ayrıldı. İki ayrı gerçek göz oluştu; siyah grup artık koşulsuz canlı.",
+          "label": "Merkez",
+          "text": "<p><strong>Üç boşluğu iki göze böl</strong></p><p>Siyahın içindeki üç boş nokta tek bir bağlı alan. Ortaya bir siyah taş koymak, sağ ve sol boşluğu birbirinden ayırır.</p><p>Siyah olarak iki gerçek göz oluşturan hamleyi bul.</p>",
+          "fb": {
+            "t": "Siyah olarak iki gerçek göz oluşturan hamleyi bul.",
+            "c": "info"
+          },
+          "fb_ok": "İç alan ikiye ayrıldı. İki ayrı gerçek göz oluştu; siyah grup artık koşulsuz canlı.",
+          "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+          "answer": {
+            "x": 4,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "title": "Rakip önce aynı noktaya girerse",
+      "kind": "move",
+      "body": "Aynı formasyonda sıra beyazda. Merkezdeki beyaz taş, siyahın iç alanı iki göze ayırmasını engeller.",
+      "prompt": "Beyaz olarak siyahın yaşama noktasına oyna.",
+      "board": [
+        {"x": 2, "y": 3, "color": "B"},
+        {"x": 3, "y": 3, "color": "B"},
+        {"x": 4, "y": 3, "color": "B"},
+        {"x": 5, "y": 3, "color": "B"},
+        {"x": 6, "y": 3, "color": "B"},
+        {"x": 2, "y": 5, "color": "B"},
+        {"x": 3, "y": 5, "color": "B"},
+        {"x": 4, "y": 5, "color": "B"},
+        {"x": 5, "y": 5, "color": "B"},
+        {"x": 6, "y": 5, "color": "B"},
+        {"x": 2, "y": 4, "color": "B"},
+        {"x": 6, "y": 4, "color": "B"},
+        {"x": 2, "y": 2, "color": "W"},
+        {"x": 3, "y": 2, "color": "W"},
+        {"x": 4, "y": 2, "color": "W"},
+        {"x": 5, "y": 2, "color": "W"},
+        {"x": 6, "y": 2, "color": "W"},
+        {"x": 2, "y": 6, "color": "W"},
+        {"x": 3, "y": 6, "color": "W"},
+        {"x": 4, "y": 6, "color": "W"},
+        {"x": 5, "y": 6, "color": "W"},
+        {"x": 6, "y": 6, "color": "W"},
+        {"x": 1, "y": 3, "color": "W"},
+        {"x": 1, "y": 4, "color": "W"},
+        {"x": 1, "y": 5, "color": "W"},
+        {"x": 7, "y": 3, "color": "W"},
+        {"x": 7, "y": 4, "color": "W"},
+        {"x": 7, "y": 5, "color": "W"}
+      ],
+      "size": 9,
+      "source": "Falling in Love with Baduk · PDF s.49 · Dia.03",
+      "targets": [
+        [4, 4]
+      ],
+      "turn": "white",
+      "continuation": [
+        {
+          "x": 3,
+          "y": 4,
+          "color": "black"
+        },
+        {
+          "x": 5,
+          "y": 4,
+          "color": "white"
+        }
+      ],
+      "success": "Beyaz merkezde. Örnek devamda siyah soldan daraltır, beyaz sağa oynayıp siyah grubu yakalar. Bu devamı aşağıdan izleyebilirsin.",
+      "text": "<p><strong>Rakip önce aynı noktaya girerse</strong></p><p>Aynı formasyonda sıra beyazda. Merkezdeki beyaz taş, siyahın iç alanı iki göze ayırmasını engeller.</p><p>Beyaz olarak siyahın yaşama noktasına oyna.</p>",
+      "fb": {
+        "t": "Beyaz olarak siyahın yaşama noktasına oyna.",
+        "c": "info"
+      },
+      "fb_ok": "Beyaz merkezde. Örnek devamda siyah soldan daraltır, beyaz sağa oynayıp siyah grubu yakalar. Bu devamı aşağıdan izleyebilirsin.",
+      "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+      "answer": {
+        "x": 4,
+        "y": 4
+      },
+      "movesAfterAnswer": [
+        {
+          "x": 3,
+          "y": 4,
+          "color": "black"
+        },
+        {
+          "x": 5,
+          "y": 4,
+          "color": "white"
+        }
+      ]
+    },
+    {
+      "title": "Bükülü alanda kavşağı bul",
+      "kind": "move",
+      "body": "Üç boşluk bu kez L biçiminde. İki kolun buluştuğu noktaya siyah taş koyarsan kalan iki boşluk ayrı göz olur.",
+      "prompt": "Siyah olarak iki gözü oluşturan kavşak noktasına oyna.",
+      "board": [
+        {"x": 2, "y": 2, "color": "B"},
+        {"x": 3, "y": 2, "color": "B"},
+        {"x": 4, "y": 2, "color": "B"},
+        {"x": 5, "y": 2, "color": "B"},
+        {"x": 2, "y": 3, "color": "B"},
+        {"x": 5, "y": 3, "color": "B"},
+        {"x": 2, "y": 4, "color": "B"},
+        {"x": 4, "y": 4, "color": "B"},
+        {"x": 5, "y": 4, "color": "B"},
+        {"x": 2, "y": 5, "color": "B"},
+        {"x": 3, "y": 5, "color": "B"},
+        {"x": 4, "y": 5, "color": "B"},
+        {"x": 5, "y": 5, "color": "B"},
+        {"x": 2, "y": 1, "color": "W"},
+        {"x": 3, "y": 1, "color": "W"},
+        {"x": 4, "y": 1, "color": "W"},
+        {"x": 5, "y": 1, "color": "W"},
+        {"x": 2, "y": 6, "color": "W"},
+        {"x": 3, "y": 6, "color": "W"},
+        {"x": 4, "y": 6, "color": "W"},
+        {"x": 5, "y": 6, "color": "W"},
+        {"x": 1, "y": 2, "color": "W"},
+        {"x": 1, "y": 3, "color": "W"},
+        {"x": 1, "y": 4, "color": "W"},
+        {"x": 1, "y": 5, "color": "W"},
+        {"x": 6, "y": 2, "color": "W"},
+        {"x": 6, "y": 3, "color": "W"},
+        {"x": 6, "y": 4, "color": "W"},
+        {"x": 6, "y": 5, "color": "W"}
+      ],
+      "size": 9,
+      "source": "A Go Guide by a Beginner · PDF s.149 / basılı s.142 · bent three · merkeze alınmış, bağlı çerçeveyle uyarlama",
+      "targets": [
+        [3, 3]
+      ],
+      "turn": "black",
+      "afterEyes": [
+        [4, 3],
+        [3, 4]
+      ],
+      "success": "Kavşak doldu, iki kol ayrı göz oldu. Boşluk saymak kadar boşlukların birbirinden ayrılması da önemli.",
+      "text": "<p><strong>Bükülü alanda kavşağı bul</strong></p><p>Üç boşluk bu kez L biçiminde. İki kolun buluştuğu noktaya siyah taş koyarsan kalan iki boşluk ayrı göz olur.</p><p>Siyah olarak iki gözü oluşturan kavşak noktasına oyna.</p>",
+      "fb": {
+        "t": "Siyah olarak iki gözü oluşturan kavşak noktasına oyna.",
+        "c": "info"
+      },
+      "fb_ok": "Kavşak doldu, iki kol ayrı göz oldu. Boşluk saymak kadar boşlukların birbirinden ayrılması da önemli.",
+      "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+      "answer": {
+        "x": 3,
+        "y": 3
+      }
+    },
+    {
+      "title": "Şimdi yardım almadan yaşat",
+      "kind": "move",
+      "body": "Aynı üç-boşluk fikri döndürülmüş bir konumda. Göz işareti veya hedef ipucu yok.",
+      "prompt": "Siyah olarak grubu tek hamlede koşulsuz canlı yap.",
+      "board": [
+        {"x": 3, "y": 2, "color": "B"},
+        {"x": 3, "y": 3, "color": "B"},
+        {"x": 3, "y": 4, "color": "B"},
+        {"x": 3, "y": 5, "color": "B"},
+        {"x": 3, "y": 6, "color": "B"},
+        {"x": 5, "y": 2, "color": "B"},
+        {"x": 5, "y": 3, "color": "B"},
+        {"x": 5, "y": 4, "color": "B"},
+        {"x": 5, "y": 5, "color": "B"},
+        {"x": 5, "y": 6, "color": "B"},
+        {"x": 4, "y": 2, "color": "B"},
+        {"x": 4, "y": 6, "color": "B"},
+        {"x": 2, "y": 2, "color": "W"},
+        {"x": 2, "y": 3, "color": "W"},
+        {"x": 2, "y": 4, "color": "W"},
+        {"x": 2, "y": 5, "color": "W"},
+        {"x": 2, "y": 6, "color": "W"},
+        {"x": 6, "y": 2, "color": "W"},
+        {"x": 6, "y": 3, "color": "W"},
+        {"x": 6, "y": 4, "color": "W"},
+        {"x": 6, "y": 5, "color": "W"},
+        {"x": 6, "y": 6, "color": "W"},
+        {"x": 3, "y": 1, "color": "W"},
+        {"x": 4, "y": 1, "color": "W"},
+        {"x": 5, "y": 1, "color": "W"},
+        {"x": 3, "y": 7, "color": "W"},
+        {"x": 4, "y": 7, "color": "W"},
+        {"x": 5, "y": 7, "color": "W"}
+      ],
+      "size": 9,
+      "source": "Falling in Love with Baduk · PDF s.49 · Dia.01 · 90° döndürülmüş aktarım sorusu",
+      "targets": [
+        [4, 4]
+      ],
+      "turn": "black",
+      "afterEyes": [
+        [4, 3],
+        [4, 5]
+      ],
+      "success": "Doğru. Dikey iç alanı iki ayrı gerçek göze ayırdın.",
+      "text": "<p><strong>Şimdi yardım almadan yaşat</strong></p><p>Aynı üç-boşluk fikri döndürülmüş bir konumda. Göz işareti veya hedef ipucu yok.</p><p>Siyah olarak grubu tek hamlede koşulsuz canlı yap.</p>",
+      "fb": {
+        "t": "Siyah olarak grubu tek hamlede koşulsuz canlı yap.",
+        "c": "info"
+      },
+      "fb_ok": "Doğru. Dikey iç alanı iki ayrı gerçek göze ayırdın.",
+      "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
+      "answer": {
+        "x": 4,
+        "y": 4
+      }
+    }
+  ]
+},
 
     { id:'l8', title:'Kesme ve Bağlama', steps:[
       { text:`<p><span class="term">Kesme</span> — rakibin iki taşı arasına girerek bağlantısını koparmak.</p><p>Siyahın iki taşı arasına gir — <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}], answer:{x:4,y:3}, turn:'white', size:9, guidanceLevel:'direct', fb:{t:'Siyahın iki taşı arasına gir!',c:'info'}, fb_ok:'Kestik! Siyah artık iki ayrı grup.', fb_err:'Siyahın iki taşını birbirine bağlayan boşluğu bul.' },

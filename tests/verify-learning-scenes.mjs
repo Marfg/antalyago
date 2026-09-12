@@ -39,6 +39,7 @@ import {
 import {
   getEndgameCountingMoment, evaluateRegionTap,
 } from '../scenes/endgameCountingPolicy.js';
+import { getTwoEyesMoments } from '../scenes/twoEyesPolicy.js';
 import { CAM } from '../core/curriculum.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -7027,7 +7028,7 @@ addTest('N9) Aynı bölgeye İKİNCİ kez dokunmak duplicate progress ÜRETMEZ (
   } finally { await s.close(); }
 });
 
-addTest('N10) İki renk de ele alındığında completion TAM BİR KEZ açılır, final kontrol "Konular" (Sahne #10 son sahne), teknik dil/ham reason SIZMAZ', async () => {
+addTest('N10) İki renk de ele alındığında completion TAM BİR KEZ açılır, final kontrol "Sonraki konu" (İki Göz sırada), teknik dil/ham reason SIZMAZ', async () => {
   const s = await openScenesPage({ query: PREVIEW_QUERY });
   try {
     await advanceToScene10AndIntro(s.page);
@@ -7041,7 +7042,7 @@ addTest('N10) İki renk de ele alındığında completion TAM BİR KEZ açılır
     await goToNextS10Item(s.page);
     await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
     const label = (await s.page.locator('.ls-topic-end [data-action="advance"]').textContent())?.trim();
-    ensure(label === 'Konular', `Sahne #10 son sahne — "Konular" olmalı, bulunan: "${label}"`);
+    ensure(label === 'Sonraki konu', `Sahne #10 sonrasında İki Göz olmalı, bulunan: ${label}`);
     const events = eventsFor(await getEventLog(s.page), S10_ID);
     ensure(events.filter(e => e.type === 'scene_completion_unlocked').length === 1, 'completion TAM BİR KEZ açılmalı');
     ensure(events.filter(e => e.type === 'scene_assessment_advanced').length === 0, 'Sahne #10 TEK moment taşır — scene_assessment_advanced HİÇ üretilmemeli');
@@ -7164,7 +7165,7 @@ addTest('N14) Reload yarım akışta temiz başlangıca döner; tamamlandıktan 
   } finally { await s.close(); }
 });
 
-addTest('N15) Reload: TÜM konular tamamlanmışken SON konu (Sahne #10) REPLAY modunda açılır (teknik final ekranı YOK)', async () => {
+addTest('N15) Reload: Sahne #10 sonrasında tamamlanmamış İki Göz açılır (teknik final ekranı YOK)', async () => {
   const s = await openScenesPage({ query: PREVIEW_QUERY });
   try {
     await advanceToScene10AndIntro(s.page);
@@ -7175,13 +7176,13 @@ addTest('N15) Reload: TÜM konular tamamlanmışken SON konu (Sahne #10) REPLAY 
     await s.page.waitForTimeout(300);
     await goToNextS10Item(s.page);
     await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
-    await s.page.click('.ls-topic-end [data-action="advance"]'); // "Konular" — son sahne, kayıtlı sahne yok
+    await s.page.click('.ls-topic-end [data-action="advance"]'); // Sonraki konu: İki Göz
     await s.page.waitForTimeout(300);
     await s.page.reload({ waitUntil: 'networkidle' });
-    await s.page.waitForSelector('#s10-intro', { timeout: 8000 });
-    ensure(await s.page.locator('#s10-intro').isVisible(), 'son konu (Sahne #10) replay modunda açılmadı');
-    const events = eventsFor(await getEventLog(s.page), S10_ID);
-    ensure(events.some(e => e.type === 'scene_replay_started'), 'scene_replay_started üretilmedi');
+    await s.page.waitForSelector('#s11-info', { timeout: 8000 });
+    ensure(await s.page.locator('#s11-info').isVisible(), 'yeni iki göz konusu açılmadı');
+    const events = eventsFor(await getEventLog(s.page), 'scene-11-two-eyes');
+    ensure(events.some(e => e.type === 'scene_started'), 'iki göz scene_started üretilmedi');
   } finally { await s.close(); }
 });
 
@@ -7299,6 +7300,32 @@ addTest('N20) ogren-3d.html Sahne #10 eklenmesinden ETKİLENMEZ — regresyonsuz
     ensure(consoleErrors.length === 0, `ogren-3d.html konsol/pageerror sıfır olmalı: ${JSON.stringify(consoleErrors)}`);
   } finally { await context.close(); }
 });
+
+
+for(const [name,viewport] of Object.entries({desktop:VIEWPORTS.desktop,mobile:VIEWPORTS.mobile})) {
+ addTest(`O1-${name}) İki Göz: 14 an, yedi formasyon, tamamlanma ve tekrar`,async()=>{
+  const s=await openScenesPage({viewport,reducedMotion:'reduce',query:'?exposeBoardAdapter=1&testScene=scene-11-two-eyes'});
+  try {
+   const moments=getTwoEyesMoments();
+   for(const [i,m] of moments.entries()) {
+    await s.page.click('#s11-confirm');
+    ensure(await s.page.locator('#s11-next').isDisabled(),'cevap öncesi ilerleme kapalı olmalı');
+    for(const [col,row] of m.targets){
+     const p=await findScreenPointFor(s.page,{row,col});ensure(p,`An ${i+1}: hedef görünmüyor`);await s.page.mouse.click(p.x,p.y);
+    }
+    if(m.continuation)await s.page.click('#s11-sequence');
+    await s.page.waitForFunction(()=>!document.querySelector('#s11-next').disabled);
+    if(m.afterEyes){const eyes=await s.page.evaluate(()=>window.__lsTestBoardAdapter.getLibertyPoints());ensure(eyes.length===2,'iki göz işareti gerekli');for(const [col,row] of m.afterEyes)ensure(eyes.some(p=>p.row===row&&p.col===col),'göz konumu yanlış');}
+    await s.page.click('#s11-next');
+   }
+   ensure(await s.page.locator('.ls-topic-end').isVisible(),'ders sonu görünmeli');
+   const events=eventsFor(await getEventLog(s.page),'scene-11-two-eyes');ensure(events.filter(e=>e.type==='scene_completed').length===1,'tek tamamlanma gerekli');
+   await s.page.click('.ls-topic-end [data-action="replay"]');await s.page.waitForSelector('#s11-info');
+   ensure(await s.page.locator('#s11-progress').innerText().then(t=>t.startsWith('1 / 8')),'tekrar ilk adımdan başlamalı');
+   ensure(s.consoleErrors.length===0,JSON.stringify(s.consoleErrors));
+  } finally {await s.close();}
+ });
+}
 
 // TEST_FILTER=<regex> node tests/verify-learning-scenes.mjs — yalnız adı bu
 // regex'le eşleşen testleri çalıştırır (hızlı hedefli hata ayıklama için;

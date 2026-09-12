@@ -68,6 +68,7 @@ const GRAPH_BASENAMES = [
   // v9 (2026-09-02.2) — Sahne #10 ("Oyun Sonu ve Sayım") ve TEK yeni
   // yardımcı modülü.
   'scene10EndgameCounting.js', 'endgameCountingPolicy.js',
+  'scene11TwoEyes.js', 'twoEyesPolicy.js', 'eyeAnalysis.js',
 ];
 
 /** Import satırı içerebilecek, graph'a dahil dosyalar + HTML entry point'leri. */
@@ -94,6 +95,7 @@ const SCAN_FILES = [
   'scenes/koRulePolicy.js',
   'scenes/scene10EndgameCounting.js',
   'scenes/endgameCountingPolicy.js',
+  'scenes/scene11TwoEyes.js', 'scenes/twoEyesPolicy.js', 'core/eyeAnalysis.js',
 ];
 
 const importLineRe = /(from\s+['"])(\.[\w./-]+\.js)(\?[^'"]*)?(['"])/g;
