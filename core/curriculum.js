@@ -1581,3 +1581,17 @@ export const CURRICULUM = [
     ]},
   ]},
 ];
+
+// The curriculum screen presents every authored formation as a playable step.
+export const LEGACY_CURRICULUM = CURRICULUM.map(chapter => ({
+  ...chapter,
+  lessons: chapter.lessons.map(lesson => lesson.id !== 'l7' ? lesson : ({
+    ...lesson,
+    steps: lesson.steps.flatMap((step, mainStepIndex) => (step.examples || [step]).map((example, exampleIndex) => ({
+      ...example,
+      mainStepIndex,
+      exampleIndex,
+      text: example.label ? `<p><strong>${example.title} · ${example.label}</strong></p><p>${example.body}</p><p>${example.prompt}</p>` : example.text,
+    }))),
+  })),
+}));
