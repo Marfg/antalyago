@@ -216,7 +216,7 @@
 </div>
 
 <script type="module">
-import { CURRICULUM } from './core/curriculum.js?v=2026-09-02.1';
+import { CURRICULUM } from './core/curriculum.js?v=2026-09-12.1';
 import { classifyCurriculumStep, responseTypeOf, stripMarkup, isAssessmentLesson } from './core/learningContext.js';
 import { KNOWN_CONCEPTS } from './core/conceptMap.js';
 import { createStudentModel, hydrateStudentModel, getConceptState } from './core/studentModel.js';
@@ -225,38 +225,40 @@ import { CONTENT_PURPOSES, CONTENT_STUDENT_STATUSES, CONTENT_STAGES, validateCon
 import { mergeContentOverrides, applyOverride, OVERRIDABLE_FIELDS } from './core/contentOverrides.js';
 import { teacherContentOverrides } from './adapters/teacherContentOverrides.js';
 import { buildRetrievalQuery, retrieveContent } from './core/contentRetriever.js';
-import { EventLog } from './core/eventLog.js?v=2026-09-02.1';
+import { EventLog } from './core/eventLog.js?v=2026-09-12.1';
 import { buildAiReviewEvent } from './core/teacherAssistant.js';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-02.1';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-02.1';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-02.1';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-02.1';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-02.1';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-02.1';
-import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-09-02.1';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-02.1';
-import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-02.1';
-import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-09-02.1';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-12.1';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-12.1';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-12.1';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-12.1';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-12.1';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-12.1';
+import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-09-12.1';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-12.1';
+import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-12.1';
+import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-09-12.1';
+import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-09-12.1';
+import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-09-12.1';
 import {
   getAssessmentSteps as getLibertyAssessmentSteps,
   computeChoiceCorrectIndex as computeLibertyChoiceCorrectIndex,
   computeTapTargets as computeLibertyTapTargets,
   computeResultAfterMove as computeLibertyResultAfterMove,
   ASSESSMENT_STEP_INDICES as LIBERTY_ASSESSMENT_STEP_INDICES,
-} from './scenes/libertyAssessmentPolicy.js?v=2026-09-02.1';
+} from './scenes/libertyAssessmentPolicy.js?v=2026-09-12.1';
 import {
   getCaptureMoments,
   isValidCapturePoint as isValidCaptureMomentPoint,
   computeCaptureResult,
   MOMENT_STEP_INDICES as CAPTURE_MOMENT_STEP_INDICES,
-} from './scenes/capturePolicy.js?v=2026-09-02.1';
+} from './scenes/capturePolicy.js?v=2026-09-12.1';
 import {
   getCapturePracticeMoments,
   isValidCapturePoint as isValidPracticePoint,
   computePracticeResult,
   isKnownHintMode,
   MOMENT_STEP_INDICES as PRACTICE_MOMENT_STEP_INDICES,
-} from './scenes/capturePracticePolicy.js?v=2026-09-02.1';
+} from './scenes/capturePracticePolicy.js?v=2026-09-12.1';
 import {
   getIllegalMoveMoments,
   evaluateAttempt as evaluateIllegalMoveAttempt,
@@ -266,7 +268,7 @@ import {
   MOMENT_KINDS as ILLEGAL_MOVE_KINDS,
   MOMENT_STEP_INDICES as ILLEGAL_MOVE_STEP_INDICES,
   CONCEPT as ILLEGAL_MOVE_CONCEPT,
-} from './scenes/illegalMovePolicy.js?v=2026-09-02.1';
+} from './scenes/illegalMovePolicy.js?v=2026-09-12.1';
 import {
   getKoRuleMoments,
   evaluateKoAttempt,
@@ -276,15 +278,23 @@ import {
   MOMENT_KINDS as KO_MOMENT_KINDS,
   MOMENT_STEP_INDICES as KO_STEP_INDICES,
   CONCEPT as KO_CONCEPT,
-} from './scenes/koRulePolicy.js?v=2026-09-02.1';
-import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-09-02.1';
-import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-09-02.1';
-import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-09-02.1';
-import { BoardState } from './core/boardState.js?v=2026-09-02.1';
-import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-09-02.1';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-02.1';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-02.1';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-02.1';
+} from './scenes/koRulePolicy.js?v=2026-09-12.1';
+import {
+  getEndgameCountingMoment,
+  evaluateRegionTap,
+  regionSignature as endgameRegionSignature,
+  isKnownMomentKind as isKnownEndgameMomentKind,
+  STEP_INDEX as ENDGAME_STEP_INDEX,
+  CONCEPT as ENDGAME_CONCEPT,
+} from './scenes/endgameCountingPolicy.js?v=2026-09-12.1';
+import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-09-12.1';
+import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-09-12.1';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-09-12.1';
+import { BoardState } from './core/boardState.js?v=2026-09-12.1';
+import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-09-12.1';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-12.1';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-12.1';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-12.1';
 
 /* ── Sürüm/cache bekçisi — learning-scenes.html İLE AYNI mekanizma ────
    (bkz. o dosyadaki dosya başı notu, KRİTİK DÜZELTME: SCENE_RELEASE artık
@@ -352,7 +362,7 @@ function showStudioStaleReleaseUI() {
    yalnız statik metadata'larını (id/version/curriculumRef) registry
    üzerinden okur — mevcut Curriculum/Diagnostics/Event Log panelleri
    genişletildi, yeni bir dashboard YOK. */
-const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene07CapturePractice, scene08IllegalMoves, scene09KoRule]);
+const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene07CapturePractice, scene08IllegalMoves, scene09KoRule, scene10EndgameCounting, scene11TwoEyes]);
 
 /* ── localStorage erişimi — ogren-3d.html İLE AYNI anahtarlar ──────
    Studio kendi core mantığını YAZMAZ; yalnızca aynı adaptör deseniyle
@@ -612,6 +622,14 @@ function renderCurriculumScenes() {
   try { illegalMoveDetail = getIllegalMoveMoments(); } catch { /* Diagnostics zaten kendi hata satırını üretir */ }
   let koRuleDetail = [];
   try { koRuleDetail = getKoRuleMoments(); } catch { /* Diagnostics zaten kendi hata satırını üretir */ }
+  // Sahne #10 TEK bir moment taşır (dizi DEĞİL — bkz. scenes/
+  // endgameCountingPolicy.js `getEndgameCountingMoment()`), bu yüzden aşağıki
+  // genel çoklu-ref `scope` dalına GİRMEZ — kendi ayrı, açık bir dal kullanır
+  // (bkz. görev talimatı Bölüm 9: "Sahne #10 başlığını, gerçek lessonId ve
+  // stepIndex 0 referansını, düzeltilmiş info metnini, siyah/beyaz bölge
+  // sayısını göstersin").
+  let endgameDetail = null;
+  try { endgameDetail = getEndgameCountingMoment(); } catch { /* Diagnostics zaten kendi hata satırını üretir */ }
   const detailByScene = {
     [scene05LibertyAssessment.id]: libertyAssessmentDetail,
     [scene06CaptureBasics.id]: captureDetail,
@@ -645,7 +663,9 @@ function renderCurriculumScenes() {
           }
           return `adım ${r.stepIndex + 1}(${conceptLabel}${resultSuffix})`;
         }).join(', ')}`
-      : '—';
+      : (scene.id === scene10EndgameCounting.id && endgameDetail)
+        ? `adım ${ENDGAME_STEP_INDEX + 1}(${endgameDetail.assessmentConcept}): siyah bölge ${endgameDetail.blackRegionPoints.length} nokta · beyaz bölge ${endgameDetail.whiteRegionPoints.length} nokta — info: "${escapeHtml(endgameDetail.infoText || '')}"`
+        : '—';
     return `
     <tr>
       <td>${escapeHtml(scene.title)}</td>
@@ -1480,8 +1500,15 @@ function renderSceneDiagnostics() {
     if (sceneRegistry.next(scene07CapturePractice.id)?.id !== scene08IllegalMoves.id) {
       rows.push(`<tr><td>${scene07CapturePractice.id}</td><td>NEXT_SCENE_NOT_SCENE08</td></tr>`);
     }
-    if (sceneRegistry.next(scene08IllegalMoves.id) != null) {
-      rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>UNEXPECTED_NEXT_SCENE:son sahne olmalıydı</td></tr>`);
+    // KÖK NEDEN DÜZELTMESİ (Sahne #10 doğrulaması sırasında bulundu — bu
+    // görevin kapsamı DIŞINDAN, Sahne #9'un PR#1 birleşmesinden kalma bir
+    // hata): Sahne #9 kayıtlı olduğu için Sahne #8 ARTIK son sahne DEĞİL —
+    // bu satır önceden "next() null olmalı" diye YANLIŞ bir sabit
+    // varsayıyordu, Diagnostics'te SAHTE bir UNEXPECTED_NEXT_SCENE satırı
+    // üretiyordu (bkz. scene09KoRule bloğundaki AYNI türde bulunan/
+    // düzeltilen hata İLE AYNI kök neden).
+    if (sceneRegistry.next(scene08IllegalMoves.id)?.id !== scene09KoRule.id) {
+      rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>NEXT_SCENE_NOT_SCENE09</td></tr>`);
     }
 
     const refs8 = scene08IllegalMoves.curriculumRefs ?? [];
@@ -1709,8 +1736,13 @@ function renderSceneDiagnostics() {
     if (sceneRegistry.next(scene08IllegalMoves.id)?.id !== scene09KoRule.id) {
       rows.push(`<tr><td>${scene08IllegalMoves.id}</td><td>NEXT_SCENE_NOT_SCENE09</td></tr>`);
     }
-    if (sceneRegistry.next(scene09KoRule.id) != null) {
-      rows.push(`<tr><td>${scene09KoRule.id}</td><td>UNEXPECTED_NEXT_SCENE:son sahne olmalıydı</td></tr>`);
+    // Sahne #10 kayıtlı olduğu için Sahne #9 ARTIK son sahne DEĞİL —
+    // "Sonraki konu" scene10'a gitmeli (bkz. scene10EndgameCounting
+    // Diagnostics bloğu altında scene09'un next()'inin GERÇEKTEN scene10
+    // olduğu AYRICA doğrulanır — burada yalnız Sahne #9'un KENDİSİ
+    // "beklenmedik biçimde son sahne DEĞİL" negatif kontrolü kalır).
+    if (sceneRegistry.next(scene09KoRule.id)?.id !== scene10EndgameCounting.id) {
+      rows.push(`<tr><td>${scene09KoRule.id}</td><td>NEXT_SCENE_NOT_SCENE10</td></tr>`);
     }
 
     const refs9 = scene09KoRule.curriculumRefs ?? [];
@@ -1793,6 +1825,139 @@ function renderSceneDiagnostics() {
     // sonrası geri alma" GERÇEKTEN iki farklı senaryo sunduğunun kanıtı.
     if (seenKoKinds.size !== 2) {
       rows.push(`<tr><td>${scene09KoRule.id}</td><td>MOMENTS_NOT_DISTINCT_KINDS:${[...seenKoKinds].join(',')}</td></tr>`);
+    }
+  }
+
+  // Sahne #10 — "Oyun Sonu ve Sayım" (core/curriculum.js l6'nın kullanıcıya
+  // görünen 1. adımı, steps[0] — bkz. scenes/endgameCountingPolicy.js, TEK
+  // doğruluk kaynağı). Studio burada sahneyi mount ETMEDEN, saf
+  // endgameCountingPolicy.js üzerinden: registry sırasında scene09'dan hemen
+  // sonra geldiğini, scene10'un GERÇEKTEN son sahne olduğunu,
+  // curriculumRef'in gerçek l6.steps[0]'a gittiğini, board seed'in geçerli
+  // olduğunu, düzeltilmiş info metninin hesaplanan bölge sahipliğiyle
+  // SEMANTİK olarak uyumlu olduğunu (sabit string karşılaştırması DEĞİL —
+  // bkz. altta regex ayrıştırması), siyah/beyaz bölge kümelerinin BOŞ
+  // OLMADIĞINI, birbirinden AYRIK olduğunu, sahipsiz/karışık alanın
+  // yanlışlıkla bir renge ATANMADIĞINI, marker koordinatlarının board
+  // sınırları İÇİNDE olduğunu ve `concept`in (bilinçli olarak, Sahne #8/#9
+  // İLE AYNI desen) Student Model'e KAYITLI OLMADIĞINI doğrular.
+  {
+    const order = sceneRegistry.list().map(s => s.id);
+    const idx9 = order.indexOf(scene09KoRule.id);
+    const idx10 = order.indexOf(scene10EndgameCounting.id);
+    if (idx10 !== idx9 + 1) {
+      rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>REGISTRY_ORDER_INVALID:scene09 index=${idx9} scene10 index=${idx10}</td></tr>`);
+    }
+    if (sceneRegistry.next(scene09KoRule.id)?.id !== scene10EndgameCounting.id) {
+      rows.push(`<tr><td>${scene09KoRule.id}</td><td>NEXT_SCENE_NOT_SCENE10</td></tr>`);
+    }
+    if (sceneRegistry.next(scene10EndgameCounting.id)?.id !== scene11TwoEyes.id) {
+      rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>NEXT_SCENE_NOT_SCENE11</td></tr>`);
+    }
+
+    const ref10 = scene10EndgameCounting.curriculumRef;
+    if (!ref10 || ref10.lessonId !== 'l6' || ref10.stepIndex !== ENDGAME_STEP_INDEX) {
+      rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>CURRICULUM_REF_INVALID:${JSON.stringify(ref10)}</td></tr>`);
+    }
+    const l6ForEndgame = ALL_LESSONS.find(x => x.lesson.id === 'l6')?.lesson;
+    if (!l6ForEndgame?.steps?.[ENDGAME_STEP_INDEX]) {
+      rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>UNKNOWN_CURRICULUM_STEP:stepIndex=${ENDGAME_STEP_INDEX}</td></tr>`);
+    }
+
+    let endgameMoment = null;
+    try { endgameMoment = getEndgameCountingMoment(); }
+    catch (e) { rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>MOMENT_THREW:${e.message}</td></tr>`); }
+
+    if (!KNOWN_CONCEPTS.includes(ENDGAME_CONCEPT)) {
+      rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>CONCEPT_NOT_YET_IN_STUDENT_MODEL:concept=${ENDGAME_CONCEPT} (bilinçli — bkz. scenes/endgameCountingPolicy.js dosya başı notu)</td></tr>`);
+    }
+
+    if (endgameMoment) {
+      if (!isKnownEndgameMomentKind(endgameMoment.kind)) {
+        rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>UNKNOWN_MOMENT_KIND:kind=${endgameMoment.kind}</td></tr>`);
+      }
+      if (endgameMoment.assessmentConcept !== ENDGAME_CONCEPT) {
+        rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>UNEXPECTED_ASSESSMENT_CONCEPT:concept=${endgameMoment.assessmentConcept}</td></tr>`);
+      }
+
+      const black = endgameMoment.blackRegionPoints;
+      const white = endgameMoment.whiteRegionPoints;
+      if (!black.length) rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>BLACK_REGION_EMPTY</td></tr>`);
+      if (!white.length) rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>WHITE_REGION_EMPTY</td></tr>`);
+      const blackKeys = new Set(black.map(p => `${p.row},${p.col}`));
+      if (white.some(p => blackKeys.has(`${p.row},${p.col}`))) {
+        rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>REGIONS_NOT_DISJOINT</td></tr>`);
+      }
+      const size = endgameMoment.size;
+      const outOfBounds = [...black, ...white].some(p => p.row < 0 || p.row >= size || p.col < 0 || p.col >= size);
+      if (outOfBounds) rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>MARKER_OUT_OF_BOUNDS</td></tr>`);
+      const neutralKeys = new Set(endgameMoment.neutralRegionPoints.map(p => `${p.row},${p.col}`));
+      const neutralOverlap = [...black, ...white].some(p => neutralKeys.has(`${p.row},${p.col}`));
+      if (neutralOverlap) rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>NEUTRAL_OVERLAPS_OWNED_REGION</td></tr>`);
+
+      // Düzeltilmiş info metninin GERÇEK bölge sahipliğiyle SEMANTİK
+      // uyumu — sabit bir "beklenen string" karşılaştırması DEĞİL, metnin
+      // KENDİ yapısı ayrıştırılıp GERÇEK sol/sağ bölge sahibi ve nokta
+      // sayısıyla karşılaştırılır (bkz. görev talimatı: "cümlenin tamamının
+      // board ile semantik olarak doğru olduğunu test et").
+      // "önde!" ibaresinden ÖNCEKİ iki renk kelimesi (sol/sağ) cümle
+      // BAŞLARINDA olduğu için büyük harfle başlar ("Beyaz sol...", "Siyah
+      // sağ...") — em-tire SONRASI son kelime ("siyah önde!"/"beyaz önde!")
+      // GERÇEK, doğru Türkçe biçimde küçük harfle devam eder (cümlenin
+      // İÇİNDE, yeni bir cümle DEĞİL) — bu yüzden yalnız üçüncü grup
+      // case-insensitive eşleştirilir, ayrıştırma bunu SABİT bir hata
+      // SAYMAZ (bkz. görev talimatı: "cümlenin tamamının semantik olarak
+      // doğru olduğunu test et" — biçim değil, ANLAM doğrulanır).
+      const infoMatch = /^(Siyah|Beyaz) sol \((\d+) puan\) · (Siyah|Beyaz) sağ \((\d+) puan\) — (Siyah|Beyaz) önde!$/i.exec(endgameMoment.infoText || '');
+      if (!infoMatch) {
+        rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>INFO_TEXT_UNPARSEABLE:"${endgameMoment.infoText}"</td></tr>`);
+      } else {
+        const [, leftWord, leftCount, rightWord, rightCount, aheadWord] = infoMatch;
+        const avgCol = pts => pts.reduce((s, p) => s + p.col, 0) / pts.length;
+        const blackIsLeft = avgCol(black) < avgCol(white);
+        const realLeftWord = blackIsLeft ? 'Siyah' : 'Beyaz';
+        const realRightWord = blackIsLeft ? 'Beyaz' : 'Siyah';
+        const realLeftCount = blackIsLeft ? black.length : white.length;
+        const realRightCount = blackIsLeft ? white.length : black.length;
+        if (leftWord !== realLeftWord || Number(leftCount) !== realLeftCount) {
+          rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>INFO_TEXT_LEFT_MISMATCH:metin="${leftWord} (${leftCount})" gerçek="${realLeftWord} (${realLeftCount})"</td></tr>`);
+        }
+        if (rightWord !== realRightWord || Number(rightCount) !== realRightCount) {
+          rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>INFO_TEXT_RIGHT_MISMATCH:metin="${rightWord} (${rightCount})" gerçek="${realRightWord} (${realRightCount})"</td></tr>`);
+        }
+        const realAheadWord = realLeftCount === realRightCount ? null : (realLeftCount > realRightCount ? realLeftWord : realRightWord);
+        if (realAheadWord && aheadWord.toLowerCase() !== realAheadWord.toLowerCase()) {
+          rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>INFO_TEXT_AHEAD_MISMATCH:metin="${aheadWord}" gerçek="${realAheadWord}"</td></tr>`);
+        }
+      }
+
+      // Bir dokunuş denemesinin GERÇEKTEN board'u mutate ETMEDİĞİ.
+      const boardSigBefore = JSON.stringify(endgameMoment.board);
+      evaluateRegionTap(endgameMoment, black[0]);
+      const boardSigAfter = JSON.stringify(endgameMoment.board);
+      if (boardSigBefore !== boardSigAfter) {
+        rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>MOMENT_BOARD_MUTATED_BY_EVALUATION</td></tr>`);
+      }
+      // Bölgedeki GERÇEK bir nokta doğru renkle sınıflandırılıyor mu.
+      const blackTap = evaluateRegionTap(endgameMoment, black[0]);
+      if (blackTap.regionColor !== 'B') {
+        rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>BLACK_TAP_MISCLASSIFIED:got=${blackTap.regionColor}</td></tr>`);
+      }
+      const whiteTap = evaluateRegionTap(endgameMoment, white[0]);
+      if (whiteTap.regionColor !== 'W') {
+        rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>WHITE_TAP_MISCLASSIFIED:got=${whiteTap.regionColor}</td></tr>`);
+      }
+      // GERÇEK bir taş noktasına dokunmak hiçbir bölgeye atanmamalı.
+      if (endgameMoment.board[0]) {
+        const stoneTap = evaluateRegionTap(endgameMoment, { row: endgameMoment.board[0].y, col: endgameMoment.board[0].x });
+        if (!stoneTap.isOccupied || stoneTap.regionColor !== null) {
+          rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>STONE_POINT_MISCLASSIFIED</td></tr>`);
+        }
+      }
+      // regionSignature deterministik mi (aynı girdi → aynı çıktı).
+      if (endgameRegionSignature(black) !== endgameRegionSignature([...black].reverse())) {
+        rows.push(`<tr><td>${scene10EndgameCounting.id}</td><td>REGION_SIGNATURE_NOT_ORDER_INDEPENDENT</td></tr>`);
+      }
     }
   }
 

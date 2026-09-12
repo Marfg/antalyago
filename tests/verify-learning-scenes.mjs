@@ -36,6 +36,10 @@ import {
 import {
   getKoRuleMoments, evaluateKoAttempt, isSuccessfulAttempt as isSuccessfulKoAttempt, MOMENT_KINDS as KO_MOMENT_KINDS,
 } from '../scenes/koRulePolicy.js';
+import {
+  getEndgameCountingMoment, evaluateRegionTap,
+} from '../scenes/endgameCountingPolicy.js';
+import { getTwoEyesMoments } from '../scenes/twoEyesPolicy.js';
 import { CAM } from '../core/curriculum.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -55,6 +59,7 @@ const S06_ID = 'scene-06-capture-basics';
 const S07_ID = 'scene-07-capture-practice';
 const S08_ID = 'scene-08-illegal-moves';
 const S09_ID = 'scene-09-ko-rule';
+const S10_ID = 'scene-10-endgame-counting';
 // Sahne #2'nin beyaz cevap gecikmesini sıfırlayan query — YALNIZ turn-loop
 // testlerinin gerçek zamanlı beklemesini önler (bkz. learning-scenes.html
 // dosya başı test-hook notu). Sahne #3'ün artık HİÇBİR zamanlayıcısı yok
@@ -415,27 +420,23 @@ addTest('A10) Konular listesi: registry sırası, kullanıcı başlıkları, tek
     await s.page.click('#ls-topics-open');
     await s.page.waitForTimeout(100);
     const items = s.page.locator('.ls-topic-item');
-    // v6 — Sahne #8 ("Yasak Hamleler") kayıtlı olduğu için artık SEKİZ
-    // konu var (bkz. görev talimatı: registry sırasına yeni Sahne #8
-    // eklendi).
-    ensure(await items.count() === 8, 'sekiz konu listelenmiyor');
+    // v7 — Sahne #9 ("Ko Kuralı") ve Sahne #10 ("Oyun Sonu ve Sayım") kayıtlı
+    // olduğu için artık ON konu var (bkz. görev talimatı: registry sırasına
+    // yeni Sahne #9/#10 eklendi).
+    ensure(await items.count() === 10, 'on konu listelenmiyor');
     const titles = await items.allTextContents();
     ensure(
       titles[0].includes('Tahtayı Tanı') && titles[1].includes('Sırayla Oyna') && titles[2].includes('Taşların Nefesi') &&
       titles[3].includes('Grubun Nefesi') && titles[4].includes('Nefes Noktalarını Değerlendir') &&
       titles[5].includes('Taş Alma') && !titles[5].includes('Uygulamaları') && titles[6].includes('Taş Alma Uygulamaları') &&
-      titles[7].includes('Yasak Hamleler'),
+      titles[7].includes('Yasak Hamleler') && titles[8].includes('Ko Kuralı') && titles[9].includes('Oyun Sonu ve Sayım'),
       `sıra/başlıklar yanlış: ${JSON.stringify(titles)}`);
-    ensure(!titles.some(t => /scene-0\d/.test(t)), 'teknik scene ID görünüyor');
+    ensure(!titles.some(t => /scene-\d\d/.test(t)), 'teknik scene ID görünüyor');
 
     ensure(await items.nth(0).getAttribute('aria-current') === 'true', 'ilk (aktif) konu işaretli değil');
-    ensure(await items.nth(1).isDisabled(), 'henüz açılmamış 2. konu disabled değil');
-    ensure(await items.nth(2).isDisabled(), 'henüz açılmamış 3. konu disabled değil');
-    ensure(await items.nth(3).isDisabled(), 'henüz açılmamış 4. konu disabled değil');
-    ensure(await items.nth(4).isDisabled(), 'henüz açılmamış 5. konu disabled değil');
-    ensure(await items.nth(5).isDisabled(), 'henüz açılmamış 6. konu disabled değil');
-    ensure(await items.nth(6).isDisabled(), 'henüz açılmamış 7. konu disabled değil');
-    ensure(await items.nth(7).isDisabled(), 'henüz açılmamış 8. konu disabled değil');
+    for (let i = 1; i < 10; i++) {
+      ensure(await items.nth(i).isDisabled(), `henüz açılmamış ${i + 1}. konu disabled değil`);
+    }
 
     // Renk TEK durum göstergesi olmamalı — glif farkı da olmalı.
     const mark0 = (await items.nth(0).locator('.ls-topic-mark').textContent())?.trim();
@@ -841,25 +842,25 @@ addTest('C15) reload: ilk hamleden sonra ama "Sonraki konu"ya basmadan → temiz
   } finally { await s.close(); }
 });
 
-addTest('C16) reload: tüm konular tamamlanmışken SON konu (Sahne #9) REPLAY modunda açılır (teknik final ekranı YOK)', async () => {
+addTest('C16) reload: tüm konular tamamlanmışken SON konu (Sahne #10) REPLAY modunda açılır (teknik final ekranı YOK)', async () => {
   const s = await openScenesPage({ query: FAST_QUERY });
   try {
-    // v7 — Sahne #9 ("Ko Kuralı") kayıtlı olduğu için registry sırasındaki
-    // GERÇEK son sahne artık S09'dur (bkz. görev talimatı: registry sırası
-    // tamamlanma sırasıdır — Sahne #8'in KENDİ kodu DEĞİŞMEDEN, yalnız
-    // registry sırasının genişlemesiyle doğal olarak değişen davranış; bu
-    // test daha önce v6'da Sahne #7→#8 GENİŞLEMESİNDE de AYNI şekilde
-    // güncellenmişti).
+    // v8 — Sahne #10 ("Oyun Sonu ve Sayım") kayıtlı olduğu için registry
+    // sırasındaki GERÇEK son sahne artık S10'dur (bkz. görev talimatı:
+    // registry sırası tamamlanma sırasıdır — Sahne #9'un KENDİ kodu
+    // DEĞİŞMEDEN, yalnız registry sırasının genişlemesiyle doğal olarak
+    // değişen davranış; bu test daha önce v7'de Sahne #8→#9 GENİŞLEMESİNDE
+    // de AYNI şekilde güncellenmişti).
     await s.page.evaluate((ids) => {
       localStorage.setItem('go_scene_progress_v1', JSON.stringify({
-        version: 1, activeSceneId: ids[8], completedSceneIds: ids, sceneState: {},
+        version: 1, activeSceneId: ids[9], completedSceneIds: ids, sceneState: {},
       }));
-    }, [S01_ID, S02_ID, S03_ID, S04_ID, S05_ID, S06_ID, S07_ID, S08_ID, S09_ID]);
+    }, [S01_ID, S02_ID, S03_ID, S04_ID, S05_ID, S06_ID, S07_ID, S08_ID, S09_ID, S10_ID]);
     await s.page.reload({ waitUntil: 'networkidle' });
     await s.page.waitForTimeout(300);
-    ensure(await s.page.locator('#s09-intro').isVisible(), 'son konu (Sahne #9) replay modunda açılmadı');
+    ensure(await s.page.locator('#s10-intro').isVisible(), 'son konu (Sahne #10) replay modunda açılmadı');
     const events = await getEventLog(s.page);
-    ensure(events.some(e => e.type === 'scene_replay_started' && e.stepId === S09_ID), 'boot replay\'i scene_replay_started üretmedi');
+    ensure(events.some(e => e.type === 'scene_replay_started' && e.stepId === S10_ID), 'boot replay\'i scene_replay_started üretmedi');
     ensure(await s.page.locator('#ls-error').isHidden(), 'hata/final ekranı yanlışlıkla gösterildi');
   } finally { await s.close(); }
 });
@@ -6548,7 +6549,7 @@ addTest('M5) An 2 (ko_retake): tehdit+yanıt dizisi bitince ko noktası YEŞİL 
   } finally { await s.close(); }
 });
 
-addTest('M6) İki an da başarıyla tamamlanınca completion TAM BİR KEZ açılır, final kontrol "Konular" (Sahne #9 artık son sahne), "Sahne tamamlandı"/ham reason kodu YOK', async () => {
+addTest('M6) İki an da başarıyla tamamlanınca completion TAM BİR KEZ açılır, final kontrol "Sonraki konu" (Sahne #10 eklendiğinden BERİ Sahne #9 artık son sahne DEĞİL), "Sahne tamamlandı"/ham reason kodu YOK', async () => {
   const s = await openScenesPage({ query: PREVIEW_QUERY });
   try {
     await advanceToScene9AndIntro(s.page);
@@ -6560,7 +6561,7 @@ addTest('M6) İki an da başarıyla tamamlanınca completion TAM BİR KEZ açıl
     }
     await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
     const label = (await s.page.locator('.ls-topic-end [data-action="advance"]').textContent())?.trim();
-    ensure(label === 'Konular', `Sahne #9 son sahne — "Konular" olmalı, bulunan: "${label}"`);
+    ensure(label === 'Sonraki konu', `Sahne #9 (artık son sahne DEĞİL) "Sonraki konu" göstermeli, bulunan: "${label}"`);
     const events = eventsFor(await getEventLog(s.page), S09_ID);
     ensure(events.filter(e => e.type === 'scene_completion_unlocked').length === 1, 'completion TAM BİR KEZ açılmalı');
     const bodyText = await s.page.locator('#ls-scene-host').innerText();
@@ -6740,6 +6741,591 @@ addTest('M14) ogren-3d.html Sahne #9 eklenmesinden ETKİLENMEZ — regresyonsuz 
     ensure(consoleErrors.length === 0, `ogren-3d.html konsol/pageerror sıfır olmalı: ${JSON.stringify(consoleErrors)}`);
   } finally { await context.close(); }
 });
+
+/* ══════════════════════════════════════════════════════════════════
+   Sahne #10 ("Oyun Sonu ve Sayım") akış yardımcıları
+   ══════════════════════════════════════════════════════════════════ */
+async function completeScene9(page) {
+  await advanceToScene9AndIntro(page);
+  for (let i = 0; i < 2; i++) {
+    const ok = await answerCurrentS09Item(page);
+    ensure(ok, `Sahne #9 an ${i + 1} doğru cevaplanamadı (Sahne #10'a ilerlerken)`);
+    await page.waitForTimeout(300);
+    await goToNextS09Item(page);
+    if (i === 0) await waitForS09Interactive(page);
+  }
+  await page.waitForSelector('.ls-topic-end [data-action="advance"]');
+}
+async function advanceToScene10(page) {
+  await completeScene9(page);
+  await page.click('.ls-topic-end [data-action="advance"]');
+  await page.waitForTimeout(400);
+}
+async function confirmS10Intro(page) {
+  await page.waitForSelector('#s10-confirm');
+  await page.click('#s10-confirm');
+  await page.waitForTimeout(300);
+}
+async function advanceToScene10AndIntro(page) {
+  await advanceToScene10(page);
+  await confirmS10Intro(page);
+}
+/** GERÇEK curriculum board'undan/policy'den bağımsız doğrulanmış TEK an —
+    Sahne #10'un tek moment'i olduğu için (bkz. scenes/scene10EndgameCounting.js
+    dosya başı notu) Sahne #8/#9 gibi bir "N/M progress → moments[idx]" okuma
+    GEREKMEZ, doğrudan policy'den okunur (sahnenin KENDİSİ de aynı kaynağı
+    kullanır — iki ayrı gerçek YOK). */
+function s10Moment() { return getEndgameCountingMoment(); }
+async function tapS10Point(page, point) {
+  const pt = await findScreenPointFor(page, point);
+  if (!pt) return false;
+  await page.mouse.click(pt.x, pt.y);
+  return true;
+}
+async function goToNextS10Item(page) {
+  await page.click('#s10-continue');
+  await page.waitForTimeout(400);
+}
+/** `sampleStoneRegionPeak`'in ±6px penceresinden GENİŞ bir versiyonu —
+    Sahne #10'un board'u (39 taş + 42 bölge noktası, tüm 9×9'u kaplıyor)
+    diğer sahnelerden daha uzaktan/dar preset'le ('high') kadrajlandığı için
+    `findScreenPointFor`'un COARSE arama ızgarası (canvas'ın %6'lık adımları)
+    ile GERÇEK hedefin geometrik izdüşüm merkezi arasındaki fark, hit-test
+    toleransı (`CELL*0.55*scale`) içinde ama ±6px'in DIŞINDA kalabiliyor
+    (ölçüldü: bkz. görev talimatı hata ayıklaması — GERÇEK elmas marker
+    bulunan noktadan ~10-20px aşağıda çiziliyordu, board'un KENDİSİ doğru
+    render ediyordu, yalnız piksel örnekleme penceresi DARDI). Bu yüzden
+    Sahne #10'un piksel testleri ±6 yerine ±18 (adım 3) kullanır — geometrik
+    hit-test toleransının (tipik ~20-30px) büyük bölümünü kapsar. */
+// v2 — TEK page.evaluate() içinde TÜM ızgara taranır (169 ayrı round-trip
+// YERİNE) — her round-trip'in kendi IPC/serileştirme maliyeti ölçüldü:
+// 169×2 (N6+N7, siyah+beyaz) = 676 ayrı çağrı tam koşumda DAKİKALARCA
+// sürüyordu (bkz. görev talimatı hata ayıklaması). Örnekleme MANTIĞI
+// (±18px, adım 3, yönlü en-uç arama) DEĞİŞMEDİ — yalnız aktarım tekniği.
+async function sampleRegionMarkPeak(page, relX, relY, direction) {
+  return page.evaluate(({ relX, relY, direction }) => {
+    const canvas = document.getElementById('ls-canvas');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    let best = null, bestLum = direction === 'brighter' ? -Infinity : Infinity;
+    for (let dx = -18; dx <= 18; dx += 3) {
+      for (let dy = -18; dy <= 18; dy += 3) {
+        const x = Math.round((relX + dx) * dpr), y = Math.round((relY + dy) * dpr);
+        const d = ctx.getImageData(x, y, 1, 1).data;
+        const px = { r: d[0], g: d[1], b: d[2], a: d[3] };
+        const lum = 0.2126 * px.r + 0.7152 * px.g + 0.0722 * px.b;
+        const better = direction === 'brighter' ? lum > bestLum : lum < bestLum;
+        if (better) { bestLum = lum; best = px; }
+      }
+    }
+    return best;
+  }, { relX, relY, direction });
+}
+
+addTest('N1) Sahne #9 → Sahne #10 GERÇEK topic-end geçişi: Sahne #9 artık son sahne DEĞİL, board/narration bbox <1px stabil, tek scene_started', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await completeScene9(s.page);
+    const s9Label = (await s.page.locator('.ls-topic-end [data-action="advance"]').textContent())?.trim();
+    ensure(s9Label === 'Sonraki konu', `Sahne #9 (artık son sahne DEĞİL) "Sonraki konu" göstermeli, bulunan: "${s9Label}"`);
+    const boardBefore = await s.page.locator('#ls-canvas').boundingBox();
+    const narrBefore = await s.page.locator('#ls-narration').boundingBox();
+    await s.page.click('.ls-topic-end [data-action="advance"]');
+    await s.page.waitForSelector('#s10-confirm');
+    const boardAfter = await s.page.locator('#ls-canvas').boundingBox();
+    const narrAfter = await s.page.locator('#ls-narration').boundingBox();
+    ensure(Math.abs(boardBefore.width - boardAfter.width) < 1 && Math.abs(boardBefore.height - boardAfter.height) < 1, 'geçişte board bbox değişti');
+    ensure(Math.abs(narrBefore.width - narrAfter.width) < 1, 'geçişte narrasyon bbox değişti');
+    const events = eventsFor(await getEventLog(s.page), S10_ID);
+    ensure(events.filter(e => e.type === 'scene_started').length === 1, `tek scene_started olmalı, bulunan: ${events.filter(e => e.type === 'scene_started').length}`);
+    ensure(s.consoleErrors.length === 0, `konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('N2) Intro ve authored board doğru: onay ÖNCESİ curriculum board\'u AYNEN kurulu, hiçbir bölge marker\'ı YOK (temiz)', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10(s.page);
+    await s.page.waitForSelector('#s10-confirm');
+    const moment = s10Moment();
+    const marks = await s.page.evaluate(() => window.__lsTestBoardAdapter.getRegionMarks());
+    ensure(marks.length === 0, `onay ÖNCESİ hiçbir bölge marker'ı OLMAMALI, bulunan: ${JSON.stringify(marks)}`);
+    ensure(await s.page.locator('#s10-intro').isVisible(), 'intro şeridi görünmüyor');
+    ensure(moment.board.length === 39, `ön koşul: curriculum board'u 39 taş taşımalı, bulunan: ${moment.board.length}`);
+  } finally { await s.close(); }
+});
+
+addTest('N3) Onaydan ÖNCE marker görünürlüğü: onay SONRASI bile ilk açılışta HÂLÂ hiçbir bölge marker\'ı yok — yalnız GERÇEK bir dokunuştan SONRA tanıtılır', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const marks = await s.page.evaluate(() => window.__lsTestBoardAdapter.getRegionMarks());
+    ensure(marks.length === 0, `onay SONRASI, herhangi bir dokunuştan ÖNCE hiçbir bölge marker'ı OLMAMALI (aktif keşif ilkesi), bulunan: ${JSON.stringify(marks)}`);
+    const progressText = (await s.page.locator('#s10-region-progress').textContent())?.trim();
+    ensure(progressText === '0 / 2 bölge', `başlangıç progress "0 / 2 bölge" olmalı, bulunan: "${progressText}"`);
+  } finally { await s.close(); }
+});
+
+addTest('N4) Onay SONRASI siyah bölgeye dokunmak: siyah marker\'lar GERÇEK koordinatlarda (curriculum flood-fill sonucuyla BİREBİR), event doğru payload taşır', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const moment = s10Moment();
+    const ok = await tapS10Point(s.page, moment.blackRegionPoints[0]);
+    ensure(ok, 'siyah bölge noktası ekranda bulunamadı');
+    await s.page.waitForTimeout(250);
+    const marks = await s.page.evaluate(() => window.__lsTestBoardAdapter.getRegionMarks());
+    const blackMarks = marks.filter(m => m.color === 'black');
+    ensure(blackMarks.length === moment.blackRegionPoints.length, `siyah marker sayısı ${moment.blackRegionPoints.length} olmalı, bulunan: ${blackMarks.length}`);
+    const expectedKeys = new Set(moment.blackRegionPoints.map(p => `${p.row},${p.col}`));
+    ensure(blackMarks.every(m => expectedKeys.has(`${m.row},${m.col}`)), `siyah marker koordinatları GERÇEK bölgeyle eşleşmiyor: ${JSON.stringify(blackMarks)}`);
+    ensure(marks.filter(m => m.color === 'white').length === 0, 'yalnız siyah bulunduğunda beyaz marker OLMAMALI');
+    const events = eventsFor(await getEventLog(s.page), S10_ID).filter(e => e.type === 'scene_region_identified');
+    ensure(events.length === 1, `tek deneme event'i, bulunan: ${events.length}`);
+    const payload = events[0].payload;
+    ensure(payload.regionColor === 'B' && payload.matched === true && payload.blackFound === true && payload.whiteFound === false,
+      `payload beklenen: regionColor:B,matched:true,blackFound:true,whiteFound:false — bulunan: ${JSON.stringify(payload)}`);
+    ensure(payload.stepIndex === 0 && payload.completionReady === false, `payload stepIndex:0,completionReady:false olmalı: ${JSON.stringify(payload)}`);
+  } finally { await s.close(); }
+});
+
+addTest('N5) Onay SONRASI beyaz bölgeye dokunmak: beyaz marker\'lar GERÇEK koordinatlarda, siyah marker\'lardan bağımsız birikir', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const moment = s10Moment();
+    ensure(await tapS10Point(s.page, moment.blackRegionPoints[0]), 'siyah bölge noktası bulunamadı');
+    await s.page.waitForTimeout(250);
+    ensure(await tapS10Point(s.page, moment.whiteRegionPoints[0]), 'beyaz bölge noktası bulunamadı');
+    await s.page.waitForTimeout(250);
+    const marks = await s.page.evaluate(() => window.__lsTestBoardAdapter.getRegionMarks());
+    const blackMarks = marks.filter(m => m.color === 'black');
+    const whiteMarks = marks.filter(m => m.color === 'white');
+    ensure(blackMarks.length === moment.blackRegionPoints.length, `siyah marker sayısı korunmalı, bulunan: ${blackMarks.length}`);
+    ensure(whiteMarks.length === moment.whiteRegionPoints.length, `beyaz marker sayısı ${moment.whiteRegionPoints.length} olmalı, bulunan: ${whiteMarks.length}`);
+    const expectedWhiteKeys = new Set(moment.whiteRegionPoints.map(p => `${p.row},${p.col}`));
+    ensure(whiteMarks.every(m => expectedWhiteKeys.has(`${m.row},${m.col}`)), `beyaz marker koordinatları GERÇEK bölgeyle eşleşmiyor: ${JSON.stringify(whiteMarks)}`);
+    const progressText = (await s.page.locator('#s10-region-progress').textContent())?.trim();
+    ensure(progressText === '2 / 2 bölge', `progress "2 / 2 bölge" olmalı, bulunan: "${progressText}"`);
+  } finally { await s.close(); }
+});
+
+addTest('N6) Marker\'lar GERÇEK canvas piksellerinde görünür — yalnız state hook\'una GÜVENİLMEZ: AYNI ekran noktası dokunmadan ÖNCE (düz ahşap) ve SONRA (marker) ölçülüp KARŞILAŞTIRILIR', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const moment = s10Moment();
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const toCanvasRel = pt => ({ x: pt.x - box.x, y: pt.y - box.y });
+
+    // Bu board'da (39 taş + 22 siyah + 20 beyaz = 81, nötr YOK) her nokta
+    // taş VEYA bölge noktasıdır — "genel bir boş ahşap referans noktası"
+    // GÜVENİLİR DEĞİLDİR (rastgele bir ekran kesri kolayca bir TAŞA denk
+    // gelebilir — ilk denemede TAM BÖYLE oldu). Bunun yerine AYNI iki
+    // hedef noktanın KENDİ ekran konumu, dokunmadan ÖNCE (marker YOK, düz
+    // ahşap) ve dokunulduktan SONRA (marker VAR) ayrı ayrı ölçülüp
+    // karşılaştırılır — sabit bir "board" varsayımı YOK.
+    const blackScreenPt = await findScreenPointFor(s.page, moment.blackRegionPoints[0]);
+    ensure(blackScreenPt, 'siyah bölge noktası ekranda bulunamadı');
+    const whiteScreenPt = await findScreenPointFor(s.page, moment.whiteRegionPoints[0]);
+    ensure(whiteScreenPt, 'beyaz bölge noktası ekranda bulunamadı');
+    const blackRel = toCanvasRel(blackScreenPt);
+    const whiteRel = toCanvasRel(whiteScreenPt);
+
+    const blackBefore = pixelLuminance(await canvasPixelAt(s.page, blackRel.x, blackRel.y, 0, 0));
+    const whiteBefore = pixelLuminance(await canvasPixelAt(s.page, whiteRel.x, whiteRel.y, 0, 0));
+
+    await s.page.mouse.click(blackScreenPt.x, blackScreenPt.y);
+    await s.page.waitForTimeout(300);
+    await s.page.mouse.click(whiteScreenPt.x, whiteScreenPt.y);
+    await s.page.waitForTimeout(300);
+
+    const blackAfter = pixelLuminance(await sampleRegionMarkPeak(s.page, blackRel.x, blackRel.y, 'darker'));
+    ensure(blackAfter < blackBefore - 6, `siyah marker dokunuş SONRASI aynı noktayı BELİRGİN KOYULAŞTIRMALI — önce=${blackBefore.toFixed(1)} sonra=${blackAfter.toFixed(1)}`);
+
+    const whiteAfter = pixelLuminance(await sampleRegionMarkPeak(s.page, whiteRel.x, whiteRel.y, 'brighter'));
+    ensure(whiteAfter > whiteBefore + 6, `beyaz marker dokunuş SONRASI aynı noktayı BELİRGİN AÇIKLAŞTIRMALI — önce=${whiteBefore.toFixed(1)} sonra=${whiteAfter.toFixed(1)}`);
+  } finally { await s.close(); }
+});
+
+addTest('N7) Siyah/beyaz bölge marker\'ları birbirinden AYIRT EDİLEBİLİR (renk yönü ters) ve mevcut turkuaz/kırmızı/yeşil marker paletleriyle KARIŞMAZ (RGB kanal analizi)', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const moment = s10Moment();
+    const box = await s.page.locator('#ls-canvas').boundingBox();
+    const toCanvasRel = pt => ({ x: pt.x - box.x, y: pt.y - box.y });
+
+    // bkz. N6 notu — screen point GİRDİ AÇIKKEN, dokunmadan ÖNCE yakalanır.
+    const blackScreenPt = await findScreenPointFor(s.page, moment.blackRegionPoints[0]);
+    ensure(blackScreenPt, 'siyah bölge noktası ekranda bulunamadı');
+    await s.page.mouse.click(blackScreenPt.x, blackScreenPt.y);
+    await s.page.waitForTimeout(250);
+    const whiteScreenPt = await findScreenPointFor(s.page, moment.whiteRegionPoints[0]);
+    ensure(whiteScreenPt, 'beyaz bölge noktası ekranda bulunamadı');
+    await s.page.mouse.click(whiteScreenPt.x, whiteScreenPt.y);
+    await s.page.waitForTimeout(250);
+
+    const blackRel = toCanvasRel(blackScreenPt);
+    const blackPx = await sampleRegionMarkPeak(s.page, blackRel.x, blackRel.y, 'darker');
+    const whiteRel = toCanvasRel(whiteScreenPt);
+    const whitePx = await sampleRegionMarkPeak(s.page, whiteRel.x, whiteRel.y, 'brighter');
+
+    ensure(pixelLuminance(whitePx) > pixelLuminance(blackPx) + 15,
+      `beyaz marker siyah marker'dan BELİRGİN daha parlak olmalı — siyah=${pixelLuminance(blackPx).toFixed(1)} beyaz=${pixelLuminance(whitePx).toFixed(1)}`);
+    // Turkuaz (91,210,195)/kehribar-kırmızı (214,92,58)/yeşil (62,207,128)
+    // paletleriyle YANLIŞLIKLA karışmadığının kanıtı: bölge marker'larının
+    // RGB'si bu üç referans rengin HİÇBİRİNE yakın (kanal-bazlı Öklid<40) DEĞİL.
+    const REFS = { turkuaz: [91, 210, 195], amber: [214, 92, 58], yesil: [62, 207, 128] };
+    const dist = (px, ref) => Math.hypot(px.r - ref[0], px.g - ref[1], px.b - ref[2]);
+    for (const [name, ref] of Object.entries(REFS)) {
+      ensure(dist(blackPx, ref) > 40, `siyah bölge marker'ı "${name}" referans rengine ÇOK yakın (karışma riski): ${JSON.stringify(blackPx)}`);
+      ensure(dist(whitePx, ref) > 40, `beyaz bölge marker'ı "${name}" referans rengine ÇOK yakın (karışma riski): ${JSON.stringify(whitePx)}`);
+    }
+  } finally { await s.close(); }
+});
+
+addTest('N8) Dolu bir kesişime (taş) dokunmak board state\'ini DEĞİŞTİRMEZ, ilerletmez, kısa bir yönlendirme gösterir', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const moment = s10Moment();
+    const stone = moment.board[0];
+    const expected = evaluateRegionTap(moment, { row: stone.y, col: stone.x });
+    ensure(expected.isOccupied === true, 'ön koşul: seçilen nokta GERÇEKTEN dolu olmalı');
+    const ok = await tapS10Point(s.page, { row: stone.y, col: stone.x });
+    ensure(ok, 'dolu kesişim ekranda bulunamadı');
+    await s.page.waitForTimeout(300);
+    const progressText = (await s.page.locator('#s10-region-progress').textContent())?.trim();
+    ensure(progressText === '0 / 2 bölge', `dolu kesişime dokunma ilerletmemeli, bulunan: "${progressText}"`);
+    const marks = await s.page.evaluate(() => window.__lsTestBoardAdapter.getRegionMarks());
+    ensure(marks.length === 0, `dolu kesişime dokunma marker ÜRETMEMELİ, bulunan: ${JSON.stringify(marks)}`);
+    const feedback = (await s.page.locator('#s10-feedback').textContent())?.trim() || '';
+    ensure(feedback.length > 0, 'kısa bir yönlendirme metni gösterilmeli');
+    const events = eventsFor(await getEventLog(s.page), S10_ID).filter(e => e.type === 'scene_region_identified');
+    ensure(events.length === 1 && events[0].payload.isOccupied === true && events[0].payload.regionColor === null,
+      `payload isOccupied:true,regionColor:null olmalı: ${JSON.stringify(events[0]?.payload)}`);
+  } finally { await s.close(); }
+});
+
+addTest('N9) Aynı bölgeye İKİNCİ kez dokunmak duplicate progress ÜRETMEZ (idempotent), ama event yine üretilir ("zaten bulmuştun" geri bildirimiyle)', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const moment = s10Moment();
+    ensure(await tapS10Point(s.page, moment.blackRegionPoints[0]), 'siyah bölge noktası (1. dokunuş) bulunamadı');
+    await s.page.waitForTimeout(250);
+    ensure(await tapS10Point(s.page, moment.blackRegionPoints[2]), 'siyah bölge noktası (2. dokunuş, AYNI bölge FARKLI nokta) bulunamadı');
+    await s.page.waitForTimeout(250);
+    const progressText = (await s.page.locator('#s10-region-progress').textContent())?.trim();
+    ensure(progressText === '1 / 2 bölge', `AYNI bölgeye ikinci dokunuş ilerlemeyi İKİNCİ KEZ ARTIRMAMALI, bulunan: "${progressText}"`);
+    const events = eventsFor(await getEventLog(s.page), S10_ID).filter(e => e.type === 'scene_region_identified');
+    ensure(events.length === 2, `iki AYRI dokunuş iki event üretmeli (debounce farklı koordinat), bulunan: ${events.length}`);
+    ensure(events[1].payload.matched === false && events[1].payload.alreadyFound === true,
+      `ikinci dokunuşun payload'ı matched:false,alreadyFound:true olmalı: ${JSON.stringify(events[1].payload)}`);
+    const feedback = (await s.page.locator('#s10-feedback').textContent())?.trim() || '';
+    ensure(/zaten/i.test(feedback), `"zaten bulmuştun" benzeri bir geri bildirim beklenir, bulunan: "${feedback}"`);
+  } finally { await s.close(); }
+});
+
+addTest('N10) İki renk de ele alındığında completion TAM BİR KEZ açılır, final kontrol "Sonraki konu" (İki Göz sırada), teknik dil/ham reason SIZMAZ', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const moment = s10Moment();
+    ensure(await tapS10Point(s.page, moment.blackRegionPoints[0]), 'siyah bölge noktası bulunamadı');
+    await s.page.waitForTimeout(250);
+    ensure(await tapS10Point(s.page, moment.whiteRegionPoints[0]), 'beyaz bölge noktası bulunamadı');
+    await s.page.waitForTimeout(300);
+    const tabindex = await s.page.locator('#s10-continue').getAttribute('tabindex');
+    ensure(tabindex === '0', `iki bölge de bulunduktan SONRA Devam AÇIK olmalı, tabindex: ${tabindex}`);
+    await goToNextS10Item(s.page);
+    await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
+    const label = (await s.page.locator('.ls-topic-end [data-action="advance"]').textContent())?.trim();
+    ensure(label === 'Sonraki konu', `Sahne #10 sonrasında İki Göz olmalı, bulunan: ${label}`);
+    const events = eventsFor(await getEventLog(s.page), S10_ID);
+    ensure(events.filter(e => e.type === 'scene_completion_unlocked').length === 1, 'completion TAM BİR KEZ açılmalı');
+    ensure(events.filter(e => e.type === 'scene_assessment_advanced').length === 0, 'Sahne #10 TEK moment taşır — scene_assessment_advanced HİÇ üretilmemeli');
+    const bodyText = await s.page.locator('#ls-scene-host').innerText();
+    ensure(!/sahne\s*tamamlandı|scene.?completed|scene-10|registry|runtime/i.test(bodyText), `teknik dil sızmış: "${bodyText}"`);
+  } finally { await s.close(); }
+});
+
+addTest('N11) Board state\'ine GERÇEK taş EKLENMEZ — dokunulan bölge noktaları GERÇEK BoardState\'te (isOccupied) SONRASI da hâlâ boş kalır', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const moment = s10Moment();
+    const before = await s.page.evaluate(p => window.__lsTestBoardAdapter.isOccupied(p), moment.blackRegionPoints[0]);
+    ensure(before === false, 'ön koşul: dokunulacak siyah bölge noktası başlangıçta boş olmalı');
+    ensure(await tapS10Point(s.page, moment.blackRegionPoints[0]), 'siyah bölge noktası bulunamadı');
+    await s.page.waitForTimeout(250);
+    ensure(await tapS10Point(s.page, moment.whiteRegionPoints[0]), 'beyaz bölge noktası bulunamadı');
+    await s.page.waitForTimeout(250);
+    const occupiedAfterBlack = await s.page.evaluate(p => window.__lsTestBoardAdapter.isOccupied(p), moment.blackRegionPoints[0]);
+    const occupiedAfterWhite = await s.page.evaluate(p => window.__lsTestBoardAdapter.isOccupied(p), moment.whiteRegionPoints[0]);
+    ensure(occupiedAfterBlack === false, `dokunulan siyah bölge noktası taş EKLENMİŞ gibi dolu görünüyor: ${occupiedAfterBlack}`);
+    ensure(occupiedAfterWhite === false, `dokunulan beyaz bölge noktası taş EKLENMİŞ gibi dolu görünüyor: ${occupiedAfterWhite}`);
+  } finally { await s.close(); }
+});
+
+addTest('N12) Hızlı çift tıklama TEK event üretir (debounce); mobil viewport (390×844) TEK dokunuşla bölgeyi bulur', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const moment = s10Moment();
+    const pt = await findScreenPointFor(s.page, moment.blackRegionPoints[0]);
+    ensure(pt, 'siyah bölge noktası bulunamadı');
+    await s.page.mouse.click(pt.x, pt.y);
+    await s.page.mouse.click(pt.x, pt.y); // hızlı ikinci tıklama — debounce penceresi İÇİNDE
+    await s.page.waitForTimeout(300);
+    const events = eventsFor(await getEventLog(s.page), S10_ID).filter(e => e.type === 'scene_region_identified');
+    ensure(events.length === 1, `hızlı çift tıklama TEK event üretmeli, bulunan: ${events.length}`);
+  } finally { await s.close(); }
+
+  // v2 — kök neden düzeltmesi: kurulum (Sahne #1-9 boyunca oynama) BİLEREK
+  // masaüstü boyut/touch-siz context'te yapılır (bkz. M11/M12/N16 İLE AYNI
+  // desen) — yalnız Sahne #10'a ULAŞTIKTAN SONRA viewport mobil boyuta
+  // küçültülür. Kök neden: Sahne #7/#8'in KENDİ çok-hedefli hover-tabanlı
+  // findScreenPointFor akışı, hasTouch:true + 390×844 ile BAŞTAN AÇILAN
+  // TAZE bir context'te GÜVENİLMEZ davranıyor (gözlemlendi: bu testin İLK
+  // sürümünde tam olarak buradan `#s08-continue` "not visible" timeout'u —
+  // Sahne #7/#8'in KENDİ koduna görev talimatı gereği DOKUNULMADI). Sahne
+  // #10'un KENDİSİ hiçbir YENİ dokunma/hover kodu YAZMAZ — onIntersectionTap
+  // üzerinden AYNI adaptör mekanizmasını kullanır (M11/N16'da ZATEN
+  // doğrulanmış), bu yüzden burada asıl doğrulanan "Sahne #10 mobil
+  // VIEWPORT BOYUTUNDA da tek dokunuşla çalışır" — genel touch-event
+  // semantiği AYRICA test EDİLMEZ.
+  const s2 = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s2.page);
+    await s2.page.setViewportSize(VIEWPORTS.mobile);
+    await s2.page.waitForTimeout(250); // resize sonrası yeniden kadrajlama
+    const moment = s10Moment();
+    const ok = await tapS10Point(s2.page, moment.whiteRegionPoints[0]);
+    ensure(ok, 'mobil viewportta beyaz bölge noktası bulunamadı');
+    await s2.page.waitForTimeout(300);
+    const progressText = (await s2.page.locator('#s10-region-progress').textContent())?.trim();
+    ensure(progressText === '1 / 2 bölge', `mobilde TEK dokunuş bölgeyi bulmalı, bulunan: "${progressText}"`);
+  } finally { await s2.close(); }
+});
+
+addTest('N13) Konular paneli açıkken board input kilitlenir (deneme üretmez), kapanınca eski duruma döner', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const before = eventsFor(await getEventLog(s.page), S10_ID).filter(e => e.type === 'scene_region_identified').length;
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForSelector('#ls-topics-panel:not([hidden])');
+    const canvasBox = await s.page.locator('#ls-canvas').boundingBox();
+    await s.page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
+    await s.page.waitForTimeout(150);
+    const duringOpen = eventsFor(await getEventLog(s.page), S10_ID).filter(e => e.type === 'scene_region_identified').length;
+    ensure(duringOpen === before, 'Konular paneli açıkken canvas tıklaması scene_region_identified üretti — input yanlış kilitli');
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForTimeout(200);
+    const moment = s10Moment();
+    const ok = await tapS10Point(s.page, moment.blackRegionPoints[0]);
+    ensure(ok, 'panel kapandıktan SONRA siyah bölge noktası bulunamadı');
+    await s.page.waitForTimeout(300);
+    const events = eventsFor(await getEventLog(s.page), S10_ID).filter(e => e.type === 'scene_region_identified');
+    ensure(events.length === before + 1, `panel kapandıktan SONRA girdi normal çalışmalı, bulunan: ${events.length}`);
+  } finally { await s.close(); }
+});
+
+addTest('N14) Reload yarım akışta temiz başlangıca döner; tamamlandıktan SONRA replay TEMİZ (yalnız intro+0/2) başlatır, completion geçmişini çoğaltmaz', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const moment = s10Moment();
+    ensure(await tapS10Point(s.page, moment.blackRegionPoints[0]), 'siyah bölge noktası bulunamadı (reload öncesi)');
+    await s.page.waitForTimeout(250);
+    await s.page.reload({ waitUntil: 'networkidle' });
+    await s.page.waitForSelector('#s10-confirm');
+    const progress = await s.page.evaluate(() => JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null'));
+    ensure(!progress?.completedSceneIds?.includes(S10_ID), 'yarım kalan Sahne #10 yanlışlıkla tamamlanmış sayıldı');
+    const legacy = await s.page.evaluate(() => localStorage.getItem('go_done_3d'));
+    ensure(legacy == null, `go_done_3d DEĞİŞMEMELİ, bulunan: ${legacy}`);
+
+    // Şimdi TAM tamamlayıp replay'i doğrula.
+    await confirmS10Intro(s.page);
+    ensure(await tapS10Point(s.page, moment.blackRegionPoints[0]), 'siyah bölge (tamamlama) bulunamadı');
+    await s.page.waitForTimeout(250);
+    ensure(await tapS10Point(s.page, moment.whiteRegionPoints[0]), 'beyaz bölge (tamamlama) bulunamadı');
+    await s.page.waitForTimeout(300);
+    await goToNextS10Item(s.page);
+    await s.page.waitForSelector('.ls-topic-end [data-action="replay"]');
+    await s.page.click('.ls-topic-end [data-action="replay"]');
+    await s.page.waitForSelector('#s10-confirm');
+    ensure(await s.page.locator('#s10-confirm').isVisible(), 'replay temiz intro state\'i açmadı');
+    const marksAfterReplay = await s.page.evaluate(() => window.__lsTestBoardAdapter.getRegionMarks());
+    ensure(marksAfterReplay.length === 0, `replay sonrası marker KALMAMALI, bulunan: ${JSON.stringify(marksAfterReplay)}`);
+    const completions = eventsFor(await getEventLog(s.page), S10_ID).filter(e => e.type === 'scene_completion_unlocked');
+    ensure(completions.length === 1, `replay completion geçmişini ÇOĞALTMAMALI, bulunan: ${completions.length}`);
+  } finally { await s.close(); }
+});
+
+addTest('N15) Reload: Sahne #10 sonrasında tamamlanmamış İki Göz açılır (teknik final ekranı YOK)', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const moment = s10Moment();
+    ensure(await tapS10Point(s.page, moment.blackRegionPoints[0]), 'siyah bölge bulunamadı');
+    await s.page.waitForTimeout(250);
+    ensure(await tapS10Point(s.page, moment.whiteRegionPoints[0]), 'beyaz bölge bulunamadı');
+    await s.page.waitForTimeout(300);
+    await goToNextS10Item(s.page);
+    await s.page.waitForSelector('.ls-topic-end [data-action="advance"]');
+    await s.page.click('.ls-topic-end [data-action="advance"]'); // Sonraki konu: İki Göz
+    await s.page.waitForTimeout(300);
+    await s.page.reload({ waitUntil: 'networkidle' });
+    await s.page.waitForSelector('#s11-info', { timeout: 8000 });
+    ensure(await s.page.locator('#s11-info').isVisible(), 'yeni iki göz konusu açılmadı');
+    const events = eventsFor(await getEventLog(s.page), 'scene-11-two-eyes');
+    ensure(events.some(e => e.type === 'scene_started'), 'iki göz scene_started üretilmedi');
+  } finally { await s.close(); }
+});
+
+// N16/N17 — kurulum (Sahne #1-9 boyunca oynama) BİLEREK masaüstü boyut/
+// touch-siz context'te yapılır (bkz. M11/M12 İLE AYNI kök neden notu);
+// yalnız Sahne #10'a ULAŞTIKTAN SONRA viewport değiştirilir.
+addTest('N16) Resize ve orientation (390×844 → 844×390 → 390×844): board/narration hiçbir viewport\'ta kesişmez, yatay taşma yok, bölge dokunuşu her orientation\'da çalışır', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    for (const vp of [VIEWPORTS.mobile, { width: 844, height: 390 }, VIEWPORTS.mobile]) {
+      await s.page.setViewportSize(vp);
+      await s.page.waitForTimeout(250);
+      const boardBox = await s.page.locator('#ls-canvas').boundingBox();
+      const narrBox = await s.page.locator('#ls-narration').boundingBox();
+      ensure(!boxesIntersect(boardBox, narrBox), `${vp.width}x${vp.height}: board/narration kesişiyor`);
+      const scrollWidth = await s.page.evaluate(() => document.documentElement.scrollWidth);
+      const clientWidth = await s.page.evaluate(() => document.documentElement.clientWidth);
+      ensure(scrollWidth <= clientWidth + 1, `${vp.width}x${vp.height}: yatay taşma var`);
+    }
+    const moment = s10Moment();
+    const ok = await tapS10Point(s.page, moment.blackRegionPoints[0]);
+    ensure(ok, 'orientation döngüsü SONRASI siyah bölge bulunamadı');
+  } finally { await s.close(); }
+});
+
+addTest('N17) Masaüstü/tablet/mobil viewport boyutlarında Sahne #10 board/narration taşma veya kesişme ÜRETMEZ', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    for (const [name, viewport] of Object.entries(VIEWPORTS)) {
+      await s.page.setViewportSize(viewport);
+      await s.page.waitForTimeout(250);
+      const boardBox = await s.page.locator('#ls-canvas').boundingBox();
+      const narrBox = await s.page.locator('#ls-narration').boundingBox();
+      ensure(!boxesIntersect(boardBox, narrBox), `${name}: board/narration kesişiyor`);
+      const scrollWidth = await s.page.evaluate(() => document.documentElement.scrollWidth);
+      const clientWidth = await s.page.evaluate(() => document.documentElement.clientWidth);
+      ensure(scrollWidth <= clientWidth + 1, `${name}: yatay taşma var (scrollWidth=${scrollWidth} clientWidth=${clientWidth})`);
+    }
+  } finally { await s.close(); }
+});
+
+addTest('N18) prefers-reduced-motion aktifken Sahne #10 normal çalışır — marker fade-in anında tam görünür (t:1), etkileşim/completion bozulmaz', async () => {
+  const s = await openScenesPage({ query: PREVIEW_QUERY, reducedMotion: 'reduce' });
+  try {
+    await advanceToScene10AndIntro(s.page);
+    const moment = s10Moment();
+    ensure(await tapS10Point(s.page, moment.blackRegionPoints[0]), 'reduced-motion: siyah bölge bulunamadı');
+    await s.page.waitForTimeout(150);
+    const marks = await s.page.evaluate(() => window.__lsTestBoardAdapter.getRegionMarks());
+    ensure(marks.length === moment.blackRegionPoints.length, `reduced-motion'da marker'lar ANINDA tam listede olmalı, bulunan: ${marks.length}`);
+    ensure(await tapS10Point(s.page, moment.whiteRegionPoints[0]), 'reduced-motion: beyaz bölge bulunamadı');
+    await s.page.waitForTimeout(150);
+    const tabindex = await s.page.locator('#s10-continue').getAttribute('tabindex');
+    ensure(tabindex === '0', 'reduced-motion: completion akışı bozulmamalı');
+    ensure(s.consoleErrors.length === 0, `reduced-motion konsol/pageerror sıfır olmalı: ${JSON.stringify(s.consoleErrors)}`);
+  } finally { await s.close(); }
+});
+
+addTest('N19) Teacher Studio Sahne #10\'u görür (Curriculum: düzeltilmiş info metni + bölge sayıları; Diagnostics: hata YOK), console/pageerror sıfır', async () => {
+  const context = await (await launchChromium()).newContext();
+  const consoleErrors = [];
+  try {
+    await context.route(`${BASE}/**`, async route => {
+      const url = new URL(route.request().url());
+      const pathname = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
+      const filePath = absPath(pathname || 'teacher-studio.html');
+      try { await route.fulfill({ status: 200, contentType: mime(filePath), body: fs.readFileSync(filePath) }); }
+      catch { await route.abort(); }
+    });
+    const page = await context.newPage();
+    page.on('pageerror', e => consoleErrors.push('pageerror: ' + e.message));
+    page.on('console', m => { if (m.type() === 'error') consoleErrors.push('console: ' + m.text()); });
+    const resp = await page.goto(`${BASE}/teacher-studio.html`, { waitUntil: 'networkidle' });
+    ensure(resp && resp.status() === 200, `teacher-studio.html HTTP ${resp?.status()}`);
+    await page.click('[data-tab="curriculum"]');
+    await page.waitForTimeout(200);
+    const curriculumText = await page.locator('#tab-curriculum').innerText();
+    ensure(/Oyun Sonu ve Sayım/.test(curriculumText), 'Curriculum panelinde Sahne #10 başlığı görünmüyor');
+    ensure(/siyah bölge 22 nokta/.test(curriculumText) && /beyaz bölge 20 nokta/.test(curriculumText),
+      `Curriculum panelinde bölge sayıları görünmüyor: "${curriculumText.slice(0, 4000)}"`);
+    ensure(/Beyaz sol \(20 puan\) · Siyah sağ \(22 puan\) — siyah önde!/.test(curriculumText),
+      'Curriculum panelinde düzeltilmiş info metni görünmüyor');
+    ensure(!/Siyah sol \(20 puan\) · Beyaz sağ \(22 puan\) — beyaz önde!/.test(curriculumText),
+      'Curriculum panelinde ESKİ (ters) info metni HÂLÂ görünüyor');
+    await page.click('[data-tab="diagnostics"]');
+    await page.waitForTimeout(200);
+    const diagText = await page.locator('#diag-scene-table').innerText();
+    ensure(!/scene-10-endgame-counting.*(REGISTRY_ORDER_INVALID|CURRICULUM_REF_INVALID|BLACK_REGION_EMPTY|WHITE_REGION_EMPTY|REGIONS_NOT_DISJOINT|MARKER_OUT_OF_BOUNDS|NEUTRAL_OVERLAPS_OWNED_REGION|INFO_TEXT_UNPARSEABLE|INFO_TEXT_LEFT_MISMATCH|INFO_TEXT_RIGHT_MISMATCH|INFO_TEXT_AHEAD_MISMATCH|MOMENT_THREW)/i.test(diagText),
+      `Sahne #10 Diagnostics hata satırı bulundu: "${diagText}"`);
+    ensure(!/scene-09-ko-rule.*NEXT_SCENE_NOT_SCENE10/i.test(diagText), `Sahne #9 registry sırası hatası: "${diagText}"`);
+    ensure(consoleErrors.length === 0, `Teacher Studio konsol/pageerror sıfır olmalı: ${JSON.stringify(consoleErrors)}`);
+  } finally { await context.close(); }
+});
+
+addTest('N20) ogren-3d.html Sahne #10 eklenmesinden ETKİLENMEZ — regresyonsuz açılır, canvas render eder, dosya bu görev kapsamında DEĞİŞMEDİ', async () => {
+  const context = await (await launchChromium()).newContext();
+  const consoleErrors = [];
+  try {
+    await context.route(`${BASE}/**`, async route => {
+      const url = new URL(route.request().url());
+      const pathname = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
+      const filePath = absPath(pathname || 'ogren-3d.html');
+      try { await route.fulfill({ status: 200, contentType: mime(filePath), body: fs.readFileSync(filePath) }); }
+      catch { await route.abort(); }
+    });
+    const page = await context.newPage();
+    page.on('pageerror', e => consoleErrors.push('pageerror: ' + e.message));
+    page.on('console', m => { if (m.type() === 'error') consoleErrors.push('console: ' + m.text()); });
+    const resp = await page.goto(`${BASE}/ogren-3d.html`, { waitUntil: 'networkidle' });
+    ensure(resp && resp.status() === 200, `ogren-3d.html HTTP ${resp?.status()}`);
+    await page.waitForTimeout(600);
+    ensure(await page.locator('canvas').count() > 0, 'ogren-3d.html canvas render etmiyor');
+    ensure(consoleErrors.length === 0, `ogren-3d.html konsol/pageerror sıfır olmalı: ${JSON.stringify(consoleErrors)}`);
+  } finally { await context.close(); }
+});
+
+
+for(const [name,viewport] of Object.entries({desktop:VIEWPORTS.desktop,mobile:VIEWPORTS.mobile})) {
+ addTest(`O1-${name}) İki Göz: 14 an, yedi formasyon, tamamlanma ve tekrar`,async()=>{
+  const s=await openScenesPage({viewport,reducedMotion:'reduce',query:'?exposeBoardAdapter=1&testScene=scene-11-two-eyes'});
+  try {
+   const moments=getTwoEyesMoments();
+   for(const [i,m] of moments.entries()) {
+    await s.page.click('#s11-confirm');
+    ensure(await s.page.locator('#s11-next').isDisabled(),'cevap öncesi ilerleme kapalı olmalı');
+    for(const [col,row] of m.targets){
+     const p=await findScreenPointFor(s.page,{row,col});ensure(p,`An ${i+1}: hedef görünmüyor`);await s.page.mouse.click(p.x,p.y);
+    }
+    if(m.continuation)await s.page.click('#s11-sequence');
+    await s.page.waitForFunction(()=>!document.querySelector('#s11-next').disabled);
+    if(m.afterEyes){const eyes=await s.page.evaluate(()=>window.__lsTestBoardAdapter.getLibertyPoints());ensure(eyes.length===2,'iki göz işareti gerekli');for(const [col,row] of m.afterEyes)ensure(eyes.some(p=>p.row===row&&p.col===col),'göz konumu yanlış');}
+    await s.page.click('#s11-next');
+   }
+   ensure(await s.page.locator('.ls-topic-end').isVisible(),'ders sonu görünmeli');
+   const events=eventsFor(await getEventLog(s.page),'scene-11-two-eyes');ensure(events.filter(e=>e.type==='scene_completed').length===1,'tek tamamlanma gerekli');
+   await s.page.click('.ls-topic-end [data-action="replay"]');await s.page.waitForSelector('#s11-info');
+   ensure(await s.page.locator('#s11-progress').innerText().then(t=>t.startsWith('1 / 8')),'tekrar ilk adımdan başlamalı');
+   ensure(s.consoleErrors.length===0,JSON.stringify(s.consoleErrors));
+  } finally {await s.close();}
+ });
+}
 
 // TEST_FILTER=<regex> node tests/verify-learning-scenes.mjs — yalnız adı bu
 // regex'le eşleşen testleri çalıştırır (hızlı hedefli hata ayıklama için;
