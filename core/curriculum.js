@@ -347,11 +347,17 @@ export const CURRICULUM = [
       "size": 9,
       "source": "Falling in Love with Baduk · PDF s.45 · Dia.01",
       "targets": [
-        [0, 8]
+        [
+          0,
+          8
+        ]
       ],
       "turn": "white",
       "eyes": [
-        [0, 8]
+        [
+          0,
+          8
+        ]
       ],
       "success": "A bir gerçek gözdür. Fakat tek göz, koşulsuz yaşam için yeterli değildir.",
       "text": "<p><strong>Göz, grubun iç nefesidir</strong></p><p>Köşedeki A noktası siyah grubun içindedir. Siyahın dış nefesleri varken beyaz A’ya giremez: kendi taşının nefesi kalmaz.</p><p>A noktasına dokun; beyazın neden oynayamadığını gör.</p>",
@@ -404,11 +410,17 @@ export const CURRICULUM = [
       "size": 9,
       "source": "Falling in Love with Baduk · PDF s.45 · Dia.02",
       "targets": [
-        [0, 8]
+        [
+          0,
+          8
+        ]
       ],
       "turn": "white",
       "eyes": [
-        [0, 8]
+        [
+          0,
+          8
+        ]
       ],
       "capturedExpected": 3,
       "success": "Üç siyah taş yakalandı. Tek göz, dış nefesler bitince grubu koruyamadı.",
@@ -450,13 +462,25 @@ export const CURRICULUM = [
       "size": 9,
       "source": "Falling in Love with Baduk · PDF s.45 · Dia.03–04",
       "targets": [
-        [0, 8],
-        [2, 8]
+        [
+          0,
+          8
+        ],
+        [
+          2,
+          8
+        ]
       ],
       "turn": "white",
       "eyes": [
-        [0, 8],
-        [2, 8]
+        [
+          0,
+          8
+        ],
+        [
+          2,
+          8
+        ]
       ],
       "success": "Her iki deneme de intihar hamlesi. Siyah kendi gözlerini doldurmadığı sürece grup koşulsuz canlı.",
       "text": "<p><strong>İki ayrı göz grubu korur</strong></p><p>Bu grubun dış nefesi yok, ama A ve B birbirinden ayrı iki iç nefes. Beyaz birine girmeye çalışınca diğer göz siyahın nefesi olarak kalır.</p><p>A ve B noktalarını sırayla dene.</p>",
@@ -514,11 +538,17 @@ export const CURRICULUM = [
       "size": 9,
       "source": "How To Play Go · PDF s.8 · Diagram 2-6 · konumu taşınmış uyarlama",
       "targets": [
-        [3, 4]
+        [
+          3,
+          4
+        ]
       ],
       "turn": "white",
       "marks": [
-        [3, 4]
+        [
+          3,
+          4
+        ]
       ],
       "capturedExpected": 3,
       "success": "Üstteki üç taş yakalandı. A bütün siyah taşların ortak, güvenli bir gözü değildi: sahte göz.",
@@ -575,12 +605,21 @@ export const CURRICULUM = [
       "size": 9,
       "source": "Falling in Love with Baduk · PDF s.49 · Dia.01–02",
       "targets": [
-        [4, 4]
+        [
+          4,
+          4
+        ]
       ],
       "turn": "black",
       "afterEyes": [
-        [3, 4],
-        [5, 4]
+        [
+          3,
+          4
+        ],
+        [
+          5,
+          4
+        ]
       ],
       "success": "İç alan ikiye ayrıldı. İki ayrı gerçek göz oluştu; siyah grup artık koşulsuz canlı.",
       "text": "<p><strong>Üç boşluğu iki göze böl</strong></p><p>Siyahın içindeki üç boş nokta tek bir bağlı alan. Ortaya bir siyah taş koymak, sağ ve sol boşluğu birbirinden ayırır.</p><p>Siyah olarak iki gerçek göz oluşturan hamleyi bul.</p>",
@@ -621,12 +660,21 @@ export const CURRICULUM = [
           "size": 9,
           "source": "Falling in Love with Baduk · PDF s.49 · düz üç ilkesinden ikinci çizgi uyarlaması; kitap diyagramının birebir kopyası değildir",
           "targets": [
-            [4, 8]
+            [
+              4,
+              8
+            ]
           ],
           "turn": "black",
           "afterEyes": [
-            [3, 8],
-            [5, 8]
+            [
+              3,
+              8
+            ],
+            [
+              5,
+              8
+            ]
           ],
           "label": "Alt kenar",
           "success": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
@@ -675,12 +723,21 @@ export const CURRICULUM = [
           "size": 9,
           "source": "Falling in Love with Baduk · PDF s.49 · düz üç ilkesinden ikinci çizgi uyarlaması; kitap diyagramının birebir kopyası değildir",
           "targets": [
-            [4, 1]
+            [
+              4,
+              1
+            ]
           ],
           "turn": "black",
           "afterEyes": [
-            [5, 1],
-            [3, 1]
+            [
+              5,
+              1
+            ],
+            [
+              3,
+              1
+            ]
           ],
           "label": "Üst kenar",
           "success": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
@@ -729,12 +786,21 @@ export const CURRICULUM = [
           "size": 9,
           "source": "Falling in Love with Baduk · PDF s.49 · düz üç ilkesinden ikinci çizgi uyarlaması; kitap diyagramının birebir kopyası değildir",
           "targets": [
-            [1, 4]
+            [
+              1,
+              4
+            ]
           ],
           "turn": "black",
           "afterEyes": [
-            [1, 3],
-            [1, 5]
+            [
+              1,
+              3
+            ],
+            [
+              1,
+              5
+            ]
           ],
           "label": "Sol kenar",
           "success": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
@@ -783,12 +849,21 @@ export const CURRICULUM = [
           "size": 9,
           "source": "Falling in Love with Baduk · PDF s.49 · düz üç ilkesinden ikinci çizgi uyarlaması; kitap diyagramının birebir kopyası değildir",
           "targets": [
-            [7, 4]
+            [
+              7,
+              4
+            ]
           ],
           "turn": "black",
           "afterEyes": [
-            [7, 5],
-            [7, 3]
+            [
+              7,
+              5
+            ],
+            [
+              7,
+              3
+            ]
           ],
           "label": "Sağ kenar",
           "success": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
@@ -825,12 +900,21 @@ export const CURRICULUM = [
           "size": 9,
           "source": "A Go Guide by a Beginner · PDF s.149 / basılı s.142 · düz üç köşe ilkesinden uyarlama",
           "targets": [
-            [0, 7]
+            [
+              0,
+              7
+            ]
           ],
           "turn": "black",
           "afterEyes": [
-            [0, 6],
-            [0, 8]
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              8
+            ]
           ],
           "label": "Köşe",
           "success": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
@@ -881,12 +965,21 @@ export const CURRICULUM = [
           "size": 9,
           "source": "A Go Guide by a Beginner · PDF s.149 / basılı s.142 · bükülü üç ilkesinden kenar uyarlaması",
           "targets": [
-            [3, 6]
+            [
+              3,
+              6
+            ]
           ],
           "turn": "black",
           "afterEyes": [
-            [4, 6],
-            [3, 7]
+            [
+              4,
+              6
+            ],
+            [
+              3,
+              7
+            ]
           ],
           "label": "Bükülü kenar",
           "success": "İç alan iki ayrı göze bölündü. Dış nefesi olmayan siyah grup, iki gerçek gözüyle koşulsuz canlı.",
@@ -905,256 +998,225 @@ export const CURRICULUM = [
         {
           "title": "Üç boşluğu iki göze böl",
           "kind": "move",
-          "body": "Siyahın içindeki üç boş nokta tek bir bağlı alan. Ortaya bir siyah taş koymak, sağ ve sol boşluğu birbirinden ayırır.",
-          "prompt": "Siyah olarak iki gerçek göz oluşturan hamleyi bul.",
+          "body": "Üst sağ köşede beş siyah taş, tahta kenarıyla birlikte üç boşluğu çevreliyor. İki ayrı göze bölmek için hangi noktaya oynarsın?",
+          "prompt": "Siyah olarak grubu tek hamlede iki ayrı gözle yaşat.",
           "board": [
-            {"x": 2, "y": 3, "color": "B"},
-            {"x": 3, "y": 3, "color": "B"},
-            {"x": 4, "y": 3, "color": "B"},
-            {"x": 5, "y": 3, "color": "B"},
-            {"x": 6, "y": 3, "color": "B"},
-            {"x": 2, "y": 5, "color": "B"},
-            {"x": 3, "y": 5, "color": "B"},
-            {"x": 4, "y": 5, "color": "B"},
-            {"x": 5, "y": 5, "color": "B"},
-            {"x": 6, "y": 5, "color": "B"},
-            {"x": 2, "y": 4, "color": "B"},
-            {"x": 6, "y": 4, "color": "B"},
-            {"x": 2, "y": 2, "color": "W"},
-            {"x": 3, "y": 2, "color": "W"},
-            {"x": 4, "y": 2, "color": "W"},
-            {"x": 5, "y": 2, "color": "W"},
+            {"x": 7, "y": 0, "color": "B"},
+            {"x": 7, "y": 1, "color": "B"},
+            {"x": 7, "y": 2, "color": "B"},
+            {"x": 7, "y": 3, "color": "B"},
+            {"x": 8, "y": 3, "color": "B"},
+            {"x": 6, "y": 0, "color": "W"},
+            {"x": 6, "y": 1, "color": "W"},
             {"x": 6, "y": 2, "color": "W"},
-            {"x": 2, "y": 6, "color": "W"},
-            {"x": 3, "y": 6, "color": "W"},
-            {"x": 4, "y": 6, "color": "W"},
-            {"x": 5, "y": 6, "color": "W"},
-            {"x": 6, "y": 6, "color": "W"},
-            {"x": 1, "y": 3, "color": "W"},
-            {"x": 1, "y": 4, "color": "W"},
-            {"x": 1, "y": 5, "color": "W"},
-            {"x": 7, "y": 3, "color": "W"},
+            {"x": 6, "y": 3, "color": "W"},
             {"x": 7, "y": 4, "color": "W"},
-            {"x": 7, "y": 5, "color": "W"}
+            {"x": 8, "y": 4, "color": "W"}
           ],
           "size": 9,
-          "source": "Falling in Love with Baduk · PDF s.49 · Dia.01–02",
           "targets": [
-            [4, 4]
+            [
+              8,
+              1
+            ]
           ],
           "turn": "black",
+          "source": "A Go Guide by a Beginner · PDF s.149 / basılı s.142 · köşe göz alanı ilkesinden özgün uyarlama; birebir kopya değildir",
+          "success": "İki ayrı iç nefes oluştu; grup kendi gözlerini doldurmadığı sürece canlı.",
           "afterEyes": [
-            [3, 4],
-            [5, 4]
+            [
+              8,
+              0
+            ],
+            [
+              8,
+              2
+            ]
           ],
-          "success": "İç alan ikiye ayrıldı. İki ayrı gerçek göz oluştu; siyah grup artık koşulsuz canlı.",
-          "label": "Merkez",
-          "text": "<p><strong>Üç boşluğu iki göze böl</strong></p><p>Siyahın içindeki üç boş nokta tek bir bağlı alan. Ortaya bir siyah taş koymak, sağ ve sol boşluğu birbirinden ayırır.</p><p>Siyah olarak iki gerçek göz oluşturan hamleyi bul.</p>",
+          "label": "Üst sağ köşe",
+          "text": "<p><strong>Üç boşluğu iki göze böl</strong></p><p>Üst sağ köşede beş siyah taş, tahta kenarıyla birlikte üç boşluğu çevreliyor. İki ayrı göze bölmek için hangi noktaya oynarsın?</p><p>Siyah olarak grubu tek hamlede iki ayrı gözle yaşat.</p>",
           "fb": {
-            "t": "Siyah olarak iki gerçek göz oluşturan hamleyi bul.",
+            "t": "Siyah olarak grubu tek hamlede iki ayrı gözle yaşat.",
             "c": "info"
           },
-          "fb_ok": "İç alan ikiye ayrıldı. İki ayrı gerçek göz oluştu; siyah grup artık koşulsuz canlı.",
+          "fb_ok": "İki ayrı iç nefes oluştu; grup kendi gözlerini doldurmadığı sürece canlı.",
           "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
           "answer": {
-            "x": 4,
-            "y": 4
+            "x": 8,
+            "y": 1
           }
         }
       ]
     },
     {
-      "title": "Rakip önce aynı noktaya girerse",
+      "title": "Köşede rakip önce oynarsa",
       "kind": "move",
-      "body": "Aynı formasyonda sıra beyazda. Merkezdeki beyaz taş, siyahın iç alanı iki göze ayırmasını engeller.",
-      "prompt": "Beyaz olarak siyahın yaşama noktasına oyna.",
+      "body": "Siyah köşeye yaslanıyor. Üç boşluk bir tek iç alan; dış nefes kalmamış. Beyaz, bu alanın iki göze bölünmesini engelleyen noktayı bulmalı.",
+      "prompt": "Beyaz olarak yaşama noktasını kapat.",
       "board": [
-        {"x": 2, "y": 3, "color": "B"},
-        {"x": 3, "y": 3, "color": "B"},
-        {"x": 4, "y": 3, "color": "B"},
-        {"x": 5, "y": 3, "color": "B"},
-        {"x": 6, "y": 3, "color": "B"},
-        {"x": 2, "y": 5, "color": "B"},
-        {"x": 3, "y": 5, "color": "B"},
-        {"x": 4, "y": 5, "color": "B"},
-        {"x": 5, "y": 5, "color": "B"},
-        {"x": 6, "y": 5, "color": "B"},
-        {"x": 2, "y": 4, "color": "B"},
-        {"x": 6, "y": 4, "color": "B"},
+        {"x": 3, "y": 0, "color": "B"},
+        {"x": 0, "y": 1, "color": "B"},
+        {"x": 1, "y": 1, "color": "B"},
+        {"x": 2, "y": 1, "color": "B"},
+        {"x": 3, "y": 1, "color": "B"},
+        {"x": 0, "y": 2, "color": "W"},
+        {"x": 1, "y": 2, "color": "W"},
         {"x": 2, "y": 2, "color": "W"},
         {"x": 3, "y": 2, "color": "W"},
-        {"x": 4, "y": 2, "color": "W"},
-        {"x": 5, "y": 2, "color": "W"},
-        {"x": 6, "y": 2, "color": "W"},
-        {"x": 2, "y": 6, "color": "W"},
-        {"x": 3, "y": 6, "color": "W"},
-        {"x": 4, "y": 6, "color": "W"},
-        {"x": 5, "y": 6, "color": "W"},
-        {"x": 6, "y": 6, "color": "W"},
-        {"x": 1, "y": 3, "color": "W"},
-        {"x": 1, "y": 4, "color": "W"},
-        {"x": 1, "y": 5, "color": "W"},
-        {"x": 7, "y": 3, "color": "W"},
-        {"x": 7, "y": 4, "color": "W"},
-        {"x": 7, "y": 5, "color": "W"}
+        {"x": 4, "y": 0, "color": "W"},
+        {"x": 4, "y": 1, "color": "W"}
       ],
       "size": 9,
-      "source": "Falling in Love with Baduk · PDF s.49 · Dia.03",
       "targets": [
-        [4, 4]
+        [
+          1,
+          0
+        ]
       ],
       "turn": "white",
+      "source": "A Go Guide by a Beginner · PDF s.149 / basılı s.142 · köşe göz alanı ilkesinden özgün uyarlama; birebir kopya değildir",
+      "success": "Yaşama noktası kapandı. Örnek devamı izleyerek yakalamayı gör.",
       "continuation": [
         {
-          "x": 3,
-          "y": 4,
+          "x": 0,
+          "y": 0,
           "color": "black"
         },
         {
-          "x": 5,
-          "y": 4,
+          "x": 2,
+          "y": 0,
           "color": "white"
         }
       ],
-      "success": "Beyaz merkezde. Örnek devamda siyah soldan daraltır, beyaz sağa oynayıp siyah grubu yakalar. Bu devamı aşağıdan izleyebilirsin.",
-      "text": "<p><strong>Rakip önce aynı noktaya girerse</strong></p><p>Aynı formasyonda sıra beyazda. Merkezdeki beyaz taş, siyahın iç alanı iki göze ayırmasını engeller.</p><p>Beyaz olarak siyahın yaşama noktasına oyna.</p>",
+      "text": "<p><strong>Köşede rakip önce oynarsa</strong></p><p>Siyah köşeye yaslanıyor. Üç boşluk bir tek iç alan; dış nefes kalmamış. Beyaz, bu alanın iki göze bölünmesini engelleyen noktayı bulmalı.</p><p>Beyaz olarak yaşama noktasını kapat.</p>",
       "fb": {
-        "t": "Beyaz olarak siyahın yaşama noktasına oyna.",
+        "t": "Beyaz olarak yaşama noktasını kapat.",
         "c": "info"
       },
-      "fb_ok": "Beyaz merkezde. Örnek devamda siyah soldan daraltır, beyaz sağa oynayıp siyah grubu yakalar. Bu devamı aşağıdan izleyebilirsin.",
+      "fb_ok": "Yaşama noktası kapandı. Örnek devamı izleyerek yakalamayı gör.",
       "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
       "answer": {
-        "x": 4,
-        "y": 4
+        "x": 1,
+        "y": 0
       },
       "movesAfterAnswer": [
         {
-          "x": 3,
-          "y": 4,
+          "x": 0,
+          "y": 0,
           "color": "black"
         },
         {
-          "x": 5,
-          "y": 4,
+          "x": 2,
+          "y": 0,
           "color": "white"
         }
       ]
     },
     {
-      "title": "Bükülü alanda kavşağı bul",
+      "title": "Köşede bükülü üç",
       "kind": "move",
-      "body": "Üç boşluk bu kez L biçiminde. İki kolun buluştuğu noktaya siyah taş koyarsan kalan iki boşluk ayrı göz olur.",
-      "prompt": "Siyah olarak iki gözü oluşturan kavşak noktasına oyna.",
+      "body": "Köşenin iki sınırı grubun duvarı. L biçimindeki üç boşluğun kavşağına oyna; kalan iki nokta birbirinden ayrı iç nefesler olsun.",
+      "prompt": "Siyah olarak grubu tek hamlede iki ayrı gözle yaşat.",
       "board": [
+        {"x": 0, "y": 0, "color": "B"},
+        {"x": 1, "y": 0, "color": "B"},
+        {"x": 2, "y": 0, "color": "B"},
+        {"x": 2, "y": 1, "color": "B"},
+        {"x": 1, "y": 2, "color": "B"},
         {"x": 2, "y": 2, "color": "B"},
-        {"x": 3, "y": 2, "color": "B"},
-        {"x": 4, "y": 2, "color": "B"},
-        {"x": 5, "y": 2, "color": "B"},
-        {"x": 2, "y": 3, "color": "B"},
-        {"x": 5, "y": 3, "color": "B"},
-        {"x": 2, "y": 4, "color": "B"},
-        {"x": 4, "y": 4, "color": "B"},
-        {"x": 5, "y": 4, "color": "B"},
-        {"x": 2, "y": 5, "color": "B"},
-        {"x": 3, "y": 5, "color": "B"},
-        {"x": 4, "y": 5, "color": "B"},
-        {"x": 5, "y": 5, "color": "B"},
-        {"x": 2, "y": 1, "color": "W"},
+        {"x": 0, "y": 3, "color": "B"},
+        {"x": 1, "y": 3, "color": "B"},
+        {"x": 3, "y": 0, "color": "W"},
         {"x": 3, "y": 1, "color": "W"},
-        {"x": 4, "y": 1, "color": "W"},
-        {"x": 5, "y": 1, "color": "W"},
-        {"x": 2, "y": 6, "color": "W"},
-        {"x": 3, "y": 6, "color": "W"},
-        {"x": 4, "y": 6, "color": "W"},
-        {"x": 5, "y": 6, "color": "W"},
-        {"x": 1, "y": 2, "color": "W"},
-        {"x": 1, "y": 3, "color": "W"},
-        {"x": 1, "y": 4, "color": "W"},
-        {"x": 1, "y": 5, "color": "W"},
-        {"x": 6, "y": 2, "color": "W"},
-        {"x": 6, "y": 3, "color": "W"},
-        {"x": 6, "y": 4, "color": "W"},
-        {"x": 6, "y": 5, "color": "W"}
+        {"x": 3, "y": 2, "color": "W"},
+        {"x": 2, "y": 3, "color": "W"},
+        {"x": 0, "y": 4, "color": "W"},
+        {"x": 1, "y": 4, "color": "W"}
       ],
       "size": 9,
-      "source": "A Go Guide by a Beginner · PDF s.149 / basılı s.142 · bent three · merkeze alınmış, bağlı çerçeveyle uyarlama",
       "targets": [
-        [3, 3]
+        [
+          0,
+          1
+        ]
       ],
       "turn": "black",
+      "source": "A Go Guide by a Beginner · PDF s.149 / basılı s.142 · köşe göz alanı ilkesinden özgün uyarlama; birebir kopya değildir",
+      "success": "İki ayrı iç nefes oluştu; grup kendi gözlerini doldurmadığı sürece canlı.",
       "afterEyes": [
-        [4, 3],
-        [3, 4]
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          2
+        ]
       ],
-      "success": "Kavşak doldu, iki kol ayrı göz oldu. Boşluk saymak kadar boşlukların birbirinden ayrılması da önemli.",
-      "text": "<p><strong>Bükülü alanda kavşağı bul</strong></p><p>Üç boşluk bu kez L biçiminde. İki kolun buluştuğu noktaya siyah taş koyarsan kalan iki boşluk ayrı göz olur.</p><p>Siyah olarak iki gözü oluşturan kavşak noktasına oyna.</p>",
+      "text": "<p><strong>Köşede bükülü üç</strong></p><p>Köşenin iki sınırı grubun duvarı. L biçimindeki üç boşluğun kavşağına oyna; kalan iki nokta birbirinden ayrı iç nefesler olsun.</p><p>Siyah olarak grubu tek hamlede iki ayrı gözle yaşat.</p>",
       "fb": {
-        "t": "Siyah olarak iki gözü oluşturan kavşak noktasına oyna.",
+        "t": "Siyah olarak grubu tek hamlede iki ayrı gözle yaşat.",
         "c": "info"
       },
-      "fb_ok": "Kavşak doldu, iki kol ayrı göz oldu. Boşluk saymak kadar boşlukların birbirinden ayrılması da önemli.",
+      "fb_ok": "İki ayrı iç nefes oluştu; grup kendi gözlerini doldurmadığı sürece canlı.",
       "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
       "answer": {
-        "x": 3,
-        "y": 3
+        "x": 0,
+        "y": 1
       }
     },
     {
-      "title": "Şimdi yardım almadan yaşat",
+      "title": "Kenarda yardım almadan yaşat",
       "kind": "move",
-      "body": "Aynı üç-boşluk fikri döndürülmüş bir konumda. Göz işareti veya hedef ipucu yok.",
-      "prompt": "Siyah olarak grubu tek hamlede koşulsuz canlı yap.",
+      "body": "Sağ kenara yaslanan siyah grubun dış nefesleri kapanmış. İşaret ve hedef ipucu yok. İç alanı iki ayrı göze ayıran hamleyi bul.",
+      "prompt": "Siyah olarak grubu tek hamlede iki ayrı gözle yaşat.",
       "board": [
-        {"x": 3, "y": 2, "color": "B"},
-        {"x": 3, "y": 3, "color": "B"},
-        {"x": 3, "y": 4, "color": "B"},
-        {"x": 3, "y": 5, "color": "B"},
-        {"x": 3, "y": 6, "color": "B"},
-        {"x": 5, "y": 2, "color": "B"},
-        {"x": 5, "y": 3, "color": "B"},
-        {"x": 5, "y": 4, "color": "B"},
-        {"x": 5, "y": 5, "color": "B"},
-        {"x": 5, "y": 6, "color": "B"},
-        {"x": 4, "y": 2, "color": "B"},
-        {"x": 4, "y": 6, "color": "B"},
-        {"x": 2, "y": 2, "color": "W"},
-        {"x": 2, "y": 3, "color": "W"},
-        {"x": 2, "y": 4, "color": "W"},
-        {"x": 2, "y": 5, "color": "W"},
-        {"x": 2, "y": 6, "color": "W"},
+        {"x": 7, "y": 2, "color": "B"},
+        {"x": 7, "y": 3, "color": "B"},
+        {"x": 7, "y": 4, "color": "B"},
+        {"x": 7, "y": 5, "color": "B"},
+        {"x": 7, "y": 6, "color": "B"},
+        {"x": 8, "y": 2, "color": "B"},
+        {"x": 8, "y": 6, "color": "B"},
         {"x": 6, "y": 2, "color": "W"},
         {"x": 6, "y": 3, "color": "W"},
         {"x": 6, "y": 4, "color": "W"},
         {"x": 6, "y": 5, "color": "W"},
         {"x": 6, "y": 6, "color": "W"},
-        {"x": 3, "y": 1, "color": "W"},
-        {"x": 4, "y": 1, "color": "W"},
-        {"x": 5, "y": 1, "color": "W"},
-        {"x": 3, "y": 7, "color": "W"},
-        {"x": 4, "y": 7, "color": "W"},
-        {"x": 5, "y": 7, "color": "W"}
+        {"x": 7, "y": 1, "color": "W"},
+        {"x": 8, "y": 1, "color": "W"},
+        {"x": 7, "y": 7, "color": "W"},
+        {"x": 8, "y": 7, "color": "W"}
       ],
       "size": 9,
-      "source": "Falling in Love with Baduk · PDF s.49 · Dia.01 · 90° döndürülmüş aktarım sorusu",
       "targets": [
-        [4, 4]
+        [
+          8,
+          4
+        ]
       ],
       "turn": "black",
+      "source": "A Go Guide by a Beginner · PDF s.149 / basılı s.142 · köşe göz alanı ilkesinden özgün uyarlama; birebir kopya değildir",
+      "success": "İki ayrı iç nefes oluştu; grup kendi gözlerini doldurmadığı sürece canlı.",
       "afterEyes": [
-        [4, 3],
-        [4, 5]
+        [
+          8,
+          3
+        ],
+        [
+          8,
+          5
+        ]
       ],
-      "success": "Doğru. Dikey iç alanı iki ayrı gerçek göze ayırdın.",
-      "text": "<p><strong>Şimdi yardım almadan yaşat</strong></p><p>Aynı üç-boşluk fikri döndürülmüş bir konumda. Göz işareti veya hedef ipucu yok.</p><p>Siyah olarak grubu tek hamlede koşulsuz canlı yap.</p>",
+      "text": "<p><strong>Kenarda yardım almadan yaşat</strong></p><p>Sağ kenara yaslanan siyah grubun dış nefesleri kapanmış. İşaret ve hedef ipucu yok. İç alanı iki ayrı göze ayıran hamleyi bul.</p><p>Siyah olarak grubu tek hamlede iki ayrı gözle yaşat.</p>",
       "fb": {
-        "t": "Siyah olarak grubu tek hamlede koşulsuz canlı yap.",
+        "t": "Siyah olarak grubu tek hamlede iki ayrı gözle yaşat.",
         "c": "info"
       },
-      "fb_ok": "Doğru. Dikey iç alanı iki ayrı gerçek göze ayırdın.",
+      "fb_ok": "İki ayrı iç nefes oluştu; grup kendi gözlerini doldurmadığı sürece canlı.",
       "fb_err": "İç alanı iki ayrı göze bölen noktayı bul.",
       "answer": {
-        "x": 4,
+        "x": 8,
         "y": 4
       }
     }

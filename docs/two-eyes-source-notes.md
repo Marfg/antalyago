@@ -75,3 +75,8 @@ Yeni ekran görüntüsü: `iki-goz-ikinci-cizgi-sonra.png`. Tarayıcı kontrol s
 Entegrasyon: l7 müfredatı ve scene-11-two-eyes aynı veriyi kullanır. Prototipte onaylanan alt kenar formasyonu korunmuştur.
 
 Onay sonrası alt kenar: birinci çizgideki taş katmanı kaldırıldı, kalan düzen aşağı kaydırıldı. Yaşama hedefi (4,8); gözler (3,8) ve (5,8). Yeni sahne 14 zorunlu an içerir.
+
+
+## Onaylanan sade köşe ve kenar örnekleri
+
+11. örnek üst sağ köşeye, 12. örnek üst sol köşeye, 13. örnek köşede bükülü üçe ve 14. örnek sağ kenara taşındı. Siyah/beyaz taş sayıları sırasıyla 5/6, 5/6, 8/6 ve 7/9. Guide PDF s.149 (basılı s.142) görsel olarak incelendi; formasyonlar özgün uyarlamadır. Bükülü köşe örneğinde statik çapraz sezgisi konservatiftir: aynı bağlı grubun iki ayrı tek noktalık iç nefesi ve her iki beyaz denemesinin intihar olması doğrudan doğrulanır.
