@@ -1,10 +1,10 @@
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-12.1';
-import { getTwoEyesMoments, buildTwoEyesBoard, evaluateTwoEyesTap, CONCEPT } from './twoEyesPolicy.js?v=2026-09-12.1';
-import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-09-12.1';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-12.2';
+import { getTwoEyesMoments, buildTwoEyesBoard, evaluateTwoEyesTap, CONCEPT } from './twoEyesPolicy.js?v=2026-09-12.2';
+import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-09-12.2';
 let active = null;
 const points = pairs => pairs.map(([col,row]) => ({row,col}));
 export const scene11TwoEyes = {
-  id: 'scene-11-two-eyes', version: 1, title: 'Canlı Gruplar (İki Göz)',
+  id: 'scene-11-two-eyes', version: 2, title: 'Canlı Gruplar (İki Göz)',
   curriculumRef: { lessonId: 'l7', concept: CONCEPT },
   mount(context) {
     const s = active = { index: 0, moments: getTwoEyesMoments(), done: new Set(), tried: new Set(), alive: true, locked: true, off: null, end: null, timer: null, resolveWait: null };

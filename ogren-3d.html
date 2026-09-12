@@ -1234,7 +1234,7 @@
 import { BoardState }                           from './core/boardState.js';
 import { LessonEngine, isCorrectAnswer, stepRequiresAnswer } from './core/lessonEngine.js';
 import { ActionHandler }                        from './core/actionHandler.js';
-import { CAM, LEGACY_CURRICULUM as CURRICULUM } from './core/curriculum.js?v=2026-09-12.1-legacy';
+import { CAM, LEGACY_CURRICULUM as CURRICULUM } from './core/curriculum.js?v=2026-09-12.2-legacy';
 import { classifyCurriculumStep, isAssessmentLesson, responseTypeOf, stripMarkup } from './core/learningContext.js';
 import { EventLog }                             from './core/eventLog.js';
 import { buildPanelSnapshot, deriveEvents }      from './core/teacherPanelBridge.js';
@@ -2135,11 +2135,11 @@ function drawGhost2D(b){
   const isCorrect = isCorrectAnswer(step, gx, gz);
   const pulse=.55+.45*Math.sin(hlTime*4);
   if(isCorrect){
-    drawStone2D(gx,gz,game.turn,.60,b);
+    drawStone2D(gx,gz,step?.turn || game.turn,.60,b);
     ctx.beginPath(); ctx.arc(gx2(gx,b),gy2(gz,b),b.r*1.45,0,Math.PI*2);
     ctx.strokeStyle=`rgba(62,207,128,${.70*pulse})`; ctx.lineWidth=2; ctx.stroke();
   } else {
-    drawStone2D(gx,gz,game.turn,.22,b);
+    drawStone2D(gx,gz,step?.turn || game.turn,.22,b);
   }
 }
 
@@ -2323,7 +2323,7 @@ function render() {
       const isCorrect = isCorrectAnswer(step, gx, gz);
       if(isCorrect) {
         /* Belirgin ghost + pulsing yeşil halka */
-        drawStone(-HALF+gx*CELL,wy,-HALF+gz*CELL,game.turn,.60,1);
+        drawStone(-HALF+gx*CELL,wy,-HALF+gz*CELL,step?.turn || game.turn,.60,1);
         const Y=-BOARD_H/2-.3, sp=Math.abs(Math.sin(camPitch));
         const p=project(-HALF+gx*CELL,Y,-HALF+gz*CELL);
         const rx=STONE_R*p.scale*1.45, ry2=rx*sp;
@@ -2331,7 +2331,7 @@ function render() {
         ctx.beginPath(); ctx.ellipse(p.sx,p.sy,rx,ry2,0,0,Math.PI*2);
         ctx.strokeStyle=`rgba(62,207,128,${.70*pulse})`; ctx.lineWidth=2*p.scale; ctx.stroke();
       } else {
-        drawStone(-HALF+gx*CELL,wy,-HALF+gz*CELL,game.turn,.22,1);
+        drawStone(-HALF+gx*CELL,wy,-HALF+gz*CELL,step?.turn || game.turn,.22,1);
       }
     }
   }
