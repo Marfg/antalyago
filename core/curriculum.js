@@ -1,4 +1,4 @@
-import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-09-13.7';
+import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-09-13.8';
 /**
  * core/curriculum.js
  *
@@ -1395,35 +1395,7 @@ export const CURRICULUM = [
   }
 ]},
 
-    { id:'l12', title:'Snapback', steps:[
-      { text:`<p><span class="term">Snapback</span> — rakibe taş kurban vererek daha büyük bir grubu yakalama tekniği.</p><p>Kurban ver — <strong>D5 noktasına tıkla.</strong></p>`,
-        board:[
-          {color:'W',x:3,y:3},{color:'W',x:2,y:4},{color:'W',x:4,y:4},{color:'W',x:4,y:5},
-          {color:'B',x:4,y:3},{color:'B',x:5,y:3},{color:'B',x:5,y:4},{color:'B',x:2,y:5},{color:'B',x:5,y:5},{color:'B',x:3,y:6},{color:'B',x:4,y:6},
-        ],
-        answer:{x:3,y:4}, turn:'black', size:9, guidanceLevel:'direct',
-        movesAfterAnswer:[
-          {color:'W',x:3,y:5,capture:[{x:3,y:4}]},
-          {color:'B',x:3,y:4,capture:[{x:3,y:5},{x:4,y:4},{x:4,y:5}]},
-        ],
-        fb:{t:'Kurbanı ver — beyaz alacak ama daha büyük grubu kaybedecek!',c:'info'}, fb_ok:'Snapback başladı! Beyaz kurbanı aldı ama tuzağa düştü.', fb_err:'D5 noktasına tıkla — kurbanı ver.' },
-      { text:`<p>Bir snapback örneği daha. Kurban ver — <strong>A5 noktasına tıkla.</strong></p>`,
-        board:[
-          {color:'W',x:0,y:2},{color:'W',x:1,y:2},{color:'W',x:2,y:2},{color:'W',x:3,y:2},{color:'W',x:0,y:3},{color:'W',x:1,y:4},{color:'W',x:1,y:5},
-          {color:'B',x:1,y:3},{color:'B',x:2,y:3},{color:'B',x:2,y:4},{color:'B',x:2,y:5},{color:'B',x:0,y:6},{color:'B',x:1,y:6},
-        ],
-        answer:{x:0,y:4}, turn:'black', size:9, guidanceLevel:'direct',
-        movesAfterAnswer:[
-          {color:'W',x:0,y:5,capture:[{x:0,y:4}]},
-          {color:'B',x:0,y:4,capture:[{x:0,y:5},{x:1,y:4},{x:1,y:5}]},
-        ],
-        fb:{t:'Kurbanı ver — beyaz alacak ama grubu kaybedecek!',c:'info'}, fb_ok:'Snapback! Beyaz kurbanı aldı ama tuzağa düştü.', fb_err:'A5 noktasına tıkla — kurbanı ver.' },
-
-      // ── Alıştırma ──
-      { text:`<p>★★ <strong>Alıştırma:</strong> Snapback mi, normal yakalama mı?</p>`, board:[{color:'W',x:3,y:3},{color:'W',x:2,y:4},{color:'W',x:4,y:4},{color:'B',x:1,y:3},{color:'B',x:2,y:2},{color:'B',x:3,y:2},{color:'B',x:4,y:3},{color:'B',x:1,y:4},{color:'B',x:1,y:5},{color:'B',x:2,y:5},{color:'B',x:3,y:5}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'D5\'e (3,4) oynamak snapback midir?',options:[{text:'Evet — snapback',correct:true,feedback:'Doğru! Beyaz kurbanı alır, sonra siyah geri alarak daha büyük grubu yakalar.'},{text:'Hayır — normal yakalama',correct:false,feedback:'Bu snapback — kurban veriyorsun, beyaz alıyor, sen geri alıyorsun.'}]}, fb:{t:'Snapback = kurban ver, geri al.',c:'info'} },
-
-      { text:`<p>★★★ <strong>Alıştırma:</strong> Kurban ver ve snapback tamamla.</p>`, board:[{color:'W',x:4,y:2},{color:'W',x:3,y:3},{color:'W',x:5,y:3},{color:'B',x:3,y:2},{color:'B',x:5,y:2},{color:'B',x:2,y:3},{color:'B',x:6,y:3},{color:'B',x:3,y:4},{color:'B',x:4,y:4},{color:'B',x:5,y:4}], answer:{x:4,y:3}, turn:'black', size:9, camera:CAM.center, movesAfterAnswer:[{color:'W',x:4,y:3,capture:[{x:4,y:3}]},{color:'B',x:4,y:3,capture:[{x:4,y:2},{x:3,y:3},{x:5,y:3}]}], fb:{t:'Kurbanı ver — snapback!',c:'info'}, fb_ok:'Snapback tamamlandı! Üç beyaz taş geri alındı.', fb_err:'Ortaya (E4) oyna — kurbanı ver.' },
-    ]},
+    { id:'l12', title:'Snapback', sceneId:'scene-15-snapback', steps:[{"title":"Bir taşı ver, üç taşı al","text":"<p>Siyahla bir taş kurban et; beyazla bu taşı al; sonra siyahla boşalan noktadan üç beyaz taşı yakala. Her hamleyi kendin oyna.</p>","board":[{"color":"W","x":3,"y":3},{"color":"W","x":2,"y":4},{"color":"W","x":4,"y":4},{"color":"W","x":4,"y":5},{"color":"B","x":4,"y":3},{"color":"B","x":5,"y":3},{"color":"B","x":5,"y":4},{"color":"B","x":2,"y":5},{"color":"B","x":5,"y":5},{"color":"B","x":3,"y":6},{"color":"B","x":4,"y":6}],"size":9,"auto":true,"concepts":["snapback"],"sourceRefs":["Mevcut müfredat, ilk formasyon; devam dizisi yeniden doğrulandı."],"sceneStep":0,"fb":{"t":"Siyahla bir taş kurban et; beyazla bu taşı al; sonra siyahla boşalan noktadan üç beyaz taşı yakala. Her hamleyi kendin oyna.","c":"info"}},{"title":"Kenarda aynı fikri oku","text":"<p>Kenar, dışarıdan yeni nefes açılmasını önler. Kurban, beyazın alışı ve siyahın geri alışı için üç hamleyi sırayla bul.</p>","board":[{"color":"W","x":0,"y":2},{"color":"W","x":1,"y":2},{"color":"W","x":2,"y":2},{"color":"W","x":3,"y":2},{"color":"W","x":0,"y":3},{"color":"W","x":1,"y":4},{"color":"W","x":1,"y":5},{"color":"B","x":1,"y":3},{"color":"B","x":2,"y":3},{"color":"B","x":2,"y":4},{"color":"B","x":2,"y":5},{"color":"B","x":0,"y":6},{"color":"B","x":1,"y":6}],"size":9,"auto":true,"concepts":["snapback"],"sourceRefs":["Mevcut müfredat, ikinci formasyon; devam dizisi yeniden doğrulandı."],"sceneStep":1,"fb":{"t":"Kenar, dışarıdan yeni nefes açılmasını önler. Kurban, beyazın alışı ve siyahın geri alışı için üç hamleyi sırayla bul.","c":"info"}},{"title":"Bu kez beyazla geri al","text":"<p>Teknik renge bağlı değil. Beyazla bir taş kurban et. Siyah kurbanı aldığında grubun nefeslerini say; ardından beyazla geri al. Boşalan nokta neden yeniden oynanabilir?</p>","board":[{"x":3,"y":2,"color":"W"},{"x":2,"y":3,"color":"W"},{"x":2,"y":4,"color":"W"},{"x":5,"y":4,"color":"W"},{"x":3,"y":5,"color":"W"},{"x":4,"y":5,"color":"W"},{"x":4,"y":2,"color":"B"},{"x":5,"y":3,"color":"B"},{"x":3,"y":4,"color":"B"},{"x":4,"y":4,"color":"B"}],"size":9,"auto":true,"concepts":["snapback"],"sourceRefs":["How to Play Go, PDF s.43, 7-25–27; renkler değiştirilerek uyarlandı."],"sceneStep":2,"fb":{"t":"Teknik renge bağlı değil. Beyazla bir taş kurban et. Siyah kurbanı aldığında grubun nefeslerini say; ardından beyazla geri al. Boşalan nokta neden yeniden oynanabilir?","c":"info"}},{"title":"Kenardaki zinciri çöz","text":"<p>Bu farklı kenar formasyonunda beyaz oynuyorsun. Siyahın iki nefesinden birine kurban taşını yerleştir. Siyahla kurbanı al; beyazla geri alarak daha uzun zinciri yakala.</p>","board":[{"x":7,"y":2,"color":"B"},{"x":8,"y":2,"color":"B"},{"x":8,"y":3,"color":"B"},{"x":7,"y":4,"color":"B"},{"x":7,"y":5,"color":"B"},{"x":6,"y":6,"color":"B"},{"x":7,"y":6,"color":"B"},{"x":8,"y":6,"color":"B"},{"x":7,"y":3,"color":"W"},{"x":6,"y":3,"color":"W"},{"x":6,"y":4,"color":"W"},{"x":6,"y":5,"color":"W"},{"x":5,"y":6,"color":"W"},{"x":6,"y":7,"color":"W"},{"x":7,"y":7,"color":"W"},{"x":8,"y":7,"color":"W"}],"size":9,"auto":true,"concepts":["snapback"],"sourceRefs":["How to Play Go, PDF s.43, 7-29; gerçek kenar korunarak 9×9 tahtaya taşındı; üç dış taş çıkarıldı; çevreleyen beyaz taşların bağlantısı korundu."],"sceneStep":3,"fb":{"t":"Bu farklı kenar formasyonunda beyaz oynuyorsun. Siyahın iki nefesinden birine kurban taşını yerleştir. Siyahla kurbanı al; beyazla geri alarak daha uzun zinciri yakala.","c":"info"}}]},
 
     { id:'l2_deg', title:'B2 — Taktik Okuma ✓', steps:[
       { text:`<p>★ <strong>Soru 1/12</strong> — Siyah grup dışarıdan çevrilmiş olsa bile koşulsuz canlı mı?</p>`,

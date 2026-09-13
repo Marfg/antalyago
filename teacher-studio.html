@@ -216,7 +216,7 @@
 </div>
 
 <script type="module">
-import { CURRICULUM } from './core/curriculum.js?v=2026-09-13.7';
+import { CURRICULUM } from './core/curriculum.js?v=2026-09-13.8';
 import { classifyCurriculumStep, responseTypeOf, stripMarkup, isAssessmentLesson } from './core/learningContext.js';
 import { KNOWN_CONCEPTS } from './core/conceptMap.js';
 import { createStudentModel, hydrateStudentModel, getConceptState } from './core/studentModel.js';
@@ -225,43 +225,44 @@ import { CONTENT_PURPOSES, CONTENT_STUDENT_STATUSES, CONTENT_STAGES, validateCon
 import { mergeContentOverrides, applyOverride, OVERRIDABLE_FIELDS } from './core/contentOverrides.js';
 import { teacherContentOverrides } from './adapters/teacherContentOverrides.js';
 import { buildRetrievalQuery, retrieveContent } from './core/contentRetriever.js';
-import { EventLog } from './core/eventLog.js?v=2026-09-13.7';
+import { EventLog } from './core/eventLog.js?v=2026-09-13.8';
 import { buildAiReviewEvent } from './core/teacherAssistant.js';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-13.7';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-13.7';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-13.7';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-13.7';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-13.7';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-13.7';
-import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-09-13.7';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-13.7';
-import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-13.7';
-import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-09-13.7';
-import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-09-13.7';
-import { scene14Net } from './scenes/scene14Net.js?v=2026-09-13.7';
-import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-09-13.7';
-import { scene12Connections } from './scenes/scene12Connections.js?v=2026-09-13.7';
-import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-09-13.7';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-13.8';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-13.8';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-13.8';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-13.8';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-13.8';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-13.8';
+import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-09-13.8';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-13.8';
+import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-13.8';
+import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-09-13.8';
+import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-09-13.8';
+import { scene15Snapback } from './scenes/scene15Snapback.js?v=2026-09-13.8';
+import { scene14Net } from './scenes/scene14Net.js?v=2026-09-13.8';
+import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-09-13.8';
+import { scene12Connections } from './scenes/scene12Connections.js?v=2026-09-13.8';
+import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-09-13.8';
 import {
   getAssessmentSteps as getLibertyAssessmentSteps,
   computeChoiceCorrectIndex as computeLibertyChoiceCorrectIndex,
   computeTapTargets as computeLibertyTapTargets,
   computeResultAfterMove as computeLibertyResultAfterMove,
   ASSESSMENT_STEP_INDICES as LIBERTY_ASSESSMENT_STEP_INDICES,
-} from './scenes/libertyAssessmentPolicy.js?v=2026-09-13.7';
+} from './scenes/libertyAssessmentPolicy.js?v=2026-09-13.8';
 import {
   getCaptureMoments,
   isValidCapturePoint as isValidCaptureMomentPoint,
   computeCaptureResult,
   MOMENT_STEP_INDICES as CAPTURE_MOMENT_STEP_INDICES,
-} from './scenes/capturePolicy.js?v=2026-09-13.7';
+} from './scenes/capturePolicy.js?v=2026-09-13.8';
 import {
   getCapturePracticeMoments,
   isValidCapturePoint as isValidPracticePoint,
   computePracticeResult,
   isKnownHintMode,
   MOMENT_STEP_INDICES as PRACTICE_MOMENT_STEP_INDICES,
-} from './scenes/capturePracticePolicy.js?v=2026-09-13.7';
+} from './scenes/capturePracticePolicy.js?v=2026-09-13.8';
 import {
   getIllegalMoveMoments,
   evaluateAttempt as evaluateIllegalMoveAttempt,
@@ -271,7 +272,7 @@ import {
   MOMENT_KINDS as ILLEGAL_MOVE_KINDS,
   MOMENT_STEP_INDICES as ILLEGAL_MOVE_STEP_INDICES,
   CONCEPT as ILLEGAL_MOVE_CONCEPT,
-} from './scenes/illegalMovePolicy.js?v=2026-09-13.7';
+} from './scenes/illegalMovePolicy.js?v=2026-09-13.8';
 import {
   getKoRuleMoments,
   evaluateKoAttempt,
@@ -281,7 +282,7 @@ import {
   MOMENT_KINDS as KO_MOMENT_KINDS,
   MOMENT_STEP_INDICES as KO_STEP_INDICES,
   CONCEPT as KO_CONCEPT,
-} from './scenes/koRulePolicy.js?v=2026-09-13.7';
+} from './scenes/koRulePolicy.js?v=2026-09-13.8';
 import {
   getEndgameCountingMoment,
   evaluateRegionTap,
@@ -289,15 +290,15 @@ import {
   isKnownMomentKind as isKnownEndgameMomentKind,
   STEP_INDEX as ENDGAME_STEP_INDEX,
   CONCEPT as ENDGAME_CONCEPT,
-} from './scenes/endgameCountingPolicy.js?v=2026-09-13.7';
-import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-09-13.7';
-import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-09-13.7';
-import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-09-13.7';
-import { BoardState } from './core/boardState.js?v=2026-09-13.7';
-import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-09-13.7';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-13.7';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-13.7';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-13.7';
+} from './scenes/endgameCountingPolicy.js?v=2026-09-13.8';
+import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-09-13.8';
+import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-09-13.8';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-09-13.8';
+import { BoardState } from './core/boardState.js?v=2026-09-13.8';
+import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-09-13.8';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-13.8';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-13.8';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-13.8';
 
 /* ── Sürüm/cache bekçisi — learning-scenes.html İLE AYNI mekanizma ────
    (bkz. o dosyadaki dosya başı notu, KRİTİK DÜZELTME: SCENE_RELEASE artık
@@ -365,7 +366,7 @@ function showStudioStaleReleaseUI() {
    yalnız statik metadata'larını (id/version/curriculumRef) registry
    üzerinden okur — mevcut Curriculum/Diagnostics/Event Log panelleri
    genişletildi, yeni bir dashboard YOK. */
-const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene07CapturePractice, scene08IllegalMoves, scene09KoRule, scene10EndgameCounting, scene11TwoEyes, scene12Connections, scene13Ladder, scene14Net]);
+const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene07CapturePractice, scene08IllegalMoves, scene09KoRule, scene10EndgameCounting, scene11TwoEyes, scene12Connections, scene13Ladder, scene14Net, scene15Snapback]);
 
 /* ── localStorage erişimi — ogren-3d.html İLE AYNI anahtarlar ──────
    Studio kendi core mantığını YAZMAZ; yalnızca aynı adaptör deseniyle

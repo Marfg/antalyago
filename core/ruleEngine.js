@@ -5,7 +5,7 @@
  * BoardState alır, yeni state veya hesaplama sonucu döndürür.
  */
 
-import { BoardState } from './boardState.js?v=2026-09-13.7';
+import { BoardState } from './boardState.js?v=2026-09-13.8';
 
 // ── Grup / Liberty hesaplama ───────────────────────────────────────
 
@@ -174,7 +174,7 @@ export function applyMove(board, x, y, color) {
     const sim = newState.clone();
     const group = getGroup(sim, x, y);
     const libs = getLiberties(sim, group);
-    if (libs.size === 1) {
+    if (group.size === 1 && libs.size === 1) {
       const [kx, ky] = [...libs][0].split(',').map(Number);
       newKoPoint = { x: kx, y: ky };
     }

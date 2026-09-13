@@ -117,12 +117,12 @@
  * KASITLI olarak core/conceptMap.js'e eklenmedi — Teacher Studio Diagnostics
  * bunu bilinen-olmayan concept olarak raporlar (bilinçli, gizlenmeyen boşluk).
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-13.7';
-import { assessmentTransition } from './assessmentTransition.js?v=2026-09-13.7';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-13.8';
+import { assessmentTransition } from './assessmentTransition.js?v=2026-09-13.8';
 import {
   getIllegalMoveMoments, evaluateAttempt, reasonLabelTr, pointKey, resolveCaptureExampleMoment, toRuntimeColor,
   MOMENT_KINDS, CONCEPT,
-} from './illegalMovePolicy.js?v=2026-09-13.7';
+} from './illegalMovePolicy.js?v=2026-09-13.8';
 
 const STATE = { INTRO: 'intro', PLAYING: 'playing' };
 

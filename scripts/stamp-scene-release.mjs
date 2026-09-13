@@ -68,6 +68,10 @@ const GRAPH_BASENAMES = [
   // v9 (2026-09-02.2) — Sahne #10 ("Oyun Sonu ve Sayım") ve TEK yeni
   // yardımcı modülü.
   'scene10EndgameCounting.js', 'endgameCountingPolicy.js',
+  'scene15Snapback.js',
+  'snapbackLessonPolicy.js',
+  'snapbackLessonController.js',
+  'snapbackMotionOverlay.js',
   'scene14Net.js',
   'netLessonController.js',
   'netLessonPolicy.js',
@@ -104,6 +108,9 @@ const SCAN_FILES = [
   'scenes/koRulePolicy.js',
   'scenes/scene10EndgameCounting.js',
   'scenes/endgameCountingPolicy.js',
+  'scenes/scene15Snapback.js',
+  'scenes/snapbackLessonPolicy.js',
+  'scenes/snapbackLessonController.js',
   'scenes/scene14Net.js',
   'scenes/netLessonController.js',
   'scenes/netLessonPolicy.js',

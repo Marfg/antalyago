@@ -1,5 +1,5 @@
-import {isValidMove} from '../core/ruleEngine.js?v=2026-09-13.7';
-import {LADDER_STEPS,createLadderScenario,seedBoard,whiteGroup,firstAtariTrial,goPoint} from './ladderLessonPolicy.js?v=2026-09-13.7';
+import {isValidMove} from '../core/ruleEngine.js?v=2026-09-13.8';
+import {LADDER_STEPS,createLadderScenario,seedBoard,whiteGroup,firstAtariTrial,goPoint} from './ladderLessonPolicy.js?v=2026-09-13.8';
 
 export function mountLadderLesson({board,overlay,document,initialStep=0,onStepComplete=()=>{},onPresented=()=>{},onAllComplete=()=>{}}){
 const $=id=>document.getElementById(id);

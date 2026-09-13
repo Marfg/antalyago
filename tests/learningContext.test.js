@@ -139,8 +139,8 @@ test('kalite denetimi s?n?flar? ayr??t?r?r', () => {
   ok(types.has('intentional_scaffold'));
   ok(types.has('coordinate_reference'));
   equal(audit.summary.answerLeaks, 0);
-  equal(audit.summary.intentionalScaffolds, 6);
-  equal(audit.summary.coordinateReferences, 3);
+  equal(audit.summary.intentionalScaffolds, 4);
+  equal(audit.summary.coordinateReferences, 2);
 });
 
 function synthCurriculum(lesson) {
