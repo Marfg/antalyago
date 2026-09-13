@@ -40,8 +40,8 @@ test('müfredatın tamamı sınıflandırılır', () => {
   // fix/two-eyes-curriculum: l7 ("Canlı Gruplar — İki Göz") 8 ayrı gerçek
   // kavramı (bkz. görev talimatı Bölüm 4) 7 bozuk/çakışan adımla
   // karşılayamadığı için 1 adım eklendi (111→112) — gerekçe PR açıklamasında.
-  equal(audit.summary.steps, 112);
-  equal(audit.items.length, 112);
+  equal(audit.summary.steps, 117);
+  equal(audit.items.length, 117);
 });
 
 test('uygulama ve değerlendirme adımları ayrıdır', () => {
@@ -139,7 +139,7 @@ test('kalite denetimi s?n?flar? ayr??t?r?r', () => {
   ok(types.has('intentional_scaffold'));
   ok(types.has('coordinate_reference'));
   equal(audit.summary.answerLeaks, 0);
-  equal(audit.summary.intentionalScaffolds, 9);
+  equal(audit.summary.intentionalScaffolds, 7);
   equal(audit.summary.coordinateReferences, 3);
 });
 

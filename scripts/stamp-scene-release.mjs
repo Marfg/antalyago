@@ -68,14 +68,14 @@ const GRAPH_BASENAMES = [
   // v9 (2026-09-02.2) — Sahne #10 ("Oyun Sonu ve Sayım") ve TEK yeni
   // yardımcı modülü.
   'scene10EndgameCounting.js', 'endgameCountingPolicy.js',
-  'scene11TwoEyes.js', 'twoEyesPolicy.js', 'eyeAnalysis.js',
+  'scene11TwoEyes.js', 'twoEyesPolicy.js', 'eyeAnalysis.js', 'scene12Connections.js', 'connectionShapesPolicy.js',
 ];
 
 /** Import satırı içerebilecek, graph'a dahil dosyalar + HTML entry point'leri. */
 const SCAN_FILES = [
   'learning-scenes.html',
   'teacher-studio.html',
-  'core/ruleEngine.js',
+  'core/ruleEngine.js', 'core/curriculum.js', 'ogren-3d.html',
   'scenes/scene01BoardIntro.js',
   'scenes/scene02TurnsAndIntersections.js',
   'scenes/scene03LibertiesByPosition.js',
@@ -95,7 +95,7 @@ const SCAN_FILES = [
   'scenes/koRulePolicy.js',
   'scenes/scene10EndgameCounting.js',
   'scenes/endgameCountingPolicy.js',
-  'scenes/scene11TwoEyes.js', 'scenes/twoEyesPolicy.js', 'core/eyeAnalysis.js',
+  'scenes/scene11TwoEyes.js', 'scenes/scene12Connections.js', 'scenes/connectionShapesPolicy.js', 'scenes/twoEyesPolicy.js', 'core/eyeAnalysis.js',
 ];
 
 const importLineRe = /(from\s+['"])(\.[\w./-]+\.js)(\?[^'"]*)?(['"])/g;

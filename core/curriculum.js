@@ -1,3 +1,4 @@
+import { CONNECTION_SHAPES } from '../scenes/connectionShapesPolicy.js?v=2026-09-13.2';
 /**
  * core/curriculum.js
  *
@@ -1106,21 +1107,11 @@ export const CURRICULUM = [
   ]
 },
 
-    { id:'l8', title:'Kesme ve Bağlama', steps:[
-      { text:`<p><span class="term">Kesme</span> — rakibin iki taşı arasına girerek bağlantısını koparmak.</p><p>Siyahın iki taşı arasına gir — <strong>E4 noktasına tıkla.</strong></p>`, board:[{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}], answer:{x:4,y:3}, turn:'white', size:9, guidanceLevel:'direct', fb:{t:'Siyahın iki taşı arasına gir!',c:'info'}, fb_ok:'Kestik! Siyah artık iki ayrı grup.', fb_err:'Siyahın iki taşını birbirine bağlayan boşluğu bul.' },
-      { text:`<p><span class="term">Bağlama</span> — kendi taşlarının arasını kapatarak grubu güçlendirmek.</p><p>Siyah taşları birleştir — <strong>D4 noktasına tıkla.</strong></p>`, board:[{color:'B',x:3,y:3},{color:'B',x:3,y:5},{color:'W',x:2,y:4},{color:'W',x:4,y:4}], answer:{x:3,y:4}, turn:'black', size:9, guidanceLevel:'direct', fb:{t:'Siyah taşlarını birleştir!',c:'info'}, fb_ok:'Güçlü bağlantı! Artık tek grup.', fb_err:'Siyah taşlar arasındaki boşluğu doldur.' },
-
-      // ── Alıştırma ──
-      { text:`<p>★★ <strong>Alıştırma:</strong> Beyaz nereye keser?</p>`, board:[{color:'B',x:2,y:4},{color:'B',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:5}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Beyaz hangi noktaya girerek siyahı keser?',options:[{text:'D5 (3,4)',correct:true,feedback:'Doğru! Orta nokta siyahın bağlantısını koparır.'},{text:'C4 (2,3)',correct:false,feedback:'Hayır — bu nokta bağlantıyı kesmez.'},{text:'E5 (4,3)',correct:false,feedback:'Hayır — kesme noktası iki taş arasında olmalı.'}]}, fb:{t:'Siyahın hangi noktası bağlantı boşluğu?',c:'info'} },
-
-      { text:`<p>★★ <strong>Alıştırma:</strong> Siyah taşları birbirine bağla.</p>`, board:[{color:'B',x:2,y:2},{color:'B',x:4,y:4},{color:'W',x:3,y:2},{color:'W',x:2,y:3}], answer:{x:3,y:3}, turn:'black', size:9, camera:CAM.center, fb:{t:'İki siyah taşı bağlayan noktayı bul.',c:'info'}, fb_ok:'Bağlandı! Artık tek güçlü grup.', fb_err:'İki siyah taş arasındaki köşegen bağlantıyı kapatacak noktayı bul.' },
-
-      { text:`<p>★★★ <strong>Alıştırma:</strong> Beyaz kesiyor mu yoksa siyah bağlıyor mu — doğru hamleyi seç.</p>`, board:[{color:'B',x:3,y:3},{color:'B',x:5,y:3},{color:'W',x:4,y:2},{color:'W',x:4,y:4}], answers:[{x:4,y:3}], turn:'black', size:9, camera:CAM.center, fb:{t:'Siyahın bağlantısını kes mi, koru mu?',c:'info'}, fb_ok:'Doğru — siyah bağlantıyı korudu, beyazın kesmesi engellendi.', fb_err:'Siyah taşlar arasındaki boşluğu kapat.' },
-
-      { text:`<p>★★★ <strong>Alıştırma:</strong> Kaplan ağzını tamamla — içeriyi koru.</p>`, board:[{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:3,y:2},{color:'W',x:5,y:4}], answer:{x:3,y:4}, turn:'black', size:9, camera:CAM.center, fb:{t:'Üç siyah taşın altına oyna — içe giren düşman taşı yakalanır!',c:'info'}, fb_ok:'Kaplan ağzı tamamlandı! Beyaz (3,3) noktasına girerse anında yakalanır — 4 komşusu da siyah.', fb_err:'Üç siyah taşın orta noktasının altına oyna.' },
-
-      { text:`<p>★★★ <strong>Alıştırma:</strong> Kaplan ağzına girilebilir mi?</p>`, board:[{color:'B',x:2,y:3},{color:'B',x:4,y:3},{color:'B',x:3,y:2},{color:'B',x:3,y:4}], forbidden:[{x:3,y:3}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Beyaz kırmızı X noktasına oynayabilir mi?',options:[{text:'Hayır — kaplan ağzı, anında yakalanır',correct:true,feedback:'Doğru! Dört komşusunun tamamı siyah — nefessiz kalır, yasak hamle.'},{text:'Evet — serbest',correct:false,feedback:'Hayır! Dört komşusu da siyah taş — oynarsa hiç nefesi kalmaz.'}]}, fb:{t:'Kaplan ağzı = 4 komşu siyah → düşman için yasak bölge.',c:'info'} },
-    ]},
+    { id:'l8', title:'Kesme ve Bağlama', sceneId:'scene-12-connections', steps:CONNECTION_SHAPES.flatMap(s=>[
+      {text:'<p><strong>'+s.name+'</strong> · '+s.tr+'</p><p>'+s.geometry+' '+s.purpose+'</p>',board:s.stones.map(([x,y])=>({x:x+6,y:y+6,color:'B'})),auto:true,size:19,fb:{t:'Biçimin adını ve geometrisini tanı.',c:'info'}},
+      {text:'<p><strong>'+s.name+' · Her yönde kur</strong></p><p>'+s.geometry+'</p>',board:s.stones.filter(p=>p[0]!==s.root[0]||p[1]!==s.root[1]).map(([x,y])=>({x:x+6,y:y+6,color:'B'})),answer:{x:s.root[0]+6,y:s.root[1]+6},turn:'black',size:19,fb:{t:'Yönleri ve kesme denemelerini Learning Scenes içinde uygula.',c:'info'},fb_ok:'Biçim kuruldu.',fb_err:'Taşlar arasındaki mesafeyi say.'},
+      {text:'<p><strong>'+s.name+' · Bağlantıyı sorgula</strong></p><p>'+s.warning+'</p>',board:s.stones.map(([x,y])=>({x:x+6,y:y+6,color:'B'})),auto:true,size:19,fb:{t:'Önce beyazla kesmeyi, ardından siyahla savunmayı dene.',c:'info'}}
+    ])},
 
     { id:'l9', title:'Çift Atari', steps:[
       { text:`<p><span class="term">Çift atari</span> — tek hamleyle iki ayrı grubu aynı anda atariye almak. Beyaz ikisini birden kurtaramaz.</p><p>Çift atari noktasını bul ve oyna!</p>`,

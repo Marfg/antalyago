@@ -42,11 +42,11 @@
  * varsayım DEĞİL), `resultConcept` YALNIZ doğru cevap board'u GERÇEKTEN
  * bir yakalamaya dönüştürdüyse eklenir ('capture').
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-13.1';
-import { assessmentTransition } from './assessmentTransition.js?v=2026-09-13.1';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-13.2';
+import { assessmentTransition } from './assessmentTransition.js?v=2026-09-13.2';
 import {
   getCaptureMoments, isValidCapturePoint, computeCaptureResult,
-} from './capturePolicy.js?v=2026-09-13.1';
+} from './capturePolicy.js?v=2026-09-13.2';
 
 const CONCEPT = 'capture';
 

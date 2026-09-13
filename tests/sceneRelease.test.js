@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function read(rel) { return fs.readFileSync(path.join(ROOT, rel), 'utf8'); }
@@ -52,11 +52,11 @@ const GRAPH_BASENAMES = [
   'scene09KoRule.js', 'koRulePolicy.js',
   // v9 (2026-09-02.2) — Sahne #10 ve bir yeni yardımcı modülü.
   'scene10EndgameCounting.js', 'endgameCountingPolicy.js',
-  'scene11TwoEyes.js', 'twoEyesPolicy.js', 'eyeAnalysis.js',
+  'scene11TwoEyes.js', 'twoEyesPolicy.js', 'eyeAnalysis.js', 'scene12Connections.js', 'connectionShapesPolicy.js',
 ];
 const SCAN_FILES = [
   'learning-scenes.html', 'teacher-studio.html',
-  'core/ruleEngine.js',
+  'core/ruleEngine.js', 'core/curriculum.js',
   'scenes/scene01BoardIntro.js', 'scenes/scene02TurnsAndIntersections.js',
   'scenes/scene03LibertiesByPosition.js', 'scenes/scene04GroupLiberties.js',
   'scenes/topicEndControls.js', 'scenes/groupLibertyPolicy.js',
@@ -67,7 +67,7 @@ const SCAN_FILES = [
   'scenes/scene08IllegalMoves.js', 'scenes/illegalMovePolicy.js',
   'scenes/scene09KoRule.js', 'scenes/koRulePolicy.js',
   'scenes/scene10EndgameCounting.js', 'scenes/endgameCountingPolicy.js',
-  'scenes/scene11TwoEyes.js', 'scenes/twoEyesPolicy.js',
+  'scenes/scene11TwoEyes.js', 'scenes/scene12Connections.js', 'scenes/connectionShapesPolicy.js', 'scenes/twoEyesPolicy.js',
 ];
 // Studio'nun kapsam DIŞI (AI asistan / içerik kütüphanesi) import'ları —
 // bunlar KASITLI olarak versiyonSUZ kalmalı (bkz. stamp script dosya başı
@@ -176,8 +176,8 @@ test('scenes/scene05LibertyAssessment.js: exported version >= 1, sahne release t
   assert.ok(Number(m[1]) >= 1, `version >= 1 olmalı, bulunan: ${m[1]}`);
 });
 
-test('RELEASE token "2026-09-13.1" — eski "2026-08-23.2/.3", "2026-08-24.1", "2026-08-25.1", "2026-08-25.2", "2026-08-26.1", "2026-08-26.2", "2026-08-29.1", "2026-08-31.1" (PR#1 dal taslağı), "2026-09-01.1" (main, PR#1 birleşmeden ÖNCE), "2026-09-02.1" (Sahne #10 öncesi) ve "2026-09-02.2" (İki Göz birleşmeden ÖNCE) query\'leri AKTİF graph\'ta KALMAMIŞ', () => {
-  assert.equal(RELEASE, '2026-09-13.1');
+test('RELEASE token "2026-09-13.2" — eski "2026-08-23.2/.3", "2026-08-24.1", "2026-08-25.1", "2026-08-25.2", "2026-08-26.1", "2026-08-26.2", "2026-08-29.1", "2026-08-31.1" (PR#1 dal taslağı), "2026-09-01.1" (main, PR#1 birleşmeden ÖNCE), "2026-09-02.1" (Sahne #10 öncesi) ve "2026-09-02.2" (İki Göz birleşmeden ÖNCE) query\'leri AKTİF graph\'ta KALMAMIŞ', () => {
+  assert.equal(RELEASE, '2026-09-13.2');
   for (const rel of SCAN_FILES) {
     const src = read(rel);
     assert.ok(!src.includes('?v=2026-08-23.2'), `${rel}: eski (2026-08-23.2) release query'si HÂLÂ mevcut`);
@@ -240,10 +240,11 @@ test('scenes/scene10EndgameCounting.js: exported version >= 1', () => {
   assert.ok(Number(m[1]) >= 1, `version >= 1 olmalı, bulunan: ${m[1]}`);
 });
 
+const stampSnapshotBefore=SCAN_FILES.map(read); await import('../scripts/stamp-scene-release.mjs'); const stampSnapshotAfter=SCAN_FILES.map(read);
 test('scripts/stamp-scene-release.mjs idempotent: script tekrar çalıştırılınca dosyalarda DEĞİŞİKLİK üretmiyor (zaten güncel)', () => {
-  const before = SCAN_FILES.map(read);
-  execSync('node scripts/stamp-scene-release.mjs', { cwd: ROOT });
-  const after = SCAN_FILES.map(read);
+  const before = stampSnapshotBefore;
+  const stampAfter = stampSnapshotAfter;
+  const after = stampSnapshotAfter;
   before.forEach((content, i) => {
     assert.equal(after[i], content, `${SCAN_FILES[i]}: stamp script'in tekrar çalıştırılması dosyayı DEĞİŞTİRDİ (idempotent olmalı)`);
   });
