@@ -7303,13 +7303,14 @@ addTest('N20) ogren-3d.html Sahne #10 eklenmesinden ETKİLENMEZ — regresyonsuz
 
 
 for(const [name,viewport] of Object.entries({desktop:VIEWPORTS.desktop,mobile:VIEWPORTS.mobile})) {
- addTest(`O1-${name}) İki Göz: 14 an, yedi formasyon, tamamlanma ve tekrar`,async()=>{
+ addTest(`O1-${name}) İki Göz: 12 an, beş formasyon, tamamlanma ve tekrar`,async()=>{
   const s=await openScenesPage({viewport,reducedMotion:'reduce',query:'?exposeBoardAdapter=1&testScene=scene-11-two-eyes'});
   try {
    const moments=getTwoEyesMoments();
    for(const [i,m] of moments.entries()) {
     await s.page.click('#s11-confirm');
     ensure(await s.page.locator('#s11-next').isDisabled(),'cevap öncesi ilerleme kapalı olmalı');
+    if(m.query) { await s.page.click('#s11-real');ensure(await s.page.locator('#s11-next').isDisabled(),'yanlış göz yanıtı ilerletmemeli');await s.page.click('#s11-false');ensure(await s.page.locator('#s11-next').isDisabled(),'doğru sorgudan sonra tahta hamlesi gerekli'); }
     for(const [col,row] of m.targets){
      const p=await findScreenPointFor(s.page,{row,col});ensure(p,`An ${i+1}: hedef görünmüyor`);await s.page.mouse.click(p.x,p.y);
     }

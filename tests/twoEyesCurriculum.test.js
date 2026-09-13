@@ -41,9 +41,9 @@ test('Tek göz: üç siyah taşın yalnız bir nefesi vardır',()=>{const b=seed
 test('İki göz: altı siyah taşın yalnız iki iç nefesi vardır',()=>{const b=seed(steps[2]);assert.equal(getLiberties(b,getGroup(b,0,7)).size,2)});
 test('Sahte göz: A çevresindeki siyahlar farklı bağlı gruplardır',()=>{const b=seed(steps[3]);assert(!getGroup(b,3,3).has('2,4'));assert.equal(classifySinglePointEye(b,3,4).isEyeCandidate,false)});
 
-for(const s of steps[4].examples){
+for(const s of steps[4].examples.filter(s=>!s.query)){
  const b=seed(s),anchor=s.board.find(p=>p.color==='black');
- test(`5/${s.label}: siyah tek bağlı grup, dış nefes yok, iç alan üç boşluk`,()=>{const g=getGroup(b,anchor.x,anchor.y);assert.equal(g.size,s.board.filter(p=>p.color==='black').length);const libs=getLiberties(b,g);assert.equal(libs.size,3);const [k]=libs;assert.equal(findEmptyRegion(b,...k.split(',').map(Number)).points.length,3);assert.equal(new Set(s.board.map(p=>`${p.x},${p.y}`)).size,s.board.length);for(const p of s.board)assert(b.isInBounds(p.x,p.y));});
+ test(`5/${s.label}: siyah tek bağlı grup, dış nefes yok, iç alan üç boşluk`,()=>{const g=getGroup(b,anchor.x,anchor.y);if(s.title==='Bağlanarak iki göz yap') { assert.equal(g.size,1);assert.equal(s.board.filter(p=>p.color==='black').length,5);return; }assert.equal(g.size,s.board.filter(p=>p.color==='black').length);const libs=getLiberties(b,g);assert.equal(libs.size,3);const [k]=libs;assert.equal(findEmptyRegion(b,...k.split(',').map(Number)).points.length,3);assert.equal(new Set(s.board.map(p=>`${p.x},${p.y}`)).size,s.board.length);for(const p of s.board)assert(b.isInBounds(p.x,p.y));});
  test(`5/${s.label}: doğru cevap yasal ve yakalama yok`,()=>{assert(isValidMove(b,...s.targets[0],'black').valid);assert.equal(applyMove(b,...s.targets[0],'black').captured.length,0)});
  const after=applyMove(b,...s.targets[0],'black').newState;
  test(`5/${s.label}: iki ayrı gerçek göz aynı gruba ait`,()=>{const eyes=s.afterEyes.map(p=>protectedEye(after,...p));assert(eyes.every(e=>e.isTrue));assert.equal(eyes[0].groupId,eyes[1].groupId);for(const p of s.afterEyes){assert.equal(findEmptyRegion(after,...p).points.length,1);assert.equal(isValidMove(after,...p,'white').valid,false)}});
@@ -52,7 +52,7 @@ for(const s of steps[4].examples){
 
 
 const moments=getTwoEyesMoments();
-test('Sekiz ana adım, yedi örnek dahil 14 zorunlu an',()=>{assert.equal(steps.length,8);assert.equal(moments.length,14);assert.equal(moments.filter(m=>m.curriculumStepIndex===4).length,7)});
+test('Sekiz ana adım, beş örnek dahil 12 zorunlu an',()=>{assert.equal(steps.length,8);assert.equal(moments.length,12);assert.equal(moments.filter(m=>m.curriculumStepIndex===4).length,5)});
 test('Onaylanan alt kenar: alt taş katmanı yok, hedef tahta kenarında',()=>{const m=moments.find(m=>m.curriculumStepIndex===4);assert.deepEqual(m.targets,[[4,8]]);assert.deepEqual(m.afterEyes,[[3,8],[5,8]]);assert.deepEqual(m.board.filter(p=>p.y===8&&p.color==='B').map(p=>p.x).sort(),[2,6])});
 for(const [i,m] of moments.entries()){
  test(`An ${i+1}: sıralı kurulum formasyonu değiştirmez`,()=>{let b=new BoardState(9);for(const p of m.board){const color=p.color==='B'?'black':'white';assert(isValidMove(b,p.x,p.y,color).valid);b=applyMove(b,p.x,p.y,color).newState;}const key=b=>b.stones.map(p=>`${p.x},${p.y},${p.color}`).sort();assert.deepEqual(key(b),key(buildTwoEyesBoard(m)));});
@@ -60,14 +60,16 @@ for(const [i,m] of moments.entries()){
 }
 
 
-test('Müfredat ekranı aynı 14 formasyonu aynı cevaplarla açar',()=>{
+test('Müfredat ekranı aynı 12 formasyonu aynı cevaplarla açar',()=>{
  const legacy=LEGACY_CURRICULUM.flatMap(c=>c.lessons).find(l=>l.id==='l7').steps;
- assert.equal(legacy.length,14);
+ assert.equal(legacy.length,12);
  for(const [i,s] of legacy.entries()){assert.deepEqual(s.board,moments[i].board);assert.deepEqual(s.targets,moments[i].targets);}
 });
-test('Onaylanan sade örnekler: kenar ve köşede 11, 11, 14, 16 taş',()=>{
- assert.deepEqual(moments.slice(10).map(m=>m.board.length),[11,11,14,16]);
- assert.deepEqual(moments.slice(10).map(m=>m.targets[0]),[[8,1],[1,0],[0,1],[8,4]]);
+test('Onaylanan sade örnekler: kenar ve köşede 11, 14, 16 taş',()=>{
+ assert.deepEqual(moments.slice(9).map(m=>m.board.length),[11,14,16]);
+ assert.deepEqual(moments.slice(9).map(m=>m.targets[0]),[[1,0],[0,1],[8,4]]);
 });
 
+test('Yeni yalancı göz: beyaz yalnız kopuk taşı alır',()=>{const m=moments[7];assert(m.query);const b=buildTwoEyesBoard(m);const result=evaluateTwoEyesTap(b,m,{col:0,row:8});assert(result.correct);assert.equal(result.captured.length,1);assert.equal(result.newState.stones.filter(p=>p.color==='black').length,2)});
+test('Müfredat 6–8: onaylanan üç prototip doğrudan bu sırada',()=>{const legacy=LEGACY_CURRICULUM.flatMap(c=>c.lessons).find(l=>l.id==='l7').steps;assert.deepEqual(legacy.slice(5,8).map(s=>s.title),['Bağlanarak iki göz yap','Köşede kısa bükülü alan','A gerçek göz mü, yalancı göz mü?']);assert.deepEqual(legacy.slice(5,8).map(s=>s.board.length),[12,12,5]);});
 results.push(`\n${count}/${count} kontroller geçti.`);console.log(results.join('\n'));

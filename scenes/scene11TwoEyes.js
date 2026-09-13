@@ -1,25 +1,25 @@
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-12.2';
-import { getTwoEyesMoments, buildTwoEyesBoard, evaluateTwoEyesTap, CONCEPT } from './twoEyesPolicy.js?v=2026-09-12.2';
-import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-09-12.2';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-13.1';
+import { getTwoEyesMoments, buildTwoEyesBoard, evaluateTwoEyesTap, CONCEPT } from './twoEyesPolicy.js?v=2026-09-13.1';
+import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-09-13.1';
 let active = null;
 const points = pairs => pairs.map(([col,row]) => ({row,col}));
 export const scene11TwoEyes = {
-  id: 'scene-11-two-eyes', version: 2, title: 'Canlı Gruplar (İki Göz)',
+  id: 'scene-11-two-eyes', version: 3, title: 'Canlı Gruplar (İki Göz)',
   curriculumRef: { lessonId: 'l7', concept: CONCEPT },
   mount(context) {
     const s = active = { index: 0, moments: getTwoEyesMoments(), done: new Set(), tried: new Set(), alive: true, locked: true, off: null, end: null, timer: null, resolveWait: null };
     const root = document.createElement('div');
     root.className = 'ls-strip-root s11-root';
-    root.innerHTML = `<div class="s11-heading" id="s11-progress"></div><div class="ls-strip-row" id="s11-info"><p class="ls-strip-text" id="s11-explanation"></p><button class="ls-tick" id="s11-confirm" aria-label="Bilgiyi onayla">✓</button></div><div class="s11-task" id="s11-task" hidden><p class="ls-strip-text" id="s11-prompt"></p><div class="s05-feedback-row"><p class="s05-feedback" id="s11-feedback" role="status"></p><button class="ls-strip-btn" id="s11-sequence" hidden>Devamı izle</button><button class="ls-strip-btn" id="s11-next" disabled>Devam</button></div></div>`;
+    root.innerHTML = `<div class="s11-heading" id="s11-progress"></div><div class="ls-strip-row" id="s11-info"><p class="ls-strip-text" id="s11-explanation"></p><button class="ls-tick" id="s11-confirm" aria-label="Bilgiyi onayla">✓</button></div><div class="s11-task" id="s11-task" hidden><p class="ls-strip-text" id="s11-prompt"></p><div id="s11-question" hidden><button class="ls-strip-btn" id="s11-real">Gerçek göz</button><button class="ls-strip-btn" id="s11-false">Yalancı göz</button></div><div class="s05-feedback-row"><p class="s05-feedback" id="s11-feedback" role="status"></p><button class="ls-strip-btn" id="s11-sequence" hidden>Devamı izle</button><button class="ls-strip-btn" id="s11-next" disabled>Devam</button></div></div>`;
     context.container.append(root); s.root = root;
     const el = id => root.querySelector('#'+id), board = context.boardAdapter;
     function clearVisuals() { board.clearMovePreview(); board.clearLiberties(); board.clearIllegalHints(); board.clearRegionMarks(); }
     function render() {
-      s.off?.(); s.off = null; s.tried.clear(); s.locked = true;
+      s.off?.(); s.off = null; s.offHover?.(); s.offHover = null; s.tried.clear(); s.locked = true; s.queryAnswered = false;
       const m = s.moments[s.index]; s.board = buildTwoEyesBoard(m);
       root.dataset.stepIndex = m.curriculumStepIndex; root.dataset.exampleIndex = m.exampleIndex;
-      el('s11-progress').textContent = `${m.curriculumStepIndex+1} / 8 · ${m.title}${m.exampleCount > 1 ? ' · '+m.label+' ('+(m.exampleIndex+1)+'/'+m.exampleCount+')' : ''}`;
-      el('s11-explanation').textContent = m.body;
+      el('s11-progress').textContent = `${m.curriculumStepIndex+1} / 8 · ${m.title}${m.exampleCount > 1 ? ' · '+(m.label || m.title)+' ('+(m.exampleIndex+1)+'/'+m.exampleCount+')' : ''}`;
+      el('s11-explanation').textContent = m.body; el('s11-question').hidden = !m.query;
       el('s11-info').hidden = false; el('s11-task').hidden = true;
       el('s11-confirm').disabled = false; el('s11-next').disabled = true; el('s11-sequence').hidden = true;
       el('s11-feedback').textContent = ''; el('s11-prompt').textContent = m.prompt;
@@ -40,7 +40,9 @@ export const scene11TwoEyes = {
     }
     function tap(hit) {
       if(s.locked || !s.alive) return;
-      const m = s.moments[s.index], r = evaluateTwoEyesTap(s.board,m,hit);
+      const m = s.moments[s.index];
+      if(m.query && !s.queryAnswered) { el('s11-feedback').textContent='Önce gerçek göz / yalancı göz kararını ver.'; return; }
+      const r = evaluateTwoEyesTap(s.board,m,hit);
       const key = `${hit.col},${hit.row}`;
       if(r.correct && s.tried.has(key)) return;
       context.emit('scene_assessment_answered',{stepIndex:m.curriculumStepIndex,exampleIndex:m.exampleIndex,assessmentIndex:s.index,assessmentType:'board_tap',concept:CONCEPT,correct:r.correct,legal:r.legal,row:hit.row,col:hit.col});
@@ -59,10 +61,13 @@ export const scene11TwoEyes = {
       if(m.continuation) { s.locked=true;board.setInputEnabled(false);el('s11-sequence').hidden=false; }
       else finishItem();
     }
+    el('s11-real').onclick=()=>{el('s11-feedback').textContent='Siyah komşular birbirine bağlı mı? Son nefesi kalan parçayı incele.';};
+    el('s11-false').onclick=()=>{s.queryAnswered=true;el('s11-feedback').textContent='Doğru. Şimdi beyaz olarak A’ya oyna ve alınan taşı gör.';};
     el('s11-confirm').onclick = () => {
       if(!s.alive || !el('s11-task').hidden) return;
       el('s11-confirm').disabled=true;el('s11-info').hidden=true;el('s11-task').hidden=false;s.locked=false;
       board.setInputEnabled(true);s.off = board.onIntersectionTap(tap);
+      s.offHover=board.onIntersectionHover(hit=>{const m=s.moments[s.index];if(!hit || s.locked || !isValidMove(s.board,hit.col,hit.row,m.turn).valid) board.clearMovePreview();else board.setMovePreview({...hit,color:m.turn});});
       const m=s.moments[s.index];if(s.index===0) context.emit('scene_intro_confirmed',{});context.emit('scene_assessment_presented',{assessmentIndex:s.index,assessmentCount:s.moments.length,stepIndex:m.curriculumStepIndex,exampleIndex:m.exampleIndex,concept:CONCEPT,assessmentType:'board_tap'});
     };
     el('s11-sequence').onclick = async () => {
@@ -87,7 +92,7 @@ export const scene11TwoEyes = {
   },
   unmount(context) {
     if(!active) return;
-    active.alive=false;active.off?.();clearTimeout(active.timer);active.resolveWait?.();active.end?.destroy();active.root.remove();
+    active.alive=false;active.off?.();active.offHover?.();clearTimeout(active.timer);active.resolveWait?.();active.end?.destroy();active.root.remove();
     context.boardAdapter.setInputEnabled(false);context.boardAdapter.clearLiberties();context.boardAdapter.clearIllegalHints();context.boardAdapter.clearMovePreview();active=null;
   },
   canComplete() { return !!active && active.done.size === active.moments.length; },

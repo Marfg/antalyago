@@ -1234,7 +1234,7 @@
 import { BoardState }                           from './core/boardState.js';
 import { LessonEngine, isCorrectAnswer, stepRequiresAnswer } from './core/lessonEngine.js';
 import { ActionHandler }                        from './core/actionHandler.js';
-import { CAM, LEGACY_CURRICULUM as CURRICULUM } from './core/curriculum.js?v=2026-09-12.2-legacy';
+import { CAM, LEGACY_CURRICULUM as CURRICULUM } from './core/curriculum.js?v=2026-09-13.1-legacy';
 import { classifyCurriculumStep, isAssessmentLesson, responseTypeOf, stripMarkup } from './core/learningContext.js';
 import { EventLog }                             from './core/eventLog.js';
 import { buildPanelSnapshot, deriveEvents }      from './core/teacherPanelBridge.js';
@@ -3588,6 +3588,12 @@ function handleMiniAnswer(idx, q) {
   const el = document.getElementById('mini-question');
   if (!el) return;
   const btns = el.querySelectorAll('.mini-opt-btn');
+  if(q.beforeMove) {
+    const chosen=q.options[idx];
+    el.querySelector('#mini-q-fb').textContent=chosen.feedback; el.querySelector('#mini-q-fb').style.display='';
+    if(chosen.correct) { CUR_STEP_DATA._queryAnswered=true;btns.forEach(b=>b.disabled=true); }
+    return;
+  }
   btns.forEach(b => { b.disabled = true; });
   const chosen = q.options[idx];
   btns[idx].classList.add(chosen.correct ? 'correct' : 'wrong');
@@ -3841,6 +3847,10 @@ function updateLessonDOM(ls) {
   const _mqEl = document.getElementById('mini-question');
   if (_mqEl) { _mqEl.classList.remove('show'); _mqEl.innerHTML = ''; }
   ghostActive   = !!(step && !done && stepRequiresAnswer(step));
+  if(step?.query && !done) {
+    step._queryAnswered=false;
+    renderMiniQuestion({text:step.prompt,options:[{text:'Gerçek göz',correct:false,feedback:'Siyah komşular birbirine bağlı mı?'},{text:'Yalancı göz',correct:true,feedback:'Doğru. Şimdi beyaz olarak A’ya oyna.'}],beforeMove:true});
+  }
 
   const chap = chapter;
   document.getElementById('chapter-tag').textContent   = (currentLang!=='tr'&&TITLE_T[chap?.id]?.[currentLang])||chap?.title||'';
@@ -4001,6 +4011,7 @@ function playMoves(moves, step, gen) {
 
 /* ── Board tap ─────────────────────────────────────────────────── */
 function onClick3D(gx, gz) {
+  if(CUR_STEP_DATA?.query && !CUR_STEP_DATA._queryAnswered) { setFb('Önce gerçek göz / yalancı göz kararını ver.','info');return; }
   /* S9: Kullanıcı harekete geçti → info talimatı kapat */
   hideMobFb();
   // v0.2: hamle uygulanmadan ÖNCEKİ board durumunun bağımsız kopyası —
