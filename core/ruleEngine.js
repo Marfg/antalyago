@@ -5,7 +5,7 @@
  * BoardState alır, yeni state veya hesaplama sonucu döndürür.
  */
 
-import { BoardState } from './boardState.js?v=2026-09-13.3';
+import { BoardState } from './boardState.js?v=2026-09-13.4';
 
 // ── Grup / Liberty hesaplama ───────────────────────────────────────
 

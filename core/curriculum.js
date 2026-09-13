@@ -1,4 +1,4 @@
-import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-09-13.3';
+import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-09-13.4';
 /**
  * core/curriculum.js
  *
@@ -13,6 +13,7 @@ export const CAM = {
   corner_tl:{yaw:.85,pitch:.95,dist:420},
   corner_tr:{yaw:.15,pitch:.95,dist:420},
   center:   {yaw:.50,pitch:1.08,dist:460},
+  connections: {yaw:.12,pitch:1.34,dist:460},
   board19:  {yaw:.50,pitch:1.25,dist:520},
 };
 
