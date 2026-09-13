@@ -1,4 +1,4 @@
-import { CONNECTION_SHAPES } from '../scenes/connectionShapesPolicy.js?v=2026-09-13.2';
+import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-09-13.3';
 /**
  * core/curriculum.js
  *
@@ -1108,9 +1108,9 @@ export const CURRICULUM = [
 },
 
     { id:'l8', title:'Kesme ve Bağlama', sceneId:'scene-12-connections', steps:CONNECTION_SHAPES.flatMap(s=>[
-      {text:'<p><strong>'+s.name+'</strong> · '+s.tr+'</p><p>'+s.geometry+' '+s.purpose+'</p>',board:s.stones.map(([x,y])=>({x:x+6,y:y+6,color:'B'})),auto:true,size:19,fb:{t:'Biçimin adını ve geometrisini tanı.',c:'info'}},
-      {text:'<p><strong>'+s.name+' · Her yönde kur</strong></p><p>'+s.geometry+'</p>',board:s.stones.filter(p=>p[0]!==s.root[0]||p[1]!==s.root[1]).map(([x,y])=>({x:x+6,y:y+6,color:'B'})),answer:{x:s.root[0]+6,y:s.root[1]+6},turn:'black',size:19,fb:{t:'Yönleri ve kesme denemelerini Learning Scenes içinde uygula.',c:'info'},fb_ok:'Biçim kuruldu.',fb_err:'Taşlar arasındaki mesafeyi say.'},
-      {text:'<p><strong>'+s.name+' · Bağlantıyı sorgula</strong></p><p>'+s.warning+'</p>',board:s.stones.map(([x,y])=>({x:x+6,y:y+6,color:'B'})),auto:true,size:19,fb:{t:'Önce beyazla kesmeyi, ardından siyahla savunmayı dene.',c:'info'}}
+      {text:'<p><strong>'+s.name+'</strong> · '+s.tr+'</p><p>'+s.geometry+' '+s.purpose+'</p>',board:s.stones.map(([x,y])=>({x:x+CONNECTION_OFFSET,y:y+CONNECTION_OFFSET,color:'B'})),auto:true,size:CONNECTION_BOARD_SIZE,fb:{t:'Biçimin adını ve geometrisini tanı.',c:'info'}},
+      {text:'<p><strong>'+s.name+' · Biçimi kur</strong></p><p>'+s.geometry+'</p>',board:s.stones.filter(p=>p[0]!==s.root[0]||p[1]!==s.root[1]).map(([x,y])=>({x:x+CONNECTION_OFFSET,y:y+CONNECTION_OFFSET,color:'B'})),answer:{x:s.root[0]+CONNECTION_OFFSET,y:s.root[1]+CONNECTION_OFFSET},turn:'black',size:CONNECTION_BOARD_SIZE,fb:{t:'Yönleri ve kesme denemelerini Learning Scenes içinde uygula.',c:'info'},fb_ok:'Biçim kuruldu.',fb_err:'Taşlar arasındaki mesafeyi say.'},
+      {text:'<p><strong>'+s.name+' · Bağlantıyı sorgula</strong></p><p>'+s.warning+'</p>',board:s.stones.map(([x,y])=>({x:x+CONNECTION_OFFSET,y:y+CONNECTION_OFFSET,color:'B'})),auto:true,size:CONNECTION_BOARD_SIZE,fb:{t:'Önce beyazla kesmeyi, ardından siyahla savunmayı dene.',c:'info'}}
     ])},
 
     { id:'l9', title:'Çift Atari', steps:[

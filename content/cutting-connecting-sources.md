@@ -10,6 +10,6 @@ Müfredat girişi l8, Learning Scenes sahnesi scene-12-connections.
 
 Şemalar kaynak ilkelerinden özgün olarak düzenlendi. Fiziksel zincir, tek hamlede birleşme olanağı ve kalıcı taktik bağlantı aynı şey değildir. Motor geri bildirimi ilk ikisini değerlendirir; ölüm, koşulsuz kesilmezlik veya bütün varyantların çözümü iddia edilmez.
 
-Kur: kosumi dört, bir aralık sıçrama dört, keima sekiz yönde tamamlanır. Bambu üç taşın eksik dördüncüsüyle tamamlanır. Bütün biçimler sekiz döndürme/yansıtma yönelimiyle gösterilebilir.
+Kur: kosumi dört, bir aralık sıçrama dört, keima sekiz yönde tamamlanır. Bambu bir başlangıç taşına üç taş eklenerek sekiz yönde kurulabilir. Ders 9×9 tahtada gösterilir. Yön menüsü yoktur; öğrenci taş yerleştirerek yönü belirler. Dört küçük terim düğmesi biçimler arasında gezinmeyi sağlar.
 
 Sorgula: beyazla kesme girişimi, siyahla savunma ve dönüşümlü serbest yasal devam. Kurulan özgün biçim korunur. Bir temas girişimi ve siyah cevabından sonra öğrenci ilerleyebilir veya denemeye devam edebilir.
