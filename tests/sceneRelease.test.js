@@ -176,8 +176,8 @@ test('scenes/scene05LibertyAssessment.js: exported version >= 1, sahne release t
   assert.ok(Number(m[1]) >= 1, `version >= 1 olmalı, bulunan: ${m[1]}`);
 });
 
-test('RELEASE token "2026-09-13.4" — eski "2026-08-23.2/.3", "2026-08-24.1", "2026-08-25.1", "2026-08-25.2", "2026-08-26.1", "2026-08-26.2", "2026-08-29.1", "2026-08-31.1" (PR#1 dal taslağı), "2026-09-01.1" (main, PR#1 birleşmeden ÖNCE), "2026-09-02.1" (Sahne #10 öncesi) ve "2026-09-02.2" (İki Göz birleşmeden ÖNCE) query\'leri AKTİF graph\'ta KALMAMIŞ', () => {
-  assert.equal(RELEASE, '2026-09-13.4');
+test('RELEASE token "2026-09-13.5" — eski "2026-08-23.2/.3", "2026-08-24.1", "2026-08-25.1", "2026-08-25.2", "2026-08-26.1", "2026-08-26.2", "2026-08-29.1", "2026-08-31.1" (PR#1 dal taslağı), "2026-09-01.1" (main, PR#1 birleşmeden ÖNCE), "2026-09-02.1" (Sahne #10 öncesi) ve "2026-09-02.2" (İki Göz birleşmeden ÖNCE) query\'leri AKTİF graph\'ta KALMAMIŞ', () => {
+  assert.equal(RELEASE, '2026-09-13.5');
   for (const rel of SCAN_FILES) {
     const src = read(rel);
     assert.ok(!src.includes('?v=2026-08-23.2'), `${rel}: eski (2026-08-23.2) release query'si HÂLÂ mevcut`);

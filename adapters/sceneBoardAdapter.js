@@ -220,9 +220,9 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-09-13.4';
-import { BoardState } from '../core/boardState.js?v=2026-09-13.4';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-09-13.4';
+import { CAM } from '../core/curriculum.js?v=2026-09-13.5';
+import { BoardState } from '../core/boardState.js?v=2026-09-13.5';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-09-13.5';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -367,6 +367,12 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   }
   resize();
   window.addEventListener('resize', resize);
+  // Lesson layout changes can resize the canvas without a window resize.
+  const canvasResizeObserver = typeof ResizeObserver !== 'undefined'
+    ? new ResizeObserver(() => {
+      if (canvas.clientWidth !== W || canvas.clientHeight !== H) resize();
+    }) : null;
+  canvasResizeObserver?.observe(canvas);
 
   function projectAt(x, y, z, yaw, pitch, dist) {
     const rx = x * Math.cos(yaw) + z * Math.sin(yaw);
@@ -1004,7 +1010,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // Sahne modülleri canvas/koordinat matematiğine HİÇ dokunmaz; yalnız
   // onIntersectionTap(handler) ile abone olur.
   function screenToGrid(mx, my) {
-    const BY = -BOARD_H / 2;
+    const BY = -BOARD_H / 2 - .4;
     let best = null, bestD = Infinity, bestSc = 1;
     for (let gz = 0; gz < SIZE; gz++) {
       for (let gx = 0; gx < SIZE; gx++) {
@@ -1027,7 +1033,10 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     const rect = canvas.getBoundingClientRect();
     const clientX = evt.touches?.[0]?.clientX ?? evt.clientX;
     const clientY = evt.touches?.[0]?.clientY ?? evt.clientY;
-    return { mx: clientX - rect.left, my: clientY - rect.top };
+    return {
+      mx: (clientX - rect.left) * W / (rect.width || W),
+      my: (clientY - rect.top) * H / (rect.height || H),
+    };
   }
   function notifyHover(hit) {
     const payload = hit ? { row: hit.gz, col: hit.gx } : null;
@@ -1477,6 +1486,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     destroy() {
       if (rafId != null) cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
+      canvasResizeObserver?.disconnect();
       canvas.removeEventListener('click', handleClick);
       canvas.removeEventListener('pointermove', handleMove);
       canvas.removeEventListener('pointerdown', handleMove);
