@@ -1,6 +1,6 @@
-import {mountLadderLesson} from './ladderLessonController.js?v=2026-09-13.6';
-import {createLadderMotionOverlay} from './ladderMotionOverlay.js?v=2026-09-13.6';
-import {mountTopicEndControls} from './topicEndControls.js?v=2026-09-13.6';
+import {mountLadderLesson} from './ladderLessonController.js?v=2026-09-13.7';
+import {createLadderMotionOverlay} from './ladderMotionOverlay.js?v=2026-09-13.7';
+import {mountTopicEndControls} from './topicEndControls.js?v=2026-09-13.7';
 let active=null;
 export const scene13Ladder={
  id:'scene-13-ladder',version:1,title:'Merdiven (Shichō)',curriculumRef:{lessonId:'l10',concept:'ladder'},

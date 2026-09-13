@@ -46,12 +46,12 @@
  * SKOR DİLİ YOK (bkz. görev talimatı Bölüm 10): puan/yüzde/başarısızlık
  * ekranı YOK — yalnız "Doğru" / "Bir kez daha düşün" + kısa açıklama.
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-13.6';
-import { assessmentTransition } from './assessmentTransition.js?v=2026-09-13.6';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-13.7';
+import { assessmentTransition } from './assessmentTransition.js?v=2026-09-13.7';
 import {
   getAssessmentSteps, computeChoiceCorrectIndex, computeTapTargets,
   isValidTapAnswer, isValidChoiceAnswer, computeResultAfterMove,
-} from './libertyAssessmentPolicy.js?v=2026-09-13.6';
+} from './libertyAssessmentPolicy.js?v=2026-09-13.7';
 
 const CONCEPT = 'liberty';
 

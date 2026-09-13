@@ -71,9 +71,9 @@
  * KASITLI olarak EKLENMEZ — Teacher Studio Diagnostics bunu bilinen-olmayan
  * concept olarak raporlar (bilinçli, gizlenmeyen boşluk).
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-09-13.6';
-import { BoardState } from '../core/boardState.js?v=2026-09-13.6';
-import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-09-13.6';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-09-13.7';
+import { BoardState } from '../core/boardState.js?v=2026-09-13.7';
+import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-09-13.7';
 
 const LESSON_ID = 'l5';
 const BOARD_SIZE = 9;

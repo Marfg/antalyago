@@ -1,4 +1,4 @@
-import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-09-13.6';
+import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-09-13.7';
 /**
  * core/curriculum.js
  *
@@ -1142,21 +1142,258 @@ export const CURRICULUM = [
 
     { id:'l10', title:'Merdiven (Shichō)', sceneId:'scene-13-ladder', steps:[{"title":"Önce kaçışları say","text":"<p><strong>Önce kaçışları say</strong></p><p>Merdiven (Japonca shichō), kaçan grubu art arda atariye alarak kurulan zikzak bir takip dizisidir. Önce beyazın iki nefesini tahtada bul.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":0,"fb":{"t":"Merdiven (Japonca shichō), kaçan grubu art arda atariye alarak kurulan zikzak bir takip dizisidir. Önce beyazın iki nefesini tahtada bul.","c":"info"}},{"title":"Atarinin yönünü seç","text":"<p><strong>Atarinin yönünü seç</strong></p><p>Siyah olarak beyazı atariye al. İki nefesten hangisini kapatırsan beyaz zikzak kaçışa zorlanır? Diğer yönü de deneyebilirsin.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":1,"fb":{"t":"Siyah olarak beyazı atariye al. İki nefesten hangisini kapatırsan beyaz zikzak kaçışa zorlanır? Diğer yönü de deneyebilirsin.","c":"info"}},{"title":"Zorunlu kaçışı bul","text":"<p><strong>Zorunlu kaçışı bul</strong></p><p>Beyazın yalnız bir nefesi kaldı. Beyaz olarak grubu uzat; sonra yeni grubun nefeslerini say.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"},{"x":2,"y":3,"color":"B"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":2,"fb":{"t":"Beyazın yalnız bir nefesi kaldı. Beyaz olarak grubu uzat; sonra yeni grubun nefeslerini say.","c":"info"}},{"title":"Kaçış → atari ritmi","text":"<p><strong>Kaçış → atari ritmi</strong></p><p>Beyaz uzayınca iki nefes kazanır. Siyah doğru taraftan beyazı atariye alarak nefeslerini yeniden bire indirir. İlk üç hamle çiftini yavaşça izle.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":3,"fb":{"t":"Beyaz uzayınca iki nefes kazanır. Siyah doğru taraftan beyazı atariye alarak nefeslerini yeniden bire indirir. İlk üç hamle çiftini yavaşça izle.","c":"info"}},{"title":"Merdiveni sen sürdür","text":"<p><strong>Merdiveni sen sürdür</strong></p><p>Siyah olarak beyazı üç kez daha atariye al. Beyaz tek nefesinden otomatik olarak kaçacak. Her hamlenden önce iki olası yönü karşılaştır.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"},{"x":2,"y":3,"color":"B"},{"x":3,"y":2,"color":"W"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":4,"fb":{"t":"Siyah olarak beyazı üç kez daha atariye al. Beyaz tek nefesinden otomatik olarak kaçacak. Her hamlenden önce iki olası yönü karşılaştır.","c":"info"}},{"title":"Kenarda son nefes","text":"<p><strong>Kenarda son nefes</strong></p><p>Merdiveni başlangıçtan kenara kadar izle. Beyazın son kaçışı ikinci bir nefes açmayacak. O anda siyah olarak bütün beyaz zinciri yakala.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":5,"fb":{"t":"Merdiveni başlangıçtan kenara kadar izle. Beyazın son kaçışı ikinci bir nefes açmayacak. O anda siyah olarak bütün beyaz zinciri yakala.","c":"info"}},{"title":"Merdiven kırıcı","text":"<p><strong>Merdiven kırıcı</strong></p><p>Aynı başlangıç, aynı takip yönü; bu kez ileride bir beyaz destek taşı var. Kovalamaya başlamadan önce sonucunu düşün.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"},{"x":6,"y":5,"color":"W"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":6,"fb":{"t":"Aynı başlangıç, aynı takip yönü; bu kez ileride bir beyaz destek taşı var. Kovalamaya başlamadan önce sonucunu düşün.","c":"info"}},{"title":"Destek taşının yeri","text":"<p><strong>Destek taşının yeri</strong></p><p>İki işaretli noktadan birine beyaz destek taşı ekle ve kovalamayı izle. Sadece uzakta bir beyaz taş bulunması yeterli mi?</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":7,"fb":{"t":"İki işaretli noktadan birine beyaz destek taşı ekle ve kovalamayı izle. Sadece uzakta bir beyaz taş bulunması yeterli mi?","c":"info"}},{"title":"Bütün rotayı oku","text":"<p><strong>Bütün rotayı oku</strong></p><p>Şimdi müfredattaki uzun örneğe geçiyoruz: 13×13 tahtada rota daha uzun. Kırıcı olmadan ve kırıcı taşla iki sonucu karşılaştır.</p>","board":[{"x":4,"y":9,"color":"W"},{"x":3,"y":8,"color":"B"},{"x":3,"y":9,"color":"B"},{"x":5,"y":9,"color":"B"},{"x":4,"y":10,"color":"B"}],"size":13,"auto":true,"concepts":["ladder"],"sceneStep":8,"fb":{"t":"Şimdi müfredattaki uzun örneğe geçiyoruz: 13×13 tahtada rota daha uzun. Kırıcı olmadan ve kırıcı taşla iki sonucu karşılaştır.","c":"info"}}]},
 
-    { id:'l11', title:'Ağ (Geta)', steps:[
-      { text:`<p><span class="term">Ağ</span> (Japonca: <em>geta</em>) — bir taşı atari yapmadan, kaçış yollarını keserek tuzağa düşürmek.</p><p>Beyazın kaçış yolunu kesen noktayı bul — <strong>F6 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:4,y:5},{color:'B',x:5,y:5}], answer:{x:5,y:3}, turn:'black', size:9, guidanceLevel:'direct',
-        movesAfterAnswer:[
-          {color:'W',x:4,y:3,capture:[]},
-          {color:'B',x:4,y:2,capture:[]},
-          {color:'W',x:5,y:4,capture:[]},
-          {color:'B',x:6,y:4,capture:[{x:4,y:4},{x:4,y:3},{x:5,y:4}]},
-        ],
-        fb:{t:'Beyazın tüm kaçış yollarını kapat!',c:'info'}, fb_ok:'Ağ kuruldu! Beyaz kaçmaya çalışıyor ama tuzakta.', fb_err:'Beyazın kaçış yollarını kapatan noktayı bul.' },
-
-      // ── Alıştırma ──
-      { text:`<p>★★ <strong>Alıştırma:</strong> Beyaz taşı ağa düşür — hangi nokta?</p>`, board:[{color:'W',x:5,y:3},{color:'B',x:4,y:2},{color:'B',x:4,y:3},{color:'B',x:5,y:4},{color:'B',x:6,y:4}], answer:{x:6,y:2}, turn:'black', size:9, camera:CAM.center, fb:{t:'Beyazın tüm kaçış yollarını kapatan noktayı bul!',c:'info'}, fb_ok:'Ağ kuruldu! Beyaz nereye kaçarsa yakalanır.', fb_err:'Beyazın sağ üst kaçışını kapatan noktayı bul.' },
-
-      { text:`<p>★★★ <strong>Alıştırma:</strong> Ağ mı merdiven mi — hangisi daha uygun?</p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:4,y:5},{color:'B',x:5,y:5}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Bu pozisyonda doğru yaklaşım hangisi?',options:[{text:'Ağ — F6\'ya oyna',correct:true,feedback:'Doğru! Ağ burada çalışır — beyaz nereye kaçarsa yakalanır.'},{text:'Merdiven — E6\'ya oyna',correct:false,feedback:'Hayır. Merdiven burada çalışmaz, ağ daha etkili.'}]}, fb:{t:'Ağ = etrafı çevirme, merdiven = atari zinciri.',c:'info'} },
-    ]},
+    { id:'l11', title:'Ağ (Geta)', sceneId:'scene-14-net', steps:[
+  {
+    "title": "İki çıkış, tek hedef",
+    "text": "<p><strong>İki çıkış, tek hedef</strong></p><p>Ağ, Japonca geta; Korece jangmun (장문), Çince jiā (枷). Rakibin çıkışlarını önden kapatan bir yakalama tesujisidir. Önce beyaz taşın iki nefesini tahtada bul.</p>",
+    "board": [
+      {
+        "x": 4,
+        "y": 4,
+        "color": "W"
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "color": "B"
+      },
+      {
+        "x": 3,
+        "y": 4,
+        "color": "B"
+      },
+      {
+        "x": 4,
+        "y": 5,
+        "color": "B"
+      },
+      {
+        "x": 5,
+        "y": 5,
+        "color": "B"
+      }
+    ],
+    "size": 9,
+    "auto": true,
+    "concepts": [
+      "net"
+    ],
+    "sourceRefs": [
+      "Falling in Love with Baduk, s. 131; How to Play Go, PDF s. 40, 7-11/12"
+    ],
+    "sceneStep": 0,
+    "fb": {
+      "t": "Ağ, Japonca geta; Korece jangmun (장문), Çince jiā (枷). Rakibin çıkışlarını önden kapatan bir yakalama tesujisidir. Önce beyaz taşın iki nefesini tahtada bul.",
+      "c": "info"
+    }
+  },
+  {
+    "title": "Çaprazdan ağı kur",
+    "text": "<p><strong>Çaprazdan ağı kur</strong></p><p>Beyazın iki nefesinden birine hemen temas etmek yerine, ikisinin de önüne yerleş. Siyah olarak küçük ağı kur; beyazın hâlâ iki nefesi kaldığını gör.</p>",
+    "board": [
+      {
+        "x": 4,
+        "y": 4,
+        "color": "W"
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "color": "B"
+      },
+      {
+        "x": 3,
+        "y": 4,
+        "color": "B"
+      },
+      {
+        "x": 4,
+        "y": 5,
+        "color": "B"
+      },
+      {
+        "x": 5,
+        "y": 5,
+        "color": "B"
+      }
+    ],
+    "size": 9,
+    "auto": true,
+    "concepts": [
+      "net"
+    ],
+    "sourceRefs": [
+      "Falling in Love with Baduk, s. 131; How to Play Go, PDF s. 40, 7-11/12"
+    ],
+    "sceneStep": 1,
+    "fb": {
+      "t": "Beyazın iki nefesinden birine hemen temas etmek yerine, ikisinin de önüne yerleş. Siyah olarak küçük ağı kur; beyazın hâlâ iki nefesi kaldığını gör.",
+      "c": "info"
+    }
+  },
+  {
+    "title": "Beyazla ağı sına",
+    "text": "<p><strong>Beyazla ağı sına</strong></p><p>Önce beyazla bir çıkıştan uzat, sonra siyahla dışarı açılan yeni nefesi kapat. Renkler sırayla değişecek. İki başlangıç kaçışını da yakalamaya kadar sınamalısın.</p>",
+    "board": [
+      {
+        "x": 4,
+        "y": 4,
+        "color": "W"
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "color": "B"
+      },
+      {
+        "x": 3,
+        "y": 4,
+        "color": "B"
+      },
+      {
+        "x": 4,
+        "y": 5,
+        "color": "B"
+      },
+      {
+        "x": 5,
+        "y": 5,
+        "color": "B"
+      },
+      {
+        "x": 5,
+        "y": 3,
+        "color": "B"
+      }
+    ],
+    "size": 9,
+    "auto": true,
+    "concepts": [
+      "net"
+    ],
+    "sourceRefs": [
+      "Falling in Love with Baduk, s. 131; How to Play Go, PDF s. 40, 7-11/12"
+    ],
+    "sceneStep": 2,
+    "fb": {
+      "t": "Önce beyazla bir çıkıştan uzat, sonra siyahla dışarı açılan yeni nefesi kapat. Renkler sırayla değişecek. İki başlangıç kaçışını da yakalamaya kadar sınamalısın.",
+      "c": "info"
+    }
+  },
+  {
+    "title": "İki taşı ağla yakala",
+    "text": "<p><strong>İki taşı ağla yakala</strong></p><p>Bu kez hedef iki beyaz taş. İki çıkış kolunu tamamlayan ağ hamlesini bul; ardından beyazın üç çıkışını sırayla dene. Siyah her uzayışın dış tarafını kapatarak zinciri yakalayacak.</p>",
+    "board": [
+      {
+        "x": 3,
+        "y": 5,
+        "color": "W"
+      },
+      {
+        "x": 4,
+        "y": 5,
+        "color": "W"
+      },
+      {
+        "x": 2,
+        "y": 4,
+        "color": "B"
+      },
+      {
+        "x": 2,
+        "y": 5,
+        "color": "B"
+      },
+      {
+        "x": 3,
+        "y": 6,
+        "color": "B"
+      },
+      {
+        "x": 4,
+        "y": 6,
+        "color": "B"
+      },
+      {
+        "x": 5,
+        "y": 6,
+        "color": "B"
+      }
+    ],
+    "size": 9,
+    "auto": true,
+    "concepts": [
+      "net"
+    ],
+    "sourceRefs": [
+      "How to Play Go, PDF s. 40, 7-13/14"
+    ],
+    "sceneStep": 3,
+    "fb": {
+      "t": "Bu kez hedef iki beyaz taş. İki çıkış kolunu tamamlayan ağ hamlesini bul; ardından beyazın üç çıkışını sırayla dene. Siyah her uzayışın dış tarafını kapatarak zinciri yakalayacak.",
+      "c": "info"
+    }
+  },
+  {
+    "title": "Kenar ağın bir parçası",
+    "text": "<p><strong>Kenar ağın bir parçası</strong></p><p>Bu iki beyaz taş tahtanın kenarında. Kenarın dışına doğru yeni nefes açılamaz; ancak tahta içine açılan iki çıkış hâlâ okunmalı. Ağı kur ve iki kaçışın da nasıl kapandığını dene.</p>",
+    "board": [
+      {
+        "x": 3,
+        "y": 8,
+        "color": "W"
+      },
+      {
+        "x": 4,
+        "y": 8,
+        "color": "W"
+      },
+      {
+        "x": 4,
+        "y": 7,
+        "color": "B"
+      },
+      {
+        "x": 5,
+        "y": 7,
+        "color": "B"
+      },
+      {
+        "x": 5,
+        "y": 8,
+        "color": "B"
+      },
+      {
+        "x": 0,
+        "y": 7,
+        "color": "W"
+      },
+      {
+        "x": 1,
+        "y": 6,
+        "color": "W"
+      },
+      {
+        "x": 2,
+        "y": 5,
+        "color": "W"
+      }
+    ],
+    "size": 9,
+    "auto": true,
+    "concepts": [
+      "net"
+    ],
+    "sourceRefs": [
+      "Falling in Love with Baduk, s. 132, Test 04; kaçış devamları özgün doğrulama"
+    ],
+    "sceneStep": 4,
+    "fb": {
+      "t": "Bu iki beyaz taş tahtanın kenarında. Kenarın dışına doğru yeni nefes açılamaz; ancak tahta içine açılan iki çıkış hâlâ okunmalı. Ağı kur ve iki kaçışın da nasıl kapandığını dene.",
+      "c": "info"
+    }
+  }
+]},
 
     { id:'l12', title:'Snapback', steps:[
       { text:`<p><span class="term">Snapback</span> — rakibe taş kurban vererek daha büyük bir grubu yakalama tekniği.</p><p>Kurban ver — <strong>D5 noktasına tıkla.</strong></p>`,
