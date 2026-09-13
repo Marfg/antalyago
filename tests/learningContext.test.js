@@ -40,8 +40,8 @@ test('müfredatın tamamı sınıflandırılır', () => {
   // fix/two-eyes-curriculum: l7 ("Canlı Gruplar — İki Göz") 8 ayrı gerçek
   // kavramı (bkz. görev talimatı Bölüm 4) 7 bozuk/çakışan adımla
   // karşılayamadığı için 1 adım eklendi (111→112) — gerekçe PR açıklamasında.
-  equal(audit.summary.steps, 117);
-  equal(audit.items.length, 117);
+  equal(audit.summary.steps, 122);
+  equal(audit.items.length, 122);
 });
 
 test('uygulama ve değerlendirme adımları ayrıdır', () => {

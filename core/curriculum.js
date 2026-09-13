@@ -1,4 +1,4 @@
-import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-09-13.5';
+import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-09-13.6';
 /**
  * core/curriculum.js
  *
@@ -1140,60 +1140,7 @@ export const CURRICULUM = [
       { text:`<p>★★★ <strong>Alıştırma:</strong> Bu pozisyonda çift atari mümkün mü?</p>`, board:[{color:'W',x:2,y:2},{color:'W',x:6,y:6},{color:'B',x:1,y:2},{color:'B',x:3,y:2},{color:'B',x:2,y:1},{color:'B',x:5,y:6},{color:'B',x:7,y:6},{color:'B',x:6,y:5}], auto:true, size:9, camera:CAM.overview, miniQuestion:{text:'Bu pozisyonda çift atari kurmak mümkün mü?',options:[{text:'Hayır — taşlar çok uzak',correct:true,feedback:'Doğru! İki beyaz taş birbirinden kopuk, tek bir nokta her ikisine atari yapamaz.'},{text:'Evet — D4 noktası çalışır',correct:false,feedback:'Hayır — iki taş arasındaki mesafe çok büyük.'}]}, fb:{t:'Çift atari için taşların yakın olması gerekir.',c:'info'} },
     ]},
 
-    { id:'l10', title:'Merdiven (Shicho)', steps:[
-
-      { text:`<p><span class="term">Merdiven</span> (Japonca: <em>shicho</em>) — atariden kaçan taş her hamlede yeniden atariye girer ve köşeye doğru sürülür.</p><p>Beyaz kaçmaya çalıştıkça siyah kovalıyor — bu döngüyü izle.</p>`,
-        board:[
-          {color:'W',x:4,y:9},
-          {color:'B',x:3,y:8},{color:'B',x:3,y:9},{color:'B',x:5,y:9},{color:'B',x:4,y:10},
-        ],
-        moves:[
-          {color:'W',x:4,y:8,capture:[]},{color:'B',x:4,y:7,capture:[]},
-          {color:'W',x:5,y:8,capture:[]},{color:'B',x:6,y:8,capture:[]},
-          {color:'W',x:5,y:7,capture:[]},{color:'B',x:5,y:6,capture:[]},
-          {color:'W',x:6,y:7,capture:[]},{color:'B',x:7,y:7,capture:[],speed:0.12},
-          {color:'W',x:6,y:6,capture:[],speed:0.12},{color:'B',x:6,y:5,capture:[],speed:0.12},
-          {color:'W',x:7,y:6,capture:[],speed:0.12},{color:'B',x:8,y:6,capture:[],speed:0.12},
-          {color:'W',x:7,y:5,capture:[],speed:0.12},{color:'B',x:7,y:4,capture:[],speed:0.12},
-          {color:'W',x:8,y:5,capture:[],speed:0.12},{color:'B',x:9,y:5,capture:[],speed:0.12},
-          {color:'W',x:8,y:4,capture:[],speed:0.12},{color:'B',x:8,y:3,capture:[],speed:0.12},
-          {color:'W',x:9,y:4,capture:[],speed:0.12},{color:'B',x:10,y:4,capture:[],speed:0.12},
-          {color:'W',x:9,y:3,capture:[],speed:0.12},{color:'B',x:9,y:2,capture:[],speed:0.12},
-          {color:'W',x:10,y:3,capture:[],speed:0.12},{color:'B',x:11,y:3,capture:[],speed:0.12},
-          {color:'W',x:10,y:2,capture:[],speed:0.12},{color:'B',x:10,y:1,capture:[],speed:0.12},
-          {color:'W',x:11,y:2,capture:[],speed:0.12},{color:'B',x:12,y:2,capture:[],speed:0.12},
-          {color:'W',x:11,y:1,capture:[],speed:0.12},{color:'B',x:11,y:0,capture:[],speed:0.12},
-          {color:'W',x:12,y:1,capture:[],speed:0.12},
-          {color:'B',x:12,y:0,capture:[{x:4,y:9},{x:4,y:8},{x:5,y:8},{x:5,y:7},{x:6,y:7},{x:6,y:6},{x:7,y:6},{x:7,y:5},{x:8,y:5},{x:8,y:4},{x:9,y:4},{x:9,y:3},{x:10,y:3},{x:10,y:2},{x:11,y:2},{x:11,y:1},{x:12,y:1}],speed:0.12},
-        ],
-        moveSpeed:0.35, auto:true, size:13, camera:CAM.overview,
-        fb:{t:'Beyaz her kaçışta köşeye yaklaşıyor — merdiven sonunda onu sıkıştırır.',c:'info'} },
-
-      { text:`<p><strong>Merdiveni kıran taş</strong> — merdiven yolunda bir beyaz taş varsa, kaçan grup ona bağlanır ve kurtulur.</p><div class="highlight-box">Merdiven oynamadan önce taşın tüm yolunu kontrol et!</div>`,
-        board:[
-          {color:'W',x:4,y:9},{color:'W',x:9,y:4},
-          {color:'B',x:3,y:8},{color:'B',x:3,y:9},{color:'B',x:5,y:9},{color:'B',x:4,y:10},
-        ],
-        groupIndicators:[{x:9,y:4,color:'green'}],
-        moves:[
-          {color:'W',x:4,y:8,capture:[]},{color:'B',x:4,y:7,capture:[]},
-          {color:'W',x:5,y:8,capture:[]},{color:'B',x:6,y:8,capture:[]},
-          {color:'W',x:5,y:7,capture:[]},{color:'B',x:5,y:6,capture:[]},
-          {color:'W',x:6,y:7,capture:[]},{color:'B',x:7,y:7,capture:[]},
-          {color:'W',x:6,y:6,capture:[]},{color:'B',x:6,y:5,capture:[]},
-          {color:'W',x:7,y:6,capture:[]},{color:'B',x:8,y:6,capture:[]},
-          {color:'W',x:7,y:5,capture:[]},{color:'B',x:7,y:4,capture:[]},
-          {color:'W',x:8,y:5,capture:[]},{color:'B',x:9,y:5,capture:[]},
-          {color:'W',x:8,y:4,capture:[]},
-        ],
-        moveSpeed:0.22, auto:true, size:13, camera:CAM.overview,
-        fb:{t:'Beyaz (8,4) merdiveni kıran taşa bağlandı — artık köşeye sürülmez!',c:'info'} },
-
-      // ── Alıştırma ──
-      { text:`<p>★★ <strong>Alıştırma:</strong> Bu pozisyon merdiven mi?</p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:5,y:4},{color:'B',x:4,y:5}], auto:true, size:9, camera:CAM.center, miniQuestion:{text:'Beyaz bu atariden kaçabilir mi?',options:[{text:'Hayır — merdiven, yakalanır',correct:true,feedback:'Doğru! Kaçtıkça köşeye sürülecek ve yakalanacak.'},{text:'Evet — kurtulur',correct:false,feedback:'Hayır. Her adımda yeniden atariye girer.'}]}, fb:{t:'Merdiven = kaçış yok.',c:'info'} },
-
-      { text:`<p>★★★ <strong>Alıştırma:</strong> Merdiveni başlat — ilk hamleyi oyna.</p>`, board:[{color:'W',x:5,y:5},{color:'B',x:4,y:4},{color:'B',x:4,y:5},{color:'B',x:6,y:5},{color:'B',x:5,y:6}], answer:{x:5,y:4}, turn:'black', size:9, camera:CAM.center, fb:{t:'Beyaza atari kur — merdiveni başlat!',c:'info'}, fb_ok:'Merdiven başladı! Beyaz köşeye doğru sürülecek.', fb_err:'Beyazın kaçacağı yönün önünü kes.' },
-    ]},
+    { id:'l10', title:'Merdiven (Shichō)', sceneId:'scene-13-ladder', steps:[{"title":"Önce kaçışları say","text":"<p><strong>Önce kaçışları say</strong></p><p>Merdiven (Japonca shichō), kaçan grubu art arda atariye alarak kurulan zikzak bir takip dizisidir. Önce beyazın iki nefesini tahtada bul.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":0,"fb":{"t":"Merdiven (Japonca shichō), kaçan grubu art arda atariye alarak kurulan zikzak bir takip dizisidir. Önce beyazın iki nefesini tahtada bul.","c":"info"}},{"title":"Atarinin yönünü seç","text":"<p><strong>Atarinin yönünü seç</strong></p><p>Siyah olarak beyazı atariye al. İki nefesten hangisini kapatırsan beyaz zikzak kaçışa zorlanır? Diğer yönü de deneyebilirsin.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":1,"fb":{"t":"Siyah olarak beyazı atariye al. İki nefesten hangisini kapatırsan beyaz zikzak kaçışa zorlanır? Diğer yönü de deneyebilirsin.","c":"info"}},{"title":"Zorunlu kaçışı bul","text":"<p><strong>Zorunlu kaçışı bul</strong></p><p>Beyazın yalnız bir nefesi kaldı. Beyaz olarak grubu uzat; sonra yeni grubun nefeslerini say.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"},{"x":2,"y":3,"color":"B"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":2,"fb":{"t":"Beyazın yalnız bir nefesi kaldı. Beyaz olarak grubu uzat; sonra yeni grubun nefeslerini say.","c":"info"}},{"title":"Kaçış → atari ritmi","text":"<p><strong>Kaçış → atari ritmi</strong></p><p>Beyaz uzayınca iki nefes kazanır. Siyah doğru taraftan beyazı atariye alarak nefeslerini yeniden bire indirir. İlk üç hamle çiftini yavaşça izle.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":3,"fb":{"t":"Beyaz uzayınca iki nefes kazanır. Siyah doğru taraftan beyazı atariye alarak nefeslerini yeniden bire indirir. İlk üç hamle çiftini yavaşça izle.","c":"info"}},{"title":"Merdiveni sen sürdür","text":"<p><strong>Merdiveni sen sürdür</strong></p><p>Siyah olarak beyazı üç kez daha atariye al. Beyaz tek nefesinden otomatik olarak kaçacak. Her hamlenden önce iki olası yönü karşılaştır.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"},{"x":2,"y":3,"color":"B"},{"x":3,"y":2,"color":"W"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":4,"fb":{"t":"Siyah olarak beyazı üç kez daha atariye al. Beyaz tek nefesinden otomatik olarak kaçacak. Her hamlenden önce iki olası yönü karşılaştır.","c":"info"}},{"title":"Kenarda son nefes","text":"<p><strong>Kenarda son nefes</strong></p><p>Merdiveni başlangıçtan kenara kadar izle. Beyazın son kaçışı ikinci bir nefes açmayacak. O anda siyah olarak bütün beyaz zinciri yakala.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":5,"fb":{"t":"Merdiveni başlangıçtan kenara kadar izle. Beyazın son kaçışı ikinci bir nefes açmayacak. O anda siyah olarak bütün beyaz zinciri yakala.","c":"info"}},{"title":"Merdiven kırıcı","text":"<p><strong>Merdiven kırıcı</strong></p><p>Aynı başlangıç, aynı takip yönü; bu kez ileride bir beyaz destek taşı var. Kovalamaya başlamadan önce sonucunu düşün.</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"},{"x":6,"y":5,"color":"W"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":6,"fb":{"t":"Aynı başlangıç, aynı takip yönü; bu kez ileride bir beyaz destek taşı var. Kovalamaya başlamadan önce sonucunu düşün.","c":"info"}},{"title":"Destek taşının yeri","text":"<p><strong>Destek taşının yeri</strong></p><p>İki işaretli noktadan birine beyaz destek taşı ekle ve kovalamayı izle. Sadece uzakta bir beyaz taş bulunması yeterli mi?</p>","board":[{"x":2,"y":2,"color":"W"},{"x":1,"y":2,"color":"B"},{"x":2,"y":1,"color":"B"},{"x":3,"y":1,"color":"B"}],"size":9,"auto":true,"concepts":["ladder"],"sceneStep":7,"fb":{"t":"İki işaretli noktadan birine beyaz destek taşı ekle ve kovalamayı izle. Sadece uzakta bir beyaz taş bulunması yeterli mi?","c":"info"}},{"title":"Bütün rotayı oku","text":"<p><strong>Bütün rotayı oku</strong></p><p>Şimdi müfredattaki uzun örneğe geçiyoruz: 13×13 tahtada rota daha uzun. Kırıcı olmadan ve kırıcı taşla iki sonucu karşılaştır.</p>","board":[{"x":4,"y":9,"color":"W"},{"x":3,"y":8,"color":"B"},{"x":3,"y":9,"color":"B"},{"x":5,"y":9,"color":"B"},{"x":4,"y":10,"color":"B"}],"size":13,"auto":true,"concepts":["ladder"],"sceneStep":8,"fb":{"t":"Şimdi müfredattaki uzun örneğe geçiyoruz: 13×13 tahtada rota daha uzun. Kırıcı olmadan ve kırıcı taşla iki sonucu karşılaştır.","c":"info"}}]},
 
     { id:'l11', title:'Ağ (Geta)', steps:[
       { text:`<p><span class="term">Ağ</span> (Japonca: <em>geta</em>) — bir taşı atari yapmadan, kaçış yollarını keserek tuzağa düşürmek.</p><p>Beyazın kaçış yolunu kesen noktayı bul — <strong>F6 noktasına tıkla.</strong></p>`, board:[{color:'W',x:4,y:4},{color:'B',x:3,y:3},{color:'B',x:3,y:4},{color:'B',x:4,y:5},{color:'B',x:5,y:5}], answer:{x:5,y:3}, turn:'black', size:9, guidanceLevel:'direct',

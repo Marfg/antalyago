@@ -68,6 +68,11 @@ const GRAPH_BASENAMES = [
   // v9 (2026-09-02.2) — Sahne #10 ("Oyun Sonu ve Sayım") ve TEK yeni
   // yardımcı modülü.
   'scene10EndgameCounting.js', 'endgameCountingPolicy.js',
+  'scene13Ladder.js',
+  'ladderLessonController.js',
+  'ladderLessonPolicy.js',
+  'ladderScenarioData.js',
+  'ladderMotionOverlay.js',
   'scene11TwoEyes.js', 'twoEyesPolicy.js', 'eyeAnalysis.js', 'scene12Connections.js', 'connectionShapesPolicy.js',
 ];
 
@@ -95,6 +100,9 @@ const SCAN_FILES = [
   'scenes/koRulePolicy.js',
   'scenes/scene10EndgameCounting.js',
   'scenes/endgameCountingPolicy.js',
+  'scenes/scene13Ladder.js',
+  'scenes/ladderLessonController.js',
+  'scenes/ladderLessonPolicy.js',
   'scenes/scene11TwoEyes.js', 'scenes/scene12Connections.js', 'scenes/connectionShapesPolicy.js', 'scenes/twoEyesPolicy.js', 'core/eyeAnalysis.js',
 ];
 

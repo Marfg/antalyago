@@ -1,0 +1,24 @@
+
+body:has(.s13-root){--narration-h:clamp(240px,34vh,300px)}
+body:has(.s13-root) #ls-stage{max-width:min(1000px,96vw)}
+body:has(.s13-root) #ls-narration{padding:.55rem 1rem;overflow-y:auto}
+.s13-scene-host{max-width:780px;min-height:0;align-items:center;justify-content:flex-start;gap:7px}
+.s13-heading{font-size:.85rem;color:var(--gold2);font-weight:650;margin:0}
+.s13-heading-row{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px}
+.s13-story{font-size:.86rem;line-height:1.5;margin:0;max-width:720px;min-height:2.7em}
+.s13-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px}
+.s13-row button{background:transparent;border:1px solid var(--gborder);border-radius:8px;color:var(--text);font:inherit;font-size:.76rem;padding:7px 11px;cursor:pointer;min-height:34px}
+.s13-row button[aria-pressed=true],.s13-row .primary{background:rgba(200,168,75,.15);color:var(--gold2);border-color:var(--gold)}
+.s13-row button:disabled{opacity:.35;cursor:default}
+.s13-feedback{font-size:.8rem;margin:0;min-height:2em;color:var(--muted);max-width:720px}
+.s13-feedback.good{color:#69cda3}
+.s13-timeline{gap:8px;width:min(620px,100%)}
+.s13-timeline input{flex:1;min-width:90px;accent-color:var(--gold)}
+.s13-counter{font-size:.72rem;min-width:68px;color:var(--muted);font-variant-numeric:tabular-nums}
+.s13-dots button{padding:2px;width:25px;min-height:25px;border-radius:50%;font-size:.68rem}
+.s13-dots button.done{border-color:#4c9378}
+.s13-badge{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:.73rem;color:var(--text);background:rgba(8,8,14,.75);border:1px solid var(--gborder);border-radius:20px;padding:5px 12px;pointer-events:none;white-space:nowrap}
+.s13-motion-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.s13-root [hidden]{display:none!important}
+@media(max-width:600px){body:has(.s13-root){--narration-h:clamp(240px,40vh,300px)}.s13-story{font-size:.78rem;min-height:3em}.s13-feedback{font-size:.74rem}.s13-row button{padding:5px 8px;font-size:.7rem}.s13-dots button{padding:2px}}
+.s13-root{display:flex;flex-direction:column;align-items:center;gap:7px;width:100%}.s13-root[hidden],.s13-motion-overlay[hidden],.s13-badge[hidden]{display:none!important}

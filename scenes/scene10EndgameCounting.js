@@ -60,10 +60,10 @@
  * Teacher Studio Diagnostics bunu bilinen-olmayan concept olarak raporlar
  * (Sahne #8/#9 İLE AYNI bilinçli, gizlenmeyen boşluk).
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-13.5';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-13.6';
 import {
   getEndgameCountingMoment, evaluateRegionTap, regionSignature, CONCEPT,
-} from './endgameCountingPolicy.js?v=2026-09-13.5';
+} from './endgameCountingPolicy.js?v=2026-09-13.6';
 
 const STATE = { INTRO: 'intro', PLAYING: 'playing' };
 

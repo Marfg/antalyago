@@ -4,7 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Antalya GO — Öğrenme Sahneleri</title>
-<link rel="stylesheet" href="styles/learning-scenes.css?v=2026-09-13.5" />
+<link rel="stylesheet" href="styles/learning-scenes.css?v=2026-09-13.6" />
+<link rel="stylesheet" href="styles/ladder-lesson.css?v=2026-09-13.6">
 </head>
 <body>
 <!-- v0.9 — Board ve anlatım şeridi TEK bir dikey eksende (#ls-stage):
@@ -43,25 +44,26 @@
 </div>
 
 <script type="module">
-import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-09-13.5';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-13.5';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-13.5';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-13.5';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-13.5';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-13.5';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-13.5';
-import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-09-13.5';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-13.5';
-import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-13.5';
-import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-09-13.5';
-import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-09-13.5';
-import { scene12Connections } from './scenes/scene12Connections.js?v=2026-09-13.5';
-import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-09-13.5';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-13.5';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-13.5';
-import { EventLog } from './core/eventLog.js?v=2026-09-13.5';
-import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-09-13.5';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-13.5';
+import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-09-13.6';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-13.6';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-13.6';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-13.6';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-13.6';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-13.6';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-13.6';
+import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-09-13.6';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-13.6';
+import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-13.6';
+import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-09-13.6';
+import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-09-13.6';
+import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-09-13.6';
+import { scene12Connections } from './scenes/scene12Connections.js?v=2026-09-13.6';
+import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-09-13.6';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-13.6';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-13.6';
+import { EventLog } from './core/eventLog.js?v=2026-09-13.6';
+import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-09-13.6';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-13.6';
 
 /* ── Sürüm/cache bekçisi ──────────────────────────────────────────────
    GitHub Pages önündeki CDN, .js dosyalarına saatlerce (bkz. görev
@@ -172,7 +174,7 @@ const canvas = document.getElementById('ls-canvas');
 const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
 const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19 });
 
-const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene07CapturePractice, scene08IllegalMoves, scene09KoRule, scene10EndgameCounting, scene11TwoEyes, scene12Connections]);
+const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene07CapturePractice, scene08IllegalMoves, scene09KoRule, scene10EndgameCounting, scene11TwoEyes, scene12Connections, scene13Ladder]);
 
 const searchParams = new URLSearchParams(location.search);
 
@@ -258,6 +260,7 @@ const runtime = createSceneRuntime({
   emitEvent: appendEvent,
   contextExtras: () => ({
     container: sceneHost,
+    canvas,
     boardAdapter,
     openTopicsList,
     ...(whiteMoveDelayOverride != null ? { whiteMoveDelayMs: whiteMoveDelayOverride } : {}),
