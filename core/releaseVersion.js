@@ -74,4 +74,4 @@
  * TEK dosyada iki AYRI ders bölümünü (l6/l7) otomatik/temiz birleştirdi,
  * çakışma işareti KALMADI.
  */
-export const SCENE_RELEASE = '2026-09-13.8';
+export const SCENE_RELEASE = '2026-09-15.v0-text1';

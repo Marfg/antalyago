@@ -40,14 +40,14 @@
  * özet + [Bu konuyu tekrar et]/[Sonraki konu] gösterir.
  */
 
-import { pickDeterministicWhiteMove } from './turnPolicy.js?v=2026-09-13.8';
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-13.8';
+import { pickDeterministicWhiteMove } from './turnPolicy.js?v=2026-09-15.v0-text1';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-15.v0-text1';
 
 const SUMMARY_TEXT = "Go'da oyuncular sırayla taş yerleştirir.";
 
 const INFO_STEPS = [
   {
-    text: 'Go, sırayla oynanan bir oyundur. Taraflar dönüşümlü olarak hamle yapar — aynı anda iki taş birden konmaz.',
+    text: 'Go sıralı bir oyundur. Bir oyuncu iki hamle üst üste oynamaz.',
     ariaLabel: '1. adımı onayla',
   },
   {
