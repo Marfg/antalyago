@@ -1,5 +1,5 @@
-import {BoardState} from '../core/boardState.js?v=2026-09-15.v0-text1';
-import {applyMove,isValidMove,getGroup} from '../core/ruleEngine.js?v=2026-09-15.v0-text1';
+import {BoardState} from '../core/boardState.js?v=2026-09-16.v0-intersections1';
+import {applyMove,isValidMove,getGroup} from '../core/ruleEngine.js?v=2026-09-16.v0-intersections1';
 export const CONNECTION_BOARD_SIZE=9;
 export const CONNECTION_OFFSET=1;
 export const CONNECTION_SHAPES=[

@@ -38,11 +38,11 @@
  * SAHNEYE ÖZEL OLMAYAN genel event: `scene_hint_revealed` (bkz.
  * revealHint altında) — bir an için EN FAZLA BİR KEZ üretilir.
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-15.v0-text1';
-import { assessmentTransition } from './assessmentTransition.js?v=2026-09-15.v0-text1';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-16.v0-intersections1';
+import { assessmentTransition } from './assessmentTransition.js?v=2026-09-16.v0-intersections1';
 import {
   getCapturePracticeMoments, isValidCapturePoint, computePracticeResult, buildResultText,
-} from './capturePracticePolicy.js?v=2026-09-15.v0-text1';
+} from './capturePracticePolicy.js?v=2026-09-16.v0-intersections1';
 
 const CONCEPT = 'capture';
 

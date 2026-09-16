@@ -1,6 +1,6 @@
-import {BoardState} from '../core/boardState.js?v=2026-09-15.v0-text1';
-import {applyMove,isValidMove,getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-09-15.v0-text1';
-import {LADDER_SCENARIOS,LADDER_STEPS} from './ladderScenarioData.js?v=2026-09-15.v0-text1';
+import {BoardState} from '../core/boardState.js?v=2026-09-16.v0-intersections1';
+import {applyMove,isValidMove,getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-09-16.v0-intersections1';
+import {LADDER_SCENARIOS,LADDER_STEPS} from './ladderScenarioData.js?v=2026-09-16.v0-intersections1';
 export {LADDER_STEPS};
 export function whiteGroup(board,anchor){
  if(board.colorAt(anchor.x,anchor.y)!=='white')return {stones:[],liberties:[],count:0};

@@ -1,5 +1,5 @@
-import {isValidMove} from '../core/ruleEngine.js?v=2026-09-15.v0-text1';
-import {NET_FORMS,NET_STEPS,seedBoard,targetGroup,netSequence,permutations,goPoint} from './netLessonPolicy.js?v=2026-09-15.v0-text1';
+import {isValidMove} from '../core/ruleEngine.js?v=2026-09-16.v0-intersections1';
+import {NET_FORMS,NET_STEPS,seedBoard,targetGroup,netSequence,permutations,goPoint} from './netLessonPolicy.js?v=2026-09-16.v0-intersections1';
 
 export function mountNetLesson({board,overlay,document,initialStep=0,onPresented=()=>{},onStepComplete=()=>{},onAllComplete=()=>{}}){
  const $=id=>document.getElementById(id);

@@ -220,9 +220,9 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-09-15.v0-text1';
-import { BoardState } from '../core/boardState.js?v=2026-09-15.v0-text1';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-09-15.v0-text1';
+import { CAM } from '../core/curriculum.js?v=2026-09-16.v0-intersections1';
+import { BoardState } from '../core/boardState.js?v=2026-09-16.v0-intersections1';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-09-16.v0-intersections1';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -299,6 +299,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // rehberi DEĞİLDİR, yalnız seçili taşın gerçek komşu boş noktalarını
   // gösterir (bkz. getLibertiesAt/showLiberties/clearLiberties).
   let libertyPoints = [];
+  let intersectionMarkers = false;
+  let markerTime = 0;
   // Hamle öncesi taş silueti — {gx,gz,color}|null. Board State'e ASLA
   // yazılmaz, yalnız görsel bir önizlemedir (bkz. setMovePreview/
   // clearMovePreview/drawMovePreview).
@@ -959,6 +961,14 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
     drawBoard();
     drawGrid();
+    if (intersectionMarkers) {
+      ctx.save();
+      // A gentle four-second brightness cycle; reduced motion stays still.
+      ctx.globalAlpha = reduceMotion ? 0.42 : 0.22 + 0.40 * (0.5 - 0.5 * Math.cos(markerTime * Math.PI / 2));
+      for (let row = 0; row < SIZE; row++)
+        for (let col = 0; col < SIZE; col++) drawLibertyMark(col, row, 1);
+      ctx.restore();
+    }
     // movePreview aktifken sade hover noktası GÖSTERİLMEZ — aynı kesişimde
     // iki farklı işaret üst üste binmesin diye (bkz. drawMovePreview).
     if (inputEnabled && hoverPoint && !movePreview) drawHoverPoint(hoverPoint.gx, hoverPoint.gz);
@@ -986,6 +996,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   function loop(nowMs) {
     const dt = lastFrameMs ? Math.min(0.05, (nowMs - lastFrameMs) / 1000) : 1 / 60;
     lastFrameMs = nowMs;
+    if (intersectionMarkers && !reduceMotion) markerTime += dt;
     if (camLerpT < 1 && camTarget) {
       camLerpT = Math.min(1, camLerpT + (1 / 60) / CAM_DUR);
       const t = easeInOutCubic(camLerpT);
@@ -1069,6 +1080,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       SIZE = n; CELL = sizeToCell(n); HALF = (SIZE - 1) * CELL / 2; STONE_R = CELL * (20 / 48);
       boardSt = new BoardState(SIZE);
       visualStones = [];
+      intersectionMarkers = false;
       libertyPoints = [];
       movePreview = null;
       illegalMarks = [];
@@ -1080,6 +1092,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     reset() {
       boardSt.reset(SIZE);
       visualStones = [];
+      intersectionMarkers = false;
       libertyPoints = [];
       movePreview = null;
       illegalMarks = [];
@@ -1209,6 +1222,10 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     },
 
     /** @param {Array<{row:number,col:number}>} points — pedagojik nefes-noktası işaretlerini çizer. */
+    showIntersectionMarkers(visible) {
+      if (visible && !intersectionMarkers) markerTime = 0;
+      intersectionMarkers = Boolean(visible);
+    },
     showLiberties(points) {
       libertyPoints = (points || []).map(p => ({ gx: p.col, gz: p.row, t: reduceMotion ? 1 : 0 }));
     },

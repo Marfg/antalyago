@@ -1,6 +1,6 @@
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-15.v0-text1';
-import { getTwoEyesMoments, buildTwoEyesBoard, evaluateTwoEyesTap, CONCEPT } from './twoEyesPolicy.js?v=2026-09-15.v0-text1';
-import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-09-15.v0-text1';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-16.v0-intersections1';
+import { getTwoEyesMoments, buildTwoEyesBoard, evaluateTwoEyesTap, CONCEPT } from './twoEyesPolicy.js?v=2026-09-16.v0-intersections1';
+import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-09-16.v0-intersections1';
 let active = null;
 const points = pairs => pairs.map(([col,row]) => ({row,col}));
 export const scene11TwoEyes = {

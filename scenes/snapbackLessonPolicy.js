@@ -1,5 +1,5 @@
-import {BoardState} from '../core/boardState.js?v=2026-09-15.v0-text1';
-import {isValidMove,applyMove,getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-09-15.v0-text1';
+import {BoardState} from '../core/boardState.js?v=2026-09-16.v0-intersections1';
+import {isValidMove,applyMove,getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-09-16.v0-intersections1';
 export function seedBoard(stones){const b=new BoardState(9);for(const p of stones)b.placeStone(p.x,p.y,p.color);return b}
 const pts=(color,coords)=>coords.map(([x,y])=>({x,y,color}));
 const legacy=[{"seed":[{"color":"white","x":3,"y":3},{"color":"white","x":2,"y":4},{"color":"white","x":4,"y":4},{"color":"white","x":4,"y":5},{"color":"black","x":4,"y":3},{"color":"black","x":5,"y":3},{"color":"black","x":5,"y":4},{"color":"black","x":2,"y":5},{"color":"black","x":5,"y":5},{"color":"black","x":3,"y":6},{"color":"black","x":4,"y":6}],"moves":[{"x":3,"y":4,"color":"black"},{"x":3,"y":5,"color":"white"},{"x":3,"y":4,"color":"black"}]},{"seed":[{"color":"white","x":0,"y":2},{"color":"white","x":1,"y":2},{"color":"white","x":2,"y":2},{"color":"white","x":3,"y":2},{"color":"white","x":0,"y":3},{"color":"white","x":1,"y":4},{"color":"white","x":1,"y":5},{"color":"black","x":1,"y":3},{"color":"black","x":2,"y":3},{"color":"black","x":2,"y":4},{"color":"black","x":2,"y":5},{"color":"black","x":0,"y":6},{"color":"black","x":1,"y":6}],"moves":[{"x":0,"y":4,"color":"black"},{"x":0,"y":5,"color":"white"},{"x":0,"y":4,"color":"black"}]}];

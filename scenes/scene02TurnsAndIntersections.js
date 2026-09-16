@@ -6,12 +6,7 @@
  * kesişim noktalarına konur, (3) ilk hamleyi siyah yapar. Sahne sonunda
  * tahtada 3 siyah + 3 beyaz = 6 gerçek, kural-doğrulanmış taş vardır.
  *
- * v0.9 — kesişim "rehber" (yeşil neon nokta) sistemi BİLEREK KALDIRILDI
- * (bkz. görev talimatı Bölüm B, adapters/sceneBoardAdapter.js dosya başı
- * notu): kullanıcı kesişimleri artık doğal tahta çizgileri, adaptörün
- * ince tek-noktalı pointer hover geri bildirimi ve taşın gerçek yerleşme
- * davranışıyla öğrenir. `scene_guides_shown`/`scene_guides_cleared`
- * event'leri ve ilgili state ARTIK ÜRETİLMEZ.
+ * Kesişim açıklamasında hafif neon işaretler gösterilir; diğer adımlarda temizlenir.
  *
  * DOM'u ORTAK anlatım şeridi ilkelleriyle (ls-strip-row, ls-tick — bkz.
  * styles/learning-scenes.css) kurar — ayrı bir sağ panel YOK.
@@ -40,8 +35,8 @@
  * özet + [Bu konuyu tekrar et]/[Sonraki konu] gösterir.
  */
 
-import { pickDeterministicWhiteMove } from './turnPolicy.js?v=2026-09-15.v0-text1';
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-15.v0-text1';
+import { pickDeterministicWhiteMove } from './turnPolicy.js?v=2026-09-16.v0-intersections1';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-16.v0-intersections1';
 
 const SUMMARY_TEXT = "Go'da oyuncular sırayla taş yerleştirir.";
 
@@ -51,7 +46,7 @@ const INFO_STEPS = [
     ariaLabel: '1. adımı onayla',
   },
   {
-    text: 'Taşlar karelerin İÇİNE değil, çizgilerin KESİŞTİĞİ noktalara konur.',
+    text: 'Taşlar karelerin içine değil, Çizgilerin Kesiştiği noktalara yerleştirilir.',
     ariaLabel: '2. adımı onayla',
   },
   {
@@ -80,6 +75,8 @@ let whiteTimerId = null;
 let clearScheduledTimeoutFn = clearTimeout;
 let topicEnded = false;
 let topicEnd = null;
+let markerBoard = null;
+let advanceTimerId = null;
 
 function resetState() {
   step = 0;
@@ -96,6 +93,7 @@ function resetState() {
 
 function render() {
   if (!els) return;
+  markerBoard?.showIntersectionMarkers(step === 1);
   els.stepEls.forEach((el, i) => { el.hidden = i !== step; });
 }
 
@@ -229,6 +227,7 @@ export const scene02TurnsAndIntersections = {
 
   mount(context) {
     resetState();
+    markerBoard = context.boardAdapter;
     cleanupFns = [];
     els = buildDom(context);
 
@@ -249,6 +248,7 @@ export const scene02TurnsAndIntersections = {
 
         const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const doAdvance = () => {
+          advanceTimerId = null;
           confirmingStep = null;
           step = i + 1;
           context.emit('scene_info_step_confirmed', { step });
@@ -257,7 +257,7 @@ export const scene02TurnsAndIntersections = {
         };
         if (reduceMotion) { doAdvance(); return; }
         els.stepEls[i].classList.add('ls-closing');
-        setTimeout(doAdvance, 220);
+        advanceTimerId = setTimeout(doAdvance, 220);
       });
     });
 
@@ -265,6 +265,10 @@ export const scene02TurnsAndIntersections = {
   },
 
   unmount() {
+    if (advanceTimerId !== null) clearTimeout(advanceTimerId);
+    advanceTimerId = null;
+    markerBoard?.showIntersectionMarkers(false);
+    markerBoard = null;
     cleanupFns.forEach(fn => fn());
     cleanupFns = [];
     if (unsubscribeTap) { unsubscribeTap(); unsubscribeTap = null; }
