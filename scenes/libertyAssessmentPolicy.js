@@ -27,9 +27,9 @@
  *     oynanan hamlenin GERÇEK yakalamayı ürettiğini garanti eder — bkz.
  *     adapters/sceneBoardAdapter.js playMove()).
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-09-16.v0-intersections1';
-import { BoardState } from '../core/boardState.js?v=2026-09-16.v0-intersections1';
-import { getGroup, getLiberties, applyMove } from '../core/ruleEngine.js?v=2026-09-16.v0-intersections1';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-09-20.capture-native1';
+import { BoardState } from '../core/boardState.js?v=2026-09-20.capture-native1';
+import { getGroup, getLiberties, applyMove } from '../core/ruleEngine.js?v=2026-09-20.capture-native1';
 
 const LESSON_ID = 'l2';
 const BOARD_SIZE = 9;

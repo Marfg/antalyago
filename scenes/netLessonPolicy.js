@@ -1,6 +1,6 @@
-import {BoardState} from '../core/boardState.js?v=2026-09-16.v0-intersections1';
-import {getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-09-16.v0-intersections1';
-import {NET_FORMS,NET_STEPS,NET_VARIANTS} from './netScenarioData.js?v=2026-09-16.v0-intersections1';
+import {BoardState} from '../core/boardState.js?v=2026-09-20.capture-native1';
+import {getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-09-20.capture-native1';
+import {NET_FORMS,NET_STEPS,NET_VARIANTS} from './netScenarioData.js?v=2026-09-20.capture-native1';
 export {NET_FORMS,NET_STEPS};
 export function seedBoard(stones,size=9){const b=new BoardState(size);for(const p of stones)b.placeStone(p.x,p.y,p.color);return b}
 export function targetGroup(board,anchor){

@@ -1,5 +1,5 @@
-import {isValidMove} from '../core/ruleEngine.js?v=2026-09-16.v0-intersections1';
-import {SNAP_STEPS,seedBoard,buildScenario,groupAt} from './snapbackLessonPolicy.js?v=2026-09-16.v0-intersections1';
+import {isValidMove} from '../core/ruleEngine.js?v=2026-09-20.capture-native1';
+import {SNAP_STEPS,seedBoard,buildScenario,groupAt} from './snapbackLessonPolicy.js?v=2026-09-20.capture-native1';
 export function mountSnapbackLesson({board,overlay,document,initialStep=0,onPresented=()=>{},onStepComplete=()=>{},onAllComplete=()=>{}}){
  const $=id=>document.getElementById(id),scenarios=SNAP_STEPS.map(buildScenario),done=new Set();
  let step=0,frame=0,live,ended=false,libs=false,term=null,alive=true;

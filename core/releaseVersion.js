@@ -74,4 +74,4 @@
  * TEK dosyada iki AYRI ders bölümünü (l6/l7) otomatik/temiz birleştirdi,
  * çakışma işareti KALMADI.
  */
-export const SCENE_RELEASE = '2026-09-16.v0-intersections1';
+export const SCENE_RELEASE = '2026-09-20.capture-native1';

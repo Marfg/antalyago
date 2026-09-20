@@ -1,6 +1,6 @@
-import { CURRICULUM } from '../core/curriculum.js?v=2026-09-16.v0-intersections1';
-import { BoardState } from '../core/boardState.js?v=2026-09-16.v0-intersections1';
-import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-09-16.v0-intersections1';
+import { CURRICULUM } from '../core/curriculum.js?v=2026-09-20.capture-native1';
+import { BoardState } from '../core/boardState.js?v=2026-09-20.capture-native1';
+import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-09-20.capture-native1';
 export const CONCEPT = 'life_and_death';
 export function getTwoEyesMoments() {
   const lesson = CURRICULUM.flatMap(c => c.lessons).find(l => l.id === 'l7');

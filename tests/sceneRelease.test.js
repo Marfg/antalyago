@@ -1,3 +1,5 @@
+import { scene06CaptureBasics } from '../scenes/scene06CaptureBasics.js';
+import { scene07CapturePractice } from '../scenes/scene07CapturePractice.js';
 /**
  * tests/sceneRelease.test.js
  * node tests/sceneRelease.test.js
@@ -43,7 +45,7 @@ const GRAPH_BASENAMES = [
   // v3 (2026-08-23.3) — Sahne #5 ve iki yeni yardımcı modülü.
   'scene05LibertyAssessment.js', 'libertyAssessmentPolicy.js', 'assessmentTransition.js',
   // v4 (2026-08-25.1) — Sahne #6 ve bir yeni yardımcı modülü.
-  'scene06CaptureBasics.js', 'capturePolicy.js',
+  'scene06CaptureBasics.js', 'capturePolicy.js', 'captureScene.js', 'captureNativePolicy.js',
   // v5 (2026-08-25.2) — Sahne #7 ve bir yeni yardımcı modülü.
   'scene07CapturePractice.js', 'capturePracticePolicy.js',
   // v6 (2026-08-29.1) — Sahne #8 ve bir yeni yardımcı modülü.
@@ -75,7 +77,7 @@ const SCAN_FILES = [
   'scenes/topicEndControls.js', 'scenes/groupLibertyPolicy.js',
   'adapters/sceneBoardAdapter.js',
   'scenes/scene05LibertyAssessment.js', 'scenes/libertyAssessmentPolicy.js',
-  'scenes/scene06CaptureBasics.js', 'scenes/capturePolicy.js',
+  'scenes/scene06CaptureBasics.js', 'scenes/capturePolicy.js', 'scenes/captureScene.js', 'scenes/captureNativePolicy.js',
   'scenes/scene07CapturePractice.js', 'scenes/capturePracticePolicy.js',
   'scenes/scene08IllegalMoves.js', 'scenes/illegalMovePolicy.js',
   'scenes/scene09KoRule.js', 'scenes/koRulePolicy.js',
@@ -198,8 +200,8 @@ test('scenes/scene05LibertyAssessment.js: exported version >= 1, sahne release t
   assert.ok(Number(m[1]) >= 1, `version >= 1 olmalı, bulunan: ${m[1]}`);
 });
 
-test('RELEASE token "2026-09-16.v0-intersections1" — eski "2026-08-23.2/.3", "2026-08-24.1", "2026-08-25.1", "2026-08-25.2", "2026-08-26.1", "2026-08-26.2", "2026-08-29.1", "2026-08-31.1" (PR#1 dal taslağı), "2026-09-01.1" (main, PR#1 birleşmeden ÖNCE), "2026-09-02.1" (Sahne #10 öncesi) ve "2026-09-02.2" (İki Göz birleşmeden ÖNCE) query\'leri AKTİF graph\'ta KALMAMIŞ', () => {
-  assert.equal(RELEASE, '2026-09-16.v0-intersections1');
+test('RELEASE token "2026-09-20.capture-native1" — eski "2026-08-23.2/.3", "2026-08-24.1", "2026-08-25.1", "2026-08-25.2", "2026-08-26.1", "2026-08-26.2", "2026-08-29.1", "2026-08-31.1" (PR#1 dal taslağı), "2026-09-01.1" (main, PR#1 birleşmeden ÖNCE), "2026-09-02.1" (Sahne #10 öncesi) ve "2026-09-02.2" (İki Göz birleşmeden ÖNCE) query\'leri AKTİF graph\'ta KALMAMIŞ', () => {
+  assert.equal(RELEASE, '2026-09-20.capture-native1');
   for (const rel of SCAN_FILES) {
     const src = read(rel);
     assert.ok(!src.includes('?v=2026-08-23.2'), `${rel}: eski (2026-08-23.2) release query'si HÂLÂ mevcut`);
@@ -218,21 +220,11 @@ test('RELEASE token "2026-09-16.v0-intersections1" — eski "2026-08-23.2/.3", "
 });
 
 test('scenes/scene06CaptureBasics.js: exported version >= 1', () => {
-  const src = read('scenes/scene06CaptureBasics.js');
-  const idIdx = src.indexOf(`id: 'scene-06-capture-basics'`);
-  assert.ok(idIdx >= 0, 'exported scene objesi bulunamadı');
-  const m = src.slice(idIdx).match(/version:\s*(\d+)/);
-  assert.ok(m, 'exported obje içinde version alanı bulunamadı');
-  assert.ok(Number(m[1]) >= 1, `version >= 1 olmalı, bulunan: ${m[1]}`);
+  assert.ok(Number.isInteger(scene06CaptureBasics.version) && scene06CaptureBasics.version >= 1);
 });
 
 test('scenes/scene07CapturePractice.js: exported version >= 1', () => {
-  const src = read('scenes/scene07CapturePractice.js');
-  const idIdx = src.indexOf(`id: 'scene-07-capture-practice'`);
-  assert.ok(idIdx >= 0, 'exported scene objesi bulunamadı');
-  const m = src.slice(idIdx).match(/version:\s*(\d+)/);
-  assert.ok(m, 'exported obje içinde version alanı bulunamadı');
-  assert.ok(Number(m[1]) >= 1, `version >= 1 olmalı, bulunan: ${m[1]}`);
+  assert.ok(Number.isInteger(scene07CapturePractice.version) && scene07CapturePractice.version >= 1);
 });
 
 test('scenes/scene08IllegalMoves.js: exported version >= 1', () => {

@@ -56,7 +56,7 @@ const GRAPH_BASENAMES = [
   // v3 (2026-08-23.3) — Sahne #5 ve İKİ yeni yardımcı modülü.
   'scene05LibertyAssessment.js', 'libertyAssessmentPolicy.js', 'assessmentTransition.js',
   // v4 (2026-08-25.1) — Sahne #6 ("Taş Alma") ve TEK yeni yardımcı modülü.
-  'scene06CaptureBasics.js', 'capturePolicy.js',
+  'scene06CaptureBasics.js', 'capturePolicy.js', 'captureScene.js', 'captureNativePolicy.js',
   // v5 (2026-08-25.2) — Sahne #7 ("Taş Alma Uygulamaları") ve TEK yeni
   // yardımcı modülü.
   'scene07CapturePractice.js', 'capturePracticePolicy.js',
@@ -100,6 +100,8 @@ const SCAN_FILES = [
   'scenes/libertyAssessmentPolicy.js',
   'scenes/scene06CaptureBasics.js',
   'scenes/capturePolicy.js',
+  'scenes/captureScene.js',
+  'scenes/captureNativePolicy.js',
   'scenes/scene07CapturePractice.js',
   'scenes/capturePracticePolicy.js',
   'scenes/scene08IllegalMoves.js',
