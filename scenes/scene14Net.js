@@ -1,6 +1,6 @@
-import {mountNetLesson} from './netLessonController.js?v=2026-09-20.capture-native1';
-import {createLadderMotionOverlay} from './ladderMotionOverlay.js?v=2026-09-20.capture-native1';
-import {mountTopicEndControls} from './topicEndControls.js?v=2026-09-20.capture-native1';
+import {mountNetLesson} from './netLessonController.js?v=2026-09-22.illegal-native2';
+import {createLadderMotionOverlay} from './ladderMotionOverlay.js?v=2026-09-22.illegal-native2';
+import {mountTopicEndControls} from './topicEndControls.js?v=2026-09-22.illegal-native2';
 let active=null;
 export const scene14Net={
  id:'scene-14-net',version:1,title:'Ağ (Geta)',curriculumRef:{lessonId:'l11',concept:'net'},

@@ -1,4 +1,4 @@
-import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-09-20.capture-native1';
+import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-09-22.illegal-native2';
 /**
  * core/curriculum.js
  *

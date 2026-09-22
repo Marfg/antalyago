@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><title>LS 08 prototype tests</title>
+<style>body{font:16px system-ui;background:#101018;color:#eee}iframe{border:1px solid #555}pre{white-space:pre-wrap}</style>
+<h1>LS 08 prototype tests</h1><pre id="results">Running…</pre>
+<script type="module">
+import { runIllegalBrowserTests } from './illegalNative.browser.js';
+try {await runIllegalBrowserTests(message=>document.querySelector('#results').textContent+='\n'+message);document.body.dataset.result='passed';}
+catch(e){document.querySelector('#results').textContent+='\nFAIL '+e.stack;document.body.dataset.result='failed';}
+</script>

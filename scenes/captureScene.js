@@ -1,5 +1,5 @@
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-20.capture-native1';
-import { createCaptureBoard, targetLiberties, evaluateCaptureMove, chooseCaptureReply } from './captureNativePolicy.js?v=2026-09-20.capture-native1';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-22.illegal-native2';
+import { createCaptureBoard, targetLiberties, evaluateCaptureMove, chooseCaptureReply } from './captureNativePolicy.js?v=2026-09-22.illegal-native2';
 
 /** Capture-only controller using the existing scene lifecycle and board adapter. */
 export function createCaptureScene({ id, scenario, game = false }) {

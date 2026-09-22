@@ -1,6 +1,6 @@
 /** LS-owned positions. No lesson/page content is read here. */
-import { BoardState } from '../core/boardState.js?v=2026-09-20.capture-native1';
-import { applyMove, isValidMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-09-20.capture-native1';
+import { BoardState } from '../core/boardState.js?v=2026-09-22.illegal-native2';
+import { applyMove, isValidMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-09-22.illegal-native2';
 
 const stone = (x, y, color) => ({ x, y, color });
 export const CAPTURE_SCENARIOS = [
