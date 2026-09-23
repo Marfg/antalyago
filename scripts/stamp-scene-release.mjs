@@ -56,13 +56,13 @@ const GRAPH_BASENAMES = [
   // v3 (2026-08-23.3) — Sahne #5 ve İKİ yeni yardımcı modülü.
   'scene05LibertyAssessment.js', 'libertyAssessmentPolicy.js', 'assessmentTransition.js',
   // v4 (2026-08-25.1) — Sahne #6 ("Taş Alma") ve TEK yeni yardımcı modülü.
-  'scene06CaptureBasics.js', 'capturePolicy.js',
+  'scene06CaptureBasics.js', 'capturePolicy.js', 'captureScene.js', 'captureNativePolicy.js',
   // v5 (2026-08-25.2) — Sahne #7 ("Taş Alma Uygulamaları") ve TEK yeni
   // yardımcı modülü.
   'scene07CapturePractice.js', 'capturePracticePolicy.js',
   // v6 (2026-08-29.1) — Sahne #8 ("Yasak Hamleler") ve TEK yeni yardımcı
   // modülü.
-  'scene08IllegalMoves.js', 'illegalMovePolicy.js',
+  'scene08IllegalMoves.js', 'illegalMovePolicy.js', 'illegalNativePolicy.js',
   // v7 (2026-08-31.1) — Sahne #9 ("Ko Kuralı") ve TEK yeni yardımcı modülü.
   'scene09KoRule.js', 'koRulePolicy.js',
   // v9 (2026-09-02.2) — Sahne #10 ("Oyun Sonu ve Sayım") ve TEK yeni
@@ -100,10 +100,12 @@ const SCAN_FILES = [
   'scenes/libertyAssessmentPolicy.js',
   'scenes/scene06CaptureBasics.js',
   'scenes/capturePolicy.js',
+  'scenes/captureScene.js',
+  'scenes/captureNativePolicy.js',
   'scenes/scene07CapturePractice.js',
   'scenes/capturePracticePolicy.js',
   'scenes/scene08IllegalMoves.js',
-  'scenes/illegalMovePolicy.js',
+  'scenes/illegalMovePolicy.js', 'scenes/illegalNativePolicy.js',
   'scenes/scene09KoRule.js',
   'scenes/koRulePolicy.js',
   'scenes/scene10EndgameCounting.js',

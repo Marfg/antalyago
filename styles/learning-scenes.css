@@ -475,3 +475,12 @@ body:has(.s12-root){--narration-h:clamp(190px,36vh,250px)}
 .s12-topics .ls-strip-btn{width:auto;min-height:32px;padding:4px 8px;font-size:.73rem;background:transparent;color:var(--text);border:1px solid var(--gborder);box-shadow:none}
 .s12-topics .ls-strip-btn[aria-pressed="true"]{background:rgba(199,166,74,.14);color:var(--gold2);outline:none;border-color:var(--gold2)}
 .s12-root[hidden]{display:none}
+
+/* Capture: the task, consequence and controls stay in the existing LS strip. */
+.capture-scene { gap: .2rem .6rem; }
+.capture-scene .s05-content { min-height: 0; flex-basis: 100%; }
+.capture-scene .s05-prompt { margin: 0; }
+.capture-scene .s05-tap-hint { margin: .25rem 0 0; }
+.capture-scene .s05-feedback { line-height: 1.35; flex: 1 1 180px; }
+.capture-scene .s05-feedback:empty { display: none; }
+.capture-scene [hidden] { display: none; }

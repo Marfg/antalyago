@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><title>Capture LS browser tests</title>
+<style>body{font:16px system-ui;background:#101018;color:#eee}iframe{border:1px solid #555}pre{white-space:pre-wrap}</style>
+<h1>Capture LS browser tests</h1><pre id="results">Running…</pre>
+<script type="module">
+import { runCaptureBrowserTests } from './captureNative.browser.js';
+try { await runCaptureBrowserTests(message => document.querySelector('#results').textContent += '\n' + message); document.body.dataset.result = 'passed'; }
+catch (error) { document.querySelector('#results').textContent += '\nFAIL ' + error.stack; document.body.dataset.result = 'failed'; }
+</script>

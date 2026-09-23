@@ -220,9 +220,9 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-09-16.v0-intersections1';
-import { BoardState } from '../core/boardState.js?v=2026-09-16.v0-intersections1';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-09-16.v0-intersections1';
+import { CAM } from '../core/curriculum.js?v=2026-09-22.illegal-native2';
+import { BoardState } from '../core/boardState.js?v=2026-09-22.illegal-native2';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-09-22.illegal-native2';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -254,7 +254,7 @@ function makeWoodPattern(ctx) {
 
 function easeInOutCubic(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
 function lerp(a, b, t) { return a + (b - a) * t; }
-function sizeToCell(n) { return n === 9 ? 48 : n === 13 ? 32 : 22; }
+function sizeToCell(n) { return n === 5 ? 80 : n === 9 ? 48 : n === 13 ? 32 : 22; }
 
 /**
  * @param {HTMLCanvasElement} canvas
@@ -642,7 +642,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       ? [[3, 3], [9, 3], [15, 3], [3, 9], [9, 9], [15, 9], [3, 15], [9, 15], [15, 15]]
       : SIZE === 13
         ? [[3, 3], [9, 3], [6, 6], [3, 9], [9, 9]]
-        : [[2, 2], [6, 2], [4, 4], [2, 6], [6, 6]];
+        : SIZE === 5 ? [[2, 2]] : [[2, 2], [6, 2], [4, 4], [2, 6], [6, 6]];
     const hoshiR = SIZE === 9 ? 3.8 : SIZE === 13 ? 2.6 : 2.0;
     HOSHI.forEach(([sx, sz]) => {
       const p = project(-HALF + sx * CELL, Y, -HALF + sz * CELL);
@@ -985,7 +985,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     const sorted = [...visualStones].sort((a, b) => project(-HALF + a.gx * CELL, 0, -HALF + a.gz * CELL).z - project(-HALF + b.gx * CELL, 0, -HALF + b.gz * CELL).z);
     for (const s of sorted) {
       const scale = reduceMotion ? 1 : easeInOutCubic(Math.min(1, s.t));
-      drawStone(s.gx, s.gz, s.color, scale);
+      const fade = s.captureAge == null ? 1 : 1 - Math.max(0, (s.captureAge - .25) / .2);
+      drawStone(s.gx, s.gz, s.color, scale * fade, fade);
     }
   }
 
@@ -1004,6 +1005,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       camPitch = lerp(camStart.pitch, camTarget.pitch, t);
       camDist = lerp(camStart.dist, camTarget.dist, t);
     }
+    for (const s of visualStones) if (s.captureAge != null) s.captureAge += dt;
+    visualStones = visualStones.filter(s => s.captureAge == null || s.captureAge < .45);
     if (!reduceMotion) {
       for (const s of visualStones) if (s.t < 1) s.t = Math.min(1, s.t + dt / STONE_ANIM_DUR);
       for (const l of libertyPoints) if (l.t < 1) l.t = Math.min(1, l.t + dt / LIBERTY_FADE_DUR);
@@ -1076,7 +1079,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
 
   return {
     setSize(n) {
-      if (![9, 13, 19].includes(n)) return;
+      if (![5, 9, 13, 19].includes(n)) return;
       SIZE = n; CELL = sizeToCell(n); HALF = (SIZE - 1) * CELL / 2; STONE_R = CELL * (20 / 48);
       boardSt = new BoardState(SIZE);
       visualStones = [];
@@ -1168,14 +1171,19 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
      * @param {{row:number,col:number,color:'black'|'white'}} move
      * @returns {{ok:boolean, reason?:string, captured?:Array<{row:number,col:number}>}}
      */
-    playMove({ row, col, color }) {
+    playMove({ row, col, color, animateCapture = false }) {
       const check = isValidMove(boardSt, col, row, color);
       if (!check.valid) return { ok: false, reason: check.reason };
       const { newState, captured } = applyMove(boardSt, col, row, color);
       boardSt = newState;
       visualStones.push({ gx: col, gz: row, color, t: reduceMotion ? 1 : 0 });
       for (const c of captured) {
-        visualStones = visualStones.filter(s => !(s.gx === c.x && s.gz === c.y));
+        if (animateCapture && !reduceMotion) {
+          const visual = visualStones.find(s => s.gx === c.x && s.gz === c.y);
+          if (visual) visual.captureAge = 0;
+        } else {
+          visualStones = visualStones.filter(s => !(s.gx === c.x && s.gz === c.y));
+        }
       }
       return { ok: true, captured: captured.map(c => ({ row: c.y, col: c.x })) };
     },

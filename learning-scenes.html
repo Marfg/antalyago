@@ -4,10 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Antalya GO — Öğrenme Sahneleri</title>
-<link rel="stylesheet" href="styles/learning-scenes.css?v=2026-09-16.v0-intersections1" />
-<link rel="stylesheet" href="styles/ladder-lesson.css?v=2026-09-16.v0-intersections1">
-<link rel="stylesheet" href="styles/net-lesson.css?v=2026-09-16.v0-intersections1">
-<link rel="stylesheet" href="styles/snapback-lesson.css?v=2026-09-16.v0-intersections1">
+<link rel="stylesheet" href="styles/learning-scenes.css?v=2026-09-20.capture-native1" />
+<link rel="stylesheet" href="styles/ladder-lesson.css?v=2026-09-20.capture-native1">
+<link rel="stylesheet" href="styles/net-lesson.css?v=2026-09-20.capture-native1">
+<link rel="stylesheet" href="styles/snapback-lesson.css?v=2026-09-20.capture-native1">
 </head>
 <body>
 <!-- v0.9 — Board ve anlatım şeridi TEK bir dikey eksende (#ls-stage):
@@ -46,28 +46,28 @@
 </div>
 
 <script type="module">
-import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-09-16.v0-intersections1';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-16.v0-intersections1';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-16.v0-intersections1';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-16.v0-intersections1';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-16.v0-intersections1';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-16.v0-intersections1';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-16.v0-intersections1';
-import { scene06CaptureBasics } from './scenes/scene06CaptureBasics.js?v=2026-09-16.v0-intersections1';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-16.v0-intersections1';
-import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-16.v0-intersections1';
-import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-09-16.v0-intersections1';
-import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-09-16.v0-intersections1';
-import { scene15Snapback } from './scenes/scene15Snapback.js?v=2026-09-16.v0-intersections1';
-import { scene14Net } from './scenes/scene14Net.js?v=2026-09-16.v0-intersections1';
-import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-09-16.v0-intersections1';
-import { scene12Connections } from './scenes/scene12Connections.js?v=2026-09-16.v0-intersections1';
-import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-09-16.v0-intersections1';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-16.v0-intersections1';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-16.v0-intersections1';
-import { EventLog } from './core/eventLog.js?v=2026-09-16.v0-intersections1';
-import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-09-16.v0-intersections1';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-16.v0-intersections1';
+import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-09-22.illegal-native2';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-22.illegal-native2';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-22.illegal-native2';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-22.illegal-native2';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-22.illegal-native2';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-22.illegal-native2';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-22.illegal-native2';
+import { scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup } from './scenes/scene06CaptureBasics.js?v=2026-09-22.illegal-native2';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-22.illegal-native2';
+import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-22.illegal-native2';
+import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-09-22.illegal-native2';
+import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-09-22.illegal-native2';
+import { scene15Snapback } from './scenes/scene15Snapback.js?v=2026-09-22.illegal-native2';
+import { scene14Net } from './scenes/scene14Net.js?v=2026-09-22.illegal-native2';
+import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-09-22.illegal-native2';
+import { scene12Connections } from './scenes/scene12Connections.js?v=2026-09-22.illegal-native2';
+import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-09-22.illegal-native2';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-22.illegal-native2';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-22.illegal-native2';
+import { EventLog } from './core/eventLog.js?v=2026-09-22.illegal-native2';
+import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-09-22.illegal-native2';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-22.illegal-native2';
 
 /* ── Sürüm/cache bekçisi ──────────────────────────────────────────────
    GitHub Pages önündeki CDN, .js dosyalarına saatlerce (bkz. görev
@@ -178,7 +178,7 @@ const canvas = document.getElementById('ls-canvas');
 const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
 const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19 });
 
-const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene07CapturePractice, scene08IllegalMoves, scene09KoRule, scene10EndgameCounting, scene11TwoEyes, scene12Connections, scene13Ladder, scene14Net, scene15Snapback]);
+const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup, scene07CapturePractice, scene08IllegalMoves, scene09KoRule, scene10EndgameCounting, scene11TwoEyes, scene12Connections, scene13Ladder, scene14Net, scene15Snapback]);
 
 const searchParams = new URLSearchParams(location.search);
 
