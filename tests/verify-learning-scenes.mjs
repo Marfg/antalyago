@@ -1223,17 +1223,96 @@ function boardCenterXY(box) { return { cx: Math.round(box.width / 2), cy: Math.r
     luminance referansı) THRESH'ten fazla sapan piksellerin dx aralığından
     görünür disk yarıçapını (CSS px) tahmin eder. */
 async function measureVisibleDiscRadius(page, cx, cy, boardLum, thresh = 15) {
-  let minDx = null, maxDx = null;
-  for (let dx = -60; dx <= 60; dx += 2) {
-    const px = await canvasPixelAt(page, cx, cy, dx, 0);
-    if (Math.abs(pixelLuminance(px) - boardLum) > thresh) {
-      if (minDx === null) minDx = dx;
-      maxDx = dx;
-    }
-  }
-  return minDx !== null ? (maxDx - minDx) / 2 : 0;
+  // Merkezden iki yöne, disk KESİNTİSİZ sürdükçe yürür — ayrı duran komşu
+  // işaretler (ör. nefes noktaları; açı değişince tarama çizgisine
+  // düşebiliyorlar) ölçüme karışmaz.
+  const differs = async dx => Math.abs(pixelLuminance(await canvasPixelAt(page, cx, cy, dx, 0)) - boardLum) > thresh;
+  if (!(await differs(0))) return 0;
+  let maxDx = 0, minDx = 0;
+  while (maxDx < 60 && await differs(maxDx + 2)) maxDx += 2;
+  while (minDx > -60 && await differs(minDx - 2)) minDx -= 2;
+  return (maxDx - minDx) / 2;
 }
 
+/** (2eaaf8e'de yanlışlıkla silinmişti, M/N/O testleri hâlâ kullanıyor — geri
+    getirildi.) Bir sahnenin GERÇEK hedef noktasını, kamera preseti NE OLURSA olsun
+    (köşe/kenar/merkez — moment'ler farklı camera preset'ler kullanır,
+    Sahne #6'nın merkez-tabanlı ring-scan'i BURADA GÜVENLİ değildir) İKİ
+    fazlı bir taramayla bulur — sabit piksel varsayımı YOK:
+    Faz 1) tam canvas ızgarası (izometrik projeksiyon YÜZÜNDEN kesişimler
+    ekranda EŞİT aralıklı değildir — bazı tekil hücreler ızgara
+    örneklerinin TAM ARASINA düşüp kaçabilir, doğrulandı: (1,0) hedefi
+    komşuları (0,0)/(1,1)/(2,0) bulunurken ATLANDI, bkz. görev talimatı
+    hata ayıklaması).
+    Faz 2) Faz 1'in bulduğu TÜM YAKIN (Manhattan mesafesi ≤2) GERÇEK
+    komşu kesişimlerin ekran konumu ETRAFINDA — EN YAKINDAN başlayarak —
+    ince yerel arama. Tek bir "en yakın" adaya güvenmek KIRILGANDIR (bir
+    koşumda bulunan en yakın komşu farklı bir koşumda farklı çıkabilir,
+    hover/timing'e bağlı) — bu yüzden BİRDEN FAZLA aday sırayla denenir;
+    komşu tahta hücreleri ekranda da YAKINDIR, bu yüzden ızgaranın
+    "atladığı" hücreyi güvenle yakalar. */
+async function findScreenPointForOnce(page, target) {
+  const box = await page.locator('#ls-canvas').boundingBox();
+  // Yalnız iki kesişimin arasındaki sınıra YAKIN OLMAYAN bir nokta kabul
+  // edilir: hover (pointermove) ile click koordinatı arasındaki küçük
+  // yuvarlama farkı sınırda hedefi komşu kesişime kaydırabiliyordu.
+  const isTarget = h => h && h.row === target.row && h.col === target.col;
+  async function stableAt(x, y) {
+    for (const [ox, oy] of [[-4, 0], [4, 0], [0, -4], [0, 4]]) {
+      await page.mouse.move(x + ox, y + oy);
+      await page.waitForTimeout(10);
+      if (!isTarget(await getHoverPoint(page))) return false;
+    }
+    await page.mouse.move(x, y);
+    return true;
+  }
+  const candidates = []; // {x, y, dist}
+  for (let i = 0; i < 289; i++) {
+    const fx = 0.02 + (i % 17) * 0.06;
+    const fy = 0.02 + (Math.floor(i / 17) % 17) * 0.06;
+    const x = box.x + box.width * fx, y = box.y + box.height * fy;
+    await page.mouse.move(x, y);
+    // v2 — kök neden düzeltmesi: 5ms bekleme bu yavaş ortamda adaptörün
+    // RAF-tabanlı hover güncellemesiyle YARIŞIYORDU (bkz. görev talimatı
+    // hata ayıklaması: AYNI mantıksal sayfa durumunda bir koşumda bulunan
+    // nokta başka bir koşumda BULUNAMIYORDU) — 25ms'e çıkarıldı.
+    await page.waitForTimeout(25);
+    const hit = await getHoverPoint(page);
+    if (!hit) continue;
+    if (isTarget(hit) && await stableAt(x, y)) return { x, y };
+    if (isTarget(hit)) { candidates.push({ x, y, dist: 0 }); continue; }
+    const dist = Math.abs(hit.row - target.row) + Math.abs(hit.col - target.col);
+    if (dist <= 2) candidates.push({ x, y, dist });
+  }
+  candidates.sort((a, b) => a.dist - b.dist);
+  // Tek bir "en yakın" adaya güvenmek KIRILGANDIR (bkz. dosya başı notu)
+  // — EN FAZLA 4 aday sırayla denenir, her biri etrafında ince yerel arama.
+  for (const anchor of candidates.slice(0, 4)) {
+    for (let dx = -50; dx <= 50; dx += 5) {
+      for (let dy = -50; dy <= 50; dy += 5) {
+        const x = anchor.x + dx, y = anchor.y + dy;
+        if (x < box.x || x > box.x + box.width || y < box.y || y > box.y + box.height) continue;
+        await page.mouse.move(x, y);
+        await page.waitForTimeout(15);
+        const hit = await getHoverPoint(page);
+        if (isTarget(hit) && await stableAt(x, y)) return { x, y };
+      }
+    }
+  }
+  return null;
+}
+/** v3 — bu ortamda gözlemlenen genel hover-timing gecikmesi ARA SIRA tek
+    bir taramayı bile başarısız kılabiliyordu (AYNI mantıksal sayfa
+    durumunda tek taramalı bir hata ayıklama koşumu ile GERÇEK testin
+    farklı sonuç verdiği doğrulandı) — YALNIZ bu geçici çevresel gecikmeyi
+    tolere etmek için TEK taramanın kendisi DEĞİŞTİRİLMEDEN 3 kez denenir. */
+async function findScreenPointFor(page, target) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const pt = await findScreenPointForOnce(page, target);
+    if (pt) return pt;
+  }
+  return null;
+}
 addTest('E1) Sahne #3 MOUNT anında (intro tick ONAYLANMADAN) preview state zaten (4,4) VE gerçek move/liberty/completion event\'i SIFIR', async () => {
   const s = await openScenesPage({ query: PREVIEW_QUERY });
   try {
@@ -2034,14 +2113,15 @@ addTest('G6) Üç düz taş GERÇEK 8 nefes, üç L taşı RuleEngine\'in FARKLI
   // Doğrusal (curriculum örneği) — deterministik (4,4) ve (4,5) hâlâ GEÇERLİ
   // birer nefes noktasıdır (artık ZORUNLU değil, ama kabul EDİLMELİ).
   {
-    const s = await openScenesPage({ query: FAST_QUERY });
+    const s = await openScenesPage({ query: PREVIEW_QUERY }) // findScreenPointFor hover kancası ister;
     try {
       await advanceToScene4AndIntro(s.page);
       const box = await s.page.locator('#ls-canvas').boundingBox();
       const { cx, cy } = boardCenterXY(box);
       await s.page.mouse.click(box.x + cx, box.y + cy); // (4,4)
       await s.page.waitForTimeout(150);
-      await s.page.mouse.click(box.x + cx + 20, box.y + cy + 36); // (4,5)
+      // Sabit piksel ofseti kamera açısına bağlıydı — gerçek izdüşümle bulunur.
+      { const pt = await findScreenPointFor(s.page, { row: 4, col: 5 }); ensure(pt, '(4,5) ekranda bulunamadı'); await s.page.mouse.click(pt.x, pt.y); } // (4,5)
       await s.page.waitForTimeout(150);
       const events = await getEventLog(s.page);
       const lib = eventsFor(events, S04_ID).filter(e => e.type === 'scene_liberties_shown');
@@ -2052,14 +2132,14 @@ addTest('G6) Üç düz taş GERÇEK 8 nefes, üç L taşı RuleEngine\'in FARKLI
   }
   // L-biçimi — (4,4) sonra (4,4)'ün KUZEYİ (3,4), GERÇEK FARKLI sonuç (8 DEĞİL).
   {
-    const s = await openScenesPage({ query: FAST_QUERY });
+    const s = await openScenesPage({ query: PREVIEW_QUERY }) // findScreenPointFor hover kancası ister;
     try {
       await advanceToScene4AndIntro(s.page);
       const box = await s.page.locator('#ls-canvas').boundingBox();
       const { cx, cy } = boardCenterXY(box);
       await s.page.mouse.click(box.x + cx, box.y + cy); // (4,4)
       await s.page.waitForTimeout(150);
-      await s.page.mouse.click(box.x + cx - 20, box.y + cy - 36); // (3,4) — L-biçimi
+      { const pt = await findScreenPointFor(s.page, { row: 3, col: 4 }); ensure(pt, '(3,4) ekranda bulunamadı'); await s.page.mouse.click(pt.x, pt.y); } // (3,4) — L-biçimi
       await s.page.waitForTimeout(150);
       const events = await getEventLog(s.page);
       const lib = eventsFor(events, S04_ID).filter(e => e.type === 'scene_liberties_shown');
