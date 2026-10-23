@@ -43,8 +43,8 @@
  * Studio Diagnostics bunu bilinen-olmayan concept olarak raporlar (bilinçli,
  * gizlenmeyen boşluk).
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-23.tahta-c';
-import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-c';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-23.tahta-d';
+import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-d';
 
 export const LESSON_ID = 'l6';
 export const STEP_INDEX = 0;

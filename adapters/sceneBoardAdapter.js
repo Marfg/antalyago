@@ -220,10 +220,10 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-10-23.tahta-c';
-import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-c';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-23.tahta-c';
-import { createBoardSound } from './boardSound.js?v=2026-10-23.tahta-c';
+import { CAM } from '../core/curriculum.js?v=2026-10-23.tahta-d';
+import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-d';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-23.tahta-d';
+import { createBoardSound } from './boardSound.js?v=2026-10-23.tahta-d';
 
 const CAM_PRESETS = { ...CAM };
 
