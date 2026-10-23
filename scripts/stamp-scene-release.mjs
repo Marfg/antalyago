@@ -46,7 +46,7 @@ const GRAPH_BASENAMES = [
   'sceneRegistry.js', 'scene01BoardIntro.js', 'scene02TurnsAndIntersections.js',
   'scene03LibertiesByPosition.js', 'scene04GroupLiberties.js', 'groupLibertyPolicy.js',
   'turnPolicy.js', 'boardZones.js', 'topicEndControls.js', 'sceneTransition.js',
-  'sceneBoardAdapter.js', 'sceneProgressAdapter.js',
+  'sceneBoardAdapter.js', 'sceneProgressAdapter.js', 'boardSound.js',
   // KRİTİK DÜZELTME (bkz. görev talimatı): releaseVersion.js ARTIK BARE
   // import edilmiyor — bekçinin kendisi de versioned graph'ın bir
   // parçası, aksi hâlde "o an gerçekte ne çalıştığını yansıtır" iddiası

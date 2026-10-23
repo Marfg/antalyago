@@ -38,6 +38,9 @@
   <a href="index.html">← Ana</a>
   <button type="button" class="ls-topbar-btn" id="ls-topics-open">Konular</button>
 </div>
+<div id="ls-topbar-end">
+  <button type="button" class="ls-topbar-btn" id="ls-sound-toggle" aria-pressed="false">Ses: Kapalı</button>
+</div>
 
 <div id="ls-error" role="alert">
   <h2 id="ls-error-title">Sahne yüklenemedi</h2>
@@ -46,28 +49,28 @@
 </div>
 
 <script type="module">
-import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-09-22.illegal-native2';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-09-22.illegal-native2';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-09-22.illegal-native2';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-09-22.illegal-native2';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-09-22.illegal-native2';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-09-22.illegal-native2';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-09-22.illegal-native2';
-import { scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup } from './scenes/scene06CaptureBasics.js?v=2026-09-22.illegal-native2';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-09-22.illegal-native2';
-import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-09-22.illegal-native2';
-import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-09-22.illegal-native2';
-import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-09-22.illegal-native2';
-import { scene15Snapback } from './scenes/scene15Snapback.js?v=2026-09-22.illegal-native2';
-import { scene14Net } from './scenes/scene14Net.js?v=2026-09-22.illegal-native2';
-import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-09-22.illegal-native2';
-import { scene12Connections } from './scenes/scene12Connections.js?v=2026-09-22.illegal-native2';
-import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-09-22.illegal-native2';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-09-22.illegal-native2';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-09-22.illegal-native2';
-import { EventLog } from './core/eventLog.js?v=2026-09-22.illegal-native2';
-import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-09-22.illegal-native2';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-09-22.illegal-native2';
+import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-10-23.tahta-ab';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-10-23.tahta-ab';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-10-23.tahta-ab';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-10-23.tahta-ab';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-10-23.tahta-ab';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-10-23.tahta-ab';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-10-23.tahta-ab';
+import { scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup } from './scenes/scene06CaptureBasics.js?v=2026-10-23.tahta-ab';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-10-23.tahta-ab';
+import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-10-23.tahta-ab';
+import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-10-23.tahta-ab';
+import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-10-23.tahta-ab';
+import { scene15Snapback } from './scenes/scene15Snapback.js?v=2026-10-23.tahta-ab';
+import { scene14Net } from './scenes/scene14Net.js?v=2026-10-23.tahta-ab';
+import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-10-23.tahta-ab';
+import { scene12Connections } from './scenes/scene12Connections.js?v=2026-10-23.tahta-ab';
+import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-10-23.tahta-ab';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-10-23.tahta-ab';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-10-23.tahta-ab';
+import { EventLog } from './core/eventLog.js?v=2026-10-23.tahta-ab';
+import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-10-23.tahta-ab';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-10-23.tahta-ab';
 
 /* ── Sürüm/cache bekçisi ──────────────────────────────────────────────
    GitHub Pages önündeki CDN, .js dosyalarına saatlerce (bkz. görev
@@ -177,6 +180,25 @@ function appendEvent(partial) {
 const canvas = document.getElementById('ls-canvas');
 const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
 const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19 });
+
+/* Tahta sesleri — varsayılan KAPALI; tercih yalnız bu tarayıcıda saklanır
+   (öğrenme ilerlemesiyle ilgisi yok). Kayıtlı tercih "açık" ise ses ilk
+   dokunuşta devreye girer (tarayıcılar sesi ancak kullanıcı hareketiyle açar). */
+const SOUND_PREF_KEY = 'go_board_sound_v1';
+const soundToggle = document.getElementById('ls-sound-toggle');
+function applySound(on) {
+  boardAdapter.setSoundEnabled(on);
+  soundToggle.setAttribute('aria-pressed', String(on));
+  soundToggle.textContent = on ? 'Ses: Açık' : 'Ses: Kapalı';
+}
+let soundPref = false;
+try { soundPref = localStorage.getItem(SOUND_PREF_KEY) === '1'; } catch {}
+applySound(soundPref);
+soundToggle.addEventListener('click', () => {
+  const on = !boardAdapter.isSoundEnabled();
+  applySound(on);
+  try { localStorage.setItem(SOUND_PREF_KEY, on ? '1' : '0'); } catch {}
+});
 
 const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup, scene07CapturePractice, scene08IllegalMoves, scene09KoRule, scene10EndgameCounting, scene11TwoEyes, scene12Connections, scene13Ladder, scene14Net, scene15Snapback]);
 

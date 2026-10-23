@@ -7,13 +7,17 @@ export function createLadderMotionOverlay(canvas,board,mainCanvas){
   const x=p.x*cell-half,z=p.y*cell-half,r=cell*20/48,y=surface?-7-r*.36-1:-7.4;
   const rx=x*Math.cos(c.yaw)+z*Math.sin(c.yaw),rz=-x*Math.sin(c.yaw)+z*Math.cos(c.yaw);
   const ry=y*Math.cos(c.pitch)-rz*Math.sin(c.pitch),depth=y*Math.sin(c.pitch)+rz*Math.cos(c.pitch),scale=700/(700+depth)*(c.dist/500);
-  const fx=canvas.width/mainCanvas.width,fy=canvas.height/mainCanvas.height;
-  return {x:(mainCanvas.width/2+rx*scale)*fx,y:(mainCanvas.height/2+ry*scale)*fy,rx:r*scale*fx,ry:r*scale*Math.sqrt(Math.sin(c.pitch)**2+.36**2*Math.cos(c.pitch)**2)*fy};
+  // CSS pikseliyle eşle: ana tahta arka tamponunu devicePixelRatio ile büyütür.
+  const mw=mainCanvas.clientWidth||mainCanvas.width,mh=mainCanvas.clientHeight||mainCanvas.height;
+  const fx=(canvas.clientWidth||mw)/mw,fy=(canvas.clientHeight||mh)/mh;
+  return {x:(mw/2+rx*scale)*fx,y:(mh/2+ry*scale)*fy,rx:r*scale*fx,ry:r*scale*Math.sqrt(Math.sin(c.pitch)**2+.36**2*Math.cos(c.pitch)**2)*fy};
  }
  function draw(now){
-  if(canvas.width!==canvas.clientWidth)canvas.width=canvas.clientWidth;
-  if(canvas.height!==canvas.clientHeight)canvas.height=canvas.clientHeight;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const dpr=Math.min(3,Math.max(1,window.devicePixelRatio||1)),cw=Math.round(canvas.clientWidth*dpr),ch=Math.round(canvas.clientHeight*dpr);
+  if(canvas.width!==cw)canvas.width=cw;
+  if(canvas.height!==ch)canvas.height=ch;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight);
   if(scenario&&route){
    ctx.save();ctx.strokeStyle='rgba(210,240,226,.65)';ctx.lineWidth=2;ctx.setLineDash([4,7]);ctx.beginPath();
    const points=[scenario.anchor,...scenario.moves.filter(m=>m.color==='white')];
