@@ -5,7 +5,7 @@
  * BoardState alır, yeni state veya hesaplama sonucu döndürür.
  */
 
-import { BoardState } from './boardState.js?v=2026-10-23.tahta-ab';
+import { BoardState } from './boardState.js?v=2026-10-23.tahta-c';
 
 // ── Grup / Liberty hesaplama ───────────────────────────────────────
 
