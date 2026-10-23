@@ -1,6 +1,6 @@
-import {mountNetLesson} from './netLessonController.js?v=2026-10-23.tahta-ab';
-import {createLadderMotionOverlay} from './ladderMotionOverlay.js?v=2026-10-23.tahta-ab';
-import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-23.tahta-ab';
+import {mountNetLesson} from './netLessonController.js?v=2026-10-23.tahta-c';
+import {createLadderMotionOverlay} from './ladderMotionOverlay.js?v=2026-10-23.tahta-c';
+import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-23.tahta-c';
 let active=null;
 export const scene14Net={
  id:'scene-14-net',version:1,title:'Ağ (Geta)',curriculumRef:{lessonId:'l11',concept:'net'},

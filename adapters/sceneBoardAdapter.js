@@ -220,10 +220,10 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-10-23.tahta-ab';
-import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-ab';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-23.tahta-ab';
-import { createBoardSound } from './boardSound.js?v=2026-10-23.tahta-ab';
+import { CAM } from '../core/curriculum.js?v=2026-10-23.tahta-c';
+import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-c';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-23.tahta-c';
+import { createBoardSound } from './boardSound.js?v=2026-10-23.tahta-c';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -378,6 +378,19 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // — YALNIZ test/gözlem amaçlı (bkz. getFocusPointsResult), getMovePreviewState()
   // ile AYNI desen.
   let lastFocusResult = null;
+  // Sakin kamera: sahne preset'lerinin yan dönüşü (yaw) burada yumuşatılır —
+  // core/curriculum.js'teki CAM eski 3D sayfayla ORTAK olduğu için orada
+  // değiştirilmez. Dar ekranın sabit yaw'ı da aynı oranla yumuşar.
+  const YAW_CALM = 0.45;
+  const NARROW_YAW = 0.12; // dar ekranda genişlik sınır — daha az dönüş, daha büyük tahta
+  // Son focus(presetName) — focusPoints() yokken resize/orientation'da
+  // tahtayı yeni ölçüye yeniden sığdırmak için (bkz. presetView, resize).
+  let activePreset = null;
+  // Elle döndürme: sağ tuş ya da Shift+sürükleme ile sahne açısının ÜSTÜNE
+  // eklenen geçici yaw sapması; bırakılınca sıfıra yaylanır. Sahnenin
+  // kamera kararlarına (focus/focusPoints) karışmaz.
+  let userYaw = 0, rotateDrag = null;
+  const USER_YAW_MAX = 0.7;
 
   function updateProjCenter() { projCY = H * 0.5; }
   // Keskin çizim: `W`/`H` CSS pikseli olarak KALIR (projeksiyon, hit-test,
@@ -400,6 +413,11 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     // "sürekli zıplama" olmadan) yeniden hesaplanır — bkz. görev talimatı
     // "mobil resize/orientation değişiminde güvenli biçimde yeniden hesaplanabilmeli".
     if (activeFocusPoints) applyFocusPoints(activeFocusPoints.points, activeFocusPoints.opts, false);
+    else if (activePreset && camTarget) {
+      // Yalnız preset aktifken: tahtayı yeni ölçüye (ör. ekran döndürme) sığdır.
+      camTarget = presetView(activePreset, isMobile);
+      if (camLerpT >= 1) { camYaw = camTarget.yaw; camPitch = camTarget.pitch; camDist = camTarget.dist; }
+    }
   }
   resize();
   window.addEventListener('resize', resize);
@@ -418,7 +436,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     const fov = 700, sc = fov / Math.max(fov + rz2, 1) * (dist / 500);
     return { sx: W / 2 + rx * sc, sy: projCY + ry2 * sc, scale: sc, z: rz2 };
   }
-  function project(x, y, z) { return projectAt(x, y, z, camYaw, camPitch, camDist); }
+  function project(x, y, z) { return projectAt(x, y, z, camYaw + userYaw, camPitch, camDist); }
 
   function lerpAngle(a, b, t) { return a + (b - a) * t; }
 
@@ -465,6 +483,29 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     // savunmacı üslup, ör. setSize) — GERÇEK sonuç `safe` alanında ayrıca
     // raporlanır (bkz. computeFraming).
     return Math.max(minZoom, Math.min(maxZoom, hi >= lo ? hi : minZoom));
+  }
+
+  /** Kenar boşluğu, canvas'ın küçük kenarıyla ORANTILI (cihaza özel sabit
+      DEĞİL) — üstte, learning-scenes.html'in canvas üzerine bindirdiği
+      düğmeler için ek bir pay bırakılır. */
+  function safeRect() {
+    const edgeMargin = Math.max(24, Math.min(W, H) * 0.05);
+    const topMargin = Math.max(edgeMargin, 56);
+    return { left: edgeMargin, right: W - edgeMargin, top: topMargin, bottom: H - edgeMargin };
+  }
+
+  /** Bir preset'in BU canvas geometrisindeki hedefi: yumuşatılmış yaw, dar
+      ekranda pitch alt sınırı ve — tahtanın TAMAMI (koordinat etiketleri
+      dahil) güvenli alana sığmıyorsa — sığacak kadar küçültülmüş dist.
+      Sığıyorsa preset'in kendi dist'i AYNEN kalır (masaüstünde çoğunlukla). */
+  function presetView(presetName, narrow) {
+    const preset = CAM_PRESETS[presetName] || CAM_PRESETS.overview;
+    const yaw = narrow ? NARROW_YAW : preset.yaw * YAW_CALM;
+    const pitch = narrow ? Math.max(preset.pitch, 1.2) : preset.pitch;
+    const bw = HALF + CELL * .82;
+    const corners = [[-bw, -bw], [bw, -bw], [bw, bw], [-bw, bw]].map(([wx, wz]) => ({ wx, wz }));
+    const dist = solveDistForFit(corners, safeRect(), yaw, pitch, 120, preset.dist);
+    return { yaw, pitch, dist };
   }
 
   const FOCUS_HYSTERESIS_PX = 3;
@@ -522,12 +563,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       auxPts.push({ wx: p.wx + padding, wz: p.wz }, { wx: p.wx - padding, wz: p.wz },
         { wx: p.wx, wz: p.wz + padding }, { wx: p.wx, wz: p.wz - padding });
     }
-    // Kenar boşluğu, canvas'ın küçük kenarıyla ORANTILI (cihaza özel sabit
-    // DEĞİL) — üstte, learning-scenes.html'in canvas üzerine bindirdiği
-    // "← Ana"/"Konular" düğmeleri için ek bir pay bırakılır.
-    const edgeMargin = Math.max(24, Math.min(W, H) * 0.05);
-    const topMargin = Math.max(edgeMargin, 56);
-    const safe = { left: edgeMargin, right: W - edgeMargin, top: topMargin, bottom: H - edgeMargin };
+    const safe = safeRect();
 
     // 1) GÜVENLİK KONTROLÜ — GERÇEKTEN o an render EDİLEN/edilecek duruma
     // (`camTarget`, `focus(presetName)` az önce çağrıldıysa O preset'in
@@ -544,16 +580,12 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     // 2) DÜZELTME GEREKLİ. Başlangıç noktası — ÖNCEKİ bir düzeltmenin
     // (`liveState`) DEĞİL — `focus(presetName)`'in O ANKİ CANLI canvas
     // genişliğiyle YENİDEN uygulanmış hâlidir (bkz. fonksiyon başı notu).
-    const rawPreset = CAM_PRESETS[presetName] || CAM_PRESETS.overview;
-    // freshBase, `focus(presetName)`'in KENDİ dar-layout FORMÜLÜYLE
-    // (`{...preset, yaw:.50, pitch:Math.max(preset.pitch,1.2)}`) BİREBİR
+    // freshBase, `focus(presetName)`'in KENDİ formülüyle (presetView) BİREBİR
     // AYNI şekilde — yalnız donmuş `isMobile` yerine `isNarrowLayout()`
     // (canlı `W`) ile — yeniden türetilir; böylece "taze bir mount bu
     // preset'i BU geometride nasıl uygulardı" sorusunun cevabıyla TUTARLI
     // kalır (bkz. fonksiyon başı notu).
-    const freshBase = isNarrowLayout()
-      ? { yaw: .50, pitch: Math.max(rawPreset.pitch, 1.2), dist: rawPreset.dist }
-      : { yaw: rawPreset.yaw, pitch: rawPreset.pitch, dist: rawPreset.dist };
+    const freshBase = presetView(presetName, isNarrowLayout());
 
     // Tam-merkezleme yawını (rx=0 ⟺ (cos,sin) ⊥ (wx0,wz0)) kapalı biçimde
     // çöz — YALNIZ bir ÜST SINIR/hedef olarak; asıl kullanılan sapma
@@ -1118,6 +1150,11 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     // Pencere başka yoğunlukta bir ekrana taşınınca 'resize' gelmeyebilir.
     if (canvas.width !== Math.round(W * pixelRatio())) resize();
     if (intersectionMarkers && !reduceMotion) markerTime += dt;
+    // Elle döndürme bırakılınca sahne açısına yumuşakça geri döner.
+    if (!rotateDrag && userYaw !== 0) {
+      userYaw = reduceMotion ? 0 : userYaw * Math.exp(-dt * 7);
+      if (Math.abs(userYaw) < 1e-3) userYaw = 0;
+    }
     if (camLerpT < 1 && camTarget) {
       camLerpT = Math.min(1, camLerpT + (1 / 60) / CAM_DUR);
       const t = easeInOutCubic(camLerpT);
@@ -1186,6 +1223,12 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   let touchPress = null; // {pointerId} | null
   let suppressClickUntil = 0;
   function handleMove(evt) {
+    if (rotateDrag) {
+      if (evt.pointerId !== rotateDrag.pointerId) return;
+      const dx = evt.clientX - rotateDrag.x;
+      userYaw = Math.max(-USER_YAW_MAX, Math.min(USER_YAW_MAX, rotateDrag.base + dx * 0.008));
+      return;
+    }
     if (touchPress && evt.pointerId !== touchPress.pointerId) return; // ikinci parmak
     if (!inputEnabled) { hoverPoint = null; notifyHover(null); return; }
     const { mx, my } = pointerXY(evt);
@@ -1208,13 +1251,30 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   }
   function handleDown(evt) {
     sound.unlock(); // kullanıcı hareketi — askıdaki sesi açmanın tek güvenli anı
+    // Fare/kalem: sağ tuş ya da Shift+sol tuş sürüklemesi tahtayı döndürür,
+    // hamle OYNAMAZ. (Dokunmatikte tek parmak hamle önizlemesine ayrılmış.)
+    if (evt.pointerType !== 'touch' && !rotateDrag && (evt.button === 2 || (evt.button === 0 && evt.shiftKey))) {
+      rotateDrag = { pointerId: evt.pointerId, x: evt.clientX, base: userYaw };
+      try { canvas.setPointerCapture(evt.pointerId); } catch {}
+      canvas.style.cursor = 'grabbing';
+      if (hoverPoint) { hoverPoint = null; notifyHover(null); }
+      return;
+    }
     if (evt.pointerType === 'touch' && !touchPress) {
       touchPress = { pointerId: evt.pointerId };
       try { canvas.setPointerCapture(evt.pointerId); } catch {}
     }
     handleMove(evt);
   }
+  function endRotate(evt) {
+    if (!rotateDrag || evt.pointerId !== rotateDrag.pointerId) return false;
+    rotateDrag = null;
+    canvas.style.cursor = '';
+    suppressClickUntil = performance.now() + 300; // Shift+tık hamle sayılmaz
+    return true;
+  }
   function handleUp(evt) {
+    if (endRotate(evt)) return;
     if (!touchPress || evt.pointerId !== touchPress.pointerId) return;
     touchPress = null;
     suppressClickUntil = performance.now() + 700;
@@ -1226,6 +1286,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     dispatchTap(hit);
   }
   function handleCancel(evt) {
+    if (endRotate(evt)) return;
     if (!touchPress || evt.pointerId !== touchPress.pointerId) return;
     touchPress = null;
     suppressClickUntil = performance.now() + 700;
@@ -1245,6 +1306,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   canvas.addEventListener('pointerdown', handleDown);
   canvas.addEventListener('pointerup', handleUp);
   canvas.addEventListener('pointercancel', handleCancel);
+  function preventContextMenu(evt) { evt.preventDefault(); } // sağ tuş döndürme içindir
+  canvas.addEventListener('contextmenu', preventContextMenu);
 
   return {
     setSize(n) {
@@ -1288,10 +1351,9 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       // state'ini/tanı sonucunu GEÇERSİZ kılar.
       activeFocusPoints = null;
       lastFocusResult = null;
-      const preset = CAM_PRESETS[presetName] || CAM_PRESETS.overview;
-      const target = isMobile ? { ...preset, yaw: .50, pitch: Math.max(preset.pitch, 1.2) } : preset;
+      activePreset = presetName;
       camStart = { yaw: camYaw, pitch: camPitch, dist: camDist };
-      camTarget = { ...target };
+      camTarget = presetView(presetName, isMobile);
       camLerpT = 0;
     },
 
@@ -1589,7 +1651,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
      * @returns {{yaw:number, pitch:number, dist:number}}
      */
     getCameraState() {
-      return { yaw: camYaw, pitch: camPitch, dist: camDist };
+      // Elle döndürme sapması dahil — hareket katmanları bununla hizalanır.
+      return { yaw: camYaw + userYaw, pitch: camPitch, dist: camDist };
     },
 
     /**
@@ -1718,6 +1781,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       canvas.removeEventListener('pointerdown', handleDown);
       canvas.removeEventListener('pointerup', handleUp);
       canvas.removeEventListener('pointercancel', handleCancel);
+      canvas.removeEventListener('contextmenu', preventContextMenu);
       tapHandlers.clear();
       hoverHandlers.clear();
       libertyPoints = [];

@@ -60,10 +60,10 @@
  * Teacher Studio Diagnostics bunu bilinen-olmayan concept olarak raporlar
  * (Sahne #8/#9 İLE AYNI bilinçli, gizlenmeyen boşluk).
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-23.tahta-ab';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-23.tahta-c';
 import {
   getEndgameCountingMoment, evaluateRegionTap, regionSignature, CONCEPT,
-} from './endgameCountingPolicy.js?v=2026-10-23.tahta-ab';
+} from './endgameCountingPolicy.js?v=2026-10-23.tahta-c';
 
 const STATE = { INTRO: 'intro', PLAYING: 'playing' };
 

@@ -84,9 +84,9 @@
  * `KNOWN_CONCEPTS`'te olan, doğrulanmış bir kavramdır (capturePracticePolicy.js
  * ile AYNI ilke).
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-23.tahta-ab';
-import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-ab';
-import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-10-23.tahta-ab';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-23.tahta-c';
+import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-c';
+import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-10-23.tahta-c';
 
 const LESSON_ID = 'l4';
 const BOARD_SIZE = 9;
