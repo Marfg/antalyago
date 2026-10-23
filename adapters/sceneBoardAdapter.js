@@ -223,6 +223,7 @@
 import { CAM } from '../core/curriculum.js?v=2026-09-22.illegal-native2';
 import { BoardState } from '../core/boardState.js?v=2026-09-22.illegal-native2';
 import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-09-22.illegal-native2';
+import { createBoardSound } from './boardSound.js?v=2026-09-22.illegal-native2';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -348,6 +349,15 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     seedingThisTask = true;
     queueMicrotask(() => { seedingThisTask = false; });
   }
+  // Dokunsal his: gerçek hamleler (kurulum taşları DEĞİL) yukarıdan düşüp
+  // küçük bir sekmeyle oturur (`dropT` 0→1); kullanıcının az önce dokunduğu
+  // noktadaki yasak hamle kısa bir "hayır" sallanmasıyla söner (`rejectFx`).
+  // Sesler varsayılan kapalıdır (bkz. boardSound.js, setSoundEnabled).
+  const sound = createBoardSound();
+  let rejectFx = null; // {gx,gz,color,age}|null
+  let lastTap = null;  // {gx,gz,time}|null — yasak hamle efekti yalnız kullanıcı denemesine
+  const DROP_DUR = 0.24;
+  const REJECT_DUR = 0.38;
   let inputEnabled = false;
   const tapHandlers = new Set();
   const hoverHandlers = new Set();
@@ -699,18 +709,23 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // parametresi ogren-3d.html'in `drawStone(wx,wy,wz,color,alpha,mul)`
   // tekniğiyle AYNI — ghost/preview taşı (bkz. drawMovePreview) GERÇEK taş
   // koduyla PAYLAŞIR, ikinci bir "siluet çizici" YAZILMADI.
-  function drawStone(gx, gz, color, scale, alpha) {
-    const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
-    const p = project(wx, stoneSurfaceY(), wz);
+  // `lift`: taşın tahtadan yüksekliği (dünya birimi, düşme/kalkış için);
+  // `dx`/`dz`: tahta düzleminde kayma (yakalanan taşın kenara süzülmesi).
+  // Gölge tahtada kalır; taş yükseldikçe büyür ve açılır.
+  function drawStone(gx, gz, color, scale, alpha, lift = 0, dx = 0, dz = 0) {
+    const wx = -HALF + gx * CELL + dx, wz = -HALF + gz * CELL + dz;
+    const p = project(wx, stoneSurfaceY() - lift, wz);
     const { rx, ry } = stoneRadii(p, scale ?? 1);
     if (rx < 2) return;
     const isB = color === 'black';
     ctx.save();
     if (alpha !== undefined) ctx.globalAlpha = alpha;
     const ps = project(wx, -BOARD_H / 2 - .5, wz);
-    const sg = ctx.createRadialGradient(ps.sx + rx * .1, ps.sy + ry * .12, 0, ps.sx + rx * .1, ps.sy + ry * .12, rx);
-    sg.addColorStop(0, 'rgba(0,0,0,.38)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.beginPath(); ctx.ellipse(ps.sx + rx * .1, ps.sy + ry * .12, rx, ry * .48, 0, 0, Math.PI * 2);
+    const rise = Math.min(1, lift / (STONE_R * 2.2));
+    const srx = rx * (1 + rise * .35);
+    const sg = ctx.createRadialGradient(ps.sx + rx * .1, ps.sy + ry * .12, 0, ps.sx + rx * .1, ps.sy + ry * .12, srx);
+    sg.addColorStop(0, `rgba(0,0,0,${(.38 * (1 - rise * .6)).toFixed(3)})`); sg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.ellipse(ps.sx + rx * .1, ps.sy + ry * .12, srx, ry * .48 * (1 + rise * .35), 0, 0, Math.PI * 2);
     ctx.fillStyle = sg; ctx.fill();
 
     ctx.beginPath(); ctx.ellipse(p.sx, p.sy, rx, ry, 0, 0, Math.PI * 2);
@@ -1021,10 +1036,15 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     for (const r of regionMarks) drawRegionMark(r.gx, r.gz, r.t, r.color);
     const sorted = [...visualStones].sort((a, b) => project(-HALF + a.gx * CELL, 0, -HALF + a.gz * CELL).z - project(-HALF + b.gx * CELL, 0, -HALF + b.gz * CELL).z);
     for (const s of sorted) {
+      if (s.captureAge != null) { drawCapturedStone(s); continue; }
+      if (s.dropT != null && s.dropT < 1) {
+        drawStone(s.gx, s.gz, s.color, 1, Math.min(1, .35 + s.dropT / .25), dropHeight(s.dropT));
+        continue;
+      }
       const scale = reduceMotion ? 1 : easeInOutCubic(Math.min(1, s.t));
-      const fade = s.captureAge == null ? 1 : 1 - Math.max(0, (s.captureAge - .25) / .2);
-      drawStone(s.gx, s.gz, s.color, scale * fade, fade);
+      drawStone(s.gx, s.gz, s.color, scale, undefined);
     }
+    if (rejectFx) drawRejectFx(rejectFx);
     if (lastMove) {
       const s = visualStones.find(v => v.gx === lastMove.gx && v.gz === lastMove.gz && v.captureAge == null);
       if (s) drawLastMoveMark(s);
@@ -1038,11 +1058,54 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     const { rx, ry } = stoneRadii(p, 0.42);
     if (rx < 1.5) return;
     ctx.save();
-    ctx.globalAlpha = reduceMotion ? 1 : Math.max(0, Math.min(1, (stone.t - 0.6) / 0.4));
+    // Düşen taşta işaret taş oturunca belirir; kurulum/eski taşta giriş ölçeğiyle.
+    const landed = stone.dropT != null ? stone.dropT : stone.t;
+    ctx.globalAlpha = reduceMotion ? 1 : Math.max(0, Math.min(1, (landed - 0.6) / 0.4));
     ctx.strokeStyle = stone.color === 'black' ? 'rgba(244,240,232,.92)' : 'rgba(24,26,36,.82)';
     ctx.lineWidth = Math.max(1.2, rx * 0.2);
     ctx.beginPath(); ctx.ellipse(p.sx, p.sy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
+  }
+
+  /** Düşme eğrisi: hızlanarak iner (%72), ardından küçük tek bir sekme. */
+  function dropHeight(t) {
+    const H0 = STONE_R * 1.8;
+    if (t < 0.72) { const u = t / 0.72; return H0 * (1 - u * u); }
+    return H0 * 0.1 * Math.sin(Math.PI * (t - 0.72) / 0.28);
+  }
+
+  /** Yakalanan taş (0–0,45 sn, mevcut süre korunur): önce çevresi kısa bir
+      an parlar, sonra kalkıp tahtanın en yakın kenarına doğru süzülerek söner. */
+  function drawCapturedStone(s) {
+    const age = s.captureAge;
+    if (age < 0.12) {
+      const p = project(-HALF + s.gx * CELL, stoneSurfaceY(), -HALF + s.gz * CELL);
+      const { rx, ry } = stoneRadii(p, 1.18);
+      ctx.save();
+      ctx.globalAlpha = Math.sin(Math.PI * age / 0.12) * 0.7;
+      ctx.strokeStyle = 'rgb(255,236,190)';
+      ctx.lineWidth = Math.max(1.2, rx * 0.1);
+      ctx.shadowColor = 'rgba(255,220,150,.8)'; ctx.shadowBlur = rx * 0.5;
+      ctx.beginPath(); ctx.ellipse(p.sx, p.sy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+      drawStone(s.gx, s.gz, s.color, 1, undefined);
+      return;
+    }
+    const u = Math.min(1, (age - 0.12) / 0.33), e = easeInOutCubic(u);
+    // En yakın kenar yönü: merkezden uzaklığı büyük olan eksen boyunca dışarı.
+    const ox = s.gx - (SIZE - 1) / 2, oz = s.gz - (SIZE - 1) / 2;
+    const dirX = Math.abs(ox) >= Math.abs(oz) ? Math.sign(ox) || 1 : 0;
+    const dirZ = dirX === 0 ? Math.sign(oz) || 1 : 0;
+    const slide = CELL * 0.7 * e;
+    drawStone(s.gx, s.gz, s.color, 1 - 0.15 * e, Math.max(0, 1 - Math.pow(u, 1.4)), STONE_R * 1.4 * e, dirX * slide, dirZ * slide);
+  }
+
+  /** Yasak hamle: dokunulan noktada yarı saydam taş sağa-sola kısa
+      sallanıp söner (kırmızı işaretleri sahne ayrıca gösterir). */
+  function drawRejectFx(fx) {
+    const u = Math.min(1, fx.age / REJECT_DUR);
+    const shake = Math.sin(u * Math.PI * 5) * (1 - u) * CELL * 0.14;
+    drawStone(fx.gx, fx.gz, fx.color, 1, 0.42 * (1 - u * u), 0, shake, 0);
   }
 
   let rafId = null;
@@ -1064,8 +1127,10 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     }
     for (const s of visualStones) if (s.captureAge != null) s.captureAge += dt;
     visualStones = visualStones.filter(s => s.captureAge == null || s.captureAge < .45);
+    if (rejectFx) { rejectFx.age += dt; if (rejectFx.age >= REJECT_DUR) rejectFx = null; }
     if (!reduceMotion) {
       for (const s of visualStones) if (s.t < 1) s.t = Math.min(1, s.t + dt / STONE_ANIM_DUR);
+      for (const s of visualStones) if (s.dropT != null && s.dropT < 1) s.dropT = Math.min(1, s.dropT + dt / DROP_DUR);
       for (const l of libertyPoints) if (l.t < 1) l.t = Math.min(1, l.t + dt / LIBERTY_FADE_DUR);
       for (const m of illegalMarks) if (m.t < 1) m.t = Math.min(1, m.t + dt / LIBERTY_FADE_DUR);
       for (const h of illegalHints) if (h.t < 1) h.t = Math.min(1, h.t + dt / LIBERTY_FADE_DUR);
@@ -1127,7 +1192,22 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     hoverPoint = screenToGrid(mx, my);
     notifyHover(hoverPoint);
   }
+  /** Yasak hamle efekti + sesi — YALNIZ kullanıcının son 1 sn içinde
+      dokunduğu noktada ve o dokunuş başına bir kez (bilgisayarın yasal aday
+      araması, ko gösterimi gibi otomatik işaretler sallanmaz). */
+  function triggerReject(gx, gz, color) {
+    if (seedingThisTask || !lastTap || lastTap.rejected) return;
+    if (lastTap.gx !== gx || lastTap.gz !== gz || performance.now() - lastTap.time > 1000) return;
+    lastTap.rejected = true;
+    if (!reduceMotion) rejectFx = { gx, gz, color, age: 0 };
+    sound.reject();
+  }
+  function dispatchTap(hit) {
+    lastTap = { gx: hit.gx, gz: hit.gz, time: performance.now() };
+    for (const handler of tapHandlers) handler({ row: hit.gz, col: hit.gx });
+  }
   function handleDown(evt) {
+    sound.unlock(); // kullanıcı hareketi — askıdaki sesi açmanın tek güvenli anı
     if (evt.pointerType === 'touch' && !touchPress) {
       touchPress = { pointerId: evt.pointerId };
       try { canvas.setPointerCapture(evt.pointerId); } catch {}
@@ -1143,7 +1223,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     const hit = screenToGrid(mx, my);
     hoverPoint = null;
     if (!hit) { notifyHover(null); return; } // tahta dışında bırakıldı — iptal
-    for (const handler of tapHandlers) handler({ row: hit.gz, col: hit.gx });
+    dispatchTap(hit);
   }
   function handleCancel(evt) {
     if (!touchPress || evt.pointerId !== touchPress.pointerId) return;
@@ -1158,7 +1238,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     const { mx, my } = pointerXY(evt);
     const hit = screenToGrid(mx, my);
     if (!hit) return; // tahta dışı/boş tıklama — hamle sayılmaz
-    for (const handler of tapHandlers) handler({ row: hit.gz, col: hit.gx });
+    dispatchTap(hit);
   }
   canvas.addEventListener('click', handleClick);
   canvas.addEventListener('pointermove', handleMove);
@@ -1181,6 +1261,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       regionMarks = [];
       hoverPoint = null;
       lastMove = null;
+      rejectFx = null;
       markSeedingTask();
     },
     reset() {
@@ -1195,8 +1276,13 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       regionMarks = [];
       hoverPoint = null;
       lastMove = null;
+      rejectFx = null;
       markSeedingTask();
     },
+    /** Tahta sesleri (varsayılan kapalı). Açma çağrısı bir kullanıcı
+        tıklamasının içinden yapılmalı — tarayıcılar sesi ancak öyle açar. */
+    setSoundEnabled(on) { sound.setEnabled(on); },
+    isSoundEnabled() { return sound.isEnabled(); },
     focus(presetName) {
       // bkz. focusPoints() — adlandırılmış preset'e dönüş eski focus-noktası
       // state'ini/tanı sonucunu GEÇERSİZ kılar.
@@ -1266,11 +1352,20 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
      */
     playMove({ row, col, color, animateCapture = false }) {
       const check = isValidMove(boardSt, col, row, color);
-      if (!check.valid) return { ok: false, reason: check.reason };
+      if (!check.valid) {
+        if (check.reason !== 'OCCUPIED' && check.reason !== 'OUT_OF_BOUNDS') triggerReject(col, row, color);
+        return { ok: false, reason: check.reason };
+      }
       const { newState, captured } = applyMove(boardSt, col, row, color);
       boardSt = newState;
-      visualStones.push({ gx: col, gz: row, color, t: reduceMotion ? 1 : 0 });
-      lastMove = seedingThisTask ? null : { gx: col, gz: row };
+      const realMove = !seedingThisTask;
+      visualStones.push({ gx: col, gz: row, color, t: reduceMotion ? 1 : 0, ...(realMove && !reduceMotion ? { t: 1, dropT: 0 } : {}) });
+      lastMove = realMove ? { gx: col, gz: row } : null;
+      if (realMove) {
+        sound.place();
+        if (captured.length) sound.capture(captured.length);
+      }
+      if (rejectFx && rejectFx.gx === col && rejectFx.gz === row) rejectFx = null;
       for (const c of captured) {
         if (animateCapture && !reduceMotion) {
           const visual = visualStones.find(s => s.gx === c.x && s.gz === c.y);
@@ -1377,6 +1472,12 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
      */
     showIllegalMoves(points) {
       illegalMarks = (points || []).map(p => ({ gx: p.col, gz: p.row, t: reduceMotion ? 1 : 0 }));
+      // Yasak Hamleler sahnesi hamleyi kendi tahtasında değerlendirip yalnız
+      // işaret gönderir — dokunulan nokta listedeyse aynı "hayır" efekti.
+      if (lastTap && illegalMarks.some(m => m.gx === lastTap.gx && m.gz === lastTap.gz)) {
+        const color = movePreview && movePreview.gx === lastTap.gx && movePreview.gz === lastTap.gz ? movePreview.color : 'black';
+        triggerReject(lastTap.gx, lastTap.gz, color);
+      }
     },
     clearIllegalMoves() {
       illegalMarks = [];

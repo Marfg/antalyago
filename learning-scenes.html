@@ -38,6 +38,9 @@
   <a href="index.html">← Ana</a>
   <button type="button" class="ls-topbar-btn" id="ls-topics-open">Konular</button>
 </div>
+<div id="ls-topbar-end">
+  <button type="button" class="ls-topbar-btn" id="ls-sound-toggle" aria-pressed="false">Ses: Kapalı</button>
+</div>
 
 <div id="ls-error" role="alert">
   <h2 id="ls-error-title">Sahne yüklenemedi</h2>
@@ -177,6 +180,25 @@ function appendEvent(partial) {
 const canvas = document.getElementById('ls-canvas');
 const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
 const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19 });
+
+/* Tahta sesleri — varsayılan KAPALI; tercih yalnız bu tarayıcıda saklanır
+   (öğrenme ilerlemesiyle ilgisi yok). Kayıtlı tercih "açık" ise ses ilk
+   dokunuşta devreye girer (tarayıcılar sesi ancak kullanıcı hareketiyle açar). */
+const SOUND_PREF_KEY = 'go_board_sound_v1';
+const soundToggle = document.getElementById('ls-sound-toggle');
+function applySound(on) {
+  boardAdapter.setSoundEnabled(on);
+  soundToggle.setAttribute('aria-pressed', String(on));
+  soundToggle.textContent = on ? 'Ses: Açık' : 'Ses: Kapalı';
+}
+let soundPref = false;
+try { soundPref = localStorage.getItem(SOUND_PREF_KEY) === '1'; } catch {}
+applySound(soundPref);
+soundToggle.addEventListener('click', () => {
+  const on = !boardAdapter.isSoundEnabled();
+  applySound(on);
+  try { localStorage.setItem(SOUND_PREF_KEY, on ? '1' : '0'); } catch {}
+});
 
 const registry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup, scene07CapturePractice, scene08IllegalMoves, scene09KoRule, scene10EndgameCounting, scene11TwoEyes, scene12Connections, scene13Ladder, scene14Net, scene15Snapback]);
 

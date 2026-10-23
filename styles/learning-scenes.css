@@ -143,6 +143,11 @@ body {
   padding: .4rem .8rem; font-size: .8rem; backdrop-filter: blur(10px);
 }
 #ls-topbar a:hover { border-color: var(--gold); }
+/* Ses düğmesi sağ üstte — sol üst köşe tahtanın boş alanı olarak kalsın. */
+#ls-topbar-end {
+  position: fixed; top: 0; right: 0; z-index: 20;
+  padding: .7rem 1rem;
+}
 .ls-topbar-btn {
   color: var(--text); text-decoration: none; font-family: inherit;
   background: var(--glass); border: 1px solid var(--gborder); border-radius: 8px;
