@@ -1,5 +1,5 @@
-import { BoardState } from '../core/boardState.js?v=2026-09-22.illegal-native2';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-09-22.illegal-native2';
+import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-ab';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-23.tahta-ab';
 
 // LS-owned positions preserving the previous scene's four shapes and both
 // five-stone captures. No runtime dependency on curriculum/page/lesson data.

@@ -1,5 +1,5 @@
-import { STAGES, createBoard, attempt, liberties, coord, key } from './illegalNativePolicy.js?v=2026-09-22.illegal-native2';
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-09-22.illegal-native2';
+import { STAGES, createBoard, attempt, liberties, coord, key } from './illegalNativePolicy.js?v=2026-10-23.tahta-ab';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-23.tahta-ab';
 
 let dispose, completed=false;
 export const scene08IllegalMoves={
