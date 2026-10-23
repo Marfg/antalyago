@@ -58,7 +58,9 @@ body {
   flex: 1 1 auto; min-height: 0; min-width: 0; position: relative;
   display: flex; align-items: center; justify-content: center;
 }
-#ls-canvas { width: 100%; height: 100%; display: block; }
+/* Tek parmak kaydırma sayfayı değil tahtadaki önizlemeyi hareket ettirir
+   (bkz. sceneBoardAdapter dokunmatik güvenlik); iki parmak yakınlaştırma açık. */
+#ls-canvas { width: 100%; height: 100%; display: block; touch-action: pinch-zoom; }
 
 /* ── Anlatım şeridi — tahtanın HEMEN ALTINDA, aynı genişlik bütçesinde.
    Ayrı bir panel/kutu görünümü YOK: sert kenarlık, dikey/yatay ayırıcı

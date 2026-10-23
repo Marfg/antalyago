@@ -336,6 +336,18 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // budur" bilgisini tutar (bkz. drawRegionMark — TEK çizim fonksiyonu, İKİ
   // renk varyantı, sahneye özel hard-code YOK).
   let regionMarks = [];
+  // Son hamle işareti — {gx,gz}|null. Sahneler başlangıç dizilimini de
+  // playMove() ile kurduğu için, reset()/setSize() ile AYNI senkron görevde
+  // konan taşlar "kurulum" sayılır ve işaret ALMAZ; görev bitince (microtask)
+  // bayrak düşer, sonraki her playMove gerçek bir hamledir. Sahne modülleri
+  // bu işarete hiç dokunmaz.
+  let lastMove = null;
+  let seedingThisTask = false;
+  function markSeedingTask() {
+    if (seedingThisTask) return;
+    seedingThisTask = true;
+    queueMicrotask(() => { seedingThisTask = false; });
+  }
   let inputEnabled = false;
   const tapHandlers = new Set();
   const hoverHandlers = new Set();
@@ -358,9 +370,21 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   let lastFocusResult = null;
 
   function updateProjCenter() { projCY = H * 0.5; }
+  // Keskin çizim: `W`/`H` CSS pikseli olarak KALIR (projeksiyon, hit-test,
+  // focusPoints ve overlay köprüleri hep CSS koordinatıyla çalışır); yalnız
+  // canvas'ın arka tamponu ekranın gerçek piksel yoğunluğuyla büyütülür ve
+  // ctx bir kez ölçeklenir. Üst sınır 3 — daha yoğun ekranlarda fark
+  // görünmez, yalnız bellek/çizim maliyeti artar.
+  function pixelRatio() {
+    return Math.min(3, Math.max(1, (typeof window !== 'undefined' && window.devicePixelRatio) || 1));
+  }
   function resize() {
-    W = canvas.width = canvas.clientWidth || canvas.parentElement?.clientWidth || innerWidth;
-    H = canvas.height = canvas.clientHeight || canvas.parentElement?.clientHeight || innerHeight;
+    W = canvas.clientWidth || canvas.parentElement?.clientWidth || innerWidth;
+    H = canvas.clientHeight || canvas.parentElement?.clientHeight || innerHeight;
+    const dpr = pixelRatio();
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     updateProjCenter();
     // Aktif bir focusPoints() varsa YENİ canvas ölçüleriyle SESSİZCE (animasyonsuz,
     // "sürekli zıplama" olmadan) yeniden hesaplanır — bkz. görev talimatı
@@ -372,7 +396,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // Lesson layout changes can resize the canvas without a window resize.
   const canvasResizeObserver = typeof ResizeObserver !== 'undefined'
     ? new ResizeObserver(() => {
-      if (canvas.clientWidth !== W || canvas.clientHeight !== H) resize();
+      if (canvas.clientWidth !== W || canvas.clientHeight !== H || canvas.width !== Math.round(W * pixelRatio())) resize();
     }) : null;
   canvasResizeObserver?.observe(canvas);
 
@@ -955,6 +979,18 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     ctx.restore();
   }
 
+  /** Parmak basılıyken seçili kesişimin çevresinde taştan büyük halka —
+      parmağın kenarından görünür, önizleme taşıyla çakışmaz (onu çevreler). */
+  function drawTouchRing(gx, gz) {
+    const p = project(-HALF + gx * CELL, -BOARD_H / 2 - .3, -HALF + gz * CELL);
+    const r = STONE_R * 1.35 * p.scale;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(232,228,222,.8)';
+    ctx.lineWidth = Math.max(1.5, r * 0.09);
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+
   function render() {
     const bg = ctx.createRadialGradient(W * .5, H * .45, 0, W * .5, H * .5, Math.max(W, H) * .75);
     bg.addColorStop(0, '#141420'); bg.addColorStop(1, '#060608');
@@ -971,7 +1007,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     }
     // movePreview aktifken sade hover noktası GÖSTERİLMEZ — aynı kesişimde
     // iki farklı işaret üst üste binmesin diye (bkz. drawMovePreview).
-    if (inputEnabled && hoverPoint && !movePreview) drawHoverPoint(hoverPoint.gx, hoverPoint.gz);
+    if (inputEnabled && hoverPoint && touchPress) drawTouchRing(hoverPoint.gx, hoverPoint.gz);
+    else if (inputEnabled && hoverPoint && !movePreview) drawHoverPoint(hoverPoint.gx, hoverPoint.gz);
     for (const l of libertyPoints) drawLibertyMark(l.gx, l.gz, l.t);
     if (movePreview) drawMovePreview(movePreview.gx, movePreview.gz, movePreview.color);
     // İpuçları ÖNCE (bulunmamış hedefler) — bulunmuş işaretler her zaman
@@ -988,6 +1025,24 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       const fade = s.captureAge == null ? 1 : 1 - Math.max(0, (s.captureAge - .25) / .2);
       drawStone(s.gx, s.gz, s.color, scale * fade, fade);
     }
+    if (lastMove) {
+      const s = visualStones.find(v => v.gx === lastMove.gx && v.gz === lastMove.gz && v.captureAge == null);
+      if (s) drawLastMoveMark(s);
+    }
+  }
+
+  /** Son oynanan taşın üstünde, taş rengine zıt ince halka. Taş giriş
+      animasyonunu bitirirken belirir; sürekli yanıp sönmez. */
+  function drawLastMoveMark(stone) {
+    const p = project(-HALF + stone.gx * CELL, stoneSurfaceY(), -HALF + stone.gz * CELL);
+    const { rx, ry } = stoneRadii(p, 0.42);
+    if (rx < 1.5) return;
+    ctx.save();
+    ctx.globalAlpha = reduceMotion ? 1 : Math.max(0, Math.min(1, (stone.t - 0.6) / 0.4));
+    ctx.strokeStyle = stone.color === 'black' ? 'rgba(244,240,232,.92)' : 'rgba(24,26,36,.82)';
+    ctx.lineWidth = Math.max(1.2, rx * 0.2);
+    ctx.beginPath(); ctx.ellipse(p.sx, p.sy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
   }
 
   let rafId = null;
@@ -997,6 +1052,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   function loop(nowMs) {
     const dt = lastFrameMs ? Math.min(0.05, (nowMs - lastFrameMs) / 1000) : 1 / 60;
     lastFrameMs = nowMs;
+    // Pencere başka yoğunlukta bir ekrana taşınınca 'resize' gelmeyebilir.
+    if (canvas.width !== Math.round(W * pixelRatio())) resize();
     if (intersectionMarkers && !reduceMotion) markerTime += dt;
     if (camLerpT < 1 && camTarget) {
       camLerpT = Math.min(1, camLerpT + (1 / 60) / CAM_DUR);
@@ -1056,14 +1113,48 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     const payload = hit ? { row: hit.gz, col: hit.gx } : null;
     for (const handler of hoverHandlers) handler(payload);
   }
+  // Dokunmatik güvenlik: parmak değdiğinde hamle OYNANMAZ, yalnız önizleme
+  // gösterilir; parmak kayarken önizleme onu izler ve parmak KALKTIĞI
+  // kesişimde hamle oynanır. Parmak tahta dışına kayarak kalkarsa hamle
+  // iptal olur. Hâlâ TEK dokunuş yeter. Fare ve kalem davranışı değişmez
+  // ('click'); dokunuşun ardından tarayıcının ürettiği 'click' yutulur.
+  let touchPress = null; // {pointerId} | null
+  let suppressClickUntil = 0;
   function handleMove(evt) {
+    if (touchPress && evt.pointerId !== touchPress.pointerId) return; // ikinci parmak
     if (!inputEnabled) { hoverPoint = null; notifyHover(null); return; }
     const { mx, my } = pointerXY(evt);
     hoverPoint = screenToGrid(mx, my);
     notifyHover(hoverPoint);
   }
+  function handleDown(evt) {
+    if (evt.pointerType === 'touch' && !touchPress) {
+      touchPress = { pointerId: evt.pointerId };
+      try { canvas.setPointerCapture(evt.pointerId); } catch {}
+    }
+    handleMove(evt);
+  }
+  function handleUp(evt) {
+    if (!touchPress || evt.pointerId !== touchPress.pointerId) return;
+    touchPress = null;
+    suppressClickUntil = performance.now() + 700;
+    if (!inputEnabled) { hoverPoint = null; return; }
+    const { mx, my } = pointerXY(evt);
+    const hit = screenToGrid(mx, my);
+    hoverPoint = null;
+    if (!hit) { notifyHover(null); return; } // tahta dışında bırakıldı — iptal
+    for (const handler of tapHandlers) handler({ row: hit.gz, col: hit.gx });
+  }
+  function handleCancel(evt) {
+    if (!touchPress || evt.pointerId !== touchPress.pointerId) return;
+    touchPress = null;
+    suppressClickUntil = performance.now() + 700;
+    hoverPoint = null;
+    notifyHover(null);
+  }
   function handleClick(evt) {
     if (!inputEnabled) return;
+    if (performance.now() < suppressClickUntil) return; // dokunuş pointerup'ta zaten işlendi
     const { mx, my } = pointerXY(evt);
     const hit = screenToGrid(mx, my);
     if (!hit) return; // tahta dışı/boş tıklama — hamle sayılmaz
@@ -1071,11 +1162,9 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   }
   canvas.addEventListener('click', handleClick);
   canvas.addEventListener('pointermove', handleMove);
-  // Touch cihazlarda kalıcı hover YOK — pointerdown, dokunuş anında BİR
-  // KARELİK kısa bir önizleme üretir (ogren-3d.html'in touchstart→ghostGrid
-  // deseniyle AYNI ruh); ardından gelen 'click' AYNI etkileşimde hamleyi
-  // commit eder — ikinci bir dokunuş İSTENMEZ (bkz. görev talimatı Bölüm B).
-  canvas.addEventListener('pointerdown', handleMove);
+  canvas.addEventListener('pointerdown', handleDown);
+  canvas.addEventListener('pointerup', handleUp);
+  canvas.addEventListener('pointercancel', handleCancel);
 
   return {
     setSize(n) {
@@ -1091,6 +1180,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       koFreeMarks = [];
       regionMarks = [];
       hoverPoint = null;
+      lastMove = null;
+      markSeedingTask();
     },
     reset() {
       boardSt.reset(SIZE);
@@ -1103,6 +1194,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       koFreeMarks = [];
       regionMarks = [];
       hoverPoint = null;
+      lastMove = null;
+      markSeedingTask();
     },
     focus(presetName) {
       // bkz. focusPoints() — adlandırılmış preset'e dönüş eski focus-noktası
@@ -1177,6 +1270,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       const { newState, captured } = applyMove(boardSt, col, row, color);
       boardSt = newState;
       visualStones.push({ gx: col, gz: row, color, t: reduceMotion ? 1 : 0 });
+      lastMove = seedingThisTask ? null : { gx: col, gz: row };
       for (const c of captured) {
         if (animateCapture && !reduceMotion) {
           const visual = visualStones.find(s => s.gx === c.x && s.gz === c.y);
@@ -1206,6 +1300,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       const { newState } = applyMove(freshBoard, col, row, color);
       boardSt = newState;
       visualStones = [{ gx: col, gz: row, color, t: reduceMotion ? 1 : 0 }];
+      lastMove = null; // tek taşlı örnek bir hamle dizisi değildir
       libertyPoints = [];
       movePreview = null;
       return { ok: true };
@@ -1421,6 +1516,11 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       return hoverPoint ? { row: hoverPoint.gz, col: hoverPoint.gx } : null;
     },
 
+    /** Son hamle işaretinin konumu — YALNIZ test/gözlem amaçlı, salt-okunur. */
+    getLastMove() {
+      return lastMove ? { row: lastMove.gz, col: lastMove.gx } : null;
+    },
+
     /** false iken onIntersectionTap/onIntersectionHover abonelerine ASLA ulaşılmaz (girdi kilidi) — preview'ı da temizler.
         true'ya DIŞARIDAN (false'tan) geçişte abone olan hover handler'larına `null` bildirilir (bkz. dosya başı v0.12 notu). */
     setInputEnabled(enabled) {
@@ -1514,7 +1614,9 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       canvasResizeObserver?.disconnect();
       canvas.removeEventListener('click', handleClick);
       canvas.removeEventListener('pointermove', handleMove);
-      canvas.removeEventListener('pointerdown', handleMove);
+      canvas.removeEventListener('pointerdown', handleDown);
+      canvas.removeEventListener('pointerup', handleUp);
+      canvas.removeEventListener('pointercancel', handleCancel);
       tapHandlers.clear();
       hoverHandlers.clear();
       libertyPoints = [];
@@ -1524,6 +1626,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       koFreeMarks = [];
       regionMarks = [];
       visualStones = [];
+      lastMove = null;
     },
   };
 }
