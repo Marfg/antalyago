@@ -1,5 +1,5 @@
-import {isValidMove} from '../core/ruleEngine.js?v=2026-10-23.tahta-c';
-import {LADDER_STEPS,createLadderScenario,seedBoard,whiteGroup,firstAtariTrial,goPoint} from './ladderLessonPolicy.js?v=2026-10-23.tahta-c';
+import {isValidMove} from '../core/ruleEngine.js?v=2026-10-23.tahta-d';
+import {LADDER_STEPS,createLadderScenario,seedBoard,whiteGroup,firstAtariTrial,goPoint} from './ladderLessonPolicy.js?v=2026-10-23.tahta-d';
 
 export function mountLadderLesson({board,overlay,document,initialStep=0,onStepComplete=()=>{},onPresented=()=>{},onAllComplete=()=>{}}){
 const $=id=>document.getElementById(id);

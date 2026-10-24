@@ -220,37 +220,40 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-10-23.tahta-c';
-import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-c';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-23.tahta-c';
-import { createBoardSound } from './boardSound.js?v=2026-10-23.tahta-c';
+import { CAM } from '../core/curriculum.js?v=2026-10-23.tahta-d';
+import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-d';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-23.tahta-d';
+import { createBoardSound } from './boardSound.js?v=2026-10-23.tahta-d';
 
 const CAM_PRESETS = { ...CAM };
 
+// Ahşap dokusu bir kez üretilir ve tahta yüzeyine TEK karo olarak
+// gerilir (bkz. drawBoard: desen dönüşümü), bu yüzden damarlar tahtayla
+// birlikte döner. Yüksek yoğunluklu ekranlarda bulanmasın diye karo büyük.
+const WOOD_TILE = 1024;
 function makeWoodPattern(ctx) {
+  const S = WOOD_TILE;
   const woodCv = document.createElement('canvas');
-  woodCv.width = woodCv.height = 512;
+  woodCv.width = woodCv.height = S;
   const wc = woodCv.getContext('2d');
-  const g = wc.createLinearGradient(0, 0, 512, 0);
+  const g = wc.createLinearGradient(0, 0, 0, S);
   g.addColorStop(0, '#c8a84a'); g.addColorStop(.15, '#d4b050');
   g.addColorStop(.38, '#c2a040'); g.addColorStop(.6, '#caa848');
   g.addColorStop(.82, '#be9c3a'); g.addColorStop(1, '#c8a444');
-  wc.fillStyle = g; wc.fillRect(0, 0, 512, 512);
-  wc.globalAlpha = 0.055;
-  for (let i = 0; i < 120; i++) {
-    const y = Math.random() * 512, dk = i % 7 === 0;
-    wc.strokeStyle = dk ? '#5a2e00' : '#e8d060';
-    wc.lineWidth = dk ? Math.random() * 1.2 + .4 : Math.random() * .8 + .2;
-    wc.beginPath(); wc.moveTo(0, y + (Math.random() - .5) * 4);
-    wc.bezierCurveTo(128, y + (Math.random() - .5) * 3, 384, y + (Math.random() - .5) * 3, 512, y + (Math.random() - .5) * 4);
+  wc.fillStyle = g; wc.fillRect(0, 0, S, S);
+  // Damarlar tahtanın bir ekseni boyunca uzanır; koyu damarlar biraz daha
+  // belirgin, açık olanlar ince parıltı gibi.
+  for (let i = 0; i < 220; i++) {
+    const y = Math.random() * S, dk = i % 6 === 0;
+    wc.globalAlpha = dk ? 0.09 : 0.06;
+    wc.strokeStyle = dk ? '#5a2e00' : '#ecd468';
+    wc.lineWidth = dk ? Math.random() * 2 + .6 : Math.random() * 1.2 + .3;
+    wc.beginPath(); wc.moveTo(0, y + (Math.random() - .5) * 8);
+    wc.bezierCurveTo(S * .25, y + (Math.random() - .5) * 6, S * .75, y + (Math.random() - .5) * 6, S, y + (Math.random() - .5) * 8);
     wc.stroke();
   }
-  wc.globalAlpha = .10;
-  const vig = wc.createLinearGradient(0, 0, 512, 512);
-  vig.addColorStop(0, '#3a1c00'); vig.addColorStop(.5, 'transparent'); vig.addColorStop(1, '#3a1c00');
-  wc.fillStyle = vig; wc.fillRect(0, 0, 512, 512);
   wc.globalAlpha = 1;
-  return ctx.createPattern(woodCv, 'repeat');
+  return ctx.createPattern(woodCv, 'no-repeat');
 }
 
 function easeInOutCubic(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
@@ -391,6 +394,22 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // kamera kararlarına (focus/focusPoints) karışmaz.
   let userYaw = 0, rotateDrag = null;
   const USER_YAW_MAX = 0.7;
+  // Tek ışık kaynağı — dünya xz düzleminde ışığın GELDİĞİ yön. Tahtanın ışık
+  // eğimi, taşların parlak noktası ve gölgesi aynı yönü kullanır; varsayılan
+  // eski açıda (yaw .5) önceki sabit parlama konumunu birebir verir.
+  const LIGHT_X = -0.897, LIGHT_Z = 0.442;
+  let lightDir = { x: -0.62, y: -0.78 }; // ekran düzleminde, her karede güncellenir
+  function updateLightDir() {
+    const yaw = camYaw + userYaw, sp = Math.sin(camPitch);
+    const rx = LIGHT_X * Math.cos(yaw) + LIGHT_Z * Math.sin(yaw);
+    const rz = -LIGHT_X * Math.sin(yaw) + LIGHT_Z * Math.cos(yaw);
+    const n = Math.hypot(rx, rz * sp) || 1;
+    lightDir = { x: rx / n, y: -rz * sp / n };
+  }
+  // Hareket yokken çizim atlanır (pil): API çağrıları, girdi ve yeniden
+  // boyutlanma `dirty` ile bir sonraki kareyi çizdirir; animasyon sürerken
+  // her kare çizilir (bkz. loop/isAnimating).
+  let dirty = true;
 
   function updateProjCenter() { projCY = H * 0.5; }
   // Keskin çizim: `W`/`H` CSS pikseli olarak KALIR (projeksiyon, hit-test,
@@ -401,13 +420,18 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   function pixelRatio() {
     return Math.min(3, Math.max(1, (typeof window !== 'undefined' && window.devicePixelRatio) || 1));
   }
+  // shadowBlur/shadowOffset ctx dönüşümünden ETKİLENMEZ (cihaz pikseli) —
+  // gölge çizimlerinde bu oranla çarpılır.
+  let curDpr = 1;
   function resize() {
     W = canvas.clientWidth || canvas.parentElement?.clientWidth || innerWidth;
     H = canvas.clientHeight || canvas.parentElement?.clientHeight || innerHeight;
     const dpr = pixelRatio();
+    curDpr = dpr;
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    dirty = true; // arka tampon yeniden boyutlanınca temizlenir
     updateProjCenter();
     // Aktif bir focusPoints() varsa YENİ canvas ölçüleriyle SESSİZCE (animasyonsuz,
     // "sürekli zıplama" olmadan) yeniden hesaplanır — bkz. görev talimatı
@@ -665,26 +689,59 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     return result;
   }
 
-  function drawFace(corners, fill, stroke) {
-    const pts = corners.map(([x, y, z]) => project(x, y, z));
+  function tracePoly(pts) {
     ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.sx, p.sy) : ctx.lineTo(p.sx, p.sy));
-    ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
-    ctx.strokeStyle = stroke || fill; ctx.lineWidth = 1; ctx.stroke();
+    ctx.closePath();
+  }
+
+  /** Yan yüz: üst kenarı (ilk iki köşe) açık, alt kenarı koyu — ahşap
+      kalınlığına derinlik verir. */
+  function drawFace(corners, light, dark, stroke) {
+    const pts = corners.map(([x, y, z]) => project(x, y, z));
+    const topMid = { x: (pts[0].sx + pts[1].sx) / 2, y: (pts[0].sy + pts[1].sy) / 2 };
+    const botMid = { x: (pts[2].sx + pts[3].sx) / 2, y: (pts[2].sy + pts[3].sy) / 2 };
+    const g = ctx.createLinearGradient(topMid.x, topMid.y, botMid.x, botMid.y);
+    g.addColorStop(0, light); g.addColorStop(1, dark);
+    tracePoly(pts); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  /** Tahtanın altına düşen yumuşak gölge — tahta havada asılı durmasın. */
+  function drawGroundShadow(bw, bh) {
+    const pts = [[-bw, bh, -bw], [bw, bh, -bw], [bw, bh, bw], [-bw, bh, bw]].map(([x, y, z]) => project(x, y, z));
+    const sc = pts.reduce((s, p) => s + p.scale, 0) / pts.length;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.6)';
+    ctx.shadowBlur = Math.min(60, 34 * sc) * curDpr;
+    ctx.shadowOffsetY = 16 * sc * curDpr;
+    tracePoly(pts); ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fill();
+    ctx.restore();
   }
 
   function drawBoard() {
     const bh = BOARD_H / 2, bw = HALF + CELL * .82;
-    drawFace([[-bw, -bh, -bw], [-bw, -bh, bw], [-bw, bh, bw], [-bw, bh, -bw]], '#7a4e0e', '#5e3a08');
-    drawFace([[-bw, -bh, bw], [bw, -bh, bw], [bw, bh, bw], [-bw, bh, bw]], '#8a5a12', '#6a4408');
-    drawFace([[bw, -bh, -bw], [bw, -bh, bw], [bw, bh, bw], [bw, bh, -bw]], '#966014', '#724808');
+    drawGroundShadow(bw, bh);
+    drawFace([[-bw, -bh, -bw], [-bw, -bh, bw], [-bw, bh, bw], [-bw, bh, -bw]], '#8a5a14', '#4e3004', '#5e3a08');
+    drawFace([[-bw, -bh, bw], [bw, -bh, bw], [bw, bh, bw], [-bw, bh, bw]], '#9c681a', '#5c3a08', '#6a4408');
+    drawFace([[bw, -bh, -bw], [bw, -bh, bw], [bw, bh, bw], [bw, bh, -bw]], '#a8701e', '#663f0a', '#724808');
     const top = [[-bw, -bh, -bw], [bw, -bh, -bw], [bw, -bh, bw], [-bw, -bh, bw]];
     const tpts = top.map(([x, y, z]) => project(x, y, z));
-    ctx.save(); ctx.beginPath();
-    tpts.forEach((p, i) => i === 0 ? ctx.moveTo(p.sx, p.sy) : ctx.lineTo(p.sx, p.sy));
-    ctx.closePath(); ctx.clip();
+    ctx.save(); tracePoly(tpts); ctx.clip();
+    // Ahşap karosunu tahta yüzeyine ger (afin yaklaşım — perspektif hafif).
+    if (woodPat?.setTransform && typeof DOMMatrix !== 'undefined') {
+      const [p0, p1, , p3] = tpts, S = WOOD_TILE;
+      woodPat.setTransform(new DOMMatrix([(p1.sx - p0.sx) / S, (p1.sy - p0.sy) / S, (p3.sx - p0.sx) / S, (p3.sy - p0.sy) / S, p0.sx, p0.sy]));
+    }
+    ctx.fillStyle = '#c6a446'; ctx.fill(); // desen yoksa (test ortamı) düz ahşap rengi
     ctx.fillStyle = woodPat; ctx.globalAlpha = .96; ctx.fill();
-    ctx.globalAlpha = .06; ctx.fillStyle = '#2a1200'; ctx.fill();
-    ctx.globalAlpha = 1; ctx.strokeStyle = '#6a4008'; ctx.lineWidth = 1.6; ctx.stroke();
+    // Işık eğimi: ışığın geldiği kenar hafif aydınlık, karşı kenar hafif gölgeli.
+    const lit = project(LIGHT_X * bw, -bh, LIGHT_Z * bw), far = project(-LIGHT_X * bw, -bh, -LIGHT_Z * bw);
+    const lg = ctx.createLinearGradient(lit.sx, lit.sy, far.sx, far.sy);
+    lg.addColorStop(0, 'rgba(255,238,196,.20)'); lg.addColorStop(.5, 'rgba(255,238,196,0)'); lg.addColorStop(1, 'rgba(40,18,0,.16)');
+    ctx.globalAlpha = 1; ctx.fillStyle = lg; ctx.fill();
+    // Kenar: içte ince açık pah, dışta koyu çizgi (yarısı kırpılır).
+    ctx.strokeStyle = 'rgba(255,232,170,.35)'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.strokeStyle = '#6a4008'; ctx.lineWidth = 1.2; ctx.stroke();
     ctx.restore();
   }
 
@@ -755,13 +812,15 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     const ps = project(wx, -BOARD_H / 2 - .5, wz);
     const rise = Math.min(1, lift / (STONE_R * 2.2));
     const srx = rx * (1 + rise * .35);
-    const sg = ctx.createRadialGradient(ps.sx + rx * .1, ps.sy + ry * .12, 0, ps.sx + rx * .1, ps.sy + ry * .12, srx);
+    // Gölge ışığın tersine, parlak nokta ışığa doğru (bkz. updateLightDir).
+    const shx = ps.sx - lightDir.x * .16 * rx, shy = ps.sy - lightDir.y * .16 * ry;
+    const sg = ctx.createRadialGradient(shx, shy, 0, shx, shy, srx);
     sg.addColorStop(0, `rgba(0,0,0,${(.38 * (1 - rise * .6)).toFixed(3)})`); sg.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.beginPath(); ctx.ellipse(ps.sx + rx * .1, ps.sy + ry * .12, srx, ry * .48 * (1 + rise * .35), 0, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.ellipse(shx, shy, srx, ry * .48 * (1 + rise * .35), 0, 0, Math.PI * 2);
     ctx.fillStyle = sg; ctx.fill();
 
     ctx.beginPath(); ctx.ellipse(p.sx, p.sy, rx, ry, 0, 0, Math.PI * 2);
-    const g = ctx.createRadialGradient(p.sx - rx * .2, p.sy - ry * .25, rx * .03, p.sx, p.sy, rx * 1.05);
+    const g = ctx.createRadialGradient(p.sx + lightDir.x * .32 * rx, p.sy + lightDir.y * .32 * ry, rx * .03, p.sx, p.sy, rx * 1.05);
     if (isB) {
       g.addColorStop(0, '#4e5c70'); g.addColorStop(.4, '#171b28'); g.addColorStop(1, '#050508');
     } else {
@@ -1039,6 +1098,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   }
 
   function render() {
+    updateLightDir();
     const bg = ctx.createRadialGradient(W * .5, H * .45, 0, W * .5, H * .5, Math.max(W, H) * .75);
     bg.addColorStop(0, '#141420'); bg.addColorStop(1, '#060608');
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
@@ -1144,11 +1204,21 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   let lastFrameMs = 0;
   const STONE_ANIM_DUR = 0.16;
   const LIBERTY_FADE_DUR = 0.25;
+  const hasActiveFade = list => list.some(m => m.t < 1);
+  function isAnimating() {
+    return !!((camLerpT < 1 && camTarget) || userYaw !== 0 || rotateDrag || rejectFx
+      || (intersectionMarkers && !reduceMotion)
+      || visualStones.some(s => s.t < 1 || (s.dropT != null && s.dropT < 1) || s.captureAge != null)
+      || hasActiveFade(libertyPoints) || hasActiveFade(illegalMarks) || hasActiveFade(illegalHints)
+      || hasActiveFade(koFreeMarks) || hasActiveFade(regionMarks));
+  }
   function loop(nowMs) {
     const dt = lastFrameMs ? Math.min(0.05, (nowMs - lastFrameMs) / 1000) : 1 / 60;
     lastFrameMs = nowMs;
     // Pencere başka yoğunlukta bir ekrana taşınınca 'resize' gelmeyebilir.
     if (canvas.width !== Math.round(W * pixelRatio())) resize();
+    // İlerletmeden ÖNCE bakılır: biten bir animasyonun son karesi de çizilsin.
+    const animating = isAnimating();
     if (intersectionMarkers && !reduceMotion) markerTime += dt;
     // Elle döndürme bırakılınca sahne açısına yumuşakça geri döner.
     if (!rotateDrag && userYaw !== 0) {
@@ -1174,7 +1244,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       for (const k of koFreeMarks) if (k.t < 1) k.t = Math.min(1, k.t + dt / LIBERTY_FADE_DUR);
       for (const r of regionMarks) if (r.t < 1) r.t = Math.min(1, r.t + dt / LIBERTY_FADE_DUR);
     }
-    render();
+    if (animating || dirty) { dirty = false; render(); }
     rafId = requestAnimationFrame(loop);
   }
   rafId = requestAnimationFrame(loop);
@@ -1212,6 +1282,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     };
   }
   function notifyHover(hit) {
+    dirty = true; // imleç/önizleme değişti
     const payload = hit ? { row: hit.gz, col: hit.gx } : null;
     for (const handler of hoverHandlers) handler(payload);
   }
@@ -1250,6 +1321,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     for (const handler of tapHandlers) handler({ row: hit.gz, col: hit.gx });
   }
   function handleDown(evt) {
+    dirty = true;
     sound.unlock(); // kullanıcı hareketi — askıdaki sesi açmanın tek güvenli anı
     // Fare/kalem: sağ tuş ya da Shift+sol tuş sürüklemesi tahtayı döndürür,
     // hamle OYNAMAZ. (Dokunmatikte tek parmak hamle önizlemesine ayrılmış.)
@@ -1267,6 +1339,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     handleMove(evt);
   }
   function endRotate(evt) {
+    dirty = true;
     if (!rotateDrag || evt.pointerId !== rotateDrag.pointerId) return false;
     rotateDrag = null;
     canvas.style.cursor = '';
@@ -1274,6 +1347,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     return true;
   }
   function handleUp(evt) {
+    dirty = true;
     if (endRotate(evt)) return;
     if (!touchPress || evt.pointerId !== touchPress.pointerId) return;
     touchPress = null;
@@ -1286,6 +1360,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     dispatchTap(hit);
   }
   function handleCancel(evt) {
+    dirty = true;
     if (endRotate(evt)) return;
     if (!touchPress || evt.pointerId !== touchPress.pointerId) return;
     touchPress = null;
@@ -1309,7 +1384,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   function preventContextMenu(evt) { evt.preventDefault(); } // sağ tuş döndürme içindir
   canvas.addEventListener('contextmenu', preventContextMenu);
 
-  return {
+  const api = {
     setSize(n) {
       if (![5, 9, 13, 19].includes(n)) return;
       SIZE = n; CELL = sizeToCell(n); HALF = (SIZE - 1) * CELL / 2; STONE_R = CELL * (20 / 48);
@@ -1794,4 +1869,12 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       lastMove = null;
     },
   };
+  // Durum değiştirebilecek her API çağrısı bir sonraki karede yeniden çizim
+  // ister; salt-okunur get*/is* sorguları (ör. hareket katmanının her kare
+  // okuduğu getCameraState) boşta çizimi tetiklemez.
+  for (const [name, fn] of Object.entries(api)) {
+    if (typeof fn !== 'function' || /^(get|is)[A-Z]/.test(name)) continue;
+    api[name] = (...args) => { dirty = true; return fn(...args); };
+  }
+  return api;
 }

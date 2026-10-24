@@ -1,6 +1,6 @@
-import {mountLadderLesson} from './ladderLessonController.js?v=2026-10-23.tahta-c';
-import {createLadderMotionOverlay} from './ladderMotionOverlay.js?v=2026-10-23.tahta-c';
-import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-23.tahta-c';
+import {mountLadderLesson} from './ladderLessonController.js?v=2026-10-23.tahta-d';
+import {createLadderMotionOverlay} from './ladderMotionOverlay.js?v=2026-10-23.tahta-d';
+import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-23.tahta-d';
 let active=null;
 export const scene13Ladder={
  id:'scene-13-ladder',version:1,title:'Merdiven (Shichō)',curriculumRef:{lessonId:'l10',concept:'ladder'},

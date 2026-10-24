@@ -21,9 +21,9 @@
  * (ikisi de saf) üzerinden hesaplar, unit test edilebilir.
  */
 
-import { CURRICULUM } from '../core/curriculum.js?v=2026-10-23.tahta-c';
-import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-c';
-import { getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-23.tahta-c';
+import { CURRICULUM } from '../core/curriculum.js?v=2026-10-23.tahta-d';
+import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-d';
+import { getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-23.tahta-d';
 
 const LESSON_ID = 'l2';
 const STEP_INDEX = 2;

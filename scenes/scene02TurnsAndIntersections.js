@@ -35,8 +35,8 @@
  * özet + [Bu konuyu tekrar et]/[Sonraki konu] gösterir.
  */
 
-import { pickDeterministicWhiteMove } from './turnPolicy.js?v=2026-10-23.tahta-c';
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-23.tahta-c';
+import { pickDeterministicWhiteMove } from './turnPolicy.js?v=2026-10-23.tahta-d';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-23.tahta-d';
 
 const SUMMARY_TEXT = "Go'da oyuncular sırayla taş yerleştirir.";
 
