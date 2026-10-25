@@ -156,6 +156,63 @@ body {
 }
 .ls-topbar-btn:hover { border-color: var(--gold); }
 
+/* ── Karşılama (#ls-welcome, bkz. scenes/welcomeIntro.js) — tahtanın
+   alt kısmına binen başlık + tek düğme. Kapsayıcı tıklamaları tahtaya
+   geçirir; yalnız yazı bloğu etkileşimlidir. Alttaki koyu geçiş boş
+   anlatım şeridini de örter. ── */
+#ls-welcome {
+  position: fixed; inset: 0; z-index: 15;
+  display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+  padding: 0 1rem max(2.2rem, calc(env(safe-area-inset-bottom, 0px) + 1.4rem));
+  background: linear-gradient(to top, rgba(8, 8, 14, .97) 0, rgba(8, 8, 14, .9) 22%, rgba(8, 8, 14, 0) 46%);
+  pointer-events: none;
+  opacity: 0; transition: opacity .5s ease;
+}
+#ls-welcome[hidden] { display: none; }
+#ls-welcome.is-in { opacity: 1; }
+#ls-welcome.is-out { opacity: 0; transition-duration: .4s; }
+.ls-welcome-copy {
+  pointer-events: auto;
+  width: 100%; max-width: 760px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: .7rem;
+}
+.ls-welcome-copy > * {
+  margin: 0; opacity: 0; transform: translateY(12px);
+  transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1);
+}
+#ls-welcome.is-in .ls-welcome-copy > * { opacity: 1; transform: none; }
+#ls-welcome.is-in .ls-welcome-eyebrow { transition-delay: .35s; }
+#ls-welcome.is-in #ls-welcome-title { transition-delay: .5s; }
+#ls-welcome.is-in .ls-welcome-lead { transition-delay: .7s; }
+#ls-welcome.is-in #ls-welcome-start { transition-delay: 1s; }
+#ls-welcome.is-out .ls-welcome-copy > * { transform: translateY(8px); transition-delay: 0s; }
+.ls-welcome-eyebrow {
+  font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--gold);
+}
+#ls-welcome-title {
+  font-family: 'Noto Serif', Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.1rem, 5.6vw, 3.6rem); font-weight: 700; line-height: 1.05;
+  letter-spacing: -.015em; color: #f4efe6;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, .6);
+}
+.ls-welcome-lead {
+  max-width: 34em; font-size: clamp(.95rem, 2.4vw, 1.08rem); line-height: 1.5;
+  color: rgba(232, 228, 222, .78);
+}
+#ls-welcome-start {
+  margin-top: .5rem; min-height: 48px; padding: .8rem 1.7rem;
+  border: 0; border-radius: 999px; cursor: pointer;
+  font-family: inherit; font-size: 1rem; font-weight: 700; color: #1d1608;
+  background: linear-gradient(180deg, var(--gold2), var(--gold));
+  box-shadow: 0 8px 28px rgba(200, 168, 75, .28), inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+#ls-welcome.is-in #ls-welcome-start:hover { transform: translateY(-1px); transition-delay: 0s; transition-duration: .16s; }
+#ls-welcome-start:focus-visible { outline: 2px solid #f4efe6; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  #ls-welcome, .ls-welcome-copy > * { transition: none; }
+}
+
 /* ══════════════════════════════════════════════════════════════════
    ORTAK ŞERİT İLKELLERİ (.ls-strip-*) — Sahne #1/#2/#3 bunları paylaşır.
    ══════════════════════════════════════════════════════════════════ */
