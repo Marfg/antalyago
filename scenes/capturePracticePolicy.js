@@ -32,9 +32,9 @@
  *      scenes/libertyAssessmentPolicy.js/capturePolicy.js "getLesson()
  *      throws if not found" deseniyle AYNI disiplin.
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-23.tahta-d';
-import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-d';
-import { getGroup, getLiberties, applyMove, isValidMove } from '../core/ruleEngine.js?v=2026-10-23.tahta-d';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-25.karsilama';
+import { BoardState } from '../core/boardState.js?v=2026-10-25.karsilama';
+import { getGroup, getLiberties, applyMove, isValidMove } from '../core/ruleEngine.js?v=2026-10-25.karsilama';
 
 const LESSON_ID = 'l3';
 const BOARD_SIZE = 9;

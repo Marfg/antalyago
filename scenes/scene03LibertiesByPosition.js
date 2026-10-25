@@ -77,8 +77,8 @@
  *      zaman gerçek hamle üretmez — ayrı bir koruma GEREKMEZ.
  */
 
-import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './boardZones.js?v=2026-10-23.tahta-d';
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-23.tahta-d';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './boardZones.js?v=2026-10-25.karsilama';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-25.karsilama';
 
 const STATE = {
   INTRO: 'intro',
