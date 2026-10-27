@@ -220,10 +220,10 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-10-23.tahta-d';
-import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-d';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-23.tahta-d';
-import { createBoardSound } from './boardSound.js?v=2026-10-23.tahta-d';
+import { CAM } from '../core/curriculum.js?v=2026-10-25.karsilama';
+import { BoardState } from '../core/boardState.js?v=2026-10-25.karsilama';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-25.karsilama';
+import { createBoardSound } from './boardSound.js?v=2026-10-25.karsilama';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -371,6 +371,17 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   let camYaw = .50, camPitch = isMobile ? 1.25 : .88, camDist = 500;
   let camStart = null, camTarget = null, camLerpT = 1;
   const CAM_DUR = 0.65;
+  // Geçiş süresi ve eğrisi: sahne kameraları hep CAM_DUR + easeInOutCubic
+  // kullanır; yalnız frameBoard() (karşılama) daha uzun, yavaşlayarak
+  // inen bir süzülme ister ve bir sonraki focus() bunları geri alır.
+  let camDur = CAM_DUR, camEase = easeInOutCubic;
+  // Karşılama salınımı: kamera dururken tahtanın çok hafifçe sağa-sola
+  // dönmesi (±0,07 rad, ~9 sn). Kapatılınca sıfıra yumuşakça döner.
+  let driftOn = false, driftYaw = 0, driftTime = 0;
+  // Karşılamada tahta, alttaki yazıya yer açmak için ekranın ortasından
+  // `projShift` px yukarıda çizilir; kamera geçişiyle birlikte kayar ve
+  // her focus()/focusPoints() çağrısı onu sıfıra (sahne düzenine) döndürür.
+  let projShift = 0, shiftStart = 0, shiftTarget = 0;
   // Son focusPoints() çağrısı — YALNIZ resize/orientation'da AYNI noktaları
   // yeni canvas ölçüleriyle yeniden hesaplamak için saklanır (bkz. altta
   // resize() ve focusPoints()). Adapter bu noktaların hangi sahne/moment'e
@@ -400,7 +411,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   const LIGHT_X = -0.897, LIGHT_Z = 0.442;
   let lightDir = { x: -0.62, y: -0.78 }; // ekran düzleminde, her karede güncellenir
   function updateLightDir() {
-    const yaw = camYaw + userYaw, sp = Math.sin(camPitch);
+    const yaw = camYaw + userYaw + driftYaw, sp = Math.sin(camPitch);
     const rx = LIGHT_X * Math.cos(yaw) + LIGHT_Z * Math.sin(yaw);
     const rz = -LIGHT_X * Math.sin(yaw) + LIGHT_Z * Math.cos(yaw);
     const n = Math.hypot(rx, rz * sp) || 1;
@@ -411,7 +422,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // her kare çizilir (bkz. loop/isAnimating).
   let dirty = true;
 
-  function updateProjCenter() { projCY = H * 0.5; }
+  function updateProjCenter() { projCY = H * 0.5 - projShift; }
   // Keskin çizim: `W`/`H` CSS pikseli olarak KALIR (projeksiyon, hit-test,
   // focusPoints ve overlay köprüleri hep CSS koordinatıyla çalışır); yalnız
   // canvas'ın arka tamponu ekranın gerçek piksel yoğunluğuyla büyütülür ve
@@ -460,7 +471,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     const fov = 700, sc = fov / Math.max(fov + rz2, 1) * (dist / 500);
     return { sx: W / 2 + rx * sc, sy: projCY + ry2 * sc, scale: sc, z: rz2 };
   }
-  function project(x, y, z) { return projectAt(x, y, z, camYaw + userYaw, camPitch, camDist); }
+  function project(x, y, z) { return projectAt(x, y, z, camYaw + userYaw + driftYaw, camPitch, camDist); }
 
   function lerpAngle(a, b, t) { return a + (b - a) * t; }
 
@@ -485,7 +496,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       maxZoom] içinde, projeksiyonun dist'e göre LİNEER ölçeklenmesinden
       (bkz. projectAt: sc ∝ dist, sabit yaw/pitch/nokta için) kapalı biçimde
       çözer. */
-  function solveDistForFit(auxPts, safe, yaw, pitch, minZoom, maxZoom) {
+  function solveDistForFit(auxPts, safe, yaw, pitch, minZoom, maxZoom, cy = projCY) {
     const Y = stoneSurfaceY();
     const REF_DIST = 500;
     let lo = minZoom, hi = maxZoom;
@@ -497,7 +508,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
         lo = Math.max(lo, Math.min(b1, b2)); hi = Math.min(hi, Math.max(b1, b2));
       }
       if (dy !== 0) {
-        const b1 = (safe.top - projCY) * REF_DIST / dy, b2 = (safe.bottom - projCY) * REF_DIST / dy;
+        const b1 = (safe.top - cy) * REF_DIST / dy, b2 = (safe.bottom - cy) * REF_DIST / dy;
         lo = Math.max(lo, Math.min(b1, b2)); hi = Math.min(hi, Math.max(b1, b2));
       }
     }
@@ -672,20 +683,38 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   function applyFocusPoints(points, opts, animate) {
     if (!Array.isArray(points) || points.length === 0) { activeFocusPoints = null; lastFocusResult = null; return null; }
     const { motion = true } = opts || {};
+    // Karşılamadan kalan dikey kayma varsa kadraj, sahnenin gerçek
+    // (kaymasız) merkezine göre değerlendirilir; kayma ayrıca sıfırlanır.
+    const leftoverShift = projShift;
+    if (leftoverShift) { projShift = 0; updateProjCenter(); }
     const result = computeFraming(points, opts);
+    if (leftoverShift) { projShift = leftoverShift; updateProjCenter(); }
     activeFocusPoints = { points, opts };
     lastFocusResult = result;
-    if (!result.adjusted) return result;
+    if (!result.adjusted) {
+      if (leftoverShift) {
+        camStart = { yaw: camYaw, pitch: camPitch, dist: camDist };
+        camTarget = { ...camStart };
+        camDur = CAM_DUR; camEase = easeInOutCubic;
+        shiftStart = projShift; shiftTarget = 0;
+        camLerpT = animate && motion && !reduceMotion ? 0 : 1;
+        if (camLerpT === 1) { projShift = 0; updateProjCenter(); }
+      }
+      return result;
+    }
 
     if (!animate) {
       camYaw = result.yaw; camPitch = result.pitch; camDist = result.dist;
       camStart = camTarget = null; camLerpT = 1;
+      projShift = 0; updateProjCenter();
       return result;
     }
     camStart = { yaw: camYaw, pitch: camPitch, dist: camDist };
     camTarget = { yaw: result.yaw, pitch: result.pitch, dist: result.dist };
+    camDur = CAM_DUR; camEase = easeInOutCubic;
+    shiftStart = projShift; shiftTarget = 0;
     camLerpT = motion && !reduceMotion ? 0 : 1;
-    if (camLerpT === 1) { camYaw = result.yaw; camPitch = result.pitch; camDist = result.dist; }
+    if (camLerpT === 1) { camYaw = result.yaw; camPitch = result.pitch; camDist = result.dist; projShift = 0; updateProjCenter(); }
     return result;
   }
 
@@ -1207,6 +1236,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   const hasActiveFade = list => list.some(m => m.t < 1);
   function isAnimating() {
     return !!((camLerpT < 1 && camTarget) || userYaw !== 0 || rotateDrag || rejectFx
+      || (driftOn && !reduceMotion) || driftYaw !== 0
       || (intersectionMarkers && !reduceMotion)
       || visualStones.some(s => s.t < 1 || (s.dropT != null && s.dropT < 1) || s.captureAge != null)
       || hasActiveFade(libertyPoints) || hasActiveFade(illegalMarks) || hasActiveFade(illegalHints)
@@ -1225,12 +1255,20 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       userYaw = reduceMotion ? 0 : userYaw * Math.exp(-dt * 7);
       if (Math.abs(userYaw) < 1e-3) userYaw = 0;
     }
+    if (driftOn && !reduceMotion) {
+      driftTime += dt;
+      driftYaw = 0.07 * Math.sin(driftTime * Math.PI * 2 / 9);
+    } else if (driftYaw !== 0) {
+      driftYaw *= Math.exp(-dt * 4);
+      if (Math.abs(driftYaw) < 1e-3) driftYaw = 0;
+    }
     if (camLerpT < 1 && camTarget) {
-      camLerpT = Math.min(1, camLerpT + (1 / 60) / CAM_DUR);
-      const t = easeInOutCubic(camLerpT);
+      camLerpT = Math.min(1, camLerpT + (1 / 60) / camDur);
+      const t = camEase(camLerpT);
       camYaw = lerp(camStart.yaw, camTarget.yaw, t);
       camPitch = lerp(camStart.pitch, camTarget.pitch, t);
       camDist = lerp(camStart.dist, camTarget.dist, t);
+      if (shiftStart !== shiftTarget) { projShift = lerp(shiftStart, shiftTarget, t); updateProjCenter(); }
     }
     for (const s of visualStones) if (s.captureAge != null) s.captureAge += dt;
     visualStones = visualStones.filter(s => s.captureAge == null || s.captureAge < .45);
@@ -1429,7 +1467,57 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       activePreset = presetName;
       camStart = { yaw: camYaw, pitch: camPitch, dist: camDist };
       camTarget = presetView(presetName, isMobile);
+      camDur = CAM_DUR; camEase = easeInOutCubic;
+      shiftStart = projShift; shiftTarget = 0;
       camLerpT = 0;
+    },
+
+    /**
+     * Karşılama kamerası: tahtanın TAMAMINI verilen açıdan, altta
+     * `bottomInset` px'lik bir bölgeyi (üstüne binen yazı) boş bırakarak
+     * kadraja alır. `from` verilirse kamera o pozdan (`distScale` hedef
+     * uzaklığa oran) `duration` saniyede yavaşlayarak süzülür; verilmezse
+     * bulunduğu yerden. Sahne preset'lerine dokunmaz — sonraki focus()/
+     * focusPoints() normal sahne kamerasına döner. Yeniden boyutlanmada
+     * çağıran tarafından `duration: 0` ile tekrar çağrılır.
+     * @param {{yaw:number, pitch:number, bottomInset?:number, from?:{yaw?:number,pitch?:number,distScale?:number}|null, duration?:number}} view
+     */
+    frameBoard({ yaw, pitch, bottomInset = 0, from = null, duration = CAM_DUR }) {
+      activeFocusPoints = null;
+      lastFocusResult = null;
+      activePreset = null;
+      const bw = HALF + CELL * .82;
+      const corners = [[-bw, -bw], [bw, -bw], [bw, bw], [-bw, bw]].map(([wx, wz]) => ({ wx, wz }));
+      const safe = safeRect();
+      safe.bottom = Math.max(safe.top + 40, safe.bottom - bottomInset);
+      const cy = (safe.top + safe.bottom) / 2;
+      const dist = solveDistForFit(corners, safe, yaw, pitch, 120, 900, cy);
+      camTarget = { yaw, pitch, dist };
+      shiftStart = from ? H * 0.5 - cy : projShift;
+      shiftTarget = H * 0.5 - cy;
+      camStart = from
+        ? { yaw: from.yaw ?? yaw, pitch: from.pitch ?? pitch, dist: dist * (from.distScale ?? 1) }
+        : { yaw: camYaw, pitch: camPitch, dist: camDist };
+      camDur = Math.max(0.05, duration);
+      camEase = t => 1 - Math.pow(1 - t, 3);
+      camLerpT = reduceMotion || duration <= 0 ? 1 : 0;
+      const pose = camLerpT === 1 ? camTarget : camStart;
+      camYaw = pose.yaw; camPitch = pose.pitch; camDist = pose.dist;
+      projShift = camLerpT === 1 ? shiftTarget : shiftStart;
+      updateProjCenter();
+    },
+    /** Karşılama salınımını aç/kapat (hareket azaltma tercihinde etkisiz). */
+    setDrift(on) {
+      driftOn = !!on;
+      if (driftOn) driftTime = 0;
+    },
+    /** Tahtadaki bütün taşları yakalama animasyonuyla kaldırır ve kuralsal
+        durumu boşaltır (karşılamadan derse geçiş). Ses çalmaz. */
+    sweepStones() {
+      boardSt.reset(SIZE);
+      lastMove = null;
+      if (reduceMotion) { visualStones = []; return; }
+      for (const s of visualStones) if (s.captureAge == null) s.captureAge = 0;
     },
 
     /**
@@ -1727,7 +1815,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
      */
     getCameraState() {
       // Elle döndürme sapması dahil — hareket katmanları bununla hizalanır.
-      return { yaw: camYaw + userYaw, pitch: camPitch, dist: camDist };
+      return { yaw: camYaw + userYaw + driftYaw, pitch: camPitch, dist: camDist };
     },
 
     /**

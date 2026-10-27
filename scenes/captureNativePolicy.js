@@ -1,6 +1,6 @@
 /** LS-owned positions. No lesson/page content is read here. */
-import { BoardState } from '../core/boardState.js?v=2026-10-23.tahta-d';
-import { applyMove, isValidMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-23.tahta-d';
+import { BoardState } from '../core/boardState.js?v=2026-10-25.karsilama';
+import { applyMove, isValidMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-25.karsilama';
 
 const stone = (x, y, color) => ({ x, y, color });
 export const CAPTURE_SCENARIOS = [

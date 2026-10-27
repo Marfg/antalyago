@@ -101,7 +101,7 @@ async function launchChromium() {
   }
 }
 
-async function openScenesPage({ viewport = VIEWPORTS.desktop, reducedMotion = 'no-preference', query = '', hasTouch } = {}) {
+async function openScenesPage({ viewport = VIEWPORTS.desktop, reducedMotion = 'no-preference', query = '', hasTouch, welcome = false } = {}) {
   const browser = await launchChromium();
   // Not: burada localStorage temizleyen bir addInitScript EKLEMİYORUZ —
   // context.addInitScript her navigasyonda (reload dahil) tekrar çalışır
@@ -119,7 +119,10 @@ async function openScenesPage({ viewport = VIEWPORTS.desktop, reducedMotion = 'n
   const page = await context.newPage();
   page.on('pageerror', e => consoleErrors.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') consoleErrors.push('console: ' + m.text()); });
-  await page.goto(`${BASE}/${PAGE}${query}`, { waitUntil: 'networkidle' });
+  // Karşılama (scenes/welcomeIntro.js) taze depoda her açılışta görünür;
+  // sahne testleri doğrudan konuyla başlasın diye `welcome:true` dışında kapatılır.
+  const welcomeQuery = welcome ? '' : `${query ? '&' : '?'}welcome=0`;
+  await page.goto(`${BASE}/${PAGE}${query}${welcomeQuery}`, { waitUntil: 'networkidle' });
   return {
     browser, context, page, consoleErrors,
     async close() { await context.close().catch(() => {}); await browser.close().catch(() => {}); },
@@ -4455,6 +4458,87 @@ for(const [name,viewport] of Object.entries({desktop:VIEWPORTS.desktop,mobile:VI
   } finally {await s.close();}
  });
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Karşılama (scenes/welcomeIntro.js) — sahne sırasını değiştirmez:
+   düğme her zamanki hedef konuyu başlatır.
+   ══════════════════════════════════════════════════════════════════ */
+for (const [label, viewport] of [['masaüstü', VIEWPORTS.desktop], ['mobil', VIEWPORTS.mobile]]) {
+  addTest(`W1) İlk ziyarette (${label}) karşılama görünür, konu başlamaz; "Öğrenmeye başla" Sahne #1'i açar`, async () => {
+    const s = await openScenesPage({ viewport, welcome: true });
+    try {
+      ensure(await s.page.locator('#ls-welcome').isVisible(), 'karşılama görünmüyor');
+      ensure((await s.page.textContent('#ls-welcome-start')).trim() === 'Öğrenmeye başla', 'düğme metni yanlış');
+      ensure(await s.page.locator('#s01-confirm').count() === 0, 'karşılama açıkken konu başlamamalı');
+      const btn = await s.page.locator('#ls-welcome-start').boundingBox();
+      const canvasBox = await s.page.locator('#ls-canvas').boundingBox();
+      ensure(btn && btn.y + btn.height <= viewport.height, 'düğme ekran dışında');
+      ensure(canvasBox && canvasBox.height > 200, 'tahta alanı görünmüyor');
+      await s.page.click('#ls-welcome-start');
+      await s.page.waitForSelector('#s01-confirm', { state: 'visible' });
+      ensure(await s.page.locator('#ls-welcome').isHidden(), 'karşılama kapanmadı');
+      const progress = await s.page.evaluate(() => JSON.parse(localStorage.getItem('go_scene_progress_v1') || 'null'));
+      ensure(!progress || progress.completedSceneIds.length === 0, 'karşılama ilerleme kaydına dokunmamalı');
+      ensure(s.consoleErrors.length === 0, JSON.stringify(s.consoleErrors));
+    } finally { await s.close(); }
+  });
+}
+
+addTest('W2) Karşılamada "Konular" önce sıradaki konuyu başlatır, sonra listeyi açar', async () => {
+  const s = await openScenesPage({ welcome: true });
+  try {
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForSelector('#ls-topics-panel', { state: 'visible' });
+    ensure(await s.page.locator('#ls-welcome').isHidden(), 'karşılama kapanmadı');
+    ensure(await s.page.locator('.ls-topic-item').first().getAttribute('aria-current') === 'true', 'ilk konu aktif işaretlenmedi');
+    await s.page.keyboard.press('Escape');
+    await s.page.waitForSelector('#s01-confirm', { state: 'visible' });
+    ensure(s.consoleErrors.length === 0, JSON.stringify(s.consoleErrors));
+  } finally { await s.close(); }
+});
+
+addTest('W3) İlerlemesi olan öğrenci "Devam et" ile sıradaki konuya döner; aynı oturumda karşılama tekrar çıkmaz', async () => {
+  const s = await openScenesPage({ welcome: true });
+  try {
+    await s.page.evaluate((id) => {
+      localStorage.setItem('go_scene_progress_v1', JSON.stringify({
+        version: 1, activeSceneId: id, completedSceneIds: [id], sceneState: {},
+      }));
+      sessionStorage.clear();
+    }, S01_ID);
+    await s.page.reload({ waitUntil: 'networkidle' });
+    ensure(await s.page.locator('#ls-welcome').isVisible(), 'dönen öğrenciye karşılama gösterilmedi');
+    ensure((await s.page.textContent('#ls-welcome-start')).trim() === 'Devam et', 'düğme "Devam et" değil');
+    ensure((await s.page.textContent('.ls-welcome-lead')).includes('1/'), 'ilerleme özeti yok');
+    await s.page.click('#ls-welcome-start');
+    await s.page.waitForSelector('#s02-step-0', { state: 'visible' });
+    await s.page.reload({ waitUntil: 'networkidle' });
+    await s.page.waitForTimeout(300);
+    ensure(await s.page.locator('#ls-welcome').isHidden(), 'aynı oturumda karşılama tekrar çıktı');
+    ensure(await s.page.locator('#s02-step-0').isVisible(), 'doğrudan Sahne #2 açılmadı');
+    ensure(s.consoleErrors.length === 0, JSON.stringify(s.consoleErrors));
+  } finally { await s.close(); }
+});
+
+addTest('W4) ?scene= bağlantısı karşılamayı atlar; hareket azaltmada taşlar hemen dizilir ve geçişte temizlenir', async () => {
+  const direct = await openScenesPage({ welcome: true, query: `?scene=${S02_ID}` });
+  try {
+    await direct.page.waitForSelector('#s02-step-0', { state: 'visible' });
+    ensure(await direct.page.locator('#ls-welcome').isHidden(), '?scene= ile karşılama çıkmamalı');
+  } finally { await direct.close(); }
+  const s = await openScenesPage({ welcome: true, reducedMotion: 'reduce', query: '?welcome=1&exposeBoardAdapter=1' });
+  try {
+    ensure(await s.page.locator('#ls-welcome').isVisible(), 'karşılama görünmüyor');
+    ensure(await s.page.evaluate(() => window.__lsTestBoardAdapter.isOccupied({ row: 3, col: 15 })), 'taşlar hemen dizilmedi');
+    await s.page.click('#ls-welcome-start');
+    await s.page.waitForSelector('#s01-confirm', { state: 'visible' });
+    ensure(!(await s.page.evaluate(() => window.__lsTestBoardAdapter.isOccupied({ row: 3, col: 15 }))), 'karşılama taşları derse taşındı');
+    await s.page.waitForTimeout(900);
+    const cam = await s.page.evaluate(() => window.__lsTestBoardAdapter.getCameraState());
+    ensure(Math.abs(cam.yaw - CAM.board19.yaw * 0.45) < 1e-3, `sahne kamerası devralmadı: yaw=${cam.yaw}`);
+    ensure(s.consoleErrors.length === 0, JSON.stringify(s.consoleErrors));
+  } finally { await s.close(); }
+});
 
 // TEST_FILTER=<regex> node tests/verify-learning-scenes.mjs — yalnız adı bu
 // regex'le eşleşen testleri çalıştırır (hızlı hedefli hata ayıklama için;

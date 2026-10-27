@@ -83,7 +83,7 @@ await test('altı sayfa tasarım sistemi ve tema kontrolü taşıyor', async () 
 
 await test('ana sayfa yeni içerik ve hedefleri taşıyor', async () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assertOk(html.includes('ogren-3d.html'), 'öğren CTA yok');
+  assertOk(html.includes('href="learning-scenes.html"'), 'öğren CTA yok');
   assertOk(html.includes('robot.html') && html.includes('9&times;9'), 'robot CTA yanlış');
   assertOk(!html.includes('Uyarlanabilir robot'), 'eski robot ifadesi kaldı');
   assertOk(html.includes('Temel seviye 9&times;9 pratik robotu'), 'yeni robot ifadesi yok');

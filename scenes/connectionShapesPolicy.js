@@ -1,5 +1,5 @@
-import {BoardState} from '../core/boardState.js?v=2026-10-23.tahta-d';
-import {applyMove,isValidMove,getGroup} from '../core/ruleEngine.js?v=2026-10-23.tahta-d';
+import {BoardState} from '../core/boardState.js?v=2026-10-25.karsilama';
+import {applyMove,isValidMove,getGroup} from '../core/ruleEngine.js?v=2026-10-25.karsilama';
 export const CONNECTION_BOARD_SIZE=9;
 export const CONNECTION_OFFSET=1;
 export const CONNECTION_SHAPES=[

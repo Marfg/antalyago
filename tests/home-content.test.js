@@ -26,7 +26,8 @@ assert(html.includes('rel="canonical"'), 'canonical eksik');
 assert(html.includes('rel="icon" type="image/svg+xml"'), 'SVG favicon eksik');
 assert(html.includes('rel="icon" type="image/png" sizes="32x32"'), 'PNG favicon eksik');
 assert(html.includes('rel="apple-touch-icon"'), 'apple touch icon eksik');
-assert(html.includes('&Ouml;&#287;renmeye ba&#351;la') && html.includes('ogren-3d.html'), 'öğren CTA yanlış');
+assert(html.includes('href="learning-scenes.html">&Ouml;&#287;renmeye ba&#351;la'), 'öğren CTA öğrenme sahnelerine gitmiyor');
+assert(!html.includes('href="ogren-3d.html"'), 'ana sayfada eski 3D ders bağlantısı kaldı');
 assert(html.includes('9&times;9 robotla oyna') && html.includes('robot.html'), 'robot CTA yanlış');
 
 console.log('  ✓ Ana sayfa içerik koruma testi geçti');

@@ -34,6 +34,18 @@
   </div>
 </div>
 
+<!-- Karşılama: ilk açılışta tahtanın üstüne binen başlık ve tek düğme
+     (bkz. scenes/welcomeIntro.js). Bir öğrenme sahnesi değildir; düğmeye
+     basılınca her zamanki ilk/sıradaki konu başlar. -->
+<section id="ls-welcome" aria-labelledby="ls-welcome-title" hidden>
+  <div class="ls-welcome-copy">
+    <p class="ls-welcome-eyebrow"></p>
+    <h1 id="ls-welcome-title"></h1>
+    <p class="ls-welcome-lead"></p>
+    <button type="button" id="ls-welcome-start"></button>
+  </div>
+</section>
+
 <div id="ls-topbar">
   <a href="index.html">← Ana</a>
   <button type="button" class="ls-topbar-btn" id="ls-topics-open">Konular</button>
@@ -49,28 +61,29 @@
 </div>
 
 <script type="module">
-import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-10-23.tahta-d';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-10-23.tahta-d';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-10-23.tahta-d';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-10-23.tahta-d';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-10-23.tahta-d';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-10-23.tahta-d';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-10-23.tahta-d';
-import { scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup } from './scenes/scene06CaptureBasics.js?v=2026-10-23.tahta-d';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-10-23.tahta-d';
-import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-10-23.tahta-d';
-import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-10-23.tahta-d';
-import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-10-23.tahta-d';
-import { scene15Snapback } from './scenes/scene15Snapback.js?v=2026-10-23.tahta-d';
-import { scene14Net } from './scenes/scene14Net.js?v=2026-10-23.tahta-d';
-import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-10-23.tahta-d';
-import { scene12Connections } from './scenes/scene12Connections.js?v=2026-10-23.tahta-d';
-import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-10-23.tahta-d';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-10-23.tahta-d';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-10-23.tahta-d';
-import { EventLog } from './core/eventLog.js?v=2026-10-23.tahta-d';
-import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-10-23.tahta-d';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-10-23.tahta-d';
+import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-10-25.karsilama';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-10-25.karsilama';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-10-25.karsilama';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-10-25.karsilama';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-10-25.karsilama';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-10-25.karsilama';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-10-25.karsilama';
+import { scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup } from './scenes/scene06CaptureBasics.js?v=2026-10-25.karsilama';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-10-25.karsilama';
+import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-10-25.karsilama';
+import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-10-25.karsilama';
+import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-10-25.karsilama';
+import { scene15Snapback } from './scenes/scene15Snapback.js?v=2026-10-25.karsilama';
+import { scene14Net } from './scenes/scene14Net.js?v=2026-10-25.karsilama';
+import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-10-25.karsilama';
+import { scene12Connections } from './scenes/scene12Connections.js?v=2026-10-25.karsilama';
+import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-10-25.karsilama';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-10-25.karsilama';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-10-25.karsilama';
+import { EventLog } from './core/eventLog.js?v=2026-10-25.karsilama';
+import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-10-25.karsilama';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-10-25.karsilama';
+import { createWelcomeIntro, shouldShowWelcome, welcomeCopy } from './scenes/welcomeIntro.js?v=2026-10-25.karsilama';
 
 /* ── Sürüm/cache bekçisi ──────────────────────────────────────────────
    GitHub Pages önündeki CDN, .js dosyalarına saatlerce (bkz. görev
@@ -397,6 +410,8 @@ function onTopicsKeydown(evt) {
   if (evt.key === 'Escape') { evt.preventDefault(); closeTopicsList(); }
 }
 topicsOpenBtn.addEventListener('click', () => {
+  // Karşılama açıkken önce konu başlar, liste onun üstünde açılır.
+  if (welcome?.isActive()) { welcome.finish().then(openTopicsList); return; }
   if (!topicsPanel.hidden) { closeTopicsList(); return; }
   openTopicsList();
 });
@@ -409,6 +424,12 @@ topicsOpenBtn.addEventListener('click', () => {
    modunda açılır — kullanıcı onu tekrar tamamlayıp kendi özet+[Konular]
    kontrolüne ulaşabilir veya topbar'daki "Konular" ile istediği konuya
    gidebilir. */
+/* Karşılama (scenes/welcomeIntro.js) — ilk açılışta, ilerlemesi olan
+   öğrencide ise tarayıcı oturumu başına bir kez. Sahne sırasını
+   değiştirmez: düğme her zamanki hedef konuyu başlatır. */
+const WELCOME_SEEN_KEY = 'go_scene_welcome_seen_v1';
+let welcome = null;
+
 function boot() {
   if (!registry.size) { showErrorState(null, 'NO_SCENES'); return; }
   const progress = sceneProgressAdapter.load();
@@ -419,8 +440,29 @@ function boot() {
   const target = requestedTarget ?? testTarget ?? nextIncomplete ?? registry.list()[registry.list().length - 1];
   const mode = nextIncomplete ? 'normal' : 'replay';
 
-  const result = runtime.start(target.id, { mode });
-  if (!result.ok) { showErrorState(target.id, result.reason); return; }
+  const startTarget = () => {
+    const result = runtime.start(target.id, { mode });
+    if (!result.ok) showErrorState(target.id, result.reason);
+  };
+
+  let seenThisSession = false;
+  try { seenThisSession = sessionStorage.getItem(WELCOME_SEEN_KEY) === '1'; } catch {}
+  const showWelcome = !requestedTarget && !testTarget && shouldShowWelcome({
+    params: searchParams,
+    hasProgress: progress.completedSceneIds.length > 0,
+    seenThisSession,
+  });
+  if (!showWelcome) { startTarget(); return; }
+  try { sessionStorage.setItem(WELCOME_SEEN_KEY, '1'); } catch {}
+  const completedCount = registry.list().filter(scene => progress.completedSceneIds.includes(scene.id)).length;
+  welcome = createWelcomeIntro({
+    root: document.getElementById('ls-welcome'),
+    canvas,
+    boardAdapter,
+    copy: welcomeCopy({ completedCount, total: registry.size, nextTitle: nextIncomplete?.title ?? null }),
+    onStart: startTarget,
+  });
+  welcome.show();
 }
 
 checkSceneRelease().then(outcome => {
