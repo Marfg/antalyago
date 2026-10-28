@@ -1,52 +1,71 @@
 /**
  * home/heroBoard.js
  *
- * Ana sayfa açılış tahtası. Önce on saniyelik "ilk taş" mini dersi oynar
- * (taşı bırak → 4 nefes → kuşat/atari → taş alınır), ardından tahta serbest
- * 9×9 oyuna açılır: ziyaretçi siyahla oynar, beyaz basit bir puanlamayla
- * cevap verir. Hamle kuralları derslerin kural motorundan gelir.
+ * Ana sayfa açılış sahnesi. Goban, taşlar ve kase Blender'da üretilir
+ * (scripts/hero/build-hero-goban.py → assets/hero/goban.glb). İlk kare,
+ * Blender posteriyle (assets/hero/poster-*.webp) aynı kameradan başlar:
+ * siyah taş atari durumunda, son nefes noktasında kırmızı halka.
+ *
+ * Sayfa kaydıkça kamera tahta yüzeyinden yükselip gobanın tamamını gösterir.
+ * Panel mini dersi sürdürür (son nefesi kapat → taş alınır; istenirse ders
+ * baştan), ardından tahta serbest 9×9 oyuna açılır: ziyaretçi siyahla oynar,
+ * beyaz basit bir puanlamayla cevap verir. Hamle kuralları derslerin kural
+ * motorundan gelir.
  *
  * Three.js yalnız sayfa yüklendikten sonra ve <html> üzerinde `hero-3d`
- * sınıfı varsa (WebGL var, "hareketi azalt" kapalı) yüklenir. Yükleme ya da
- * WebGL başarısız olursa bugünkü hero-board.png görseli olduğu gibi kalır.
- * Telefonda hafif sürüm: gölge yok, düşük çözünürlük, ~30 fps.
+ * sınıfı varsa (WebGL var, "hareketi azalt" kapalı) yüklenir. Bir şey
+ * başarısız olursa poster olduğu gibi kalır. Telefonda hafif GLB, düşük
+ * çözünürlük ve ~30 fps kullanılır; sahne ekran dışındayken çizim durur.
+ *
+ * Birimler metredir (Blender ile aynı); eksenler Three.js düzeninde (y yukarı).
  */
 import { BoardState } from '../core/boardState.js?v=2026-10-28.acilis';
 import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-28.acilis';
 
-const THREE_URL = new URL('../vendor/three-r128.min.js', import.meta.url).href;
+const RELEASE = new URL(import.meta.url).searchParams.get('v');
+const asset = name => new URL('../assets/hero/' + name, import.meta.url).href + (RELEASE ? '?v=' + RELEASE : '');
+const THREE_DIR = '../vendor/three-r169/';
+
 const N = 9;
+const SX = 0.022, SY = 0.0237;          // çizgi aralığı (Blender betiğiyle aynı)
+const TOP = 0.06, LEG_H = 0.035;        // tahta üst yüzü, ayak yüksekliği
+// <picture> içindeki telefon posteriyle aynı sorgu: kamera hangi posterle başlıyorsa onu izler.
+const PHONE = '(max-width: 1024px) and (orientation: portrait)';
+const LITE = '(max-width: 700px), (pointer: coarse)';
 
 export function mountHeroBoard(root) {
   if (!root || !document.documentElement.classList.contains('hero-3d')) return;
-  const start = () => loadThree().then(T => init(T, root)).catch(() => {});
+  const start = () => load(root).catch(() => {});
   const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(start, { timeout: 1500 }) : setTimeout(start, 200));
   if (document.readyState === 'complete') idle();
   else addEventListener('load', idle, { once: true });
 }
 
-function loadThree() {
-  if (window.THREE) return Promise.resolve(window.THREE);
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = THREE_URL;
-    s.async = true;
-    s.onload = () => (window.THREE ? resolve(window.THREE) : reject(new Error('THREE yüklenmedi')));
-    s.onerror = reject;
-    document.head.appendChild(s);
-  });
+async function load(root) {
+  const lite = matchMedia(LITE).matches;
+  const [T, { GLTFLoader }, { RoomEnvironment }, cfg] = await Promise.all([
+    import(THREE_DIR + 'three.module.min.js'),
+    import(THREE_DIR + 'addons/GLTFLoader.js'),
+    import(THREE_DIR + 'addons/RoomEnvironment.js'),
+    fetch(asset('sahne.json')).then(r => r.json()),
+  ]);
+  const gltf = await new GLTFLoader().loadAsync(asset(lite ? 'goban-hafif.glb' : 'goban.glb'));
+  init(T, RoomEnvironment, root, gltf.scene, cfg, lite);
 }
 
+const clamp01 = v => Math.min(1, Math.max(0, v));
 const lerp = (a, b, k) => a + (b - a) * k;
 const easeOut = p => 1 - Math.pow(1 - p, 3);
-const easeInOut = p => (p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
+const easeInOut = p => (p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
 /** Düşüş: ivmeli iniş, sonda küçük bir sekme. */
 function fall(p, y0, rest) {
   if (p < .8) { const q = p / .8; return y0 + (rest - y0) * q * q; }
-  return rest + .08 * Math.sin(((p - .8) / .2) * Math.PI);
+  return rest + .0018 * Math.sin(((p - .8) / .2) * Math.PI);
 }
 const key = (x, y) => x + ',' + y;
 const libsAt = (b, x, y) => getLiberties(b, getGroup(b, x, y)).size;
+const wx = i => (i - 4) * SX;           // sütun → x
+const wz = j => (j - 4) * SY;           // satır → z (Blender'da y = (4 - j)·SY, z = −y)
 
 /** Beyazın hamlesi: alma, kendi atarisinden kaçma, siyahı sıkıştırma. */
 function whiteMove(state) {
@@ -75,13 +94,29 @@ const LESSON = [
   { btn: 'Son nefesi kapat', cap: 'Beyaz üç nefesi kapattı. Tek nefes kaldı; buna atari denir.' },
   { btn: 'Şimdi sen oyna', cap: 'Nefesi kalmayan taş tahtadan alınır. Go\'nun ilk kuralı bu.' },
 ];
-// Kamera: mini derste merkeze yakın, serbest oyunda tüm tahta.
-const VIEW = {
-  lesson: { tx: 0, ty: .1, tz: .3, pitch: 1.0, half: 3.9 },
-  play: { tx: 0, ty: -.2, tz: .25, pitch: .92, half: 5.1 },
+const C = 4;
+const LIBS = [[C, C - 1], [C + 1, C], [C - 1, C], [C, C + 1]];   // üst, sağ, sol, alt: son nefes öndeki nokta (poster)
+// Açılış karesi posterdeki dizilim: atari (ders 3. adım) ve iki uzak taş.
+const OPENING_EXTRA = [['black', 2, 6], ['white', 6, 2]];
+
+/**
+ * Kameralar. `yakin` posterin kamerasıdır (sahne.json); diğerleri buradan
+ * ayarlanır. Değerler Blender kamerası gibi okunur: lens (mm, 36 mm sensör),
+ * kaydırma (shift) çerçevenin uzun kenarına göre.
+ */
+const VIEWS = {
+  masaustu: {
+    genis: { position: [-0.30, 0.34, 0.62], target: [0.03, 0.02, -0.04], lens: 50, shiftX: -0.16, shiftY: 0 },
+    oyun: { position: [-0.10, 0.50, 0.44], target: [0.035, 0.045, 0.005], lens: 42, shiftX: -0.12, shiftY: -0.045 },
+  },
+  telefon: {
+    genis: { position: [-0.06, 0.36, 0.34], target: [0.0, 0.035, 0.0], lens: 30, shiftX: 0, shiftY: -0.11 },
+    oyun: { position: [0.0, 0.40, 0.17], target: [0.0, 0.055, 0.008], lens: 30, shiftX: 0, shiftY: -0.13 },
+  },
 };
 
-function init(T, root) {
+function init(T, RoomEnvironment, root, model, cfg, lite) {
+  const pin = root.querySelector('.hero-pin');
   const stageEl = root.querySelector('.hero-stage');
   const panel = root.querySelector('.hero-panel');
   const caption = root.querySelector('[data-hero-caption]');
@@ -89,95 +124,117 @@ function init(T, root) {
   const altBtn = root.querySelector('[data-hero-alt]');
   const dotsEl = root.querySelector('.hero-dots');
   const dots = [...dotsEl.children];
-  const lite = matchMedia('(max-width: 700px), (pointer: coarse)').matches;
+  const phoneMq = matchMedia(PHONE);
 
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
   stageEl.appendChild(canvas);
   let renderer;
-  try { renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: true }); }
+  try { renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); }
   catch (e) { canvas.remove(); return; }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lite ? 1.5 : 2));
-  renderer.outputEncoding = T.sRGBEncoding;
-  renderer.toneMapping = T.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = .92;
-  renderer.shadowMap.enabled = !lite;
-  renderer.shadowMap.type = T.PCFSoftShadowMap;
-  renderer.setClearColor(0x000000, 0);
-  canvas.addEventListener('webglcontextlost', () => { root.classList.remove('is-live'); panel.hidden = true; });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lite ? 1.25 : 2));
+  renderer.toneMapping = T.AgXToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = lite ? T.PCFShadowMap : T.PCFSoftShadowMap;
+  canvas.addEventListener('webglcontextlost', () => { root.classList.remove('is-moving', 'is-live', 'is-panel'); panel.hidden = true; });
 
-  const col = hex => new T.Color(hex).convertSRGBToLinear();
+  /* ── Sahne ve ışık (değerler Blender poster düzeninden) ── */
+  const L = cfg.isik;
+  const lin = rgb => new T.Color().setRGB(rgb[0], rgb[1], rgb[2], T.LinearSRGBColorSpace);
   const scene = new T.Scene();
-  const cam = new T.PerspectiveCamera(34, 1, .1, 120);
-  scene.add(new T.HemisphereLight(0xfff3df, 0x2b2033, .85));
-  const sun = new T.DirectionalLight(0xffe6c4, 1.3);
-  sun.position.set(-5, 11, 6);
-  sun.castShadow = renderer.shadowMap.enabled;
-  sun.shadow.mapSize.set(1024, 1024);
-  Object.assign(sun.shadow.camera, { left: -7, right: 7, top: 7, bottom: -7, near: 1, far: 30 });
-  sun.shadow.bias = -.0006;
-  sun.shadow.radius = 4;
-  scene.add(sun);
-  const tilt = new T.Group();
-  scene.add(tilt);
+  scene.background = lin(L.arkaPlan);
+  const pmrem = new T.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environmentIntensity = 0.06;
+  pmrem.dispose();
 
-  /* ── Malzemeler ── */
-  function woodTexture(px, grid, dark) {
-    const c = document.createElement('canvas'); c.width = c.height = px;
+  const sun = new T.DirectionalLight(lin(L.gunesRenk), 3.4);
+  sun.position.fromArray(L.gunesYon).multiplyScalar(1.2);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(lite ? 1024 : 2048, lite ? 1024 : 2048);
+  sun.shadow.bias = -0.0003;
+  sun.shadow.normalBias = 0.0015;
+  sun.shadow.radius = 3;
+  Object.assign(sun.shadow.camera, { left: -0.32, right: 0.32, top: 0.32, bottom: -0.32, near: 0.2, far: 2.6 });
+  scene.add(sun, sun.target);
+  const fill = new T.PointLight(lin(L.dolguRenk), 0.55, 0, 2);
+  fill.position.fromArray(L.dolguKonum);
+  scene.add(fill);
+
+  const floor = new T.Mesh(new T.PlaneGeometry(8, 8), new T.MeshStandardMaterial({ color: lin([0.03, 0.018, 0.012]), roughness: 0.45 }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = L.zeminY;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  scene.add(model);
+  model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  const proto = { black: model.getObjectByName('TasSiyah'), white: model.getObjectByName('TasBeyaz') };
+  const rest = { black: TOP + proto.black.userData.stoneHeight / 2, white: TOP + proto.white.userData.stoneHeight / 2 };
+  proto.black.visible = proto.white.visible = false;
+  const stones = new T.Group();
+  scene.add(stones);
+  function makeStone(color) {
+    const m = proto[color].clone();
+    m.visible = true;
+    m.rotation.set(0, Math.random() * Math.PI * 2, 0);
+    stones.add(m);
+    return m;
+  }
+  function fadeable(mesh) {
+    if (!mesh.userData.ownMat) { mesh.material = mesh.material.clone(); mesh.userData.ownMat = true; }
+    mesh.material.transparent = true;
+    return mesh.material;
+  }
+  function removeStone(m) {
+    stones.remove(m);
+    if (m.userData.ownMat) m.material.dispose();
+  }
+
+  /* ── Halkalar: çizgi + yumuşak parıltı (posterdeki ışıma) ── */
+  const RING = { red: lin(L.halka.renk), gold: lin([0.95, 0.62, 0.20]) };
+  const ringGeo = new T.TorusGeometry(L.halka.r, lite ? 0.0008 : 0.0007, 10, 72);
+  const glowTex = (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
     const g = c.getContext('2d');
-    const gr = g.createLinearGradient(0, 0, px, px);
-    gr.addColorStop(0, dark ? '#8a5a2b' : '#d39f5a'); gr.addColorStop(1, dark ? '#6c4520' : '#b47b3c');
-    g.fillStyle = gr; g.fillRect(0, 0, px, px);
-    let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    for (let i = 0; i < px * .16; i++) {
-      const y = rnd() * px, amp = 2 + rnd() * 7, f = .003 + rnd() * .009, ph = rnd() * 6;
-      g.strokeStyle = `rgba(${dark ? '50,28,10' : '118,70,28'},${.035 + rnd() * .075})`;
-      g.lineWidth = .6 + rnd() * 1.8; g.beginPath();
-      for (let x = 0; x <= px; x += 8) { const yy = y + Math.sin(x * f + ph) * amp; x ? g.lineTo(x, yy) : g.moveTo(x, yy); }
-      g.stroke();
-    }
-    if (grid) {
-      const m = px * grid.margin, step = (px - 2 * m) / (N - 1);
-      g.strokeStyle = 'rgba(38,22,8,.8)'; g.lineWidth = Math.max(1.2, px / 520);
-      for (let i = 0; i < N; i++) {
-        const v = m + i * step;
-        g.beginPath(); g.moveTo(m, v); g.lineTo(px - m, v); g.stroke();
-        g.beginPath(); g.moveTo(v, m); g.lineTo(v, px - m); g.stroke();
-      }
-      g.fillStyle = 'rgba(38,22,8,.9)';
-      for (const [x, y] of [[2, 2], [6, 2], [4, 4], [2, 6], [6, 6]]) { g.beginPath(); g.arc(m + x * step, m + y * step, px / 150, 0, 7); g.fill(); }
-    }
-    const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = 4; return t;
-  }
-  const BW = 9.6, BH = .55;
-  const mTop = new T.MeshStandardMaterial({ map: woodTexture(lite ? 768 : 1280, { margin: (BW - 8) / 2 / BW }), roughness: .62 });
-  const mSide = new T.MeshStandardMaterial({ map: woodTexture(256, null, true), roughness: .75 });
-  const boardMesh = new T.Mesh(new T.BoxGeometry(BW, BH, BW), [mSide, mSide, mTop, mSide, mSide, mSide]);
-  boardMesh.position.y = -BH / 2; boardMesh.receiveShadow = true; boardMesh.castShadow = !lite;
-  tilt.add(boardMesh);
-
-  const SR = .47, SQ = .46, REST = SR * SQ;
-  const stoneGeo = new T.SphereGeometry(SR, lite ? 24 : 40, lite ? 12 : 20);
-  const stoneMat = {
-    black: new T.MeshPhysicalMaterial({ color: col('#18171c'), roughness: .3, clearcoat: lite ? 0 : .6, clearcoatRoughness: .35 }),
-    white: new T.MeshPhysicalMaterial({ color: col('#f0ece3'), roughness: .42, clearcoat: lite ? 0 : .25 }),
-  };
-  const makeStone = c => { const m = new T.Mesh(stoneGeo, stoneMat[c]); m.scale.y = SQ; m.castShadow = !lite; return m; };
-  const fadeable = mesh => { mesh.material = mesh.material.clone(); mesh.material.transparent = true; return mesh.material; };
-  const wx = i => i - (N - 1) / 2;
-  const ringGeo = new T.TorusGeometry(.3, .045, 12, 48);
-  const ringMat = { gold: new T.MeshBasicMaterial({ color: col('#e3b450') }), red: new T.MeshBasicMaterial({ color: col('#ed756f') }) };
+    const grad = g.createRadialGradient(64, 64, 26, 64, 64, 64);
+    grad.addColorStop(0, 'rgba(255,255,255,0)');
+    grad.addColorStop(0.5, 'rgba(255,255,255,0.9)');
+    grad.addColorStop(0.62, 'rgba(255,255,255,0.35)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grad; g.fillRect(0, 0, 128, 128);
+    return new T.CanvasTexture(c);
+  })();
+  const glowGeo = new T.PlaneGeometry(L.halka.r * 3.4, L.halka.r * 3.4);
   function makeRing(x, y, kind) {
-    const r = new T.Mesh(ringGeo, ringMat[kind]);
-    r.rotation.x = -Math.PI / 2; r.position.set(wx(x), .03, wx(y));
-    r.scale.setScalar(.001); r.userData = { s: .001, on: false, kind };
-    tilt.add(r); return r;
+    const g = new T.Group();
+    const line = new T.Mesh(ringGeo, new T.MeshBasicMaterial({ color: RING[kind].clone().multiplyScalar(2.2), toneMapped: false, transparent: true }));
+    line.rotation.x = -Math.PI / 2;
+    const glow = new T.Mesh(glowGeo, new T.MeshBasicMaterial({ map: glowTex, color: RING[kind], transparent: true, opacity: 0.55, blending: T.AdditiveBlending, depthWrite: false, toneMapped: false }));
+    glow.rotation.x = -Math.PI / 2;
+    glow.position.y = -0.0002;
+    g.add(glow, line);
+    g.position.set(wx(x), TOP + 0.0006, wz(y));
+    g.scale.setScalar(0.001);
+    g.userData = { s: 0.001, on: false, kind, line, glow };
+    scene.add(g);
+    return g;
+  }
+  function setRingKind(r, kind) {
+    r.userData.kind = kind;
+    r.userData.line.material.color.copy(RING[kind]).multiplyScalar(2.2);
+    r.userData.glow.material.color.copy(RING[kind]);
   }
 
-  const pickPlane = new T.Mesh(new T.PlaneGeometry(BW, BW), new T.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
-  pickPlane.rotation.x = -Math.PI / 2; pickPlane.position.y = .01; tilt.add(pickPlane);
-  const ghost = makeStone('black'); fadeable(ghost).opacity = .38; ghost.castShadow = false;
-  ghost.position.y = REST; ghost.visible = false; tilt.add(ghost);
+  const pickPlane = new T.Mesh(new T.PlaneGeometry(9 * SX, 9 * SY), new T.MeshBasicMaterial({ visible: false }));
+  pickPlane.rotation.x = -Math.PI / 2;
+  pickPlane.position.y = TOP;
+  scene.add(pickPlane);
+  const ghost = makeStone('black');
+  fadeable(ghost).opacity = 0.4;
+  ghost.castShadow = false;
+  ghost.visible = false;
 
   /* ── Zamanlayıcılar ── */
   let tweens = [], t = 0, dirty = true;
@@ -185,39 +242,97 @@ function init(T, root) {
   const wait = (dur, fn) => tween(dur, () => {}, fn);
 
   /* ── Kamera ── */
-  let zoom = 0, shownZoom = -1, w = 1, h = 1;
-  function applyCamera() {
-    const k = easeInOut(zoom), a = VIEW.lesson, b = VIEW.play;
-    const pitch = lerp(a.pitch, b.pitch, k), half = lerp(a.half, b.half, k), pad = 1.08;
-    const v = T.MathUtils.degToRad(cam.fov) / 2, hz = Math.atan(Math.tan(v) * cam.aspect);
-    const dW = half * pad / Math.tan(hz) + half * Math.cos(pitch) * .6;
-    const dH = (half * Math.sin(pitch) + .35) * pad / Math.tan(v) + half * Math.cos(pitch);
-    const d = Math.max(dW, dH);
-    const target = new T.Vector3(lerp(a.tx, b.tx, k), lerp(a.ty, b.ty, k), lerp(a.tz, b.tz, k));
-    cam.position.set(target.x, target.y + d * Math.sin(pitch), target.z + d * Math.cos(pitch));
-    cam.lookAt(target);
-    shownZoom = zoom;
+  const cam = new T.PerspectiveCamera(30, 1, 0.003, 20);
+  const V = (v, aspect) => ({
+    position: new T.Vector3().fromArray(v.position), target: new T.Vector3().fromArray(v.target),
+    lens: v.lens, shiftX: v.shiftX, shiftY: v.shiftY, aspect,
+  });
+  let views;
+  function pickViews() {
+    const phone = phoneMq.matches, c = phone ? cfg.telefon : cfg.masaustu, set = VIEWS[phone ? 'telefon' : 'masaustu'];
+    const aspect = c.width / c.height;
+    views = { yakin: V(c, aspect), genis: V(set.genis, aspect), oyun: V(set.oyun, aspect) };
   }
-  function zoomTo(z, dur, done) { const z0 = zoom; tween(dur, p => { zoom = lerp(z0, z, p); }, done); }
-  new ResizeObserver(() => {
-    const r = stageEl.getBoundingClientRect();
-    w = Math.max(1, r.width); h = Math.max(1, r.height);
-    renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
-    applyCamera(); renderer.render(scene, cam);
-  }).observe(stageEl);
+  pickViews();
+  let w = 1, h = 1, scrollP = 0, lessonP = 0, playP = 0;
+  const pointer = { x: 0, y: 0, sx: 0, sy: 0, active: false };
+  const tmp = { pos: new T.Vector3() };
+  function blend(a, b, k, out) {
+    out.position.lerpVectors(a.position, b.position, k);
+    out.target.lerpVectors(a.target, b.target, k);
+    out.lens = lerp(a.lens, b.lens, k); out.shiftX = lerp(a.shiftX, b.shiftX, k); out.shiftY = lerp(a.shiftY, b.shiftY, k);
+    out.aspect = a.aspect;
+    return out;
+  }
+  const cur = { position: new T.Vector3(), target: new T.Vector3() }, mid = { position: new T.Vector3(), target: new T.Vector3() };
+  /**
+   * Görünümü uygular. Poster `object-fit: cover` ile kırpıldığı için kamera da
+   * aynı kırpmayı yapar: tam çerçeve kanvası örter, görünen parça ortadan alınır
+   * (setViewOffset). Blender'ın kaydırması da aynı ofsete eklenir.
+   */
+  function applyCamera() {
+    const k = easeInOut(Math.max(scrollP, lessonP));
+    blend(views.yakin, views.genis, k, mid);
+    blend(mid, views.oyun, easeInOut(playP), cur);
+    const lift = Math.sin(Math.PI * k) * 0.04;                      // yükselirken hafif yay
+    tmp.pos.copy(cur.position); tmp.pos.y += lift;
+    const par = k * 0.012;                                          // fareyle küçük paralaks
+    tmp.pos.x += pointer.sx * par; tmp.pos.y -= pointer.sy * par * 0.6;
+    cam.position.copy(tmp.pos);
+    cam.lookAt(cur.target);
+    const A = cur.aspect;
+    let FW, FH;
+    if (w / h > A) { FW = w; FH = w / A; } else { FH = h; FW = h * A; }
+    const big = Math.max(FW, FH), tanHalf = 18 / cur.lens;
+    const tanV = FW >= FH ? tanHalf * FH / FW : tanHalf;
+    cam.fov = T.MathUtils.radToDeg(2 * Math.atan(tanV));
+    cam.aspect = FW / FH;
+    cam.setViewOffset(FW, FH, (FW - w) / 2 + cur.shiftX * big, (FH - h) / 2 - cur.shiftY * big, w, h);
+    cam.updateProjectionMatrix();
+  }
+  function lessonTo(v, dur) { const v0 = lessonP; tween(dur, p => { lessonP = lerp(v0, v, p); dirty = true; }); }
+  function playTo(v, dur, done) { const v0 = playP; tween(dur, p => { playP = lerp(v0, v, p); dirty = true; }, done); }
 
-  /* ── Fare: tahta hafifçe eğilir ── */
-  const pointer = { x: 0, y: 0, active: false };
+  function resize() {
+    const r = stageEl.getBoundingClientRect();
+    w = Math.max(1, Math.round(r.width)); h = Math.max(1, Math.round(r.height));
+    renderer.setSize(w, h, false);
+    dirty = true;
+  }
+  new ResizeObserver(resize).observe(stageEl);
+  phoneMq.addEventListener('change', () => { pickViews(); dirty = true; });
+
+  /** Kaydırma ilerlemesi: sabitlenmiş açılışın kaydırma payında 0 → 1. */
+  function readScroll() {
+    const r = root.getBoundingClientRect();
+    const stick = parseFloat(getComputedStyle(pin).top) || 0;      // sabit başlığın altı
+    const span = r.height - pin.getBoundingClientRect().height;
+    const p = span > 1 ? clamp01((stick - r.top) / span) : 0;
+    if (Math.abs(p - scrollP) > 1e-4) { scrollP = p; dirty = true; live(); }
+    root.dataset.heroProgress = scrollP.toFixed(2);
+  }
+  addEventListener('scroll', readScroll, { passive: true });
+
   root.addEventListener('pointermove', ev => {
+    if (ev.pointerType === 'touch') return;
     const r = root.getBoundingClientRect();
     pointer.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
     pointer.y = ((ev.clientY - r.top) / r.height) * 2 - 1;
-    pointer.active = ev.pointerType !== 'touch';
+    pointer.active = true;
   });
   root.addEventListener('pointerleave', () => { pointer.active = false; });
 
+  /** Kanvas, kamera ilk kez kıpırdadığında posterin üstüne gelir. */
+  function live() {
+    if (root.classList.contains('is-moving')) return;
+    root.classList.add('is-moving');
+  }
+  function syncPanelMode() {
+    root.classList.toggle('is-panel', scrollP > 0.45 || lessonP > 0.5 || mode === 'free');
+  }
+
   /* ── Panel ── */
-  let mode = 'lesson', phase = 0, busy = false;
+  let mode = 'lesson', phase = 2, busy = false;
   function setBusy(v) { busy = v; stepBtn.disabled = v; altBtn.disabled = v; }
   function say(text) {
     caption.textContent = text;
@@ -231,8 +346,7 @@ function init(T, root) {
   function showLesson(i) {
     say(LESSON[i].cap);
     stepBtn.textContent = LESSON[i].btn;
-    altBtn.textContent = 'Serbest oyna';
-    altBtn.hidden = i === LESSON.length - 1;
+    altBtn.textContent = i === LESSON.length - 1 ? 'Mini dersi baştan izle' : 'Serbest oyna';
     dotsEl.hidden = false;
     dots.forEach((d, k) => d.classList.toggle('on', k <= i));
     sync();
@@ -241,19 +355,31 @@ function init(T, root) {
     say(text);
     stepBtn.textContent = 'Tahtayı temizle';
     altBtn.textContent = 'Mini dersi baştan izle';
-    altBtn.hidden = false;
     dotsEl.hidden = true;
     sync();
   }
 
-  /* ── Mini ders: ilk taş ── */
-  const C = (N - 1) / 2;
-  const LIBS = [[C, C - 1], [C + 1, C], [C, C + 1], [C - 1, C]];
-  const lessonStone = makeStone('black');
-  lessonStone.position.set(0, 3.4, 0); tilt.add(lessonStone);
-  const lessonRings = LIBS.map(([x, y]) => makeRing(x, y, 'gold'));
-  let whites = [], hovering = true;
-
+  /* ── Tahta durumu: derste de serbest oyunda da kural motoru izlenir ── */
+  let state = new BoardState(N), meshes = new Map(), rings = new Map(), caps = { black: 0, white: 0 };
+  function put(color, x, y, from, dur, done) {
+    const m = makeStone(color);
+    m.position.set(wx(x) + (Math.random() - .5) * .0008, from ?? rest[color], wz(y) + (Math.random() - .5) * .0008);
+    meshes.set(key(x, y), m);
+    if (from != null) tween(dur, p => { m.position.y = fall(p, from, rest[color]); }, done);
+    return m;
+  }
+  function lift(k, dur = .55) {
+    const m = meshes.get(k); if (!m) return;
+    meshes.delete(k);
+    const mat = fadeable(m), y0 = m.position.y;
+    tween(dur, p => { m.position.y = y0 + easeOut(p) * 0.035; mat.opacity = 1 - p; }, () => removeStone(m));
+  }
+  function place(color, x, y, from, dur, done) {
+    const r = applyMove(state, x, y, color);
+    state = r.newState;
+    put(color, x, y, from, dur, done);
+    return r;
+  }
   function ringTo(r, s, d, done) {
     const s0 = r.userData.s; r.userData.on = true;
     tween(d || .3, p => { r.userData.s = lerp(s0, s, easeOut(p)); r.scale.setScalar(r.userData.s); }, () => {
@@ -261,75 +387,12 @@ function init(T, root) {
       if (done) done();
     });
   }
-  const dropRing = r => ringTo(r, .001, .25, () => tilt.remove(r));
-  function dropWhite(i, delay, done) {
-    wait(delay, () => {
-      const [x, y] = LIBS[i], m = makeStone('white');
-      m.position.set(wx(x), 2.6, wx(y)); tilt.add(m); whites.push(m);
-      tween(.5, p => { m.position.y = fall(p, 2.6, REST); }, () => { ringTo(lessonRings[i], .001, .2); if (done) done(); });
-    });
-  }
-  function nextLesson() {
-    if (busy) return;
-    setBusy(true);
-    const finish = () => setBusy(false);
-    if (phase === 0) {
-      hovering = false; const y0 = lessonStone.position.y; lessonStone.rotation.z = 0;
-      tween(.55, p => { lessonStone.position.y = fall(p, y0, REST); }, () => {
-        lessonRings.forEach((r, i) => wait(.15 + i * .16, () => ringTo(r, 1)));
-        wait(.9, () => { phase = 1; showLesson(1); finish(); });
-      });
-    } else if (phase === 1) {
-      dropWhite(0, 0); dropWhite(1, .35); dropWhite(2, .7, () => {
-        lessonRings[3].material = ringMat.red; lessonRings[3].userData.kind = 'red';
-        wait(.3, () => { phase = 2; showLesson(2); finish(); });
-      });
-    } else if (phase === 2) {
-      dropWhite(3, 0, () => {
-        const mat = fadeable(lessonStone);
-        tween(.7, p => { lessonStone.position.y = REST + easeOut(p) * 1.3; mat.opacity = 1 - p; }, () => {
-          lessonStone.visible = false; phase = 3; showLesson(3); finish();
-        });
-      });
-    } else {
-      toFree();
-    }
-  }
-  function clearLesson() {
-    whites.forEach(m => { const mat = fadeable(m); tween(.4, p => { mat.opacity = 1 - p; }, () => { tilt.remove(m); mat.dispose(); }); });
-    whites = [];
-    lessonRings.forEach(r => { if (r.userData.on) ringTo(r, .001, .25); });
-    if (lessonStone.visible && !hovering && phase < 3) {
-      const mat = fadeable(lessonStone);
-      tween(.4, p => { mat.opacity = 1 - p; }, () => { lessonStone.visible = false; });
-    } else if (hovering) {
-      const y0 = lessonStone.position.y, mat = fadeable(lessonStone);
-      hovering = false;
-      tween(.4, p => { lessonStone.position.y = y0 + p; mat.opacity = 1 - p; }, () => { lessonStone.visible = false; });
-    }
-  }
-  function startLesson() {
-    lessonRings.forEach(r => {
-      r.material = ringMat.gold; r.userData.kind = 'gold';
-      r.userData.s = .001; r.scale.setScalar(.001); r.userData.on = false;
-    });
-    lessonStone.material = stoneMat.black; lessonStone.visible = true;
-    lessonStone.position.y = 3.4; lessonStone.rotation.z = 0;
-    phase = 0; mode = 'lesson';
-    tween(.7, p => { lessonStone.position.y = lerp(3.4, 2.3, easeOut(p)); }, () => { hovering = true; });
-    showLesson(0);
-  }
-
-  /* ── Serbest oyun ── */
-  let state = new BoardState(N), meshes = new Map(), atari = new Map(), caps = { black: 0, white: 0 };
-  function drop(color, x, y, from, dur) {
-    const m = makeStone(color); m.position.set(wx(x), from, wx(y)); tilt.add(m); meshes.set(key(x, y), m);
-    tween(dur, p => { m.position.y = fall(p, from, REST); });
-  }
-  function lift(k) {
-    const m = meshes.get(k); if (!m) return; meshes.delete(k);
-    const mat = fadeable(m), y0 = m.position.y;
-    tween(.55, p => { m.position.y = y0 + easeOut(p) * 1.2; mat.opacity = 1 - p; }, () => { tilt.remove(m); mat.dispose(); });
+  const dropRing = r => ringTo(r, .001, .25, () => scene.remove(r));
+  function clearRings() { for (const r of rings.values()) dropRing(r); rings.clear(); }
+  function clearBoardState() {
+    [...meshes.keys()].forEach(k => lift(k, .45));
+    clearRings();
+    state = new BoardState(N); caps = { black: 0, white: 0 };
   }
   /** Tek nefesi kalan gruplar: siyahınki kırmızı (tehlike), beyazınki altın (fırsat). */
   function updateAtari() {
@@ -342,48 +405,107 @@ function init(T, root) {
       const lk = [...libs][0], kind = s.color === 'black' ? 'red' : 'gold';
       if (want.get(lk) !== 'red') want.set(lk, kind);
     }
-    for (const [k, r] of atari) {
+    for (const [k, r] of rings) {
       if (want.get(k) === r.userData.kind) continue;
-      atari.delete(k);
-      dropRing(r);
+      rings.delete(k); dropRing(r);
     }
     for (const [k, kind] of want) {
-      if (atari.has(k)) continue;
+      if (rings.has(k)) continue;
       const [x, y] = k.split(',').map(Number), r = makeRing(x, y, kind);
-      atari.set(k, r); ringTo(r, 1, .3);
+      rings.set(k, r); ringTo(r, 1, .3);
     }
     const kinds = [...want.values()];
     return { danger: kinds.filter(v => v === 'red').length, chance: kinds.filter(v => v === 'gold').length };
   }
-  function clearFree() {
-    [...meshes.keys()].forEach(lift);
-    for (const r of atari.values()) dropRing(r);
-    atari.clear();
-    state = new BoardState(N); caps = { black: 0, white: 0 };
+
+  /* ── Mini ders ── */
+  let hover = null;                     // 0. adımda tahtanın üstünde süzülen taş
+  function opening() {
+    // Posterdeki kare: atari + iki uzak taş, son nefeste kırmızı halka.
+    place('black', C, C); for (let i = 0; i < 3; i++) place('white', ...LIBS[i]);
+    for (const [c, x, y] of OPENING_EXTRA) place(c, x, y);
+    const [lx, ly] = LIBS[3], r = makeRing(lx, ly, 'red');
+    r.userData.s = 1; r.scale.setScalar(1); r.userData.on = true;
+    rings.set(key(lx, ly), r);
+    phase = 2; mode = 'lesson';
+    showLesson(2);
   }
-  function toFree() {
+  function startLesson() {
+    phase = 0; mode = 'lesson';
+    const m = hover = makeStone('black');
+    m.position.set(0, TOP + 0.09, 0);
+    m.userData.settling = true;
+    tween(.7, p => { if (m.userData.settling) m.position.y = lerp(TOP + 0.09, TOP + 0.05, easeOut(p)); }, () => { m.userData.settling = false; });
+    showLesson(0);
+  }
+  function nextLesson() {
+    if (busy) return;
     setBusy(true);
-    clearLesson();
-    zoomTo(1, 1.1, () => {
-      mode = 'free'; phase = 0;
-      showFree('Sıra sende: bir noktaya dokun, siyah taş koy. Beyaz cevap verecek.');
-      setBusy(false);
-    });
+    live();
+    if (lessonP < 1) lessonTo(1, 1.4);
+    const finish = () => { setBusy(false); syncPanelMode(); };
+    if (phase === 0) {
+      const m = hover;
+      hover = null;
+      m.userData.settling = false;       // iniş tween'i yarıda kalsa da artık taşı oynatmaz
+      const y0 = m.position.y;
+      tween(.55, p => { m.position.y = fall(p, y0, rest.black); }, () => {
+        state = applyMove(state, C, C, 'black').newState;
+        meshes.set(key(C, C), m);
+        LIBS.forEach(([x, y], i) => wait(.15 + i * .16, () => { const r = makeRing(x, y, 'gold'); rings.set(key(x, y), r); ringTo(r, 1); }));
+        wait(.9, () => { phase = 1; showLesson(1); finish(); });
+      });
+    } else if (phase === 1) {
+      LIBS.slice(0, 3).forEach(([x, y], i) => wait(i * .35, () => {
+        place('white', x, y, TOP + 0.07, .5, () => {
+          const r = rings.get(key(x, y)); if (r) { rings.delete(key(x, y)); dropRing(r); }
+          if (i === 2) {
+            setRingKind(rings.get(key(...LIBS[3])), 'red');
+            wait(.3, () => { phase = 2; showLesson(2); finish(); });
+          }
+        });
+      }));
+    } else if (phase === 2) {
+      const [x, y] = LIBS[3];
+      const r = place('white', x, y, TOP + 0.07, .5, () => {
+        const ring = rings.get(key(x, y)); if (ring) { rings.delete(key(x, y)); dropRing(ring); }
+        r.captured.forEach(c => lift(key(c.x, c.y), .7));
+        wait(.75, () => { phase = 3; showLesson(3); sync(); finish(); });
+      });
+    } else {
+      toFree();
+    }
   }
   function restartLesson() {
     setBusy(true);
     ghost.visible = false;
-    clearFree();
-    zoomTo(0, 1.1, () => { startLesson(); setBusy(false); });
+    clearBoardState();
+    if (hover) { removeStone(hover); hover = null; }
+    playTo(0, 1.1);
+    lessonTo(1, .8);
+    wait(.6, () => { startLesson(); setBusy(false); syncPanelMode(); });
+  }
+
+  /* ── Serbest oyun ── */
+  function toFree() {
+    setBusy(true);
+    clearBoardState();
+    if (hover) { removeStone(hover); hover = null; }
+    mode = 'free'; phase = 0;
+    syncPanelMode();
+    playTo(1, 1.2, () => {
+      showFree('Sıra sende: bir noktaya dokun, siyah taş koy. Beyaz cevap verecek.');
+      setBusy(false);
+    });
   }
   function clearBoard() {
     setBusy(true);
-    clearFree();
+    clearBoardState();
     wait(.6, () => { showFree('Tahta temiz. Sıra sende: bir noktaya dokun, siyah taş koy.'); setBusy(false); });
   }
   function apply(color, x, y, r) {
     state = r.newState;
-    drop(color, x, y, 2.4, .45);
+    put(color, x, y, TOP + 0.06, .45);
     if (r.captured.length) wait(.42, () => r.captured.forEach(c => lift(key(c.x, c.y))));
     caps[color] += r.captured.length;
     sync();
@@ -421,18 +543,17 @@ function init(T, root) {
     ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, cam);
     const hit = ray.intersectObject(pickPlane)[0]; if (!hit) return null;
-    const p = tilt.worldToLocal(hit.point.clone());
-    const x = Math.round(p.x + C), y = Math.round(p.z + C);
+    const x = Math.round(hit.point.x / SX + 4), y = Math.round(hit.point.z / SY + 4);
     return state.isInBounds(x, y) ? { x, y } : null;
   }
   canvas.addEventListener('pointermove', ev => {
     if (ev.pointerType === 'touch') return;
     const q = mode === 'free' && !busy ? pick(ev) : null;
     const show = !!q && state.isEmpty(q.x, q.y);
-    if (show) ghost.position.set(wx(q.x), REST, wx(q.y));
+    if (show) ghost.position.set(wx(q.x), rest.black, wz(q.y));
     if (show !== ghost.visible || show) dirty = true;
     ghost.visible = show;
-    canvas.style.cursor = mode === 'lesson' || show ? 'pointer' : 'default';
+    canvas.style.cursor = mode === 'free' ? (show ? 'pointer' : 'default') : 'pointer';
   });
   canvas.addEventListener('pointerleave', () => { ghost.visible = false; dirty = true; });
   canvas.addEventListener('click', ev => {
@@ -441,10 +562,20 @@ function init(T, root) {
     const q = pick(ev); if (q) playAt(q);
   });
   stepBtn.addEventListener('click', () => { if (busy) return; mode === 'lesson' ? nextLesson() : clearBoard(); });
-  altBtn.addEventListener('click', () => { if (busy) return; mode === 'lesson' ? toFree() : restartLesson(); });
+  altBtn.addEventListener('click', () => {
+    if (busy) return;
+    if (mode === 'free' || phase === LESSON.length - 1) restartLesson();
+    else toFree();
+  });
   canvas.style.cursor = 'pointer';
 
-  /* ── Döngü: yalnız görünürken çalışır ── */
+  /** Testler için: bir kesişimin ekran konumu (CSS pikseli). */
+  root.heroPointFor = (x, y) => {
+    const v = new T.Vector3(wx(x), TOP, wz(y)).project(cam), r = canvas.getBoundingClientRect();
+    return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height };
+  };
+
+  /* ── Döngü: yalnız görünürken ve bir şey değişirken çizer ── */
   let raf = 0, last = 0, running = false, skip = false;
   function frame(now) {
     raf = requestAnimationFrame(frame);
@@ -456,25 +587,25 @@ function init(T, root) {
       const p = Math.min(1, tw.t / tw.dur); tw.fn(p);
       if (p >= 1) { tweens.splice(i, 1); if (tw.done) tw.done(); }
     }
-    const sway = !lite && !pointer.active;
-    const rx = pointer.active ? pointer.y * .07 : sway ? Math.sin(t * .4) * .02 : 0;
-    const rz = pointer.active ? -pointer.x * .07 : sway ? Math.sin(t * .3) * .02 : 0;
-    const settled = Math.abs(tilt.rotation.x - rx) < 1e-4 && Math.abs(tilt.rotation.z - rz) < 1e-4;
-    tilt.rotation.x = lerp(tilt.rotation.x, rx, .08);
-    tilt.rotation.z = lerp(tilt.rotation.z, rz, .08);
-    if (hovering) {
-      lessonStone.position.y = 2.3 + Math.sin(t * 1.7) * .14;
-      lessonStone.rotation.z = Math.sin(t * .9) * .12;
+    const tx = pointer.active ? pointer.x : 0, ty = pointer.active ? pointer.y : 0;
+    const settled = Math.abs(pointer.sx - tx) < 1e-3 && Math.abs(pointer.sy - ty) < 1e-3;
+    pointer.sx = lerp(pointer.sx, tx, .06); pointer.sy = lerp(pointer.sy, ty, .06);
+    if (hover && !hover.userData.settling) {
+      hover.position.y = TOP + 0.05 + Math.sin(t * 1.7) * 0.004;
+      hover.rotation.z = Math.sin(t * .9) * .08;
     }
     let pulsing = false;
-    for (const r of [...lessonRings, ...atari.values()]) {
+    for (const r of rings.values()) {
       if (!r.userData.on) continue;
       pulsing = true;
-      const s = r.userData.s * (1 + Math.sin(t * (r.userData.kind === 'red' ? 6 : 2.6) + r.position.x) * .09);
+      const s = r.userData.s * (1 + Math.sin(t * (r.userData.kind === 'red' ? 5 : 2.6) + r.position.x * 90) * .05);
       r.scale.setScalar(s);
+      r.userData.glow.material.opacity = 0.45 + Math.sin(t * 2.2) * 0.12;
     }
-    if (zoom !== shownZoom) applyCamera();
-    if (dirty || tweens.length || hovering || pulsing || sway || !settled) {
+    syncPanelMode();
+    const moving = root.classList.contains('is-moving');
+    if (dirty || tweens.length || hover || (pulsing && moving) || !settled) {
+      applyCamera();
       renderer.render(scene, cam);
       dirty = false;
     }
@@ -490,8 +621,12 @@ function init(T, root) {
   new IntersectionObserver(es => { inView = es[0].isIntersecting; update(); }, { rootMargin: '80px' }).observe(root);
   document.addEventListener('visibilitychange', update);
 
-  // Canlıya geç: panel açılır, tahta resmin üstünde belirir.
+  opening();
+  resize();
+  readScroll();
+  applyCamera();
+  renderer.render(scene, cam);
   panel.hidden = false;
-  startLesson();
-  requestAnimationFrame(() => { root.classList.add('is-live'); });
+  root.classList.add('is-live');
+  syncPanelMode();
 }
