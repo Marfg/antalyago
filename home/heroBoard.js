@@ -11,8 +11,8 @@
  * WebGL başarısız olursa bugünkü hero-board.png görseli olduğu gibi kalır.
  * Telefonda hafif sürüm: gölge yok, düşük çözünürlük, ~30 fps.
  */
-import { BoardState } from '../core/boardState.js?v=2026-10-28.harita';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-28.harita';
+import { BoardState } from '../core/boardState.js?v=2026-10-28.acilis';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-28.acilis';
 
 const THREE_URL = new URL('../vendor/three-r128.min.js', import.meta.url).href;
 const N = 9;

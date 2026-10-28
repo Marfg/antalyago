@@ -1,5 +1,5 @@
-import { BoardState } from '../core/boardState.js?v=2026-10-28.harita';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-28.harita';
+import { BoardState } from '../core/boardState.js?v=2026-10-28.acilis';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-28.acilis';
 
 // LS-owned positions preserving the previous scene's four shapes and both
 // five-stone captures. No runtime dependency on curriculum/page/lesson data.

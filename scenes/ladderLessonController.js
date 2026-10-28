@@ -1,5 +1,5 @@
-import {isValidMove} from '../core/ruleEngine.js?v=2026-10-28.harita';
-import {LADDER_STEPS,createLadderScenario,seedBoard,whiteGroup,firstAtariTrial,goPoint} from './ladderLessonPolicy.js?v=2026-10-28.harita';
+import {isValidMove} from '../core/ruleEngine.js?v=2026-10-28.acilis';
+import {LADDER_STEPS,createLadderScenario,seedBoard,whiteGroup,firstAtariTrial,goPoint} from './ladderLessonPolicy.js?v=2026-10-28.acilis';
 
 export function mountLadderLesson({board,overlay,document,initialStep=0,onStepComplete=()=>{},onPresented=()=>{},onAllComplete=()=>{}}){
 const $=id=>document.getElementById(id);
