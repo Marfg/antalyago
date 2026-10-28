@@ -1,5 +1,5 @@
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-25.karsilama';
-import { createCaptureBoard, targetLiberties, evaluateCaptureMove, chooseCaptureReply } from './captureNativePolicy.js?v=2026-10-25.karsilama';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-28.harita';
+import { createCaptureBoard, targetLiberties, evaluateCaptureMove, chooseCaptureReply } from './captureNativePolicy.js?v=2026-10-28.harita';
 
 /** Capture-only controller using the existing scene lifecycle and board adapter. */
 export function createCaptureScene({ id, scenario, game = false }) {

@@ -1,6 +1,6 @@
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-25.karsilama';
-import { getTwoEyesMoments, buildTwoEyesBoard, evaluateTwoEyesTap, CONCEPT } from './twoEyesPolicy.js?v=2026-10-25.karsilama';
-import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-10-25.karsilama';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-28.harita';
+import { getTwoEyesMoments, buildTwoEyesBoard, evaluateTwoEyesTap, CONCEPT } from './twoEyesPolicy.js?v=2026-10-28.harita';
+import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-10-28.harita';
 let active = null;
 const points = pairs => pairs.map(([col,row]) => ({row,col}));
 export const scene11TwoEyes = {

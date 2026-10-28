@@ -1,6 +1,6 @@
-import {BoardState} from '../core/boardState.js?v=2026-10-25.karsilama';
-import {applyMove,isValidMove,getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-10-25.karsilama';
-import {LADDER_SCENARIOS,LADDER_STEPS} from './ladderScenarioData.js?v=2026-10-25.karsilama';
+import {BoardState} from '../core/boardState.js?v=2026-10-28.harita';
+import {applyMove,isValidMove,getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-10-28.harita';
+import {LADDER_SCENARIOS,LADDER_STEPS} from './ladderScenarioData.js?v=2026-10-28.harita';
 export {LADDER_STEPS};
 export function whiteGroup(board,anchor){
  if(board.colorAt(anchor.x,anchor.y)!=='white')return {stones:[],liberties:[],count:0};

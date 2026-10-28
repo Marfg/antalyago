@@ -103,35 +103,147 @@ body {
    OLMADAN `hidden` özniteliği artık görmezden gelinirdi. */
 #ls-scene-host[hidden] { display: none; }
 
-/* ── Konular paneli — board üzerine AÇILAN kalıcı bir yan panel DEĞİL;
-   #ls-narration'ın İÇİNDE #ls-scene-host'un yerini GEÇİCİ olarak alır
-   (aynı sabit yükseklik bütçesi, board bounding box'ı ASLA değişmez).
-   Ayırıcı çizgi/sert panel dili YOK — bkz. görev talimatı Bölüm A. ── */
+/* ── Öğrenme haritası (#ls-topics-panel, bkz. scenes/topicsMap.js) —
+   tahtanın üstünde tam ekran bir katman; tahta arkada bulanık görünür,
+   boyutu değişmez. Üst çubuk (z-index 20) haritanın üstünde kalır, böylece
+   "Konular" düğmesi aç/kapa olarak çalışır. Konular dört bölüm kartında,
+   işaretleri birbirine bağlayan bir yol çizgisiyle dizilir. ── */
 #ls-topics-panel {
-  width: 100%; max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; gap: .4rem;
-  /* #ls-narration'ın align-items:center'ı, İÇERİĞİ kendi yüksekliğinden
-     UZUN bir çocuğu ORTALARDI — bu da üste (board'a doğru) taşmasına yol
-     açardı. align-self:flex-start bu çocuğu ÜSTTEN başlatır; taşma
-     yalnız AŞAĞIYA (ebeveynin overflow-y:auto'suyla kaydırılabilir) olur. */
-  align-self: flex-start;
+  position: fixed; inset: 0; z-index: 18;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(48, 38, 14, .45), rgba(8, 8, 14, 0) 62%),
+    rgba(8, 8, 14, .9);
+  backdrop-filter: blur(14px);
+  animation: ls-map-in .28s ease both;
 }
 #ls-topics-panel[hidden] { display: none; }
-.ls-topics-header { font-size: .78rem; font-weight: 700; color: var(--muted); text-align: center; }
-.ls-topics-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .3rem; }
-.ls-topic-item {
-  width: 100%; display: flex; align-items: center; gap: .6rem;
-  padding: .5rem .7rem; border-radius: 8px; min-height: 44px;
-  border: 1px solid var(--gborder); background: transparent; color: var(--text);
-  font-size: .8rem; font-weight: 600; cursor: pointer; font-family: inherit; text-align: left;
-  transition: all .16s;
+/* Üst çubuğun arkası: harita kayarken yazılar düğmelerin altından geçmesin. */
+#ls-topics-panel::before {
+  content: ''; position: absolute; inset: 0 0 auto; z-index: 1; pointer-events: none;
+  height: calc(env(safe-area-inset-top, 0px) + 3.8rem);
+  background: linear-gradient(to bottom, rgba(8, 8, 14, .97) 62%, rgba(8, 8, 14, 0));
 }
-.ls-topic-item:hover:not(:disabled) { border-color: var(--gold); background: rgba(200, 168, 75, .08); }
-.ls-topic-item:disabled { cursor: default; opacity: .45; }
-.ls-topic-item[aria-current="true"] { border-color: var(--gold); background: rgba(200, 168, 75, .12); }
-.ls-topic-mark { flex: 0 0 auto; width: 1.3em; text-align: center; font-size: .82rem; }
-.ls-topic-mark.done { color: var(--green); }
-.ls-topic-mark.active { color: var(--gold); }
-@media (prefers-reduced-motion: reduce) { .ls-topic-item { transition: none; } }
+@keyframes ls-map-in { from { opacity: 0; } to { opacity: 1; } }
+.ls-map-scroll {
+  height: 100%; overflow-y: auto; overscroll-behavior: contain;
+  padding: calc(env(safe-area-inset-top, 0px) + 4.6rem) 1rem calc(env(safe-area-inset-bottom, 0px) + 2.5rem);
+  scrollbar-width: thin; scrollbar-color: rgba(200, 168, 75, .35) transparent;
+}
+.ls-map-scroll::-webkit-scrollbar { width: 8px; }
+.ls-map-scroll::-webkit-scrollbar-track { background: transparent; }
+.ls-map-scroll::-webkit-scrollbar-thumb { background: rgba(200, 168, 75, .3); border-radius: 8px; }
+body.ls-map-open #ls-topics-open { border-color: var(--gold); color: var(--gold2); }
+
+.ls-map-head {
+  max-width: 1120px; margin: 0 auto 1.5rem;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem;
+}
+.ls-map-heading { flex: 1 1 auto; min-width: 0; }
+.ls-map-eyebrow {
+  margin: 0; font-size: .7rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--gold);
+}
+.ls-topics-header {
+  margin: .25rem 0 .35rem;
+  font-family: 'Noto Serif', Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 700; line-height: 1.1; color: #f4efe6;
+}
+.ls-map-progress { margin: 0 0 .6rem; font-size: .84rem; color: rgba(232, 228, 222, .72); }
+.ls-map-bar { height: 4px; max-width: 320px; border-radius: 999px; background: rgba(232, 228, 222, .1); overflow: hidden; }
+.ls-map-bar span {
+  display: block; height: 100%; width: 0; border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold), var(--gold2));
+  transition: width .6s cubic-bezier(.2, .7, .2, 1);
+}
+.ls-map-close { flex: 0 0 auto; }
+
+.ls-map-sections {
+  list-style: none; margin: 0 auto; padding: 0; max-width: 1120px;
+  display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 640px) { .ls-map-sections { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1040px) { .ls-map-sections { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.ls-map-section {
+  padding: 1rem .8rem .7rem; border-radius: 14px;
+  background: rgba(255, 255, 255, .025); border: 1px solid rgba(232, 228, 222, .07);
+}
+.ls-map-section.is-here {
+  background: rgba(200, 168, 75, .055); border-color: rgba(200, 168, 75, .3);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .35);
+}
+.ls-map-section-head {
+  display: flex; justify-content: space-between; padding: 0 .35rem;
+  font-size: .66rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+}
+.ls-map-section.is-here .ls-map-section-num { color: var(--gold); }
+.ls-map-section.is-done .ls-map-section-count { color: var(--green); }
+.ls-map-section-title {
+  margin: .35rem .35rem .15rem;
+  font-family: 'Noto Serif', Georgia, 'Times New Roman', serif;
+  font-size: 1.15rem; font-weight: 700; color: #f4efe6;
+}
+.ls-map-section-blurb { margin: 0 .35rem .75rem; font-size: .78rem; line-height: 1.4; color: rgba(232, 228, 222, .6); }
+
+/* Yol: her durağın işareti bir sonrakine çizgiyle bağlanır. İşaret
+   düğmenin üstüne hizalı olduğundan çizgi başlık iki satıra sarsa da
+   tam olarak bir sonraki işarete ulaşır. */
+.ls-map-path { list-style: none; margin: 0; padding: 0; }
+.ls-map-stop { position: relative; }
+.ls-map-stop:not(:last-child)::after {
+  content: ''; position: absolute; left: 23px; top: 36px; bottom: -8px; width: 2px;
+  background: rgba(232, 228, 222, .12); pointer-events: none;
+}
+.ls-map-stop.is-done:not(:last-child)::after { background: rgba(62, 207, 128, .45); }
+.ls-topic-item {
+  width: 100%; display: flex; align-items: flex-start; gap: .7rem;
+  padding: 8px 10px; border-radius: 10px; min-height: 48px;
+  border: 1px solid transparent; background: transparent; color: var(--text);
+  font-family: inherit; text-align: left; cursor: pointer;
+  transition: background .16s ease, border-color .16s ease;
+}
+.ls-topic-item:hover:not([aria-disabled="true"]) { background: rgba(200, 168, 75, .08); }
+.ls-topic-item[aria-current="true"] { background: rgba(200, 168, 75, .12); border-color: rgba(200, 168, 75, .45); }
+.ls-topic-item[aria-disabled="true"] { cursor: not-allowed; }
+.ls-topic-mark {
+  flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; font-weight: 700; line-height: 1;
+  border: 1.5px solid rgba(232, 228, 222, .2); background: var(--dark); color: rgba(232, 228, 222, .38);
+}
+.ls-topic-mark svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.ls-topic-mark.done { background: #0f2a1d; border-color: rgba(62, 207, 128, .65); color: var(--green); }
+.ls-topic-mark.active {
+  background: linear-gradient(180deg, var(--gold2), var(--gold)); border-color: var(--gold2); color: #1d1608;
+  font-size: .62rem; box-shadow: 0 0 0 4px rgba(200, 168, 75, .16), 0 0 18px rgba(200, 168, 75, .4);
+}
+.ls-topic-mark.next { border-color: var(--gold); color: var(--gold); font-size: .6rem; padding-left: 2px; }
+.ls-topic-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: .12rem; padding-top: 3px; }
+.ls-topic-title { font-size: .88rem; font-weight: 600; line-height: 1.3; }
+.ls-topic-state { font-size: .7rem; color: var(--muted); }
+.ls-map-stop.is-done .ls-topic-state { color: rgba(62, 207, 128, .85); }
+.ls-map-stop.is-active .ls-topic-state, .ls-map-stop.is-next .ls-topic-state,
+.ls-topic-item[aria-current="true"] .ls-topic-state { color: var(--gold); }
+.ls-map-stop.is-locked .ls-topic-title { color: rgba(232, 228, 222, .5); }
+.ls-topic-num { flex: 0 0 auto; padding-top: 6px; font-size: .7rem; color: rgba(232, 228, 222, .28); font-variant-numeric: tabular-nums; }
+.ls-topic-item.is-nudged { animation: ls-map-nudge .36s ease; }
+@keyframes ls-map-nudge { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
+/* Kilitli konuya dokununca alttan beliren kısa açıklama. Panelin
+   backdrop-filter'ı sabit konumlu çocuklar için kapsayıcı olduğundan not
+   harita kaydırılsa da ekranın altında kalır. */
+.ls-map-note {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 1.2rem);
+  width: max-content; max-width: min(92vw, 460px); margin: 0; padding: .65rem 1rem;
+  border-radius: 10px; border: 1px solid var(--gborder); background: rgba(22, 19, 12, .96);
+  font-size: .84rem; line-height: 1.4; color: var(--text); text-align: center;
+  opacity: 0; transform: translate(-50%, 8px); pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+}
+.ls-map-note.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) {
+  #ls-topics-panel, .ls-topic-item.is-nudged { animation: none; }
+  .ls-topic-item, .ls-map-bar span, .ls-map-note { transition: none; }
+}
 
 #ls-topbar {
   position: fixed; top: 0; left: 0; z-index: 20;

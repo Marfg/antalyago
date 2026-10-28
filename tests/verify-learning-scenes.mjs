@@ -398,51 +398,60 @@ addTest('A8) Sahne #2 sonunda da aynı ortak konu-sonu davranışı çalışıyo
   } finally { await s.close(); }
 });
 
-addTest('A9) "Konular" kontrolü topbar\'da her zaman erişilebilir, board bounding box\'ını DEĞİŞTİRMEZ', async () => {
+addTest('A9) "Konular" haritası tam ekran açılır; board bounding box\'ı DEĞİŞMEZ, ders şeridi gizlenir, harita ekranı kaplar', async () => {
   const s = await openScenesPage();
   try {
     const boardBefore = await s.page.locator('#ls-board-region').boundingBox();
     await s.page.click('#ls-topics-open');
     await s.page.waitForTimeout(100);
-    ensure(await s.page.locator('#ls-topics-panel').isVisible(), 'Konular paneli açılmadı');
-    ensure(await s.page.locator('#ls-scene-host').isHidden(), 'sahne içeriği panel açıkken hâlâ görünüyor (kalıcı panel/bindirme riski)');
+    ensure(await s.page.locator('#ls-topics-panel').isVisible(), 'Konular haritası açılmadı');
+    ensure(await s.page.locator('#ls-scene-host').isHidden(), 'sahne içeriği harita açıkken hâlâ görünüyor');
     const boardAfter = await s.page.locator('#ls-board-region').boundingBox();
     ensure(Math.abs(boardBefore.width - boardAfter.width) < 1 && Math.abs(boardBefore.height - boardAfter.height) < 1, 'Konular açılınca board boyutu değişti');
-    const narrationBox = await s.page.locator('#ls-narration').boundingBox();
-    const topicsBox = await s.page.locator('#ls-topics-panel').boundingBox();
-    ensure(!boxesIntersect(boardAfter, topicsBox), 'Konular paneli board ile kesişiyor');
-    ensure(Math.abs(narrationBox.height - (await s.page.locator('#ls-narration').boundingBox()).height) < 1, 'şerit yüksekliği panelle değişti');
+    const vp = s.page.viewportSize();
+    const mapBox = await s.page.locator('#ls-topics-panel').boundingBox();
+    ensure(mapBox.width >= vp.width - 1 && mapBox.height >= vp.height - 1, `harita ekranı kaplamıyor: ${JSON.stringify(mapBox)}`);
+    // Üst çubuk haritanın üstünde kalır: "Konular" düğmesi aç/kapa olarak çalışır.
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForTimeout(100);
+    ensure(await s.page.locator('#ls-topics-panel').isHidden(), '"Konular" ikinci tıklamada haritayı kapatmadı');
+    ensure(await s.page.locator('#ls-scene-host').isVisible(), 'harita kapanınca ders şeridi geri gelmedi');
   } finally { await s.close(); }
 });
 
-addTest('A10) Konular listesi: registry sırası, kullanıcı başlıkları, teknik ID YOK, aktif işaretli, gelecek disabled', async () => {
+addTest('A10) Konular haritası: registry sırası, dört bölüm, kullanıcı başlıkları, teknik ID YOK, aktif işaretli, gelecek kilitli', async () => {
   const s = await openScenesPage();
   try {
     await s.page.click('#ls-topics-open');
     await s.page.waitForTimeout(100);
     const items = s.page.locator('.ls-topic-item');
-    // v7 — Sahne #9 ("Ko Kuralı") ve Sahne #10 ("Oyun Sonu ve Sayım") kayıtlı
-    // olduğu için artık ON konu var (bkz. görev talimatı: registry sırasına
-    // yeni Sahne #9/#10 eklendi).
-    ensure(await items.count() === 10, 'on konu listelenmiyor');
-    const titles = await items.allTextContents();
-    ensure(
-      titles[0].includes('Tahtayı Tanı') && titles[1].includes('Sırayla Oyna') && titles[2].includes('Taşların Nefesi') &&
-      titles[3].includes('Grubun Nefesi') && titles[4].includes('Nefes Noktalarını Değerlendir') &&
-      titles[5].includes('Taş Alma') && !titles[5].includes('Uygulamaları') && titles[6].includes('Taş Alma Uygulamaları') &&
-      titles[7].includes('Yasak Hamleler') && titles[8].includes('Ko Kuralı') && titles[9].includes('Oyun Sonu ve Sayım'),
-      `sıra/başlıklar yanlış: ${JSON.stringify(titles)}`);
-    ensure(!titles.some(t => /scene-\d\d/.test(t)), 'teknik scene ID görünüyor');
+    const expected = ['Tahtayı Tanı', 'Sırayla Oyna', 'Taşların Nefesi', 'Grubun Nefesi', 'Nefes Noktalarını Değerlendir',
+      'Son nokta', 'Tahta kenarı', 'Birlikte duran taşlar', 'İlk taşı alan kazanır',
+      'Yasak Hamleler', 'Ko Kuralı', 'Oyun Sonu ve Sayım',
+      'Canlı Gruplar (İki Göz)', 'Kesme ve Bağlama', 'Merdiven (Shichō)', 'Ağ (Geta)', 'Snapback'];
+    ensure(await items.count() === expected.length, `${expected.length} konu listelenmiyor (${await items.count()})`);
+    const titles = await s.page.locator('.ls-topic-title').allTextContents();
+    ensure(JSON.stringify(titles) === JSON.stringify(expected), `sıra/başlıklar yanlış: ${JSON.stringify(titles)}`);
+    const allText = await s.page.locator('#ls-topics-panel').textContent();
+    ensure(!/scene-\d\d/.test(allText), 'teknik scene ID görünüyor');
+
+    const sections = s.page.locator('.ls-map-section');
+    ensure(await sections.count() === 4, 'dört bölüm yok');
+    const sizes = await sections.evaluateAll(els => els.map(el => el.querySelectorAll('.ls-topic-item').length));
+    ensure(JSON.stringify(sizes) === '[5,4,3,5]', `bölüm boyutları yanlış: ${JSON.stringify(sizes)}`);
+    ensure(await s.page.locator('#ls-map-progress').textContent() === '0/17 konu tamam', 'ilerleme satırı yanlış');
 
     ensure(await items.nth(0).getAttribute('aria-current') === 'true', 'ilk (aktif) konu işaretli değil');
-    for (let i = 1; i < 10; i++) {
-      ensure(await items.nth(i).isDisabled(), `henüz açılmamış ${i + 1}. konu disabled değil`);
+    for (let i = 1; i < expected.length; i++) {
+      ensure(await items.nth(i).isDisabled(), `henüz açılmamış ${i + 1}. konu kilitli değil`);
     }
 
-    // Renk TEK durum göstergesi olmamalı — glif farkı da olmalı.
-    const mark0 = (await items.nth(0).locator('.ls-topic-mark').textContent())?.trim();
-    const mark1 = (await items.nth(1).locator('.ls-topic-mark').textContent())?.trim();
-    ensure(mark0 !== mark1, 'aktif/kilitli durumlar aynı glifi kullanıyor (yalnız renkle ayrışıyor olabilir)');
+    // Renk TEK durum göstergesi olmamalı — işaret ve durum yazısı da farklı olmalı.
+    const mark0 = await items.nth(0).locator('.ls-topic-mark').innerHTML();
+    const mark1 = await items.nth(1).locator('.ls-topic-mark').innerHTML();
+    ensure(mark0 !== mark1, 'aktif/kilitli durumlar aynı işareti kullanıyor (yalnız renkle ayrışıyor olabilir)');
+    ensure((await items.nth(0).locator('.ls-topic-state').textContent()) === 'Şu an', 'aktif konunun durum yazısı yok');
+    ensure((await items.nth(1).locator('.ls-topic-state').textContent()) === 'Kilitli', 'kilitli konunun durum yazısı yok');
   } finally { await s.close(); }
 });
 
@@ -4483,6 +4492,53 @@ for (const [label, viewport] of [['masaüstü', VIEWPORTS.desktop], ['mobil', VI
     } finally { await s.close(); }
   });
 }
+
+addTest('K1) Kilitli konuya dokunmak konuyu AÇMAZ; harita açık kalır ve sıradaki konuyu söyleyen not belirir', async () => {
+  const s = await openScenesPage();
+  try {
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForSelector('#ls-topics-panel', { state: 'visible' });
+    const before = (await getEventLog(s.page)).filter(e => e.type === 'scene_started').length;
+    await s.page.locator('.ls-topic-item').nth(9).click({ force: true });
+    await s.page.waitForTimeout(250);
+    ensure(await s.page.locator('#ls-topics-panel').isVisible(), 'kilitli konuya dokununca harita kapandı');
+    ensure(await s.page.locator('#ls-map-note').evaluate(el => el.classList.contains('show')), 'kilit notu belirmedi');
+    ensure((await s.page.locator('#ls-map-note').textContent()).includes('Tahtayı Tanı'), 'not sıradaki konuyu söylemiyor');
+    const after = (await getEventLog(s.page)).filter(e => e.type === 'scene_started').length;
+    ensure(after === before, 'kilitli konu yine de başlatıldı');
+    ensure(s.consoleErrors.length === 0, JSON.stringify(s.consoleErrors));
+  } finally { await s.close(); }
+});
+
+addTest('K2) Telefonda harita şu anki konuyu görünür alana getirir; "Derse dön" kapatır ve odağı geri verir', async () => {
+  const s = await openScenesPage({ viewport: VIEWPORTS.mobile });
+  try {
+    await s.page.evaluate(ids => {
+      localStorage.setItem('go_scene_progress_v1', JSON.stringify({ version: 1, activeSceneId: null, completedSceneIds: ids, sceneState: {} }));
+    }, ['scene-01-board-intro', 'scene-02-turns-and-intersections', 'scene-03-liberties-by-position', 'scene-04-group-liberties',
+      'scene-05-liberty-assessment', 'scene-06-capture-basics', 'scene-06-capture-edge', 'scene-06-capture-group',
+      'scene-07-capture-practice', 'scene-08-illegal-moves', 'scene-09-ko-rule']);
+    await s.page.reload();
+    await s.page.waitForSelector('#ls-scene-host > *');
+    await s.page.focus('#ls-topics-open');
+    await s.page.click('#ls-topics-open');
+    await s.page.waitForSelector('#ls-topics-panel', { state: 'visible' });
+    await s.page.waitForTimeout(150);
+    const current = s.page.locator('.ls-topic-item[aria-current="true"]');
+    ensure((await current.locator('.ls-topic-title').textContent()) === 'Oyun Sonu ve Sayım', 'şu anki konu yanlış');
+    const box = await current.boundingBox();
+    const vp = s.page.viewportSize();
+    ensure(box && box.y >= 0 && box.y + box.height <= vp.height, `şu anki konu ekranda değil: ${JSON.stringify(box)}`);
+    ensure(await s.page.locator('#ls-map-progress').textContent() === '11/17 konu tamam', 'ilerleme satırı yanlış');
+    const scrollWidth = await s.page.locator('.ls-map-scroll').evaluate(el => el.scrollWidth - el.clientWidth);
+    ensure(scrollWidth <= 0, 'harita yatay kayıyor');
+    await s.page.click('#ls-topics-close');
+    await s.page.waitForTimeout(100);
+    ensure(await s.page.locator('#ls-topics-panel').isHidden(), '"Derse dön" haritayı kapatmadı');
+    ensure(await s.page.evaluate(() => document.activeElement?.id) === 'ls-topics-open', 'odak açan kontrole dönmedi');
+    ensure(s.consoleErrors.length === 0, JSON.stringify(s.consoleErrors));
+  } finally { await s.close(); }
+});
 
 addTest('W2) Karşılamada "Konular" önce sıradaki konuyu başlatır, sonra listeyi açar', async () => {
   const s = await openScenesPage({ welcome: true });

@@ -1,5 +1,5 @@
-import {isValidMove} from '../core/ruleEngine.js?v=2026-10-25.karsilama';
-import {NET_FORMS,NET_STEPS,seedBoard,targetGroup,netSequence,permutations,goPoint} from './netLessonPolicy.js?v=2026-10-25.karsilama';
+import {isValidMove} from '../core/ruleEngine.js?v=2026-10-28.harita';
+import {NET_FORMS,NET_STEPS,seedBoard,targetGroup,netSequence,permutations,goPoint} from './netLessonPolicy.js?v=2026-10-28.harita';
 
 export function mountNetLesson({board,overlay,document,initialStep=0,onPresented=()=>{},onStepComplete=()=>{},onAllComplete=()=>{}}){
  const $=id=>document.getElementById(id);
