@@ -23,16 +23,28 @@
     <div id="ls-narration">
       <!-- Sahne modülleri kendi UI'larını buraya kurar (context.container) -->
       <div id="ls-scene-host" aria-live="polite"></div>
-      <!-- v0.10 — "Konular" paneli: #ls-scene-host'un YERİNİ GEÇİCİ olarak
-           alır (aynı sabit yükseklikte) — board üzerine açılan kalıcı bir
-           panel DEĞİL (bkz. görev talimatı Bölüm A). -->
-      <div id="ls-topics-panel" role="region" aria-label="Konular" hidden>
-        <div class="ls-topics-header">Konular</div>
-        <ul class="ls-topics-list" id="ls-topics-list"></ul>
-      </div>
     </div>
   </div>
 </div>
+
+<!-- Öğrenme haritası (Konular): tahtanın üstünde tam ekran açılır, konuları
+     registry sırasıyla dört bölümde gösterir (bkz. scenes/topicsMap.js).
+     Açıkken ders şeridi gizlenir ve tahta girdisi askıya alınır. -->
+<section id="ls-topics-panel" role="dialog" aria-labelledby="ls-topics-title" hidden>
+  <div class="ls-map-scroll">
+    <header class="ls-map-head">
+      <div class="ls-map-heading">
+        <p class="ls-map-eyebrow">Öğrenme haritası</p>
+        <h2 id="ls-topics-title" class="ls-topics-header">Konular</h2>
+        <p class="ls-map-progress" id="ls-map-progress"></p>
+        <div class="ls-map-bar" aria-hidden="true"><span id="ls-map-bar-fill"></span></div>
+      </div>
+      <button type="button" class="ls-topbar-btn ls-map-close" id="ls-topics-close">Derse dön</button>
+    </header>
+    <p class="ls-map-note" id="ls-map-note" role="status" aria-live="polite"></p>
+    <ol class="ls-map-sections" id="ls-topics-list"></ol>
+  </div>
+</section>
 
 <!-- Karşılama: ilk açılışta tahtanın üstüne binen başlık ve tek düğme
      (bkz. scenes/welcomeIntro.js). Bir öğrenme sahnesi değildir; düğmeye
@@ -84,6 +96,7 @@ import { EventLog } from './core/eventLog.js?v=2026-10-25.karsilama';
 import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-10-25.karsilama';
 import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-10-25.karsilama';
 import { createWelcomeIntro, shouldShowWelcome, welcomeCopy } from './scenes/welcomeIntro.js?v=2026-10-25.karsilama';
+import { groupTopics, topicStates } from './scenes/topicsMap.js?v=2026-10-25.karsilama';
 
 /* ── Sürüm/cache bekçisi ──────────────────────────────────────────────
    GitHub Pages önündeki CDN, .js dosyalarına saatlerce (bkz. görev
@@ -284,6 +297,10 @@ const errorEl = document.getElementById('ls-error');
 const topicsPanel = document.getElementById('ls-topics-panel');
 const topicsList = document.getElementById('ls-topics-list');
 const topicsOpenBtn = document.getElementById('ls-topics-open');
+const topicsCloseBtn = document.getElementById('ls-topics-close');
+const mapProgress = document.getElementById('ls-map-progress');
+const mapBarFill = document.getElementById('ls-map-bar-fill');
+const mapNote = document.getElementById('ls-map-note');
 
 /* Test-only hook: ?whiteMoveDelayMs=N Sahne #2'nin beyaz cevap gecikmesini
    ezer — YALNIZ turn-loop testlerinin gerçek zamanlı 450–700ms beklemeler
@@ -319,11 +336,11 @@ document.getElementById('ls-error-reload').addEventListener('click', () => {
   location.reload();
 });
 
-/* ── Konular paneli ──────────────────────────────────────────────────
-   Board üzerine açılan kalıcı bir panel DEĞİL — #ls-narration'ın İÇİNDE
-   #ls-scene-host'un yerini geçici olarak alır (aynı sabit yükseklik
-   bütçesi, board bounding box'ı ASLA değişmez). Tamamlanan konular
-   seçilince replay modunda başlatılır; henüz açılmamış konular disabled.
+/* ── Konular (öğrenme haritası) ──────────────────────────────────────
+   Tahtanın üstünde tam ekran açılan bir katman; tahta ve şerit yerinde
+   kalır, board bounding box'ı DEĞİŞMEZ. Açıkken ders şeridi gizlenir.
+   Tamamlanan konular seçilince replay modunda başlatılır; henüz açılmamış
+   konular kilitlidir (aria-disabled).
    v0.14 — girdi kilidi artık boardAdapter.suspendInteraction()/
    resumeInteraction() ile açık bir anlık-görüntü modeliyle yönetilir
    (bkz. adaptör dosya başı notu) — eski setInputEnabled(bool) tabanlı
@@ -338,41 +355,79 @@ document.getElementById('ls-error-reload').addEventListener('click', () => {
 let topicsOpenerEl = null;
 let interactionSnapshot = null;
 let interactionSnapshotSceneId = null;
+/* Öğrenme haritası — bölümler registry sırasının ardışık dilimleridir
+   (bkz. scenes/topicsMap.js); sıra ve kilit kuralı eski listeyle aynı.
+   Kilitli konular `aria-disabled` taşır: dokunulunca konu açılmaz, yalnız
+   neden kilitli olduğu ve sıradaki konu söylenir. */
+const LOCK_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.4"/><path d="M5.5 7V5.2a2.5 2.5 0 0 1 5 0V7"/></svg>';
+const STATE_LABEL = { done: 'Tamamlandı', active: 'Şu an', next: 'Sıradaki', locked: 'Kilitli' };
+const STATE_MARK = { done: '✓', active: '●', next: '▶', locked: '' };
 function renderTopicsList() {
-  const completed = sceneProgressAdapter.load().completedSceneIds;
-  const activeId = runtime.getActiveSceneId();
-  const firstIncomplete = registry.list().find(scene => !completed.includes(scene.id));
+  const scenes = registry.list();
+  const { states, current, next, completedCount } = topicStates(
+    scenes, sceneProgressAdapter.load().completedSceneIds, runtime.getActiveSceneId());
+  mapProgress.textContent = `${completedCount}/${scenes.length} konu tamam`;
+  mapBarFill.style.width = `${scenes.length ? (completedCount / scenes.length) * 100 : 0}%`;
+  clearTimeout(mapNoteTimer);
+  mapNote.textContent = '';
+  mapNote.classList.remove('show');
   topicsList.innerHTML = '';
-  registry.list().forEach(scene => {
-    const isDone = completed.includes(scene.id);
-    const isActive = scene.id === activeId;
-    const isLocked = !isDone && !isActive && scene.id !== firstIncomplete?.id;
-    const li = document.createElement('li');
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'ls-topic-item';
-    btn.disabled = isLocked;
-    if (isActive) btn.setAttribute('aria-current', 'true');
-    const mark = isDone ? '✓' : isActive ? '●' : '○';
-    const markClass = isDone ? 'done' : isActive ? 'active' : '';
-    btn.innerHTML = `<span class="ls-topic-mark ${markClass}" aria-hidden="true">${mark}</span><span class="ls-topic-title"></span>`;
-    btn.querySelector('.ls-topic-title').textContent = scene.title;
-    if (!isLocked) {
+  let number = 0;
+  groupTopics(scenes).forEach((section, sectionIndex) => {
+    const sectionDone = section.scenes.filter(scene => states.get(scene.id) === 'done').length;
+    const isHere = section.scenes.some(scene => scene.id === current || scene.id === next?.id);
+    const sectionEl = document.createElement('li');
+    sectionEl.className = 'ls-map-section';
+    if (isHere) sectionEl.classList.add('is-here');
+    if (sectionDone === section.scenes.length) sectionEl.classList.add('is-done');
+    sectionEl.innerHTML = `<div class="ls-map-section-head"><span class="ls-map-section-num">Bölüm ${sectionIndex + 1}</span><span class="ls-map-section-count">${sectionDone}/${section.scenes.length}</span></div><h3 class="ls-map-section-title"></h3><p class="ls-map-section-blurb"></p><ol class="ls-map-path"></ol>`;
+    sectionEl.querySelector('.ls-map-section-title').textContent = section.title;
+    sectionEl.querySelector('.ls-map-section-blurb').textContent = section.blurb;
+    const path = sectionEl.querySelector('.ls-map-path');
+    section.scenes.forEach(scene => {
+      number += 1;
+      const state = states.get(scene.id);
+      const isCurrent = scene.id === current;
+      const isLocked = state === 'locked';
+      const li = document.createElement('li');
+      li.className = `ls-map-stop is-${state}`;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ls-topic-item';
+      if (isLocked) btn.setAttribute('aria-disabled', 'true');
+      if (isCurrent) btn.setAttribute('aria-current', 'true');
+      const stateText = isCurrent && state === 'done' ? 'Şu an · tekrar' : STATE_LABEL[state];
+      btn.innerHTML = `<span class="ls-topic-mark ${state}" aria-hidden="true">${isLocked ? LOCK_ICON : STATE_MARK[state]}</span><span class="ls-topic-body"><span class="ls-topic-title"></span><span class="ls-topic-state"></span></span><span class="ls-topic-num" aria-hidden="true">${number}</span>`;
+      btn.querySelector('.ls-topic-title').textContent = scene.title;
+      btn.querySelector('.ls-topic-state').textContent = stateText;
       btn.addEventListener('click', () => {
+        if (isLocked) { explainLocked(btn, next); return; }
         closeTopicsList();
-        // Konular listesinden yapılan seçim de ORTAK crossfade geçişini
-        // kullanır (bkz. scenes/sceneTransition.js, scenes/
-        // topicEndControls.js'in "Sonraki konu"/"Bu konuyu tekrar et"
-        // ile AYNI yardımcı) — tutarlı, kesintisiz bir sahne değişimi.
+        // Haritadan yapılan seçim de ORTAK crossfade geçişini kullanır
+        // (bkz. scenes/sceneTransition.js, scenes/topicEndControls.js'in
+        // "Sonraki konu"/"Bu konuyu tekrar et" ile AYNI yardımcı).
         transitionSceneSwap(sceneHost, () => {
-          if (isDone && !isActive) runtime.start(scene.id, { mode: 'replay' });
+          if (state === 'done' && !isCurrent) runtime.start(scene.id, { mode: 'replay' });
           else runtime.start(scene.id);
         });
       });
-    }
-    li.appendChild(btn);
-    topicsList.appendChild(li);
+      li.appendChild(btn);
+      path.appendChild(li);
+    });
+    topicsList.appendChild(sectionEl);
   });
+}
+let mapNoteTimer = null;
+function explainLocked(btn, next) {
+  clearTimeout(mapNoteTimer);
+  mapNoteTimer = setTimeout(() => mapNote.classList.remove('show'), 4000);
+  mapNote.textContent = next
+    ? `Konular sırayla açılır. Önce “${next.title}” konusunu bitir.`
+    : 'Konular sırayla açılır.';
+  mapNote.classList.add('show');
+  btn.classList.remove('is-nudged');
+  void btn.offsetWidth; // animasyonu yeniden başlat
+  btn.classList.add('is-nudged');
 }
 function openTopicsList() {
   topicsOpenerEl = document.activeElement;
@@ -386,13 +441,18 @@ function openTopicsList() {
   renderTopicsList();
   sceneHost.hidden = true;
   topicsPanel.hidden = false;
+  document.body.classList.add('ls-map-open');
   document.addEventListener('keydown', onTopicsKeydown);
-  const firstEnabled = topicsList.querySelector('.ls-topic-item:not(:disabled)');
-  firstEnabled?.focus();
+  // Odak ve görünüm şu anki konuya gider (telefonda haritayı oraya kaydırır).
+  const focusTarget = topicsList.querySelector('.ls-topic-item[aria-current="true"]')
+    ?? topicsList.querySelector('.ls-topic-item:not([aria-disabled="true"])');
+  focusTarget?.focus({ preventScroll: true });
+  focusTarget?.scrollIntoView({ block: 'center' });
 }
 function closeTopicsList() {
   topicsPanel.hidden = true;
   sceneHost.hidden = false;
+  document.body.classList.remove('ls-map-open');
   document.removeEventListener('keydown', onTopicsKeydown);
   // Yalnız panel açıldığından beri AYNI sahne hâlâ aktifse snapshot geri
   // yüklenir — sahne değişmişse (bu akışta panel her zaman runtime.start()
@@ -409,6 +469,7 @@ function closeTopicsList() {
 function onTopicsKeydown(evt) {
   if (evt.key === 'Escape') { evt.preventDefault(); closeTopicsList(); }
 }
+topicsCloseBtn.addEventListener('click', () => closeTopicsList());
 topicsOpenBtn.addEventListener('click', () => {
   // Karşılama açıkken önce konu başlar, liste onun üstünde açılır.
   if (welcome?.isActive()) { welcome.finish().then(openTopicsList); return; }

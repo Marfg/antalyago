@@ -36,7 +36,7 @@ const GRAPH_BASENAMES = [
   'sceneRegistry.js', 'scene01BoardIntro.js', 'scene02TurnsAndIntersections.js',
   'scene03LibertiesByPosition.js', 'scene04GroupLiberties.js', 'groupLibertyPolicy.js',
   'turnPolicy.js', 'boardZones.js', 'topicEndControls.js', 'sceneTransition.js',
-  'sceneBoardAdapter.js', 'sceneProgressAdapter.js', 'boardSound.js', 'welcomeIntro.js',
+  'sceneBoardAdapter.js', 'sceneProgressAdapter.js', 'boardSound.js', 'welcomeIntro.js', 'topicsMap.js',
   // v2 düzeltmesi: bekçinin kendi sabiti de artık versioned graph'ın
   // parçası — BARE import edilirse "o an çalışanı yansıtır" iddiası
   // geçersiz kalır (bkz. görev talimatı, core/releaseVersion.js dosya
