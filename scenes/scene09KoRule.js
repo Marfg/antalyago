@@ -74,12 +74,12 @@
  * KASITLI olarak core/conceptMap.js'e eklenmedi — Teacher Studio Diagnostics
  * bunu bilinen-olmayan concept olarak raporlar (bilinçli, gizlenmeyen boşluk).
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-28.harita';
-import { assessmentTransition } from './assessmentTransition.js?v=2026-10-28.harita';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-28.acilis';
+import { assessmentTransition } from './assessmentTransition.js?v=2026-10-28.acilis';
 import {
   getKoRuleMoments, evaluateKoAttempt, isSuccessfulAttempt, reasonLabelTr, MOMENT_KINDS, CONCEPT,
   KO_ATTEMPT_COLOR,
-} from './koRulePolicy.js?v=2026-10-28.harita';
+} from './koRulePolicy.js?v=2026-10-28.acilis';
 
 const STATE = { INTRO: 'intro', PLAYING: 'playing' };
 

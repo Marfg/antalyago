@@ -1,4 +1,4 @@
-import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-10-28.harita';
+import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-10-28.acilis';
 /**
  * core/curriculum.js
  *

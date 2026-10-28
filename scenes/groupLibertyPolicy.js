@@ -21,9 +21,9 @@
  * (ikisi de saf) üzerinden hesaplar, unit test edilebilir.
  */
 
-import { CURRICULUM } from '../core/curriculum.js?v=2026-10-28.harita';
-import { BoardState } from '../core/boardState.js?v=2026-10-28.harita';
-import { getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-28.harita';
+import { CURRICULUM } from '../core/curriculum.js?v=2026-10-28.acilis';
+import { BoardState } from '../core/boardState.js?v=2026-10-28.acilis';
+import { getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-28.acilis';
 
 const LESSON_ID = 'l2';
 const STEP_INDEX = 2;

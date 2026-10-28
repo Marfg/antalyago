@@ -36,7 +36,7 @@ const GRAPH_BASENAMES = [
   'sceneRegistry.js', 'scene01BoardIntro.js', 'scene02TurnsAndIntersections.js',
   'scene03LibertiesByPosition.js', 'scene04GroupLiberties.js', 'groupLibertyPolicy.js',
   'turnPolicy.js', 'boardZones.js', 'topicEndControls.js', 'sceneTransition.js',
-  'sceneBoardAdapter.js', 'sceneProgressAdapter.js', 'boardSound.js', 'welcomeIntro.js', 'topicsMap.js',
+  'sceneBoardAdapter.js', 'sceneProgressAdapter.js', 'boardSound.js', 'welcomeIntro.js', 'topicsMap.js', 'heroBoard.js',
   // v2 düzeltmesi: bekçinin kendi sabiti de artık versioned graph'ın
   // parçası — BARE import edilirse "o an çalışanı yansıtır" iddiası
   // geçersiz kalır (bkz. görev talimatı, core/releaseVersion.js dosya
@@ -70,7 +70,7 @@ const GRAPH_BASENAMES = [
   'scene11TwoEyes.js', 'twoEyesPolicy.js', 'eyeAnalysis.js', 'scene12Connections.js', 'connectionShapesPolicy.js',
 ];
 const SCAN_FILES = [
-  'learning-scenes.html', 'teacher-studio.html',
+  'learning-scenes.html', 'teacher-studio.html', 'index.html', 'home/heroBoard.js',
   'core/ruleEngine.js', 'core/curriculum.js',
   'scenes/scene01BoardIntro.js', 'scenes/scene02TurnsAndIntersections.js',
   'scenes/scene03LibertiesByPosition.js', 'scenes/scene04GroupLiberties.js',
@@ -200,8 +200,8 @@ test('scenes/scene05LibertyAssessment.js: exported version >= 1, sahne release t
   assert.ok(Number(m[1]) >= 1, `version >= 1 olmalı, bulunan: ${m[1]}`);
 });
 
-test('RELEASE token "2026-10-28.harita" (önceki production: "2026-10-25.karsilama") — eski "2026-08-23.2/.3", "2026-08-24.1", "2026-08-25.1", "2026-08-25.2", "2026-08-26.1", "2026-08-26.2", "2026-08-29.1", "2026-08-31.1" (PR#1 dal taslağı), "2026-09-01.1" (main, PR#1 birleşmeden ÖNCE), "2026-09-02.1" (Sahne #10 öncesi) ve "2026-09-02.2" (İki Göz birleşmeden ÖNCE) query\'leri AKTİF graph\'ta KALMAMIŞ', () => {
-  assert.equal(RELEASE, '2026-10-28.harita');
+test('RELEASE token "2026-10-28.acilis" (önceki production: "2026-10-28.harita") — eski "2026-08-23.2/.3", "2026-08-24.1", "2026-08-25.1", "2026-08-25.2", "2026-08-26.1", "2026-08-26.2", "2026-08-29.1", "2026-08-31.1" (PR#1 dal taslağı), "2026-09-01.1" (main, PR#1 birleşmeden ÖNCE), "2026-09-02.1" (Sahne #10 öncesi) ve "2026-09-02.2" (İki Göz birleşmeden ÖNCE) query\'leri AKTİF graph\'ta KALMAMIŞ', () => {
+  assert.equal(RELEASE, '2026-10-28.acilis');
   for (const rel of SCAN_FILES) {
     const src = read(rel);
     assert.ok(!src.includes('?v=2026-08-23.2'), `${rel}: eski (2026-08-23.2) release query'si HÂLÂ mevcut`);
@@ -221,6 +221,7 @@ test('RELEASE token "2026-10-28.harita" (önceki production: "2026-10-25.karsila
     assert.ok(!src.includes('?v=2026-10-23.tahta-c'), `${rel}: eski (2026-10-23.tahta-c, Paket D öncesi production sürümü) release query'si HÂLÂ mevcut`);
     assert.ok(!src.includes('?v=2026-10-23.tahta-d'), `${rel}: eski (2026-10-23.tahta-d, karşılama öncesi production sürümü) release query'si HÂLÂ mevcut`);
     assert.ok(!src.includes('?v=2026-10-25.karsilama'), `${rel}: eski (2026-10-25.karsilama, harita öncesi production sürümü) release query'si HÂLÂ mevcut`);
+    assert.ok(!src.includes('?v=2026-10-28.harita'), `${rel}: eski (2026-10-28.harita, açılış öncesi production sürümü) release query'si HÂLÂ mevcut`);
   }
 });
 
