@@ -19,8 +19,8 @@
  *
  * Birimler metredir (Blender ile aynı); eksenler Three.js düzeninde (y yukarı).
  */
-import { BoardState } from '../core/boardState.js?v=2026-10-28.acilis';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-28.acilis';
+import { BoardState } from '../core/boardState.js?v=2026-10-28.goban';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-28.goban';
 
 const RELEASE = new URL(import.meta.url).searchParams.get('v');
 const asset = name => new URL('../assets/hero/' + name, import.meta.url).href + (RELEASE ? '?v=' + RELEASE : '');
