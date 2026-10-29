@@ -216,7 +216,7 @@
 </div>
 
 <script type="module">
-import { CURRICULUM } from './core/curriculum.js?v=2026-10-29.geri';
+import { CURRICULUM } from './core/curriculum.js?v=2026-10-29.tahta3d';
 import { classifyCurriculumStep, responseTypeOf, stripMarkup, isAssessmentLesson } from './core/learningContext.js';
 import { KNOWN_CONCEPTS } from './core/conceptMap.js';
 import { createStudentModel, hydrateStudentModel, getConceptState } from './core/studentModel.js';
@@ -225,32 +225,32 @@ import { CONTENT_PURPOSES, CONTENT_STUDENT_STATUSES, CONTENT_STAGES, validateCon
 import { mergeContentOverrides, applyOverride, OVERRIDABLE_FIELDS } from './core/contentOverrides.js';
 import { teacherContentOverrides } from './adapters/teacherContentOverrides.js';
 import { buildRetrievalQuery, retrieveContent } from './core/contentRetriever.js';
-import { EventLog } from './core/eventLog.js?v=2026-10-29.geri';
+import { EventLog } from './core/eventLog.js?v=2026-10-29.tahta3d';
 import { buildAiReviewEvent } from './core/teacherAssistant.js';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-10-29.geri';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-10-29.geri';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-10-29.geri';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-10-29.geri';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-10-29.geri';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-10-29.geri';
-import { scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup } from './scenes/scene06CaptureBasics.js?v=2026-10-29.geri';
-import { CAPTURE_SCENARIOS, createCaptureBoard, targetLiberties, evaluateCaptureMove } from './scenes/captureNativePolicy.js?v=2026-10-29.geri';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-10-29.geri';
-import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-10-29.geri';
-import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-10-29.geri';
-import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-10-29.geri';
-import { scene15Snapback } from './scenes/scene15Snapback.js?v=2026-10-29.geri';
-import { scene14Net } from './scenes/scene14Net.js?v=2026-10-29.geri';
-import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-10-29.geri';
-import { scene12Connections } from './scenes/scene12Connections.js?v=2026-10-29.geri';
-import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-10-29.geri';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-10-29.tahta3d';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-10-29.tahta3d';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-10-29.tahta3d';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-10-29.tahta3d';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-10-29.tahta3d';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-10-29.tahta3d';
+import { scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup } from './scenes/scene06CaptureBasics.js?v=2026-10-29.tahta3d';
+import { CAPTURE_SCENARIOS, createCaptureBoard, targetLiberties, evaluateCaptureMove } from './scenes/captureNativePolicy.js?v=2026-10-29.tahta3d';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-10-29.tahta3d';
+import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-10-29.tahta3d';
+import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-10-29.tahta3d';
+import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-10-29.tahta3d';
+import { scene15Snapback } from './scenes/scene15Snapback.js?v=2026-10-29.tahta3d';
+import { scene14Net } from './scenes/scene14Net.js?v=2026-10-29.tahta3d';
+import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-10-29.tahta3d';
+import { scene12Connections } from './scenes/scene12Connections.js?v=2026-10-29.tahta3d';
+import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-10-29.tahta3d';
 import {
   getAssessmentSteps as getLibertyAssessmentSteps,
   computeChoiceCorrectIndex as computeLibertyChoiceCorrectIndex,
   computeTapTargets as computeLibertyTapTargets,
   computeResultAfterMove as computeLibertyResultAfterMove,
   ASSESSMENT_STEP_INDICES as LIBERTY_ASSESSMENT_STEP_INDICES,
-} from './scenes/libertyAssessmentPolicy.js?v=2026-10-29.geri';
+} from './scenes/libertyAssessmentPolicy.js?v=2026-10-29.tahta3d';
 import {
   getIllegalMoveMoments,
   evaluateAttempt as evaluateIllegalMoveAttempt,
@@ -260,7 +260,7 @@ import {
   MOMENT_KINDS as ILLEGAL_MOVE_KINDS,
   MOMENT_STEP_INDICES as ILLEGAL_MOVE_STEP_INDICES,
   CONCEPT as ILLEGAL_MOVE_CONCEPT,
-} from './scenes/illegalMovePolicy.js?v=2026-10-29.geri';
+} from './scenes/illegalMovePolicy.js?v=2026-10-29.tahta3d';
 import {
   getKoRuleMoments,
   evaluateKoAttempt,
@@ -270,7 +270,7 @@ import {
   MOMENT_KINDS as KO_MOMENT_KINDS,
   MOMENT_STEP_INDICES as KO_STEP_INDICES,
   CONCEPT as KO_CONCEPT,
-} from './scenes/koRulePolicy.js?v=2026-10-29.geri';
+} from './scenes/koRulePolicy.js?v=2026-10-29.tahta3d';
 import {
   getEndgameCountingMoment,
   evaluateRegionTap,
@@ -278,15 +278,15 @@ import {
   isKnownMomentKind as isKnownEndgameMomentKind,
   STEP_INDEX as ENDGAME_STEP_INDEX,
   CONCEPT as ENDGAME_CONCEPT,
-} from './scenes/endgameCountingPolicy.js?v=2026-10-29.geri';
-import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-10-29.geri';
-import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-10-29.geri';
-import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-10-29.geri';
-import { BoardState } from './core/boardState.js?v=2026-10-29.geri';
-import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-10-29.geri';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-10-29.geri';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-10-29.geri';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-10-29.geri';
+} from './scenes/endgameCountingPolicy.js?v=2026-10-29.tahta3d';
+import { getAnchor, getCurriculumGroupSeed, computeGroupLiberties, isConnectedSingleGroup, isCompletable, isAtMax, canAddStone, MIN_GROUP_SIZE, MAX_GROUP_SIZE } from './scenes/groupLibertyPolicy.js?v=2026-10-29.tahta3d';
+import { validateCandidateOrder } from './scenes/turnPolicy.js?v=2026-10-29.tahta3d';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './scenes/boardZones.js?v=2026-10-29.tahta3d';
+import { BoardState } from './core/boardState.js?v=2026-10-29.tahta3d';
+import { getGroup, getLiberties, isValidMove } from './core/ruleEngine.js?v=2026-10-29.tahta3d';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-10-29.tahta3d';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-10-29.tahta3d';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-10-29.tahta3d';
 
 /* ── Sürüm/cache bekçisi — learning-scenes.html İLE AYNI mekanizma ────
    (bkz. o dosyadaki dosya başı notu, KRİTİK DÜZELTME: SCENE_RELEASE artık

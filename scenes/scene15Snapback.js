@@ -1,6 +1,6 @@
-import {mountSnapbackLesson} from './snapbackLessonController.js?v=2026-10-29.geri';
-import {createLadderMotionOverlay} from './snapbackMotionOverlay.js?v=2026-10-29.geri';
-import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-29.geri';
+import {mountSnapbackLesson} from './snapbackLessonController.js?v=2026-10-29.tahta3d';
+import {createLadderMotionOverlay} from './snapbackMotionOverlay.js?v=2026-10-29.tahta3d';
+import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-29.tahta3d';
 let active=null;
 export const scene15Snapback={
  id:'scene-15-snapback',version:1,title:'Snapback',curriculumRef:{lessonId:'l12',concept:'snapback'},
