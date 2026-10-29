@@ -1,6 +1,6 @@
 /** LS-owned positions. No lesson/page content is read here. */
-import { BoardState } from '../core/boardState.js?v=2026-10-29.modlar';
-import { applyMove, isValidMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-29.modlar';
+import { BoardState } from '../core/boardState.js?v=2026-10-29.geri';
+import { applyMove, isValidMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-29.geri';
 
 const stone = (x, y, color) => ({ x, y, color });
 export const CAPTURE_SCENARIOS = [

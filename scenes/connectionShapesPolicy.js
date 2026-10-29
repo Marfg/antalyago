@@ -1,5 +1,5 @@
-import {BoardState} from '../core/boardState.js?v=2026-10-29.modlar';
-import {applyMove,isValidMove,getGroup} from '../core/ruleEngine.js?v=2026-10-29.modlar';
+import {BoardState} from '../core/boardState.js?v=2026-10-29.geri';
+import {applyMove,isValidMove,getGroup} from '../core/ruleEngine.js?v=2026-10-29.geri';
 export const CONNECTION_BOARD_SIZE=9;
 export const CONNECTION_OFFSET=1;
 export const CONNECTION_SHAPES=[

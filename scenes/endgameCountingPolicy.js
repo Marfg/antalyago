@@ -43,8 +43,8 @@
  * Studio Diagnostics bunu bilinen-olmayan concept olarak raporlar (bilinçli,
  * gizlenmeyen boşluk).
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-29.modlar';
-import { BoardState } from '../core/boardState.js?v=2026-10-29.modlar';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-29.geri';
+import { BoardState } from '../core/boardState.js?v=2026-10-29.geri';
 
 export const LESSON_ID = 'l6';
 export const STEP_INDEX = 0;
