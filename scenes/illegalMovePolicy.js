@@ -84,9 +84,9 @@
  * `KNOWN_CONCEPTS`'te olan, doğrulanmış bir kavramdır (capturePracticePolicy.js
  * ile AYNI ilke).
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-29.modlar';
-import { BoardState } from '../core/boardState.js?v=2026-10-29.modlar';
-import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-10-29.modlar';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-29.sade';
+import { BoardState } from '../core/boardState.js?v=2026-10-29.sade';
+import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-10-29.sade';
 
 const LESSON_ID = 'l4';
 const BOARD_SIZE = 9;

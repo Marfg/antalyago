@@ -19,8 +19,8 @@
  *
  * Birimler metredir (Blender ile aynı); eksenler Three.js düzeninde (y yukarı).
  */
-import { BoardState } from '../core/boardState.js?v=2026-10-29.modlar';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-29.modlar';
+import { BoardState } from '../core/boardState.js?v=2026-10-29.sade';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-29.sade';
 
 const RELEASE = new URL(import.meta.url).searchParams.get('v');
 const asset = name => new URL('../assets/hero/' + name, import.meta.url).href + (RELEASE ? '?v=' + RELEASE : '');
@@ -136,7 +136,7 @@ const VIEWS = {
     oyun: { position: [-0.10, 0.50, 0.44], target: [0.035, 0.045, 0.005], lens: 42, shiftX: -0.12, shiftY: -0.045 },
   },
   telefon: {
-    genis: { position: [-0.03, 0.40, 0.37], target: [-0.006, 0.03, 0.0], lens: 28, shiftX: 0, shiftY: -0.11 },
+    genis: { position: [-0.06, 0.36, 0.34], target: [0.0, 0.035, 0.0], lens: 30, shiftX: 0, shiftY: -0.11 },
     oyun: { position: [0.0, 0.40, 0.17], target: [0.0, 0.055, 0.008], lens: 30, shiftX: 0, shiftY: -0.13 },
   },
 };
@@ -149,8 +149,7 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
   const stepBtn = root.querySelector('[data-hero-step]');
   const altBtn = root.querySelector('[data-hero-alt]');
   const dotsEl = root.querySelector('.hero-dots');
-  const modesEl = root.querySelector('[data-hero-modes]');
-  const chips = [...modesEl.querySelectorAll('[data-mode]')];
+  const dots = [...dotsEl.children];
   const phoneMq = matchMedia(PHONE);
 
   const canvas = document.createElement('canvas');
@@ -355,16 +354,12 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
     root.classList.add('is-moving');
   }
   function syncPanelMode() {
-    root.classList.toggle('is-panel', scrollP > 0.45 || lessonP > 0.5 || mode !== 'lesson');
+    root.classList.toggle('is-panel', scrollP > 0.45 || lessonP > 0.5 || mode === 'free');
   }
 
   /* ── Panel ── */
-  // mode: 'lesson' (Taş alma), 'modul' (diğer yedi mod), 'free' (serbest oyun)
   let mode = 'lesson', phase = 2, busy = false;
-  function setBusy(v) {
-    busy = v; stepBtn.disabled = v; altBtn.disabled = v;
-    chips.forEach(c => { c.disabled = v; });
-  }
+  function setBusy(v) { busy = v; stepBtn.disabled = v; altBtn.disabled = v; }
   function say(text) {
     caption.textContent = text;
     caption.classList.remove('is-new'); void caption.offsetWidth; caption.classList.add('is-new');
@@ -374,32 +369,19 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
     root.dataset.heroPhase = String(phase);
     root.dataset.heroStones = String(state.stones.length);
   }
-  function setDots(count, on) {
-    dotsEl.hidden = !count;
-    while (dotsEl.children.length > count) dotsEl.lastChild.remove();
-    while (dotsEl.children.length < count) dotsEl.appendChild(document.createElement('i'));
-    [...dotsEl.children].forEach((d, k) => d.classList.toggle('on', k <= on));
-  }
-  function pressChip(id) {
-    chips.forEach(c => c.setAttribute('aria-pressed', String(c.dataset.mode === id)));
-    root.dataset.heroModeId = id || '';
-  }
   function showLesson(i) {
     say(LESSON[i].cap);
-    stepBtn.hidden = false;
     stepBtn.textContent = LESSON[i].btn;
     altBtn.textContent = i === LESSON.length - 1 ? 'Mini dersi baştan izle' : 'Serbest oyna';
-    setDots(LESSON.length, i);
-    pressChip('tas-alma');
+    dotsEl.hidden = false;
+    dots.forEach((d, k) => d.classList.toggle('on', k <= i));
     sync();
   }
   function showFree(text) {
     say(text);
-    stepBtn.hidden = false;
     stepBtn.textContent = 'Tahtayı temizle';
     altBtn.textContent = 'Mini dersi baştan izle';
-    setDots(0, 0);
-    pressChip('');
+    dotsEl.hidden = true;
     sync();
   }
   /** İlk taş alındığında "Tahtayı temizle" düğmesi öne çıkar; sonraki hamlede söner. */
@@ -441,53 +423,8 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
   function clearBoardState() {
     [...meshes.keys()].forEach(k => lift(k, .45));
     clearRings();
-    clearMarks();
     state = new BoardState(N); caps = { black: 0, white: 0 };
     suggestClear(false);
-  }
-
-  /* ── İşaretler: yasak noktası (X), A/B harfi, alan karesi, mod halkası ── */
-  const marks = new T.Group(), markRings = new Map();
-  scene.add(marks);
-  const MARK = {
-    x: new T.MeshBasicMaterial({ color: RING.red.clone().multiplyScalar(1.6), toneMapped: false }),
-    black: new T.MeshStandardMaterial({ color: lin([0.02, 0.02, 0.025]), roughness: 0.5 }),
-    white: new T.MeshStandardMaterial({ color: lin([0.92, 0.9, 0.86]), roughness: 0.5 }),
-  };
-  const barGeo = new T.BoxGeometry(SX * 0.62, 0.0006, 0.0016), squareGeo = new T.BoxGeometry(SX * 0.38, 0.0008, SY * 0.38);
-  const letterGeo = new T.PlaneGeometry(SX * 0.8, SX * 0.8), letters = {};
-  function letterMat(text) {
-    if (letters[text]) return letters[text];
-    const c = document.createElement('canvas'); c.width = c.height = 128;
-    const g = c.getContext('2d');
-    g.font = '700 92px "Noto Serif", Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillStyle = '#3a2412'; g.fillText(text, 64, 70);
-    const tex = new T.CanvasTexture(c); tex.colorSpace = T.SRGBColorSpace;
-    return (letters[text] = new T.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
-  }
-  function addMark(m) {
-    if (m.type === 'ring-red' || m.type === 'ring-gold') {
-      const r = makeRing(m.x, m.y, m.type === 'ring-red' ? 'red' : 'gold');
-      markRings.set(key(m.x, m.y), r); ringTo(r, 1, .3);
-      return;
-    }
-    const g = new T.Group();
-    g.position.set(wx(m.x), TOP + 0.0005, wz(m.y));
-    if (m.type === 'x') {
-      for (const a of [Math.PI / 4, -Math.PI / 4]) { const b = new T.Mesh(barGeo, MARK.x); b.rotation.y = a; g.add(b); }
-    } else if (m.type === 'label') {
-      const p = new T.Mesh(letterGeo, letterMat(m.text)); p.rotation.x = -Math.PI / 2; g.add(p);
-    } else {
-      const s = new T.Mesh(squareGeo, MARK[m.type]); s.castShadow = true; g.add(s);
-    }
-    g.scale.setScalar(0.001);
-    tween(.25, p => g.scale.setScalar(Math.max(.001, easeOut(p))));
-    marks.add(g);
-  }
-  function clearMarks() {
-    marks.clear();
-    for (const r of markRings.values()) dropRing(r);
-    markRings.clear();
   }
   /** Tek nefesi kalan gruplar: siyahınki kırmızı (tehlike), beyazınki altın (fırsat). */
   function updateAtari() {
@@ -582,132 +519,6 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
     wait(.6, () => { startLesson(); setBusy(false); syncPanelMode(); });
   }
 
-  /* ── Modlar: yasak hamle, ko, oyun sonu, iki göz, bağlantı, merdiven, ağ · snapback ── */
-  let modes = null, modesLoad = null, curMode = null, stepIdx = 0, taskDone = false, found = new Set(), regionIdx = 0;
-  /** Mod verisi (home/heroModes.js) ziyaretçi seçiciye ilk yaklaştığında yüklenir. */
-  function loadModes() {
-    modesLoad ||= import(new URL('./heroModes.js', import.meta.url).href + (RELEASE ? '?v=' + RELEASE : ''))
-      .then(m => { modes = m.buildModes(); return modes; });
-    return modesLoad;
-  }
-  const same = (a, b) => a.x === b.x && a.y === b.y;
-  /** Tahtayı temizleyip bir dizilimi taş taş kurar. */
-  function setBoard(list, done) {
-    clearBoardState();
-    wait(.35, () => {
-      for (const s of list) state.placeStone(s.x, s.y, s.color);
-      list.forEach((s, i) => wait(i * .018, () => put(s.color, s.x, s.y, TOP + 0.03, .3)));
-      wait(list.length * .018 + .35, () => { sync(); done(); });
-    });
-  }
-  /** Hamleleri sırayla oynar; alınan taşlar kalkar, atari halkaları güncellenir. */
-  function playMoves(list, gap, done) {
-    if (!list.length) { done(); return; }
-    const [m, ...rest] = list;
-    const r = place(m.color, m.x, m.y, TOP + 0.05, .38);
-    if (r.captured.length) wait(.36, () => r.captured.forEach(c => lift(key(c.x, c.y))));
-    wait(gap, () => { updateAtari(); sync(); playMoves(rest, gap, done); });
-  }
-  function startMode(id) {
-    const m = modes.find(x => x.id === id);
-    setBusy(true);
-    live();
-    ghost.visible = false;
-    if (hover) { removeStone(hover); hover = null; }
-    mode = 'modul'; phase = 0; curMode = m;
-    pressChip(id);
-    playTo(0, 1.1);
-    lessonTo(1, .8);
-    syncPanelMode();
-    runStep(0);
-  }
-  function runStep(i) {
-    stepIdx = i; taskDone = false; found = new Set(); regionIdx = 0;
-    const st = curMode.steps[i];
-    root.dataset.heroModeStep = String(i);
-    root.dataset.heroTask = '';
-    setBusy(true);
-    const go = () => {
-      clearMarks();
-      (st.marks || []).forEach(addMark);
-      say(st.cap);
-      setDots(curMode.steps.length, i);
-      stepBtn.hidden = !!st.task;
-      stepBtn.textContent = st.btn || 'Devam';
-      altBtn.textContent = 'Serbest oyna';
-      setBusy(false);
-      sync();
-    };
-    if (st.setup) setBoard(st.setup, go); else go();
-  }
-  function nextModeId() {
-    const ids = chips.map(c => c.dataset.mode);
-    return ids[(ids.indexOf(curMode.id) + 1) % ids.length];
-  }
-  function finishTask(text) {
-    taskDone = true;
-    root.dataset.heroTask = 'tamam';
-    say(text);
-    const last = stepIdx === curMode.steps.length - 1;
-    const next = chips.find(c => c.dataset.mode === nextModeId());
-    stepBtn.textContent = last ? 'Sonraki: ' + next.textContent : 'Devam';
-    stepBtn.hidden = false;
-    setBusy(false);
-    sync();
-  }
-  function stepModule() {
-    const st = curMode.steps[stepIdx];
-    if (!st.task) {                         // gösterim adımı: düğme hamleyi oynatır, sonra ilerler
-      setBusy(true);
-      playMoves(st.after || [], .55, () => runStep(stepIdx + 1));
-    } else if (taskDone) {
-      if (stepIdx < curMode.steps.length - 1) runStep(stepIdx + 1);
-      else chooseMode(nextModeId());
-    }
-  }
-  function tapModule(q) {
-    const t = curMode.steps[stepIdx].task;
-    if (!t || taskDone || busy) return;
-    if (t.kind === 'rule') {
-      const v = isValidMove(state, q.x, q.y, t.color), hit = t.targets.find(p => same(p, q));
-      if (v.reason === 'OCCUPIED') return;
-      if (!hit || v.reason !== t.reason) { say(t.err); return; }
-      if (found.has(key(q.x, q.y))) return;
-      found.add(key(q.x, q.y));
-      if (t.reason === 'KO') (t.marks || []).forEach(addMark); else addMark({ ...hit, type: 'x' });
-      const total = t.all ? t.targets.length : 1;
-      if (found.size >= total) finishTask(t.ok);
-      else say(t.found(hit, found.size, total));
-    } else if (t.kind === 'answer') {
-      const hit = t.targets.find(p => same(p, q));
-      if (!hit) { if (state.isEmpty(q.x, q.y)) say(t.err); return; }
-      setBusy(true);
-      clearMarks();
-      playMoves([{ x: hit.x, y: hit.y, color: t.color }, ...(t.after || [])], t.after?.length > 4 ? .34 : .6, () => finishTask(t.ok));
-    } else if (t.kind === 'region') {
-      const r = t.regions[regionIdx];
-      if (!r.points.some(p => same(p, q))) { say(t.err); return; }
-      setBusy(true);
-      r.points.forEach((p, i) => wait(i * .025, () => addMark({ ...p, type: r.color })));
-      wait(r.points.length * .025 + .2, () => {
-        regionIdx += 1;
-        if (regionIdx >= t.regions.length) finishTask(r.ok);
-        else { say(r.ok); setBusy(false); }
-      });
-    }
-  }
-  function chooseMode(id) {
-    if (busy) return;
-    if (id === 'tas-alma') { restartLesson(); return; }
-    setBusy(true);
-    say('Mod hazırlanıyor…');
-    loadModes().then(() => { setBusy(false); startMode(id); }, () => { setBusy(false); say('Mod yüklenemedi. Sayfayı yenileyip tekrar dene.'); });
-  }
-  chips.forEach(c => c.addEventListener('click', () => chooseMode(c.dataset.mode)));
-  // Mod verisini, ziyaretçi seçiciye yaklaşınca önceden yükle.
-  modesEl.addEventListener('pointerenter', () => { loadModes().catch(() => {}); }, { once: true });
-  modesEl.addEventListener('focusin', () => { loadModes().catch(() => {}); }, { once: true });
-
   /* ── Serbest oyun ── */
   function toFree() {
     setBusy(true);
@@ -785,18 +596,12 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
   canvas.addEventListener('click', ev => {
     if (mode === 'lesson') { nextLesson(); return; }
     if (busy) return;
-    const q = pick(ev); if (!q) return;
-    if (mode === 'modul') tapModule(q); else playAt(q);
+    const q = pick(ev); if (q) playAt(q);
   });
-  stepBtn.addEventListener('click', () => {
-    if (busy) return;
-    if (mode === 'lesson') nextLesson();
-    else if (mode === 'modul') stepModule();
-    else clearBoard();
-  });
+  stepBtn.addEventListener('click', () => { if (busy) return; mode === 'lesson' ? nextLesson() : clearBoard(); });
   altBtn.addEventListener('click', () => {
     if (busy) return;
-    if (mode === 'free' || (mode === 'lesson' && phase === LESSON.length - 1)) restartLesson();
+    if (mode === 'free' || phase === LESSON.length - 1) restartLesson();
     else toFree();
   });
   canvas.style.cursor = 'pointer';
@@ -827,7 +632,7 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
       hover.rotation.z = Math.sin(t * .9) * .08;
     }
     let pulsing = false;
-    for (const r of [...rings.values(), ...markRings.values()]) {
+    for (const r of rings.values()) {
       if (!r.userData.on) continue;
       pulsing = true;
       const s = r.userData.s * (1 + Math.sin(t * (r.userData.kind === 'red' ? 5 : 2.6) + r.position.x * 90) * .05);

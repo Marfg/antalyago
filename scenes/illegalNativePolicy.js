@@ -1,5 +1,5 @@
-import { BoardState } from '../core/boardState.js?v=2026-10-29.modlar';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-29.modlar';
+import { BoardState } from '../core/boardState.js?v=2026-10-29.sade';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-29.sade';
 
 // LS-owned positions preserving the previous scene's four shapes and both
 // five-stone captures. No runtime dependency on curriculum/page/lesson data.

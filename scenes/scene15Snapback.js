@@ -1,6 +1,6 @@
-import {mountSnapbackLesson} from './snapbackLessonController.js?v=2026-10-29.modlar';
-import {createLadderMotionOverlay} from './snapbackMotionOverlay.js?v=2026-10-29.modlar';
-import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-29.modlar';
+import {mountSnapbackLesson} from './snapbackLessonController.js?v=2026-10-29.sade';
+import {createLadderMotionOverlay} from './snapbackMotionOverlay.js?v=2026-10-29.sade';
+import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-29.sade';
 let active=null;
 export const scene15Snapback={
  id:'scene-15-snapback',version:1,title:'Snapback',curriculumRef:{lessonId:'l12',concept:'snapback'},
