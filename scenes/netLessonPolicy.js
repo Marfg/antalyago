@@ -1,6 +1,6 @@
-import {BoardState} from '../core/boardState.js?v=2026-10-29.sade';
-import {getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-10-29.sade';
-import {NET_FORMS,NET_STEPS,NET_VARIANTS} from './netScenarioData.js?v=2026-10-29.sade';
+import {BoardState} from '../core/boardState.js?v=2026-10-29.modlar';
+import {getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-10-29.modlar';
+import {NET_FORMS,NET_STEPS,NET_VARIANTS} from './netScenarioData.js?v=2026-10-29.modlar';
 export {NET_FORMS,NET_STEPS};
 export function seedBoard(stones,size=9){const b=new BoardState(size);for(const p of stones)b.placeStone(p.x,p.y,p.color);return b}
 export function targetGroup(board,anchor){

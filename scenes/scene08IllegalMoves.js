@@ -1,5 +1,5 @@
-import { STAGES, createBoard, attempt, liberties, coord, key } from './illegalNativePolicy.js?v=2026-10-29.sade';
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-29.sade';
+import { STAGES, createBoard, attempt, liberties, coord, key } from './illegalNativePolicy.js?v=2026-10-29.modlar';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-29.modlar';
 
 let dispose, completed=false;
 export const scene08IllegalMoves={
