@@ -14,14 +14,14 @@
  *   task.kind: 'answer' (doğru nokta), 'rule' (kural motorunun verdiği
  *   gerekçe: SUICIDE/KO), 'region' (oyun sonu alanları).
  */
-import { STAGES } from '../scenes/illegalNativePolicy.js?v=2026-10-29.sade';
-import { getKoRuleMoments } from '../scenes/koRulePolicy.js?v=2026-10-29.sade';
-import { getEndgameCountingMoment } from '../scenes/endgameCountingPolicy.js?v=2026-10-29.sade';
-import { getTwoEyesMoments } from '../scenes/twoEyesPolicy.js?v=2026-10-29.sade';
-import { CONNECTION_SHAPES, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-10-29.sade';
-import { LADDER_SCENARIOS } from '../scenes/ladderScenarioData.js?v=2026-10-29.sade';
-import { NET_FORMS } from '../scenes/netScenarioData.js?v=2026-10-29.sade';
-import { SNAP_STEPS, buildScenario } from '../scenes/snapbackLessonPolicy.js?v=2026-10-29.sade';
+import { STAGES } from '../scenes/illegalNativePolicy.js?v=2026-10-29.modlar';
+import { getKoRuleMoments } from '../scenes/koRulePolicy.js?v=2026-10-29.modlar';
+import { getEndgameCountingMoment } from '../scenes/endgameCountingPolicy.js?v=2026-10-29.modlar';
+import { getTwoEyesMoments } from '../scenes/twoEyesPolicy.js?v=2026-10-29.modlar';
+import { CONNECTION_SHAPES, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-10-29.modlar';
+import { LADDER_SCENARIOS } from '../scenes/ladderScenarioData.js?v=2026-10-29.modlar';
+import { NET_FORMS } from '../scenes/netScenarioData.js?v=2026-10-29.modlar';
+import { SNAP_STEPS, buildScenario } from '../scenes/snapbackLessonPolicy.js?v=2026-10-29.modlar';
 
 const color = c => (c === 'B' || c === 'black' ? 'black' : 'white');
 /** Sahnelerin farklı nokta biçimlerini ({x,y}, {row,col}, [x,y]) tek biçime çevirir. */
