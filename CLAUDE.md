@@ -223,3 +223,10 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
 3. **19x19 desteği aktif** — l7 adım-1 ile test edildi, motor tüm boyutlarda çalışıyor.
 
 4. **Commit mesajları Türkçe** — proje genelinde Türkçe commit geleneği var.
+
+5. **Ders tahtası 3D denemesi (`learning-scenes.html?tahta=3d`)** — tahta ve taşlar
+   `scripts/board/build-lesson-boards.py` ile Blender'da üretilen `assets/board/ders-<n>.glb`
+   dosyalarından `adapters/board3d.js` ile çizilir; işaretler, harfler ve girdi
+   `sceneBoardAdapter.js`'in 2D tuvalinde kalır. Kamera adaptörün `projectAt()`
+   izdüşümünden birebir türetilir. Bayrak yokken 3D dosyası yüklenmez.
+   Blender çizimleri ekran kartıyla (OptiX) yapılır; test: `npm run test-board3d`.

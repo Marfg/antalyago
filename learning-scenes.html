@@ -205,7 +205,9 @@ function appendEvent(partial) {
 
 const canvas = document.getElementById('ls-canvas');
 const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
-const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19 });
+// Deneme: ?tahta=3d tahta ve taşları Blender GLB'lerinden 3D çizer (bkz. adapters/board3d.js).
+const board3d = new URLSearchParams(location.search).get('tahta') === '3d';
+const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19, board3d });
 
 /* Tahta sesleri — varsayılan KAPALI; tercih yalnız bu tarayıcıda saklanır
    (öğrenme ilerlemesiyle ilgisi yok). Kayıtlı tercih "açık" ise ses ilk
@@ -274,6 +276,10 @@ if (searchParams.get('exposeBoardAdapter') === '1') {
     // — "board'a hiçbir taş eklenmedi" kanıtı için isOccupied gerekli).
     getRegionMarks: () => boardAdapter.getRegionMarks(),
     isOccupied: (point) => boardAdapter.isOccupied(point),
+    // v6 — 3D tahta denemesi (?tahta=3d): katmanın durumu ve bir kesişimin
+    // ekran konumu; 3D taşın 2D işaretlerle aynı piksele düştüğünü doğrulamak için.
+    getBoard3dState: () => boardAdapter.getBoard3dState(),
+    getPointScreen: (point) => boardAdapter.getPointScreen(point),
   };
 }
 
