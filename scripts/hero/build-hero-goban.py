@@ -19,7 +19,8 @@ Kullanım:
 
 Ahşap kaynağı Poly Haven "Oak Veneer 03", ışık ortamı "Wooden Studio 17"
 (ikisi de CC0); ilk çalıştırmada indirilip %LOCALAPPDATA%/antalyago-hero-cache
-altında saklanır. Posterler işlemciyle ~4 dakikada çizilir.
+altında saklanır. Posterler ekran kartıyla (OptiX/CUDA) ~30 saniyede, yoksa
+işlemciyle ~4 dakikada çizilir.
 
 Birimler metredir. Tahta ölçüleri gerçek 9x9 gobandan: çizgi aralığı
 22 mm (yatay) x 23,7 mm (dikey).
@@ -388,6 +389,27 @@ def aim(o, target):
     o.rotation_euler = (Vector(target) - o.location).to_track_quat('-Z', 'Y').to_euler()
 
 
+def render_device():
+    """Ekran kartı varsa OptiX (yoksa CUDA) ile, yoksa işlemciyle çizer."""
+    try:
+        prefs = bpy.context.preferences.addons['cycles'].preferences
+    except KeyError:
+        return 'CPU'
+    for kind in ('OPTIX', 'CUDA'):
+        try:
+            prefs.compute_device_type = kind
+            devices = prefs.get_devices_for_type(kind)
+        except (TypeError, ValueError):
+            continue
+        gpus = [d for d in devices if d.type != 'CPU']
+        if gpus:
+            for d in prefs.devices:
+                d.use = d.type != 'CPU'
+            print('çizim:', kind, gpus[0].name)
+            return 'GPU'
+    return 'CPU'
+
+
 def poster_scene():
     import random
     sc = bpy.context.scene
@@ -464,7 +486,7 @@ def poster_scene():
         sc.render.engine = 'CYCLES'
     except TypeError as e:
         print('render motoru:', e)
-    sc.cycles.device = 'CPU'; sc.cycles.samples = 96; sc.cycles.use_denoising = True
+    sc.cycles.device = render_device(); sc.cycles.samples = 96; sc.cycles.use_denoising = True
     sc.view_settings.view_transform = 'AgX'
     try:
         sc.view_settings.look = 'AgX - Medium High Contrast'

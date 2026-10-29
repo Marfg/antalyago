@@ -220,10 +220,10 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-10-29.geri';
-import { BoardState } from '../core/boardState.js?v=2026-10-29.geri';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-29.geri';
-import { createBoardSound } from './boardSound.js?v=2026-10-29.geri';
+import { CAM } from '../core/curriculum.js?v=2026-10-29.tahta3d';
+import { BoardState } from '../core/boardState.js?v=2026-10-29.tahta3d';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-29.tahta3d';
+import { createBoardSound } from './boardSound.js?v=2026-10-29.tahta3d';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -262,10 +262,12 @@ function sizeToCell(n) { return n === 5 ? 80 : n === 9 ? 48 : n === 13 ? 32 : 22
 
 /**
  * @param {HTMLCanvasElement} canvas
- * @param {{isMobile?: boolean, initialSize?: 9|13|19}} [options]
+ * @param {{isMobile?: boolean, initialSize?: 9|13|19, board3d?: boolean}} [options]
+ *   `board3d` — tahta ve taşları Blender GLB'lerinden Three.js ile çizer
+ *   (bkz. board3d.js); yüklenene kadar ve WebGL yoksa 2D çizim sürer.
  * @returns {object} bkz. dosya başı sözleşme listesi
  */
-export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize = 19 } = {}) {
+export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize = 19, board3d: want3d = false } = {}) {
   const ctx = canvas.getContext('2d');
   const woodPat = makeWoodPattern(ctx);
 
@@ -434,6 +436,10 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // shadowBlur/shadowOffset ctx dönüşümünden ETKİLENMEZ (cihaz pikseli) —
   // gölge çizimlerinde bu oranla çarpılır.
   let curDpr = 1;
+  // 3D katman (bkz. board3d.js): hazır olunca tahta ve taşlar orada çizilir,
+  // bu tuval saydamlaşıp yalnız işaretleri, harfleri ve imleci çizer.
+  // `stoneSink` doluyken drawStone() boyamaz, taşı 3D kareye ekler.
+  let board3d = null, stoneSink = null;
   function resize() {
     W = canvas.clientWidth || canvas.parentElement?.clientWidth || innerWidth;
     H = canvas.clientHeight || canvas.parentElement?.clientHeight || innerHeight;
@@ -442,6 +448,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    board3d?.resize(W, H, dpr);
     dirty = true; // arka tampon yeniden boyutlanınca temizlenir
     updateProjCenter();
     // Aktif bir focusPoints() varsa YENİ canvas ölçüleriyle SESSİZCE (animasyonsuz,
@@ -462,6 +469,20 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       if (canvas.clientWidth !== W || canvas.clientHeight !== H || canvas.width !== Math.round(W * pixelRatio())) resize();
     }) : null;
   canvasResizeObserver?.observe(canvas);
+
+  if (want3d) {
+    const release = new URL(import.meta.url).searchParams.get('v');
+    import('./board3d.js' + (release ? '?v=' + release : ''))
+      .then(m => m.createBoard3D(canvas, { lite: isMobile, onReady: () => { dirty = true; } }))
+      .then(b => {
+        if (!b) return;
+        board3d = b;
+        canvas.classList.add('is-over-3d');
+        b.resize(W, H, curDpr);
+        dirty = true;
+      })
+      .catch(() => {}); // 3D yüklenemezse 2D tahta kalır
+  }
 
   function projectAt(x, y, z, yaw, pitch, dist) {
     const rx = x * Math.cos(yaw) + z * Math.sin(yaw);
@@ -774,8 +795,23 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     ctx.restore();
   }
 
-  function drawGrid() {
+  /** `labelsOnly`: 3D tahtada çizgiler ve yıldız noktaları dokudadır,
+      burada yalnız kenar harfleri ve rakamları çizilir. */
+  function drawGrid(labelsOnly = false) {
     const Y = -BOARD_H / 2 - .4;
+    if (!labelsOnly) drawGridLines(Y);
+    const LTRS_ALL = 'ABCDEFGHJKLMNOPQRST';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (let i = 0; i < SIZE; i++) {
+      const pos = -HALF + i * CELL;
+      const lb = project(pos, Y, HALF + CELL * .72), nl = project(-HALF - CELL * .72, Y, pos);
+      const fs = Math.round(9 * lb.scale); if (fs < 6) continue;
+      ctx.font = `bold ${fs}px monospace`; ctx.fillStyle = 'rgba(75,36,6,.78)';
+      ctx.fillText(LTRS_ALL[i], lb.sx, lb.sy); ctx.fillText(String(SIZE - i), nl.sx, nl.sy);
+    }
+  }
+
+  function drawGridLines(Y) {
     const corners = [[-HALF, Y, -HALF], [HALF, Y, -HALF], [HALF, Y, HALF], [-HALF, Y, HALF]];
     ctx.strokeStyle = 'rgba(55,24,0,.92)'; ctx.lineWidth = 1.9;
     for (let i = 0; i < 4; i++) {
@@ -801,15 +837,6 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       ctx.beginPath(); ctx.arc(p.sx, p.sy, hoshiR * p.scale, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(48,20,0,.88)'; ctx.fill();
     });
-    const LTRS_ALL = 'ABCDEFGHJKLMNOPQRST';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    for (let i = 0; i < SIZE; i++) {
-      const pos = -HALF + i * CELL;
-      const lb = project(pos, Y, HALF + CELL * .72), nl = project(-HALF - CELL * .72, Y, pos);
-      const fs = Math.round(9 * lb.scale); if (fs < 6) continue;
-      ctx.font = `bold ${fs}px monospace`; ctx.fillStyle = 'rgba(75,36,6,.78)';
-      ctx.fillText(LTRS_ALL[i], lb.sx, lb.sy); ctx.fillText(String(SIZE - i), nl.sx, nl.sy);
-    }
   }
 
   function stoneRadii(p, mul) {
@@ -831,6 +858,10 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // `dx`/`dz`: tahta düzleminde kayma (yakalanan taşın kenara süzülmesi).
   // Gölge tahtada kalır; taş yükseldikçe büyür ve açılır.
   function drawStone(gx, gz, color, scale, alpha, lift = 0, dx = 0, dz = 0) {
+    if (stoneSink) {
+      stoneSink.push({ gx, gz, color, scale: scale ?? 1, alpha: alpha ?? 1, lift, dx, dz });
+      return;
+    }
     const wx = -HALF + gx * CELL + dx, wz = -HALF + gz * CELL + dz;
     const p = project(wx, stoneSurfaceY() - lift, wz);
     const { rx, ry } = stoneRadii(p, scale ?? 1);
@@ -1128,11 +1159,20 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
 
   function render() {
     updateLightDir();
-    const bg = ctx.createRadialGradient(W * .5, H * .45, 0, W * .5, H * .5, Math.max(W, H) * .75);
-    bg.addColorStop(0, '#141420'); bg.addColorStop(1, '#060608');
-    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-    drawBoard();
-    drawGrid();
+    const in3d = !!board3d?.ready(SIZE);
+    if (in3d) {
+      // Arka plan 3D tuvalin CSS zemini, tahta ve çizgiler 3D'de.
+      ctx.clearRect(0, 0, W, H);
+      drawGrid(true);
+      stoneSink = [];
+    } else {
+      const bg = ctx.createRadialGradient(W * .5, H * .45, 0, W * .5, H * .5, Math.max(W, H) * .75);
+      bg.addColorStop(0, '#141420'); bg.addColorStop(1, '#060608');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+      drawBoard();
+      drawGrid();
+    }
+    if (board3d) canvas.classList.toggle('is-over-3d', in3d); // WebGL bağlamı kaybolursa 2D'ye döner
     if (intersectionMarkers) {
       ctx.save();
       // A gentle four-second brightness cycle; reduced motion stays still.
@@ -1144,7 +1184,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     // movePreview aktifken sade hover noktası GÖSTERİLMEZ — aynı kesişimde
     // iki farklı işaret üst üste binmesin diye (bkz. drawMovePreview).
     if (inputEnabled && hoverPoint && touchPress) drawTouchRing(hoverPoint.gx, hoverPoint.gz);
-    else if (inputEnabled && hoverPoint && !movePreview) drawHoverPoint(hoverPoint.gx, hoverPoint.gz);
+    // 2D işaretler 3D taşların ÜSTÜNE düşer: dolu noktada hover halkası taşın altında kalmaz, çizilmez.
+    else if (inputEnabled && hoverPoint && !movePreview && !(in3d && boardSt.isOccupied(hoverPoint.gx, hoverPoint.gz))) drawHoverPoint(hoverPoint.gx, hoverPoint.gz);
     for (const l of libertyPoints) drawLibertyMark(l.gx, l.gz, l.t);
     if (movePreview) drawMovePreview(movePreview.gx, movePreview.gz, movePreview.color);
     // İpuçları ÖNCE (bulunmamış hedefler) — bulunmuş işaretler her zaman
@@ -1169,6 +1210,14 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     if (lastMove) {
       const s = visualStones.find(v => v.gx === lastMove.gx && v.gz === lastMove.gz && v.captureAge == null);
       if (s) drawLastMoveMark(s);
+    }
+    if (in3d) {
+      board3d.frame({
+        W, H, projCY, yaw: camYaw + userYaw + driftYaw, pitch: camPitch, dist: camDist,
+        size: SIZE, cell: CELL, half: HALF, boardH: BOARD_H, stoneR: STONE_R,
+        light: { x: LIGHT_X, z: LIGHT_Z }, stones: stoneSink,
+      });
+      stoneSink = null;
     }
   }
 
@@ -1564,6 +1613,17 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
      * @param {{row:number,col:number}} point
      * @returns {boolean}
      */
+    /** 3D katman durumu ({size, stones, lost} | null) — salt-okunur, YALNIZ test/gözlem amaçlı. */
+    getBoard3dState() {
+      return board3d && board3d.ready(SIZE) ? board3d.state() : null;
+    },
+
+    /** Kesişimin tahta yüzeyindeki ekran konumu (CSS px) — salt-okunur, YALNIZ test/gözlem amaçlı. */
+    getPointScreen({ row, col }) {
+      const p = project(-HALF + col * CELL, -BOARD_H / 2, -HALF + row * CELL);
+      return { x: p.sx, y: p.sy };
+    },
+
     isOccupied({ row, col }) {
       return boardSt.isOccupied(col, row);
     },
@@ -1945,6 +2005,8 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       canvas.removeEventListener('pointerup', handleUp);
       canvas.removeEventListener('pointercancel', handleCancel);
       canvas.removeEventListener('contextmenu', preventContextMenu);
+      board3d?.destroy();
+      board3d = null;
       tapHandlers.clear();
       hoverHandlers.clear();
       libertyPoints = [];
