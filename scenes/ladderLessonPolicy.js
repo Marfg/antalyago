@@ -1,6 +1,6 @@
-import {BoardState} from '../core/boardState.js?v=2026-10-29.sade';
-import {applyMove,isValidMove,getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-10-29.sade';
-import {LADDER_SCENARIOS,LADDER_STEPS} from './ladderScenarioData.js?v=2026-10-29.sade';
+import {BoardState} from '../core/boardState.js?v=2026-10-29.geri';
+import {applyMove,isValidMove,getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-10-29.geri';
+import {LADDER_SCENARIOS,LADDER_STEPS} from './ladderScenarioData.js?v=2026-10-29.geri';
 export {LADDER_STEPS};
 export function whiteGroup(board,anchor){
  if(board.colorAt(anchor.x,anchor.y)!=='white')return {stones:[],liberties:[],count:0};

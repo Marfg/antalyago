@@ -39,7 +39,7 @@
  * ORTAK katmanda, `context.container`'ı sarmalayarak uygulanır.
  */
 
-import { transitionSceneSwap } from './sceneTransition.js?v=2026-10-29.sade';
+import { transitionSceneSwap } from './sceneTransition.js?v=2026-10-29.geri';
 
 /**
  * @param {object} context — sahnenin mount context'i (markComplete/
