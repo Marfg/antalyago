@@ -46,7 +46,7 @@ const GRAPH_BASENAMES = [
   'sceneRegistry.js', 'scene01BoardIntro.js', 'scene02TurnsAndIntersections.js',
   'scene03LibertiesByPosition.js', 'scene04GroupLiberties.js', 'groupLibertyPolicy.js',
   'turnPolicy.js', 'boardZones.js', 'topicEndControls.js', 'sceneTransition.js',
-  'sceneBoardAdapter.js', 'sceneProgressAdapter.js', 'boardSound.js', 'welcomeIntro.js', 'topicsMap.js', 'heroBoard.js',
+  'sceneBoardAdapter.js', 'sceneProgressAdapter.js', 'boardSound.js', 'welcomeIntro.js', 'topicsMap.js', 'heroBoard.js', 'heroModes.js',
   // KRİTİK DÜZELTME (bkz. görev talimatı): releaseVersion.js ARTIK BARE
   // import edilmiyor — bekçinin kendisi de versioned graph'ın bir
   // parçası, aksi hâlde "o an gerçekte ne çalıştığını yansıtır" iddiası
@@ -88,7 +88,7 @@ const GRAPH_BASENAMES = [
 const SCAN_FILES = [
   'learning-scenes.html',
   'teacher-studio.html',
-  'index.html', 'home/heroBoard.js',
+  'index.html', 'home/heroBoard.js', 'home/heroModes.js',
   'core/ruleEngine.js', 'core/curriculum.js', 'ogren-3d.html',
   'scenes/scene01BoardIntro.js',
   'scenes/scene02TurnsAndIntersections.js',

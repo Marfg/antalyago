@@ -3,14 +3,16 @@
  * node tests/verify-home-hero.mjs
  *
  * Ana sayfa açılış sahnesi (home/heroBoard.js): posterdeki atari anından
- * başlayan mini ders, dersin baştan izlenmesi, serbest oyunda beyazın cevabı,
- * kaydırmayla kameranın yükselmesi, telefonda taşma olmaması ve "hareketi
- * azalt" açıkken Three.js'in hiç yüklenmeyip posterin kalması.
+ * başlayan mini ders, dersin baştan izlenmesi, mini ders modları, serbest
+ * oyunda beyazın cevabı, kaydırmayla kameranın yükselmesi, telefonda taşma
+ * olmaması ve "hareketi azalt" açıkken Three.js'in hiç yüklenmeyip posterin
+ * kalması.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
+import { buildModes } from '../home/heroModes.js';
 
 const ROOT = path.resolve('.');
 const BASE = 'http://antalyago.test';
@@ -127,6 +129,8 @@ await test('serbest oyunda konan siyah taşa beyaz cevap verir', async () => {
   await until(page, 'heroMode', 'free');
   await ready(page);
   assert.equal(await heroData(page, 'stones'), '0');
+  // Kaydırmadan serbest oyuna geçilince de 3D tahta posterin üstüne gelmeli.
+  assert.ok(await page.locator('[data-hero-board]').evaluate(el => el.classList.contains('is-moving')), 'tahta görünmeli');
 
   const point = await page.locator('[data-hero-board]').evaluate(el => el.heroPointFor(4, 4));
   await page.mouse.click(point.x, point.y);
@@ -140,6 +144,108 @@ await test('serbest oyunda konan siyah taşa beyaz cevap verir', async () => {
   assert.equal(await caption(page), FIRST);
   assert.deepEqual(errors, []);
   await context.close();
+});
+
+await test('serbest oyunda ilk taş alınınca tahtayı temizlemek önerilir', async () => {
+  const { page, errors } = await open();
+  await live(page);
+  // Beyazın küçük rastgele payı tohumlanır: aynı hamlelere hep aynı cevap gelir.
+  await page.locator('[data-hero-board]').evaluate(el => { el.dataset.heroSeed = '7'; });
+  await page.locator('[data-hero-alt]').click();
+  await until(page, 'heroMode', 'free');
+  await ready(page);
+
+  // Siyah köşeye oynar, sonra uzak noktalara; beyaz köşedeki taşı kuşatıp alır.
+  const tries = [[0, 0], [8, 8], [8, 6], [6, 8], [8, 4], [4, 8], [6, 6], [2, 8], [8, 2]];
+  for (const [x, y] of tries) {
+    if (await heroData(page, 'suggest') === 'temizle') break;
+    const before = Number(await heroData(page, 'stones'));
+    const point = await page.locator('[data-hero-board]').evaluate((el, [px, py]) => el.heroPointFor(px, py), [x, y]);
+    await page.mouse.click(point.x, point.y);
+    const moved = await page.waitForFunction(n => Number(document.querySelector('[data-hero-board]').dataset.heroStones) !== n,
+      before, { timeout: 2500, polling: 200 }).then(() => true, () => false);
+    if (moved) await ready(page);
+  }
+  assert.equal(await heroData(page, 'suggest'), 'temizle', 'ilk taş alınınca öneri gelmeli');
+  assert.match(await caption(page), /(İlk taşı sen aldın!|Beyaz ilk taşı aldı\.)/);
+  assert.ok(await page.locator('[data-hero-step]').evaluate(b => b.classList.contains('is-suggested')), 'temizle düğmesi öne çıkmalı');
+  assert.equal(await page.locator('[data-hero-step]').textContent(), 'Tahtayı temizle');
+
+  await page.locator('[data-hero-step]').click();
+  await until(page, 'heroStones', '0');
+  await ready(page);
+  assert.equal(await heroData(page, 'suggest'), '');
+  assert.ok(!(await page.locator('[data-hero-step]').evaluate(b => b.classList.contains('is-suggested'))));
+  assert.match(await caption(page), /^Tahta temiz\./);
+  assert.deepEqual(errors, []);
+});
+
+await test('mini ders modları: yasak hamle, ko, oyun sonu ve bağlantı tahtada çözülür', async () => {
+  const { page, errors } = await open();
+  await live(page);
+  const modes = Object.fromEntries(buildModes().map(m => [m.id, m]));
+  assert.deepEqual(await page.locator('[data-hero-modes] [data-mode]').evaluateAll(b => b.map(x => x.dataset.mode)),
+    ['tas-alma', 'yasak', 'ko', 'oyun-sonu', 'iki-goz', 'baglanti', 'merdiven', 'ag-snapback']);
+  assert.equal(await page.locator('[data-mode="tas-alma"]').getAttribute('aria-pressed'), 'true');
+  const idle = () => page.waitForFunction(() => !document.querySelector('[data-hero-modes] button').disabled, null, { timeout: 60000, polling: 200 });
+  const tap = async (x, y) => {
+    const point = await page.locator('[data-hero-board]').evaluate((el, [px, py]) => el.heroPointFor(px, py), [x, y]);
+    await page.mouse.click(point.x, point.y);
+    await page.waitForTimeout(250);
+    await idle();
+  };
+  const choose = async id => {
+    await page.locator(`[data-mode="${id}"]`).click();
+    await until(page, 'heroModeId', id);
+    await until(page, 'heroModeStep', '0');
+    await idle();
+    assert.equal(await page.locator(`[data-mode="${id}"]`).getAttribute('aria-pressed'), 'true');
+  };
+  const done = () => until(page, 'heroTask', 'tamam');
+
+  // Yasak hamle: önce yasak olmayan bir nokta ipucu verir, sonra dört yasak nokta bulunur.
+  await choose('yasak');
+  await tap(2, 2);
+  assert.equal(await caption(page), modes.yasak.steps[0].task.err);
+  for (const p of modes.yasak.steps[0].task.targets) await tap(p.x, p.y);
+  await done();
+  assert.equal(await caption(page), modes.yasak.steps[0].task.ok);
+  assert.equal(await page.locator('[data-hero-step]').textContent(), 'Sonraki: Ko');
+
+  // Ko: "Sonraki" düğmesi bir sonraki moda geçer; siyah alır, beyaz hemen geri alamaz.
+  await page.locator('[data-hero-step]').click();
+  await until(page, 'heroModeId', 'ko');
+  await idle();
+  await page.locator('[data-hero-step]').click();
+  await until(page, 'heroModeStep', '1');
+  await idle();
+  await tap(4, 4);
+  await done();
+  assert.match(await caption(page), /^Ko: beyaz hemen geri alamaz/);
+
+  // Oyun sonu: önce siyahın, sonra beyazın alanına dokunulur.
+  await choose('oyun-sonu');
+  for (const r of modes['oyun-sonu'].steps[0].task.regions) await tap(r.points[0].x, r.points[0].y);
+  await done();
+  assert.match(await caption(page), /^Beyazın alanı: 20 nokta\./);
+
+  // Bağlantı: beyaz A'ya gelir, siyah B'den bağlanır.
+  await choose('baglanti');
+  await page.locator('[data-hero-step]').click();
+  await until(page, 'heroModeStep', '1');
+  await idle();
+  const answer = modes.baglanti.steps[1].task.targets[0];
+  await tap(answer.x, answer.y);
+  await done();
+  assert.match(await caption(page), /^Bağlandı\./);
+
+  // Taş alma düğmesi açılış dersine döner.
+  await page.locator('[data-mode="tas-alma"]').click();
+  await until(page, 'heroMode', 'lesson');
+  await until(page, 'heroPhase', '0');
+  await ready(page);
+  assert.equal(await caption(page), FIRST);
+  assert.deepEqual(errors, []);
 });
 
 await test('kaydırınca kamera yükselir, sonra sayfa akmaya devam eder', async () => {

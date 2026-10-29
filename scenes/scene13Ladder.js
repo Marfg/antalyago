@@ -1,6 +1,6 @@
-import {mountLadderLesson} from './ladderLessonController.js?v=2026-10-28.goban';
-import {createLadderMotionOverlay} from './ladderMotionOverlay.js?v=2026-10-28.goban';
-import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-28.goban';
+import {mountLadderLesson} from './ladderLessonController.js?v=2026-10-29.modlar';
+import {createLadderMotionOverlay} from './ladderMotionOverlay.js?v=2026-10-29.modlar';
+import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-29.modlar';
 let active=null;
 export const scene13Ladder={
  id:'scene-13-ladder',version:1,title:'Merdiven (Shichō)',curriculumRef:{lessonId:'l10',concept:'ladder'},
