@@ -67,8 +67,18 @@ const libsAt = (b, x, y) => getLiberties(b, getGroup(b, x, y)).size;
 const wx = i => (i - 4) * SX;           // sütun → x
 const wz = j => (j - 4) * SY;           // satır → z (Blender'da y = (4 - j)·SY, z = −y)
 
+/** Tohumlu, küçük rastgele sayı üreteci (mulberry32): aynı tohum, aynı dizi. */
+function seeded(seed) {
+  return () => {
+    seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /** Beyazın hamlesi: alma, kendi atarisinden kaçma, siyahı sıkıştırma. */
-function whiteMove(state) {
+function whiteMove(state, random = Math.random) {
   let best = null, bestScore = -Infinity;
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     if (!isValidMove(state, x, y, 'white').valid) continue;
@@ -82,10 +92,26 @@ function whiteMove(state) {
       if (c === 'white' && libsAt(state, n.x, n.y) === 1) s += 50;
     }
     if (x === 0 || y === 0 || x === N - 1 || y === N - 1) s -= 6;
-    s += Math.random() * 6;
+    s += random() * 6;
     if (s > bestScore) { bestScore = s; best = { x, y, r }; }
   }
   return best;
+}
+
+/**
+ * Serbest oyunda beyaz cevap verdikten sonraki açıklama. Tahtadaki ilk taş
+ * alındığında (kim alırsa alsın) yeni bir oyun için tahtayı temizlemeyi önerir.
+ */
+export function freePlayCaption({ blackTook, whiteTook, firstCapture, danger, chance, caps }) {
+  if (firstCapture) {
+    return blackTook
+      ? 'İlk taşı sen aldın! Yeni bir oyun için tahtayı temizleyebilir ya da devam edebilirsin.'
+      : 'Beyaz ilk taşı aldı. Tahtayı temizleyip yeniden deneyebilir ya da devam edebilirsin.';
+  }
+  if (whiteTook) return `Beyaz ${whiteTook} taş aldı. Sıra sende.`;
+  if (danger) return 'Kırmızı halka: taşlarının tek nefesi kaldı, buna atari denir. Sıra sende.';
+  if (chance) return 'Altın halka: beyazın tek nefesi kaldı. Oraya oynarsan taşı alırsın.';
+  return `Esir: sen ${caps.black}, beyaz ${caps.white}. Sıra sende.`;
 }
 
 const LESSON = [
@@ -358,6 +384,11 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
     dotsEl.hidden = true;
     sync();
   }
+  /** İlk taş alındığında "Tahtayı temizle" düğmesi öne çıkar; sonraki hamlede söner. */
+  function suggestClear(on) {
+    stepBtn.classList.toggle('is-suggested', on);
+    root.dataset.heroSuggest = on ? 'temizle' : '';
+  }
 
   /* ── Tahta durumu: derste de serbest oyunda da kural motoru izlenir ── */
   let state = new BoardState(N), meshes = new Map(), rings = new Map(), caps = { black: 0, white: 0 };
@@ -393,6 +424,7 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
     [...meshes.keys()].forEach(k => lift(k, .45));
     clearRings();
     state = new BoardState(N); caps = { black: 0, white: 0 };
+    suggestClear(false);
   }
   /** Tek nefesi kalan gruplar: siyahınki kırmızı (tehlike), beyazınki altın (fırsat). */
   function updateAtari() {
@@ -478,6 +510,7 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
   }
   function restartLesson() {
     setBusy(true);
+    live();
     ghost.visible = false;
     clearBoardState();
     if (hover) { removeStone(hover); hover = null; }
@@ -489,6 +522,7 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
   /* ── Serbest oyun ── */
   function toFree() {
     setBusy(true);
+    live();                              // kaydırmadan serbest oyuna geçilse de tahta görünsün
     clearBoardState();
     if (hover) { removeStone(hover); hover = null; }
     mode = 'free'; phase = 0;
@@ -517,21 +551,24 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
     if (v.reason === 'KO') { say('Ko: bu taşı hemen geri alamazsın, önce başka yere oyna.'); return; }
     if (!v.valid) return;
     ghost.visible = false; setBusy(true);
+    suggestClear(false);
+    const takenBefore = caps.black + caps.white;
     const r = applyMove(state, q.x, q.y, 'black');
     apply('black', q.x, q.y, r);
     say(r.captured.length ? `${r.captured.length} beyaz taş aldın! Beyaz düşünüyor…` : 'Beyaz düşünüyor…');
     wait(.5, () => updateAtari());
     wait(.8, () => {
-      const m = whiteMove(state);
+      // Testler tahtaya data-hero-seed koyarak beyazın cevaplarını sabitleyebilir.
+      const seed = root.dataset.heroSeed;
+      const m = whiteMove(state, seed ? seeded(Number(seed) + state.stones.length) : Math.random);
       if (!m) { say('Beyazın oynayacak yeri kalmadı. Tahtayı temizleyebilirsin.'); setBusy(false); sync(); return; }
       apply('white', m.x, m.y, m.r);
       wait(.5, () => {
         const a = updateAtari();
+        const firstCapture = takenBefore === 0 && caps.black + caps.white > 0;
         setBusy(false); sync();
-        if (m.r.captured.length) say(`Beyaz ${m.r.captured.length} taş aldı. Sıra sende.`);
-        else if (a.danger) say('Kırmızı halka: taşlarının tek nefesi kaldı, buna atari denir. Sıra sende.');
-        else if (a.chance) say('Altın halka: beyazın tek nefesi kaldı. Oraya oynarsan taşı alırsın.');
-        else say(`Esir: sen ${caps.black}, beyaz ${caps.white}. Sıra sende.`);
+        say(freePlayCaption({ blackTook: r.captured.length, whiteTook: m.r.captured.length, firstCapture, ...a, caps }));
+        suggestClear(firstCapture);
       });
     });
   }

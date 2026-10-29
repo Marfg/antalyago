@@ -127,6 +127,8 @@ await test('serbest oyunda konan siyah taşa beyaz cevap verir', async () => {
   await until(page, 'heroMode', 'free');
   await ready(page);
   assert.equal(await heroData(page, 'stones'), '0');
+  // Kaydırmadan serbest oyuna geçilince de 3D tahta posterin üstüne gelmeli.
+  assert.ok(await page.locator('[data-hero-board]').evaluate(el => el.classList.contains('is-moving')), 'tahta görünmeli');
 
   const point = await page.locator('[data-hero-board]').evaluate(el => el.heroPointFor(4, 4));
   await page.mouse.click(point.x, point.y);
@@ -140,6 +142,40 @@ await test('serbest oyunda konan siyah taşa beyaz cevap verir', async () => {
   assert.equal(await caption(page), FIRST);
   assert.deepEqual(errors, []);
   await context.close();
+});
+
+await test('serbest oyunda ilk taş alınınca tahtayı temizlemek önerilir', async () => {
+  const { page, errors } = await open();
+  await live(page);
+  // Beyazın küçük rastgele payı tohumlanır: aynı hamlelere hep aynı cevap gelir.
+  await page.locator('[data-hero-board]').evaluate(el => { el.dataset.heroSeed = '7'; });
+  await page.locator('[data-hero-alt]').click();
+  await until(page, 'heroMode', 'free');
+  await ready(page);
+
+  // Siyah köşeye oynar, sonra uzak noktalara; beyaz köşedeki taşı kuşatıp alır.
+  const tries = [[0, 0], [8, 8], [8, 6], [6, 8], [8, 4], [4, 8], [6, 6], [2, 8], [8, 2]];
+  for (const [x, y] of tries) {
+    if (await heroData(page, 'suggest') === 'temizle') break;
+    const before = Number(await heroData(page, 'stones'));
+    const point = await page.locator('[data-hero-board]').evaluate((el, [px, py]) => el.heroPointFor(px, py), [x, y]);
+    await page.mouse.click(point.x, point.y);
+    const moved = await page.waitForFunction(n => Number(document.querySelector('[data-hero-board]').dataset.heroStones) !== n,
+      before, { timeout: 2500, polling: 200 }).then(() => true, () => false);
+    if (moved) await ready(page);
+  }
+  assert.equal(await heroData(page, 'suggest'), 'temizle', 'ilk taş alınınca öneri gelmeli');
+  assert.match(await caption(page), /(İlk taşı sen aldın!|Beyaz ilk taşı aldı\.)/);
+  assert.ok(await page.locator('[data-hero-step]').evaluate(b => b.classList.contains('is-suggested')), 'temizle düğmesi öne çıkmalı');
+  assert.equal(await page.locator('[data-hero-step]').textContent(), 'Tahtayı temizle');
+
+  await page.locator('[data-hero-step]').click();
+  await until(page, 'heroStones', '0');
+  await ready(page);
+  assert.equal(await heroData(page, 'suggest'), '');
+  assert.ok(!(await page.locator('[data-hero-step]').evaluate(b => b.classList.contains('is-suggested'))));
+  assert.match(await caption(page), /^Tahta temiz\./);
+  assert.deepEqual(errors, []);
 });
 
 await test('kaydırınca kamera yükselir, sonra sayfa akmaya devam eder', async () => {

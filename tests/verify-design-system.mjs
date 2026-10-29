@@ -6,9 +6,7 @@ import { chromium } from 'playwright-core';
 const ROOT = path.resolve('.');
 const BASE = 'http://antalyago.test';
 const PAGES = [
-  { name: 'problem.html', css: 'styles/problem-page.css' },
-  { name: 'robot.html', css: 'styles/robot-page.css' },
-  { name: 'oyna.html', css: 'styles/play-page.css' }
+  { name: 'robot.html', css: 'styles/robot-page.css' }
 ];
 const BAN = ['rgb(212, 168, 75)', 'rgb(200, 168, 75)', 'rgb(184, 134, 26)', 'rgb(224, 190, 104)'];
 
@@ -99,7 +97,7 @@ await test('legacy shell pages adopt semantic theme variables', async () => {
   const page = await browserContext.newPage();
 
   await page.addInitScript(() => localStorage.setItem('antalyago-theme', 'dark'));
-  await page.goto(BASE + '/problem.html', { waitUntil: 'domcontentloaded' });
+  await page.goto(BASE + '/robot.html', { waitUntil: 'domcontentloaded' });
   await waitForPage(page);
 
   const vars = await page.evaluate(() => {
@@ -216,26 +214,6 @@ await test('reduced-motion disables transitions', async () => {
   await browserContext.close();
 });
 
-await test('problem help/result states render', async () => {
-  const browserContext = await context({ width: 1280, height: 720 });
-  const page = await browserContext.newPage();
-  await page.addInitScript(() => localStorage.setItem('antalyago-theme', 'dark'));
-  await page.goto(BASE + '/problem.html', { waitUntil: 'domcontentloaded' });
-  await waitForPage(page);
-
-  await page.evaluate(() => {
-    showHint();
-    document.getElementById('overlay-correct').classList.add('show');
-  });
-
-  await page.locator('#hint-box').waitFor({ state: 'visible' });
-  await page.locator('#overlay-correct').waitFor({ state: 'visible' });
-  assert(await page.locator('#hint-box').isVisible());
-  assert(await page.locator('#overlay-correct').isVisible());
-
-  await browserContext.close();
-});
-
 await test('robot thinking/gameover states render', async () => {
   const browserContext = await context({ width: 1280, height: 720 });
   const page = await browserContext.newPage();
@@ -257,29 +235,6 @@ await test('robot thinking/gameover states render', async () => {
   await page.locator('#gameover').waitFor({ state: 'visible' });
   assert(await page.locator('#think-bar').isVisible());
   assert(await page.locator('#gameover').isVisible());
-
-  await browserContext.close();
-});
-
-await test('play lobby/modal states render', async () => {
-  const browserContext = await context({ width: 1280, height: 720 });
-  const page = await browserContext.newPage();
-  await page.addInitScript(() => localStorage.setItem('antalyago-theme', 'dark'));
-  await page.goto(BASE + '/oyna.html', { waitUntil: 'domcontentloaded' });
-  await waitForPage(page);
-
-  await page.evaluate(() => {
-    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-    document.getElementById('screen-lobby').classList.add('active');
-    const modal = document.getElementById('modal-newroom');
-    modal.classList.add('show');
-    document.getElementById('room-name-input').value = 'Test Odası';
-  });
-
-  await page.locator('#screen-lobby').waitFor({ state: 'visible' });
-  await page.locator('#modal-newroom.show').waitFor({ state: 'visible' });
-  assert(await page.locator('#screen-lobby').isVisible());
-  assert(await page.locator('#modal-newroom.show').isVisible());
 
   await browserContext.close();
 });

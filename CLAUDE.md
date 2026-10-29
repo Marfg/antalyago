@@ -14,9 +14,7 @@ Ana sayfalar:
 - `index.html` — giriş / navigasyon
 - `ogren-3d.html` — **3D öğrenme motoru** (aktif geliştirme)
 - `ogren.html` — 2D öğrenme motoru (eski, bakım modu)
-- `problem.html` — tsumego çözme
 - `etud.html` — etüt tahtası
-- `oyna.html` — oyun modu
 - `canli.html` — OGS canlı maç entegrasyonu
 
 ---

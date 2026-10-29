@@ -146,7 +146,8 @@
       pointer-events: none;
     }
 
-    .hero-copy,
+    /* Yazı tahtanın üstüne binebilir: tıklamalar tahtaya geçsin, bağlantılar çalışsın. */
+    .hero-copy a,
     .hero-panel {
       pointer-events: auto;
     }
@@ -273,6 +274,16 @@
       cursor: not-allowed;
     }
 
+    /* İlk taş alındığında "Tahtayı temizle" önerisi (home/heroBoard.js). */
+    .hero-panel .button.is-suggested {
+      box-shadow: 0 0 0 0 rgba(237, 117, 111, 0.55);
+      animation: hero-suggest 1.8s ease-in-out infinite;
+    }
+
+    @keyframes hero-suggest {
+      50% { box-shadow: 0 0 0 7px rgba(237, 117, 111, 0); }
+    }
+
     /* Telefon: konu üstte, yazı altta. Kamera yükselince yazı yerini derse bırakır. */
     @media (max-width: 1024px) and (orientation: portrait) {
       .hero-pin {
@@ -335,7 +346,7 @@
     }
 
     .learning-grid {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     .step-number {
@@ -603,9 +614,7 @@
 
       <nav class="site-nav" id="site-nav" data-site-nav aria-label="Ana navigasyon">
         <a href="learning-scenes.html">&Ouml;&#287;ren</a>
-        <a href="problem.html">Problemler</a>
         <a href="robot.html">Robotla Oyna</a>
-        <a href="oyna.html">Go Odalar&#305;</a>
         <a href="index.html#topluluk">Topluluk</a>
         <button class="theme-toggle" data-theme-toggle type="button" aria-pressed="false" aria-label="Gece temas&#305;na ge&ccedil;">Gece</button>
       </nav>
@@ -699,11 +708,6 @@
             <span class="step-number">04</span>
             <h3>Temel Teknikler</h3>
             <p>Atari, g&ouml;z ve canl&#305; gruplar.</p>
-          </a>
-          <a class="card card-interactive card-link reveal" href="problem.html">
-            <span class="step-number">05</span>
-            <h3>Problemler</h3>
-            <p>&Ouml;r&uuml;nt&uuml; g&ouml;rme becerini geli&#351;tir.</p>
           </a>
         </div>
       </div>
