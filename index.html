@@ -196,7 +196,7 @@
       position: absolute;
       right: 0;
       bottom: 32px;
-      width: min(380px, 100%);
+      width: min(430px, 100%);
       display: grid;
       gap: 10px;
       padding: 16px 20px 18px;
@@ -211,6 +211,41 @@
     .hero-panel[hidden],
     .hero-panel [hidden] {
       display: none;
+    }
+
+    /* Mini ders modları: taş alma, yasak hamle, ko, oyun sonu, iki göz, bağlantı, merdiven, ağ · snapback. */
+    .hero-modes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .hero-modes button {
+      padding: 5px 10px;
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text-secondary);
+      font: 600 0.78rem/1.2 var(--font-body);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .hero-modes button:hover {
+      color: var(--text-primary);
+      border-color: var(--text-secondary);
+    }
+
+    .hero-modes button[aria-pressed="true"] {
+      background: var(--surface-hover);
+      border-color: var(--accent);
+      color: var(--text-primary);
+    }
+
+    .hero-modes button:disabled {
+      cursor: progress;
     }
 
     .hero-dots {
@@ -308,6 +343,14 @@
         opacity: 0;
         transform: translateY(12px);
         pointer-events: none;
+      }
+
+      .hero-modes {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        margin-inline: -4px;
+        padding-inline: 4px;
       }
 
       .hero-cine.is-panel .hero-panel {
@@ -642,6 +685,16 @@
             </div>
           </div>
           <div class="hero-panel" hidden>
+            <div class="hero-modes" role="group" aria-label="Mini ders modlar&#305;" data-hero-modes>
+              <button type="button" data-mode="tas-alma" aria-pressed="true">Ta&#351; alma</button>
+              <button type="button" data-mode="yasak" aria-pressed="false">Yasak hamle</button>
+              <button type="button" data-mode="ko" aria-pressed="false">Ko</button>
+              <button type="button" data-mode="oyun-sonu" aria-pressed="false">Oyun sonu</button>
+              <button type="button" data-mode="iki-goz" aria-pressed="false">&#304;ki g&ouml;z</button>
+              <button type="button" data-mode="baglanti" aria-pressed="false">Ba&#287;lant&#305;</button>
+              <button type="button" data-mode="merdiven" aria-pressed="false">Merdiven</button>
+              <button type="button" data-mode="ag-snapback" aria-pressed="false">A&#287; &middot; Snapback</button>
+            </div>
             <div class="hero-dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
             <p class="hero-caption" data-hero-caption aria-live="polite"></p>
             <div class="hero-panel-actions">
