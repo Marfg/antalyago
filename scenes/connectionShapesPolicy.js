@@ -1,5 +1,5 @@
-import {BoardState} from '../core/boardState.js?v=2026-10-28.acilis';
-import {applyMove,isValidMove,getGroup} from '../core/ruleEngine.js?v=2026-10-28.acilis';
+import {BoardState} from '../core/boardState.js?v=2026-10-28.goban';
+import {applyMove,isValidMove,getGroup} from '../core/ruleEngine.js?v=2026-10-28.goban';
 export const CONNECTION_BOARD_SIZE=9;
 export const CONNECTION_OFFSET=1;
 export const CONNECTION_SHAPES=[

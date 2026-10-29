@@ -42,6 +42,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Serif:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles/design-system.css">
   <link rel="stylesheet" href="styles/theme-compat.css">
+  <link rel="preload" as="image" href="assets/hero/poster-masaustu.webp" media="not all and (max-width: 1024px) and (orientation: portrait)" fetchpriority="high">
+  <link rel="preload" as="image" href="assets/hero/poster-telefon.webp" media="(max-width: 1024px) and (orientation: portrait)" fetchpriority="high">
 
   <style>
     /* Page-specific composition */
@@ -57,28 +59,117 @@
       background: var(--page-bg-secondary);
     }
 
-    .hero {
-      min-height: min(85vh, 760px);
+    /* Açılış sahnesi (home/heroBoard.js). Blender posteri her durumda görünür;
+       3D sahne yalnız `hero-3d` varken yüklenir ve kamera hareket etmeye
+       başlayınca posterin üstüne gelir. Sahne açık temada da koyu kalır:
+       içindeki bileşenler gece değişkenlerini kullanır. */
+    .hero-cine {
+      --page-bg: #0d0b14;
+      --surface: #1b1525;
+      --surface-hover: #30213b;
+      --text-primary: #f4eff7;
+      --text-secondary: #ddd2e6;
+      --text-muted: #b3a9b9;
+      --heading: #f6f1f8;
+      --border: rgba(214, 196, 226, 0.2);
+      --border-strong: rgba(214, 196, 226, 0.4);
+      --primary: #8969a2;
+      --primary-hover: #9c7bb5;
+      --primary-active: #75578d;
+      --focus-ring: #e2c9f2;
+      --hero-ink: #0b0907;
+      --hero-kaya: #e6b877;
+      position: relative;
+      background: var(--hero-ink);
+      color: var(--text-primary);
+    }
+
+    .hero-pin {
+      position: relative;
+      height: calc(100svh - 72px);
+      min-height: 560px;
+      max-height: 1000px;
+      overflow: hidden;
       display: grid;
-      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
-      gap: var(--space-7);
       align-items: center;
-      padding: var(--space-6) 0;
+    }
+
+    /* 3D varken açılış sabitlenir; bu kaydırma payında kamera tahtadan yükselir. */
+    .hero-3d .hero-cine {
+      height: calc(100svh - 72px + 75svh);
+      min-height: calc(560px + 75svh);
+    }
+
+    .hero-3d .hero-pin {
+      position: sticky;
+      top: 72px;
+    }
+
+    .hero-poster,
+    .hero-poster img,
+    .hero-stage,
+    .hero-stage canvas,
+    .hero-shade {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hero-poster img {
+      object-fit: cover;
+    }
+
+    .hero-stage canvas {
+      opacity: 0;
+      transition: opacity 0.7s ease;
+      touch-action: pan-y;
+    }
+
+    .hero-cine.is-moving .hero-stage canvas {
+      opacity: 1;
+    }
+
+    .hero-shade {
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(9, 7, 10, 0.88) 0%, rgba(9, 7, 10, 0.62) 30%, rgba(9, 7, 10, 0) 58%),
+        linear-gradient(0deg, rgba(9, 7, 10, 0.5) 0%, rgba(9, 7, 10, 0) 26%);
+    }
+
+    .hero {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: grid;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .hero-copy,
+    .hero-panel {
+      pointer-events: auto;
     }
 
     .hero-copy {
-      max-width: 640px;
+      max-width: 560px;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .hero-cine .section-label {
+      color: var(--hero-kaya);
     }
 
     .hero h1 {
       font-size: clamp(3rem, 6vw, 5.8rem);
       letter-spacing: -0.045em;
       margin: 12px 0 20px;
-      max-width: 640px;
+      color: var(--heading);
+      text-wrap: balance;
     }
 
     .hero p {
-      max-width: 620px;
+      max-width: 34ch;
       color: var(--text-secondary);
       font-size: clamp(1.05rem, 2vw, 1.25rem);
     }
@@ -90,74 +181,30 @@
       margin-top: 28px;
     }
 
-    .hero-visual {
-      position: relative;
-      border-radius: var(--radius-xl);
-      overflow: hidden;
-      background: var(--board-surround);
-      box-shadow: var(--shadow-lg);
-      aspect-ratio: 1 / 1;
+    .hero-cine .button-secondary {
+      background: rgba(13, 11, 20, 0.35);
+      border-color: var(--border-strong);
+      color: var(--text-primary);
     }
 
-    .hero-visual img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .hero-visual::after {
-      content: "";
-      position: absolute;
-      inset: auto 0 0;
-      z-index: 2;
-      height: 6px;
-      background: var(--accent);
-    }
-
-    /* 3D açılış tahtası (home/heroBoard.js). Kutu, tahta yüklenmeden önce de
-       aynı boyutta durur; resim alttan solar, tahta üstte belirir. */
-    .hero-3d .hero-visual {
-      display: grid;
-      grid-template-rows: minmax(0, 1fr) auto;
-    }
-
-    .hero-3d .hero-visual > img {
-      position: absolute;
-      inset: 0;
-      transition: opacity 0.6s ease;
-    }
-
-    .hero-visual.is-live > img {
-      opacity: 0;
-    }
-
-    .hero-stage {
-      position: relative;
-      min-height: 0;
-    }
-
-    .hero-stage canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      transition: opacity 0.6s ease;
-      touch-action: manipulation;
-    }
-
-    .hero-visual.is-live .hero-stage canvas {
-      opacity: 1;
+    .hero-cine .button-secondary:hover {
+      background: rgba(13, 11, 20, 0.6);
     }
 
     .hero-panel {
-      position: relative;
-      z-index: 1;
+      position: absolute;
+      right: 0;
+      bottom: 32px;
+      width: min(380px, 100%);
       display: grid;
       gap: 10px;
-      padding: 14px 20px 22px;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
+      padding: 16px 20px 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: rgba(18, 14, 22, 0.72);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
     }
 
     .hero-panel[hidden],
@@ -224,6 +271,45 @@
     .hero-link:disabled {
       opacity: 0.55;
       cursor: not-allowed;
+    }
+
+    /* Telefon: konu üstte, yazı altta. Kamera yükselince yazı yerini derse bırakır. */
+    @media (max-width: 1024px) and (orientation: portrait) {
+      .hero-pin {
+        align-items: end;
+        min-height: 520px;
+      }
+
+      .hero-shade {
+        background: linear-gradient(0deg, rgba(9, 7, 10, 0.94) 0%, rgba(9, 7, 10, 0.72) 34%, rgba(9, 7, 10, 0) 62%);
+      }
+
+      .hero {
+        align-items: end;
+        padding-bottom: 28px;
+      }
+
+      .hero-panel {
+        left: 0;
+        right: 0;
+        bottom: 20px;
+        width: auto;
+        opacity: 0;
+        transform: translateY(12px);
+        pointer-events: none;
+      }
+
+      .hero-cine.is-panel .hero-panel {
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
+      }
+
+      .hero-cine.is-panel .hero-copy {
+        opacity: 0;
+        transform: translateY(-12px);
+        pointer-events: none;
+      }
     }
 
     .section-head {
@@ -422,16 +508,6 @@
     }
 
     @media (max-width: 900px) {
-      .hero {
-        grid-template-columns: 1fr;
-        min-height: auto;
-        gap: 32px;
-      }
-
-      .hero-visual {
-        max-height: 430px;
-      }
-
       .learning-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -462,24 +538,13 @@
     }
 
     @media (max-width: 560px) {
-      .hero {
-        padding: 32px 0;
-      }
-
       .hero h1 {
-        font-size: 2.9rem;
+        font-size: 2.7rem;
+        margin: 8px 0 14px;
       }
 
-      .hero-visual {
-        aspect-ratio: 4 / 3;
-      }
-
-      .hero-3d .hero-visual {
-        aspect-ratio: 1 / 1.12;
-      }
-
-      .hero-panel {
-        padding: 12px 16px 20px;
+      .hero-actions {
+        margin-top: 20px;
       }
 
       .hero-panel .button {
@@ -549,20 +614,24 @@
 
   <main id="main">
     <!-- Hero -->
-    <section class="home-section">
-      <div class="content-container hero">
-        <div class="hero-copy reveal">
-          <span class="section-label">T&uuml;rk&ccedil;e Go &ouml;&#287;renme platformu</span>
-          <h1>Go'yu oynayarak &ouml;&#287;ren.</h1>
-          <p>Kurallardan ilk 9&times;9 oyununa uzanan T&uuml;rk&ccedil;e ve etkile&#351;imli bir &ouml;&#287;renme yolu.</p>
-          <div class="hero-actions">
-            <a class="button button-primary" href="learning-scenes.html">&Ouml;&#287;renmeye ba&#351;la</a>
-            <a class="button button-secondary" href="robot.html">9&times;9 robotla oyna</a>
+    <section class="hero-cine" data-hero-board>
+      <div class="hero-pin">
+        <picture class="hero-poster">
+          <source media="(max-width: 1024px) and (orientation: portrait)" srcset="assets/hero/poster-telefon.webp" width="1080" height="1350">
+          <img src="assets/hero/poster-masaustu.webp" alt="Kaya ağacından Go tahtasının yüzeyinden yakın görünüm: üç beyaz taşla çevrili siyah taşın son nefes noktasında kırmızı bir halka parlıyor" width="1920" height="1080" decoding="async" fetchpriority="high">
+        </picture>
+        <div class="hero-stage"></div>
+        <div class="hero-shade"></div>
+        <div class="content-container hero">
+          <div class="hero-copy">
+            <span class="section-label">T&uuml;rk&ccedil;e Go &ouml;&#287;renme platformu</span>
+            <h1>Go'yu oynayarak &ouml;&#287;ren.</h1>
+            <p>Kurallardan ilk 9&times;9 oyununa uzanan T&uuml;rk&ccedil;e ve etkile&#351;imli bir &ouml;&#287;renme yolu.</p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="learning-scenes.html">&Ouml;&#287;renmeye ba&#351;la</a>
+              <a class="button button-secondary" href="robot.html">9&times;9 robotla oyna</a>
+            </div>
           </div>
-        </div>
-        <div class="hero-visual reveal" data-hero-board aria-label="Go tahtas&#305; kompozisyonu">
-          <img src="assets/images/hero-board.png" alt="Ah&#351;ap Go tahtas&#305;nda siyah ve beyaz ta&#351;lar" width="900" height="675" decoding="async" fetchpriority="high">
-          <div class="hero-stage"></div>
           <div class="hero-panel" hidden>
             <div class="hero-dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
             <p class="hero-caption" data-hero-caption aria-live="polite"></p>
@@ -791,7 +860,7 @@
 
   <script type="module" src="core/theme.js"></script>
   <script type="module">
-    import { mountHeroBoard } from './home/heroBoard.js?v=2026-10-28.acilis';
+    import { mountHeroBoard } from './home/heroBoard.js?v=2026-10-28.goban';
     mountHeroBoard(document.querySelector('[data-hero-board]'));
   </script>
   <script>

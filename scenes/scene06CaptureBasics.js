@@ -1,5 +1,5 @@
-import { createCaptureScene } from './captureScene.js?v=2026-10-28.acilis';
-import { CAPTURE_SCENARIOS } from './captureNativePolicy.js?v=2026-10-28.acilis';
+import { createCaptureScene } from './captureScene.js?v=2026-10-28.goban';
+import { CAPTURE_SCENARIOS } from './captureNativePolicy.js?v=2026-10-28.goban';
 
 // Keep the existing entry ID so saved progress and links remain valid.
 export const scene06CaptureBasics = createCaptureScene({ id: 'scene-06-capture-basics', scenario: CAPTURE_SCENARIOS[0] });
