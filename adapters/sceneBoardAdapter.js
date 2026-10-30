@@ -442,6 +442,12 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // `markSink` doluyken tahta yüzeyindeki işaretler de 3D kareye gider
   // (taşlar onları örter, ahşabın ışığıyla birlikte okunurlar).
   let board3d = null, stoneSink = null, markSink = null;
+  // Açılışta 2D tahta çizilip ardından 3D'ye "atlamasın" diye 3D beklenirken
+  // yalnız zemin çizilir (`hold3d`); 3D hazır olunca 2D tuvaldeki zemin örtüsü
+  // `reveal3d` ile erir. 3D gelmezse (WebGL yok, dosya yok, süre doldu) 2D
+  // tahta çizilir. Sahne boyutunu bildirmeden (`setSize`) GLB istenmez: ilk
+  // 19'luk yer tutucu tahta boşuna indirilmesin.
+  let hold3d = want3d, reveal3d = reduceMotion ? 1 : 0, sized3d = false;
   function resize() {
     W = canvas.clientWidth || canvas.parentElement?.clientWidth || innerWidth;
     H = canvas.clientHeight || canvas.parentElement?.clientHeight || innerHeight;
@@ -473,17 +479,20 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   canvasResizeObserver?.observe(canvas);
 
   if (want3d) {
+    const give2d = () => { if (hold3d) { hold3d = false; dirty = true; } };
+    setTimeout(() => { sized3d = true; dirty = true; }, 1200);
+    setTimeout(give2d, 4000);
     const release = new URL(import.meta.url).searchParams.get('v');
     import('./board3d.js' + (release ? '?v=' + release : ''))
       .then(m => m.createBoard3D(canvas, { lite: isMobile, onReady: () => { dirty = true; } }))
       .then(b => {
-        if (!b) return;
+        if (!b) return give2d();
         board3d = b;
         canvas.classList.add('is-over-3d');
         b.resize(W, H, curDpr);
         dirty = true;
       })
-      .catch(() => {}); // 3D yüklenemezse 2D tahta kalır
+      .catch(give2d); // 3D yüklenemezse 2D tahta çizilir
   }
 
   function projectAt(x, y, z, yaw, pitch, dist) {
@@ -1171,19 +1180,32 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     ctx.restore();
   }
 
+  function drawBackdrop() {
+    const bg = ctx.createRadialGradient(W * .5, H * .45, 0, W * .5, H * .5, Math.max(W, H) * .75);
+    bg.addColorStop(0, '#141420'); bg.addColorStop(1, '#060608');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  }
+
   function render() {
     updateLightDir();
-    const in3d = !!board3d?.ready(SIZE);
+    const in3d = sized3d && !!board3d?.ready(SIZE);
     if (in3d) {
       // Arka plan 3D tuvalin CSS zemini, tahta ve çizgiler 3D'de.
       ctx.clearRect(0, 0, W, H);
+      hold3d = false;
+      if (reveal3d === 0) reveal3d = 1e-4;
+      if (reveal3d < 1) {
+        ctx.save();
+        ctx.globalAlpha = 1 - easeInOutCubic(reveal3d);
+        drawBackdrop();
+        ctx.restore();
+      }
       drawGrid(true);
       stoneSink = [];
       markSink = [];
     } else {
-      const bg = ctx.createRadialGradient(W * .5, H * .45, 0, W * .5, H * .5, Math.max(W, H) * .75);
-      bg.addColorStop(0, '#141420'); bg.addColorStop(1, '#060608');
-      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+      drawBackdrop();
+      if (hold3d) return;
       drawBoard();
       drawGrid();
     }
@@ -1301,6 +1323,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   const hasActiveFade = list => list.some(m => m.t < 1);
   function isAnimating() {
     return !!((camLerpT < 1 && camTarget) || userYaw !== 0 || rotateDrag || rejectFx
+      || (reveal3d > 0 && reveal3d < 1)
       || (driftOn && !reduceMotion) || driftYaw !== 0
       || (intersectionMarkers && !reduceMotion)
       || visualStones.some(s => s.t < 1 || (s.dropT != null && s.dropT < 1) || s.captureAge != null)
@@ -1338,6 +1361,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     for (const s of visualStones) if (s.captureAge != null) s.captureAge += dt;
     visualStones = visualStones.filter(s => s.captureAge == null || s.captureAge < .45);
     if (rejectFx) { rejectFx.age += dt; if (rejectFx.age >= REJECT_DUR) rejectFx = null; }
+    if (reveal3d > 0 && reveal3d < 1) reveal3d = Math.min(1, reveal3d + dt / 0.45);
     if (!reduceMotion) {
       for (const s of visualStones) if (s.t < 1) s.t = Math.min(1, s.t + dt / STONE_ANIM_DUR);
       for (const s of visualStones) if (s.dropT != null && s.dropT < 1) s.dropT = Math.min(1, s.dropT + dt / DROP_DUR);
@@ -1491,6 +1515,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
     setSize(n) {
       if (![5, 9, 13, 19].includes(n)) return;
       SIZE = n; CELL = sizeToCell(n); HALF = (SIZE - 1) * CELL / 2; STONE_R = CELL * (20 / 48);
+      sized3d = true;
       boardSt = new BoardState(SIZE);
       visualStones = [];
       intersectionMarkers = false;

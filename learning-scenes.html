@@ -205,8 +205,9 @@ function appendEvent(partial) {
 
 const canvas = document.getElementById('ls-canvas');
 const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window.innerWidth <= 1024);
-// Deneme: ?tahta=3d tahta ve taşları Blender GLB'lerinden 3D çizer (bkz. adapters/board3d.js).
-const board3d = new URLSearchParams(location.search).get('tahta') === '3d';
+// Tahta ve taşlar Blender GLB'lerinden 3D çizilir (bkz. adapters/board3d.js). 2D çizim
+// yalnız yedek: 3D yüklenene kadar, WebGL yoksa ya da ?tahta=2d ile açılınca.
+const board3d = new URLSearchParams(location.search).get('tahta') !== '2d';
 const boardAdapter = createSceneBoardAdapter(canvas, { isMobile, initialSize: 19, board3d });
 
 /* Tahta sesleri — varsayılan KAPALI; tercih yalnız bu tarayıcıda saklanır
