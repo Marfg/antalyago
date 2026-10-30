@@ -220,10 +220,10 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-10-29.tahta3d';
-import { BoardState } from '../core/boardState.js?v=2026-10-29.tahta3d';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-29.tahta3d';
-import { createBoardSound } from './boardSound.js?v=2026-10-29.tahta3d';
+import { CAM } from '../core/curriculum.js?v=2026-10-30.cila';
+import { BoardState } from '../core/boardState.js?v=2026-10-30.cila';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-30.cila';
+import { createBoardSound } from './boardSound.js?v=2026-10-30.cila';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -438,8 +438,10 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   let curDpr = 1;
   // 3D katman (bkz. board3d.js): hazır olunca tahta ve taşlar orada çizilir,
   // bu tuval saydamlaşıp yalnız işaretleri, harfleri ve imleci çizer.
-  // `stoneSink` doluyken drawStone() boyamaz, taşı 3D kareye ekler.
-  let board3d = null, stoneSink = null;
+  // `stoneSink` doluyken drawStone() boyamaz, taşı 3D kareye ekler;
+  // `markSink` doluyken tahta yüzeyindeki işaretler de 3D kareye gider
+  // (taşlar onları örter, ahşabın ışığıyla birlikte okunurlar).
+  let board3d = null, stoneSink = null, markSink = null;
   function resize() {
     W = canvas.clientWidth || canvas.parentElement?.clientWidth || innerWidth;
     H = canvas.clientHeight || canvas.parentElement?.clientHeight || innerHeight;
@@ -905,6 +907,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
    * tam görünür olduktan sonra STATİK kalır.
    */
   function drawLibertyMark(gx, gz, t) {
+    if (markSink) { markSink.push({ kind: 'liberty', gx, gz, a: (reduceMotion ? 1 : easeInOutCubic(Math.min(1, t))) * ctx.globalAlpha }); return; }
     const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
     const Y = -BOARD_H / 2 - .3;
     const p = project(wx, Y, wz);
@@ -951,6 +954,11 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
    * aralığının üst sınırı.
    */
   function drawMovePreview(gx, gz, color) {
+    if (markSink) {
+      stoneSink.push({ gx, gz, color, scale: 1, alpha: 0.55, lift: 0, dx: 0, dz: 0, ghost: true });
+      markSink.push({ kind: 'preview', gx, gz, a: 1 });
+      return;
+    }
     drawStone(gx, gz, color, 1, 0.42);
     const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
     const p = project(wx, stoneSurfaceY(), wz);
@@ -980,6 +988,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
    * YOK (bkz. görev talimatı Bölüm 7: "sakin ve kısa").
    */
   function drawIllegalMark(gx, gz, t) {
+    if (markSink) { markSink.push({ kind: 'illegal', gx, gz, a: reduceMotion ? 1 : easeInOutCubic(Math.min(1, t)) }); return; }
     const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
     const Y = -BOARD_H / 2 - .3;
     const p = project(wx, Y, wz);
@@ -1015,6 +1024,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
    * seferlik `t` fade-in (drawLibertyMark ile AYNI disiplin), "statik".
    */
   function drawIllegalHint(gx, gz, t) {
+    if (markSink) { markSink.push({ kind: 'hint', gx, gz, a: reduceMotion ? 1 : easeInOutCubic(Math.min(1, t)) }); return; }
     const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
     const Y = -BOARD_H / 2 - .3;
     const p = project(wx, Y, wz);
@@ -1051,6 +1061,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
    * STATİK kalır (Sahne #7/#8'in nefes/yasak işaretleriyle AYNI disiplin).
    */
   function drawKoFree(gx, gz, t) {
+    if (markSink) { markSink.push({ kind: 'ko', gx, gz, a: reduceMotion ? 1 : easeInOutCubic(Math.min(1, t)) }); return; }
     const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
     const Y = -BOARD_H / 2 - .3;
     const p = project(wx, Y, wz);
@@ -1101,6 +1112,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
    * @param {'black'|'white'} color
    */
   function drawRegionMark(gx, gz, t, color) {
+    if (markSink) { markSink.push({ kind: color === 'black' ? 'region-black' : 'region-white', gx, gz, a: reduceMotion ? 1 : easeInOutCubic(Math.min(1, t)) }); return; }
     const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
     const Y = -BOARD_H / 2 - .3;
     const p = project(wx, Y, wz);
@@ -1134,6 +1146,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   /** Tek noktalı, çok sade pointer hover geri bildirimi — kesişimlerin
       TÜMÜNÜ işaretlemez, yalnız imlecin en yakın olduğu kesişimi. */
   function drawHoverPoint(gx, gz) {
+    if (markSink) { markSink.push({ kind: 'hover', gx, gz, a: 1 }); return; }
     const wx = -HALF + gx * CELL, wz = -HALF + gz * CELL;
     const Y = -BOARD_H / 2 - .3;
     const p = project(wx, Y, wz);
@@ -1148,6 +1161,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   /** Parmak basılıyken seçili kesişimin çevresinde taştan büyük halka —
       parmağın kenarından görünür, önizleme taşıyla çakışmaz (onu çevreler). */
   function drawTouchRing(gx, gz) {
+    if (markSink) { markSink.push({ kind: 'touch', gx, gz, a: 1 }); return; }
     const p = project(-HALF + gx * CELL, -BOARD_H / 2 - .3, -HALF + gz * CELL);
     const r = STONE_R * 1.35 * p.scale;
     ctx.save();
@@ -1165,6 +1179,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       ctx.clearRect(0, 0, W, H);
       drawGrid(true);
       stoneSink = [];
+      markSink = [];
     } else {
       const bg = ctx.createRadialGradient(W * .5, H * .45, 0, W * .5, H * .5, Math.max(W, H) * .75);
       bg.addColorStop(0, '#141420'); bg.addColorStop(1, '#060608');
@@ -1215,9 +1230,10 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       board3d.frame({
         W, H, projCY, yaw: camYaw + userYaw + driftYaw, pitch: camPitch, dist: camDist,
         size: SIZE, cell: CELL, half: HALF, boardH: BOARD_H, stoneR: STONE_R,
-        light: { x: LIGHT_X, z: LIGHT_Z }, stones: stoneSink,
+        light: { x: LIGHT_X, z: LIGHT_Z }, stones: stoneSink, marks: markSink,
       });
       stoneSink = null;
+      markSink = null;
     }
   }
 

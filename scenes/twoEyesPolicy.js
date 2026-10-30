@@ -1,6 +1,6 @@
-import { CURRICULUM } from '../core/curriculum.js?v=2026-10-29.tahta3d';
-import { BoardState } from '../core/boardState.js?v=2026-10-29.tahta3d';
-import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-10-29.tahta3d';
+import { CURRICULUM } from '../core/curriculum.js?v=2026-10-30.cila';
+import { BoardState } from '../core/boardState.js?v=2026-10-30.cila';
+import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-10-30.cila';
 export const CONCEPT = 'life_and_death';
 export function getTwoEyesMoments() {
   const lesson = CURRICULUM.flatMap(c => c.lessons).find(l => l.id === 'l7');

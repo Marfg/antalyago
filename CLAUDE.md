@@ -226,7 +226,11 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
 
 5. **Ders tahtası 3D denemesi (`learning-scenes.html?tahta=3d`)** — tahta ve taşlar
    `scripts/board/build-lesson-boards.py` ile Blender'da üretilen `assets/board/ders-<n>.glb`
-   dosyalarından `adapters/board3d.js` ile çizilir; işaretler, harfler ve girdi
-   `sceneBoardAdapter.js`'in 2D tuvalinde kalır. Kamera adaptörün `projectAt()`
-   izdüşümünden birebir türetilir. Bayrak yokken 3D dosyası yüklenmez.
-   Blender çizimleri ekran kartıyla (OptiX) yapılır; test: `npm run test-board3d`.
+   dosyalarından `adapters/board3d.js` ile çizilir; tahta yüzeyindeki işaretler
+   (nefes, yasak, ko, bölge, imleç, önizleme) `markSink` ile 3D katmana gider ve
+   taşların altında kalır; harfler ve girdi `sceneBoardAdapter.js`'in 2D tuvalinde
+   kalır. Kamera adaptörün `projectAt()` izdüşümünden birebir türetilir. Bayrak
+   yokken 3D dosyası yüklenmez. Görünüm `board3d.js`'teki `LOOK` tablosundan
+   (AgX tonlama, "ara ton") gelir ve `scripts/board/render-reference.py` ile
+   alınan Blender Cycles referans karesine göre ayarlanır. Blender çizimleri
+   ekran kartıyla (OptiX) yapılır; test: `npm run test-board3d`.
