@@ -112,6 +112,42 @@ await test('tıklanan kesişim 3D tahtada taş olur', async () => {
   assert.deepEqual(errors, []);
 });
 
+/** Ekran görüntüsünde bir noktanın ortalama rengi [r, g, b]. */
+async function rgb(page, { x, y }) {
+  const png = await page.screenshot({ clip: { x: Math.round(x) - 1, y: Math.round(y) - 1, width: 3, height: 3 } });
+  return page.evaluate(async b64 => {
+    const img = new Image();
+    img.src = 'data:image/png;base64,' + b64;
+    await img.decode();
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+    const d = g.getImageData(0, 0, c.width, c.height).data;
+    const sum = [0, 0, 0];
+    for (let i = 0; i < d.length; i += 4) for (let k = 0; k < 3; k++) sum[k] += d[i + k];
+    return sum.map(v => v / (d.length / 4));
+  }, png.toString('base64'));
+}
+
+await test('nefes işaretleri ve imleç 3D katmanda, ahşaptan ayrışan turkuazla çizilir', async () => {
+  // Merdiven 1. adım: "Nefesleri göster" beyazın iki nefesini işaretler.
+  const { page, errors } = await open(`scene=scene-13-ladder&tahta=3d&exposeBoardAdapter=1`);
+  await page.waitForFunction(() => window.__lsTestBoardAdapter?.getBoard3dState()?.stones > 0, null, { timeout: 60000, polling: 300 });
+  await page.locator('#libs').click();
+  await page.waitForFunction(() => (window.__lsTestBoardAdapter.getBoard3dState().marks.liberty || 0) > 0, null, { timeout: 15000, polling: 200 });
+  await page.waitForTimeout(800);
+  const box = await page.locator('#ls-canvas').boundingBox();
+  const at = async point => { const p = await hook(page, 'getPointScreen', point); return { x: box.x + p.x, y: box.y + p.y }; };
+  const [lib] = await hook(page, 'getLibertyPoints');
+  const [r, g, b] = await rgb(page, await at(lib));
+  assert.ok(g > r + 10 && b > r, `nefes noktası turkuaz olmalı (${[r, g, b].map(Math.round)})`);
+  // İmleç: boş bir kesişimin üstünde 3D halka olarak çizilir.
+  const empty = await at({ row: 7, col: 7 });
+  await page.mouse.move(empty.x, empty.y);
+  // Sahne imleçte hamle önizlemesi gösteriyorsa halka önizleme taşının çevresindedir.
+  await page.waitForFunction(() => { const m = window.__lsTestBoardAdapter.getBoard3dState().marks; return m.hover === 1 || m.preview === 1; }, null, { timeout: 15000, polling: 200 });
+  assert.deepEqual(errors, []);
+});
+
 await test('390px telefonda hafif GLB yüklenir, yatay taşma olmaz', async () => {
   const { page, errors, requests } = await open(`scene=${SNAPBACK}&tahta=3d&exposeBoardAdapter=1`,
     { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
