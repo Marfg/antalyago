@@ -2,10 +2,11 @@
  * tests/verify-board3d.mjs
  * node tests/verify-board3d.mjs
  *
- * Ders sahnelerinin 3D tahta denemesi (learning-scenes.html?tahta=3d,
- * adapters/board3d.js): 3D taşlar 2D izdüşümün gösterdiği piksele düşer,
- * tıklanan nokta 3D'de taş olur, telefon hafif GLB'yi alır ve bayrak yokken
- * hiçbir 3D dosyası indirilmez (varsayılan 2D tahta aynen kalır).
+ * Ders sahnelerinin 3D tahtası (learning-scenes.html, adapters/board3d.js):
+ * varsayılan tahta 3D'dir ve yalnız sahnenin boyutundaki GLB indirilir; 3D
+ * beklenirken 2D tahta çizilmez, 3D taşlar 2D izdüşümün gösterdiği piksele
+ * düşer, tıklanan nokta 3D'de taş olur, telefon hafif GLB'yi alır ve
+ * ?tahta=2d ile hiçbir 3D dosyası indirilmez (2D yedek tahta).
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -39,11 +40,12 @@ const test = async (name, fn) => {
 // WebGL'i başsız tarayıcıda yazılımla çizdir.
 const browser = await chromium.launch({ headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 
-async function open(query, options = {}) {
+async function open(query, options = {}, { delayGlb = 0 } = {}) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, ...options });
   contexts.push(context);
   const requests = [];
   await context.route(BASE + '/**', async route => {
+    if (delayGlb && route.request().url().includes('.glb')) await new Promise(r => setTimeout(r, delayGlb));
     const filePath = path.join(ROOT, decodeURIComponent(new URL(route.request().url()).pathname).replace(/^\/+/, ''));
     requests.push(path.relative(ROOT, filePath).replace(/\\/g, '/'));
     try {
@@ -82,7 +84,7 @@ async function luma(page, { x, y }) {
 }
 
 await test('3D taşlar 2D izdüşümün gösterdiği noktaya düşer', async () => {
-  const { page, errors } = await open(`scene=${SNAPBACK}&tahta=3d&exposeBoardAdapter=1`);
+  const { page, errors } = await open(`scene=${SNAPBACK}&exposeBoardAdapter=1`);
   await ready3d(page, 11);
   assert.equal((await hook(page, 'getBoard3dState')).size, 9);
   assert.equal(await page.locator('.ls-canvas-3d').count(), 1);
@@ -101,7 +103,7 @@ await test('3D taşlar 2D izdüşümün gösterdiği noktaya düşer', async () 
 });
 
 await test('tıklanan kesişim 3D tahtada taş olur', async () => {
-  const { page, errors } = await open(`scene=${SNAPBACK}&tahta=3d&exposeBoardAdapter=1`);
+  const { page, errors } = await open(`scene=${SNAPBACK}&exposeBoardAdapter=1`);
   await ready3d(page, 11);
   // Kurban hamlesi: siyah (3, 4).
   const pt = await hook(page, 'getPointScreen', { row: 4, col: 3 });
@@ -130,7 +132,7 @@ async function rgb(page, { x, y }) {
 
 await test('nefes işaretleri ve imleç 3D katmanda, ahşaptan ayrışan turkuazla çizilir', async () => {
   // Merdiven 1. adım: "Nefesleri göster" beyazın iki nefesini işaretler.
-  const { page, errors } = await open(`scene=scene-13-ladder&tahta=3d&exposeBoardAdapter=1`);
+  const { page, errors } = await open(`scene=scene-13-ladder&exposeBoardAdapter=1`);
   await page.waitForFunction(() => window.__lsTestBoardAdapter?.getBoard3dState()?.stones > 0, null, { timeout: 60000, polling: 300 });
   await page.locator('#libs').click();
   await page.waitForFunction(() => (window.__lsTestBoardAdapter.getBoard3dState().marks.liberty || 0) > 0, null, { timeout: 15000, polling: 200 });
@@ -149,7 +151,7 @@ await test('nefes işaretleri ve imleç 3D katmanda, ahşaptan ayrışan turkuaz
 });
 
 await test('390px telefonda hafif GLB yüklenir, yatay taşma olmaz', async () => {
-  const { page, errors, requests } = await open(`scene=${SNAPBACK}&tahta=3d&exposeBoardAdapter=1`,
+  const { page, errors, requests } = await open(`scene=${SNAPBACK}&exposeBoardAdapter=1`,
     { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
   await ready3d(page, 11);
   assert.ok(requests.includes('assets/board/ders-9-hafif.glb'), 'telefonda hafif GLB');
@@ -158,8 +160,23 @@ await test('390px telefonda hafif GLB yüklenir, yatay taşma olmaz', async () =
   assert.deepEqual(errors, []);
 });
 
-await test('bayrak yokken 3D katmanı ve dosyaları hiç yüklenmez', async () => {
-  const { page, errors, requests } = await open(`scene=${SNAPBACK}&exposeBoardAdapter=1`);
+await test('varsayılan 3D: yalnız sahnenin GLB dosyası iner, 3D beklenirken 2D tahta çizilmez', async () => {
+  const { page, errors, requests } = await open(`scene=${SNAPBACK}&exposeBoardAdapter=1`, {}, { delayGlb: 2500 });
+  // Sahne taşları kuruldu ama GLB henüz gelmedi: 2D tuvalde ahşap yok, yalnız koyu zemin.
+  await page.waitForFunction(() => window.__lsTestBoardAdapter?.isOccupied({ row: 3, col: 4 }), null, { timeout: 30000, polling: 100 });
+  await page.waitForTimeout(300);
+  assert.equal(await hook(page, 'getBoard3dState'), null, 'GLB gecikirken 3D hazır olmamalı');
+  const box = await page.locator('#ls-canvas').boundingBox();
+  const mid = await luma(page, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+  assert.ok(mid < 40, `3D beklenirken tahta çizilmemeli (orta nokta parlaklığı ${mid.toFixed(0)})`);
+  await ready3d(page, 11);
+  const glbs = requests.filter(r => r.endsWith('.glb'));
+  assert.deepEqual(glbs, ['assets/board/ders-9.glb'], 'yalnız 9×9 tahta inmeli');
+  assert.deepEqual(errors, []);
+});
+
+await test('?tahta=2d ile 3D katmanı ve dosyaları hiç yüklenmez', async () => {
+  const { page, errors, requests } = await open(`scene=${SNAPBACK}&tahta=2d&exposeBoardAdapter=1`);
   await page.waitForFunction(() => window.__lsTestBoardAdapter?.isOccupied({ row: 3, col: 4 }), null, { timeout: 30000, polling: 300 });
   await page.waitForTimeout(1500);
   assert.equal(await page.locator('.ls-canvas-3d').count(), 0);

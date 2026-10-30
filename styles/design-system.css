@@ -554,6 +554,13 @@ textarea {
   flex: none;
 }
 
+/* Logonun içi saydam ve çizgileri siyah; gece temasında altın halkanın içine
+   fildişi bir zemin konur (rozet), yoksa taşlar ve yazı koyu zeminde kaybolur. */
+:root[data-theme='dark'] .site-brand img {
+  border-radius: 50%;
+  background: radial-gradient(circle closest-side, #f6eede 0 82%, transparent 83%);
+}
+
 .site-brand span {
   font-family: var(--font-heading);
 }

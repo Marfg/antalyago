@@ -122,7 +122,11 @@ async function openScenesPage({ viewport = VIEWPORTS.desktop, reducedMotion = 'n
   // Karşılama (scenes/welcomeIntro.js) taze depoda her açılışta görünür;
   // sahne testleri doğrudan konuyla başlasın diye `welcome:true` dışında kapatılır.
   const welcomeQuery = welcome ? '' : `${query ? '&' : '?'}welcome=0`;
-  await page.goto(`${BASE}/${PAGE}${query}${welcomeQuery}`, { waitUntil: 'networkidle' });
+  // Bu takım tahtayı 2D tuvalin piksellerinden ölçer (getImageData, ızgara
+  // taraması); varsayılan 3D tahtada o tuval saydam bir katmandır. Bu yüzden
+  // sahneler 2D yedek tahtayla açılır; 3D tahta tests/verify-board3d.mjs'te.
+  const boardQuery = `${query || welcomeQuery ? '&' : '?'}tahta=2d`;
+  await page.goto(`${BASE}/${PAGE}${query}${welcomeQuery}${boardQuery}`, { waitUntil: 'networkidle' });
   return {
     browser, context, page, consoleErrors,
     async close() { await context.close().catch(() => {}); await browser.close().catch(() => {}); },
@@ -3505,7 +3509,7 @@ addTest('Illegal moves native: 9x9 experiments, transfer and lifecycle', async (
   } finally { await s.close(); }
 });
 async function completeScene8(page) {
-  await page.goto(BASE + '/' + PAGE + PREVIEW_QUERY + '&testScene=' + S08_ID);
+  await page.goto(BASE + '/' + PAGE + PREVIEW_QUERY + '&testScene=' + S08_ID + '&tahta=2d');
   await page.waitForSelector('.illegal-native');
   const { STAGES } = await import('../scenes/illegalNativePolicy.js');
   for (const stage of STAGES) {
