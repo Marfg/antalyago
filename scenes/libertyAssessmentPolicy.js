@@ -27,9 +27,9 @@
  *     oynanan hamlenin GERÇEK yakalamayı ürettiğini garanti eder — bkz.
  *     adapters/sceneBoardAdapter.js playMove()).
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-29.tahta3d';
-import { BoardState } from '../core/boardState.js?v=2026-10-29.tahta3d';
-import { getGroup, getLiberties, applyMove } from '../core/ruleEngine.js?v=2026-10-29.tahta3d';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-30.cila';
+import { BoardState } from '../core/boardState.js?v=2026-10-30.cila';
+import { getGroup, getLiberties, applyMove } from '../core/ruleEngine.js?v=2026-10-30.cila';
 
 const LESSON_ID = 'l2';
 const BOARD_SIZE = 9;

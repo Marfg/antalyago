@@ -45,8 +45,8 @@
  * üzerinden getLibertiesAt) gerçek sonucudur — sabit metinden ÜRETİLMEZ.
  */
 
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-29.tahta3d';
-import { ANCHOR, MIN_GROUP_SIZE, MAX_GROUP_SIZE, shapeSignature, isConnectedSingleGroup } from './groupLibertyPolicy.js?v=2026-10-29.tahta3d';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-30.cila';
+import { ANCHOR, MIN_GROUP_SIZE, MAX_GROUP_SIZE, shapeSignature, isConnectedSingleGroup } from './groupLibertyPolicy.js?v=2026-10-30.cila';
 
 const STATE = {
   INTRO: 'intro',
