@@ -134,6 +134,7 @@ await test('nefes işaretleri ve imleç 3D katmanda, ahşaptan ayrışan turkuaz
   // Merdiven 1. adım: "Nefesleri göster" beyazın iki nefesini işaretler.
   const { page, errors } = await open(`scene=scene-13-ladder&exposeBoardAdapter=1`);
   await page.waitForFunction(() => window.__lsTestBoardAdapter?.getBoard3dState()?.stones > 0, null, { timeout: 60000, polling: 300 });
+  await page.locator('.lb-help-toggle').click(); // nefes düğmesi Yardım panelinde
   await page.locator('#libs').click();
   await page.waitForFunction(() => (window.__lsTestBoardAdapter.getBoard3dState().marks.liberty || 0) > 0, null, { timeout: 15000, polling: 200 });
   await page.waitForTimeout(800);
