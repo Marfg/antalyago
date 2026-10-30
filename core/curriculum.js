@@ -1,4 +1,4 @@
-import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-10-30.logo3d';
+import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-10-30.yardim';
 /**
  * core/curriculum.js
  *
