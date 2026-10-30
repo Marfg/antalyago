@@ -1,7 +1,7 @@
-import {mountSnapbackLesson} from './snapbackLessonController.js?v=2026-10-30.yardim';
-import {createLadderMotionOverlay} from './snapbackMotionOverlay.js?v=2026-10-30.yardim';
-import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-30.yardim';
-import {mountHelpDrawer} from './lessonHelpDrawer.js?v=2026-10-30.yardim';
+import {mountSnapbackLesson} from './snapbackLessonController.js?v=2026-10-30.ustcubuk';
+import {createLadderMotionOverlay} from './snapbackMotionOverlay.js?v=2026-10-30.ustcubuk';
+import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-30.ustcubuk';
+import {mountHelpDrawer} from './lessonHelpDrawer.js?v=2026-10-30.ustcubuk';
 let active=null;
 export const scene15Snapback={
  id:'scene-15-snapback',version:1,title:'Snapback',curriculumRef:{lessonId:'l12',concept:'snapback'},

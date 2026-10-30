@@ -1,5 +1,5 @@
-import { STAGES, createBoard, attempt, liberties, coord, key } from './illegalNativePolicy.js?v=2026-10-30.yardim';
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-30.yardim';
+import { STAGES, createBoard, attempt, liberties, coord, key } from './illegalNativePolicy.js?v=2026-10-30.ustcubuk';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-30.ustcubuk';
 
 let dispose, completed=false;
 export const scene08IllegalMoves={

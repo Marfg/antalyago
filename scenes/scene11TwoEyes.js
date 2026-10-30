@@ -1,6 +1,6 @@
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-30.yardim';
-import { getTwoEyesMoments, buildTwoEyesBoard, evaluateTwoEyesTap, CONCEPT } from './twoEyesPolicy.js?v=2026-10-30.yardim';
-import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-10-30.yardim';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-30.ustcubuk';
+import { getTwoEyesMoments, buildTwoEyesBoard, evaluateTwoEyesTap, CONCEPT } from './twoEyesPolicy.js?v=2026-10-30.ustcubuk';
+import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-10-30.ustcubuk';
 let active = null;
 const points = pairs => pairs.map(([col,row]) => ({row,col}));
 export const scene11TwoEyes = {
