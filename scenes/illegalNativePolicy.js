@@ -1,5 +1,5 @@
-import { BoardState } from '../core/boardState.js?v=2026-10-30.logo3d';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-30.logo3d';
+import { BoardState } from '../core/boardState.js?v=2026-10-30.yardim';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-30.yardim';
 
 // LS-owned positions preserving the previous scene's four shapes and both
 // five-stone captures. No runtime dependency on curriculum/page/lesson data.

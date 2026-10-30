@@ -81,6 +81,8 @@ const GRAPH_BASENAMES = [
   'ladderLessonPolicy.js',
   'ladderScenarioData.js',
   'ladderMotionOverlay.js',
+  // Ders denetim çubuğu (Merdiven, Ağ, Snapback) — yardım çekmecesi.
+  'lessonHelpDrawer.js',
   'scene11TwoEyes.js', 'twoEyesPolicy.js', 'eyeAnalysis.js', 'scene12Connections.js', 'connectionShapesPolicy.js',
 ];
 

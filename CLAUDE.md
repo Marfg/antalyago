@@ -236,3 +236,12 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
    (AgX tonlama, "ara ton") gelir ve `scripts/board/render-reference.py` ile
    alınan Blender Cycles referans karesine göre ayarlanır. Blender çizimleri
    ekran kartıyla (OptiX) yapılır; test: `npm run test-board3d`.
+
+6. **Ders denetim çubuğu (Merdiven, Ağ, Snapback)** — alt çubukta yalnız
+   ← Önceki adım · Yardım · Devam durur; nefesler, ipucu/rota ve yeni deneme
+   "Yardım" ile açılan panelde (`scenes/lessonHelpDrawer.js`,
+   `styles/lesson-help-drawer.css`). Düğme kimlikleri ve metinleri aynen kaldı,
+   ders denetleyicileri değişmedi. Panel kökün içinde kalmalı (denetleyiciler
+   düğmeleri kökte arar) ve `#ls-narration`'ın `backdrop-filter`'ı yüzünden o
+   alanın dışına taşamaz; çubuk bu yüzden alanın dibine itilir.
+   Test: `npm run test-help-drawer`.

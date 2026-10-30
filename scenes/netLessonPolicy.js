@@ -1,6 +1,6 @@
-import {BoardState} from '../core/boardState.js?v=2026-10-30.logo3d';
-import {getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-10-30.logo3d';
-import {NET_FORMS,NET_STEPS,NET_VARIANTS} from './netScenarioData.js?v=2026-10-30.logo3d';
+import {BoardState} from '../core/boardState.js?v=2026-10-30.yardim';
+import {getGroup,getLiberties} from '../core/ruleEngine.js?v=2026-10-30.yardim';
+import {NET_FORMS,NET_STEPS,NET_VARIANTS} from './netScenarioData.js?v=2026-10-30.yardim';
 export {NET_FORMS,NET_STEPS};
 export function seedBoard(stones,size=9){const b=new BoardState(size);for(const p of stones)b.placeStone(p.x,p.y,p.color);return b}
 export function targetGroup(board,anchor){

@@ -1,6 +1,6 @@
-import {CONNECTION_SHAPES,CONNECTION_BOARD_SIZE,CONNECTION_OFFSET,orientedShape,buildConnectionBoard,validShapeCompletion,completedShape,bambooPlacement,connectionStatus} from './connectionShapesPolicy.js?v=2026-10-30.logo3d';
-import {applyMove,isValidMove} from '../core/ruleEngine.js?v=2026-10-30.logo3d';
-import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-30.logo3d';
+import {CONNECTION_SHAPES,CONNECTION_BOARD_SIZE,CONNECTION_OFFSET,orientedShape,buildConnectionBoard,validShapeCompletion,completedShape,bambooPlacement,connectionStatus} from './connectionShapesPolicy.js?v=2026-10-30.yardim';
+import {applyMove,isValidMove} from '../core/ruleEngine.js?v=2026-10-30.yardim';
+import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-30.yardim';
 let active=null;
 export const scene12Connections={
 id:'scene-12-connections',version:2,title:'Kesme ve Bağlama',curriculumRef:{lessonId:'l8',concept:'connection'},

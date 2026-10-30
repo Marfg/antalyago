@@ -13,6 +13,7 @@
     "test-learning-fast": "node tests/snapbackLesson.test.js && node tests/netLesson.test.js && node tests/netLessonInteraction.test.js && node tests/ladderLesson.test.js && node tests/ladderLessonInteraction.test.js && node tests/learningContext.test.js && node tests/contentValidation.test.js && node tests/twoEyesCurriculum.test.js && node tests/connectionShapes.test.js && node tests/scenePointer.test.js && node tests/sceneRegistry.test.js && node tests/topicsMap.test.js && node tests/sceneRuntime.test.js && node tests/sceneProgressAdapter.test.js && node tests/sceneRelease.test.js && node tests/turnPolicy.test.js && node tests/groupLibertyPolicy.test.js && node tests/libertyAssessmentPolicy.test.js && node tests/capturePolicy.test.js && node tests/capturePracticePolicy.test.js && node tests/illegalMovePolicy.test.js && node tests/koRulePolicy.test.js && node tests/endgameCountingPolicy.test.js",
     "test-learning-scenes": "node tests/verify-learning-scenes.mjs",
     "test-board3d": "node tests/verify-board3d.mjs",
+    "test-help-drawer": "node tests/verify-help-drawer.mjs",
     "test-learning-release-cache": "node tests/sceneReleaseStaleCache.test.mjs",
     "test-learning-ui": "node tests/learning-ui.test.js && node tests/verify-learning-ui.mjs",
     "test-design-system": "node tests/design-system.test.js && node tests/verify-design-system.mjs",

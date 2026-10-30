@@ -39,7 +39,7 @@
  * ORTAK katmanda, `context.container`'ı sarmalayarak uygulanır.
  */
 
-import { transitionSceneSwap } from './sceneTransition.js?v=2026-10-30.logo3d';
+import { transitionSceneSwap } from './sceneTransition.js?v=2026-10-30.yardim';
 
 /**
  * @param {object} context — sahnenin mount context'i (markComplete/

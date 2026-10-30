@@ -1,16 +1,17 @@
-import {mountSnapbackLesson} from './snapbackLessonController.js?v=2026-10-30.logo3d';
-import {createLadderMotionOverlay} from './snapbackMotionOverlay.js?v=2026-10-30.logo3d';
-import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-30.logo3d';
+import {mountSnapbackLesson} from './snapbackLessonController.js?v=2026-10-30.yardim';
+import {createLadderMotionOverlay} from './snapbackMotionOverlay.js?v=2026-10-30.yardim';
+import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-30.yardim';
+import {mountHelpDrawer} from './lessonHelpDrawer.js?v=2026-10-30.yardim';
 let active=null;
 export const scene15Snapback={
  id:'scene-15-snapback',version:1,title:'Snapback',curriculumRef:{lessonId:'l12',concept:'snapback'},
  mount(context){
-  const root=document.createElement('div');root.className='s15-root';root.innerHTML=" <div class=\"s15-heading-row\"><h1 id=\"heading\" class=\"s15-heading\"></h1><nav id=\"steps\" class=\"s15-row s15-dots\" aria-label=\"Ders adımları\"></nav></div>\n <p id=\"story\" class=\"s15-story\"></p>\n <nav class=\"s15-row s15-terms\" aria-label=\"Kısa terim açıklamaları\"><button id=\"term-snapback\" aria-pressed=\"false\">Snapback</button></nav><p id=\"term-info\" class=\"s15-term-info\" hidden></p>\n <div id=\"choices\" class=\"s15-row\"></div>\n <p id=\"feedback\" class=\"s15-feedback\" role=\"status\" aria-live=\"polite\"></p>\n <div class=\"s15-row\"><button id=\"previous\">Önceki adım</button><button id=\"libs\" aria-pressed=\"false\">Nefesleri göster</button><button id=\"hint\">Sıradaki noktayı göster</button><button id=\"reset\">Yeni deneme</button><button id=\"next\" class=\"primary\">Devam →</button></div>\n";context.container.append(root);context.container.classList.add('s15-scene-host');
+  const root=document.createElement('div');root.className='s15-root lb-root';root.innerHTML=" <div class=\"s15-heading-row\"><h1 id=\"heading\" class=\"s15-heading\"></h1><nav id=\"steps\" class=\"s15-row s15-dots\" aria-label=\"Ders adımları\"></nav></div>\n <p id=\"story\" class=\"s15-story\"></p>\n <nav class=\"s15-row s15-terms\" aria-label=\"Kısa terim açıklamaları\"><button id=\"term-snapback\" aria-pressed=\"false\">Snapback</button></nav><p id=\"term-info\" class=\"s15-term-info\" hidden></p>\n <div id=\"choices\" class=\"s15-row\"></div>\n <p id=\"feedback\" class=\"s15-feedback\" role=\"status\" aria-live=\"polite\"></p>\n <div class=\"lb-bar\"><button id=\"previous\" class=\"lb-prev\"><span class=\"lb-prev-text\">Önceki adım</span></button><div class=\"lb-help\"><button type=\"button\" class=\"lb-help-toggle\" aria-expanded=\"false\" aria-controls=\"s15-help\">Yardım</button><div class=\"lb-panel\" id=\"s15-help\" role=\"group\" aria-label=\"Yardım\" hidden><button id=\"libs\" aria-pressed=\"false\">Nefesleri göster</button><button id=\"hint\">Sıradaki noktayı göster</button><button id=\"reset\" class=\"lb-sep\">Yeni deneme</button></div></div><button id=\"next\" class=\"primary\">Devam →</button></div>\n";context.container.append(root);context.container.classList.add('s15-scene-host');const drawer=mountHelpDrawer(root);
   const canvas=context.canvas||document.getElementById('ls-canvas'),region=canvas.parentElement;
   const motion=document.createElement('canvas');motion.className='s15-motion-overlay';motion.setAttribute('aria-hidden','true');region.append(motion);
   const badge=document.createElement('div');badge.id='badge';badge.className='s15-badge';badge.setAttribute('role','status');region.append(badge);
   const overlay=createLadderMotionOverlay(motion,context.boardAdapter,canvas);
-  const state=active={root,motion,badge,end:null,link:null,lesson:null};
+  const state=active={root,motion,badge,drawer,end:null,link:null,lesson:null};
   const scopedDocument={getElementById:id=>id==='badge'?badge:root.querySelector('#'+id),createElement:tag=>document.createElement(tag)};
   state.lesson=mountSnapbackLesson({board:context.boardAdapter,overlay,document:scopedDocument,
    onPresented:index=>context.emit('scene_assessment_presented',{assessmentIndex:index,assessmentCount:4,concept:'snapback',assessmentType:'board_tap'}),
@@ -21,6 +22,6 @@ export const scene15Snapback={
    }
   });
  },
- unmount(context){if(!active)return;active.lesson.destroy();active.end?.destroy();active.link?.remove();active.root.remove();active.motion.remove();active.badge.remove();context.container.classList.remove('s15-scene-host');active=null},
+ unmount(context){if(!active)return;active.drawer.destroy();active.lesson.destroy();active.end?.destroy();active.link?.remove();active.root.remove();active.motion.remove();active.badge.remove();context.container.classList.remove('s15-scene-host');active=null},
  canComplete(){return !!active?.lesson.canComplete},complete(){}
 };
