@@ -372,44 +372,30 @@ body.ls-map-open #ls-topics-open { border-color: var(--gold); color: var(--gold2
   font-size: .72rem; color: var(--muted); line-height: 1.4;
 }
 
-/* ── Tick onay kontrolü — metin düğmesi DEĞİL, dairesel bir ikon
-   düğmesi. Erişilebilir adı aria-label ile taşınır; hover/focus'ta
-   küçük bir "Onayla" ipucu belirir. ── */
+/* ── Bilgi onayı ("Devam →") — Merdiven/Ağ/Snapback ders çubuğundaki
+   birincil "Devam →" düğmesiyle aynı görünüm (bkz. styles/lesson-help-drawer.css
+   .lb-bar .primary). Onaylanınca yeşile döner. ── */
 .ls-tick-wrap { position: relative; display: inline-flex; flex: 0 0 auto; }
 .ls-tick {
-  width: 40px; height: 40px; border-radius: 50%;
-  border: 1px solid var(--gborder); background: rgba(200, 168, 75, .08);
-  color: var(--gold); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: background .16s ease, border-color .16s ease, transform .16s ease;
-  padding: 0;
+  min-height: 48px; padding: 0 20px; border-radius: 12px;
+  border: 1px solid var(--gold); background: var(--gold); color: #08080e;
+  font: inherit; font-size: .86rem; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  transition: background-color .2s, border-color .2s, color .2s;
 }
-.ls-tick:hover { border-color: var(--gold); background: rgba(200, 168, 75, .16); }
-.ls-tick-icon { width: 18px; height: 18px; }
-.ls-tick-icon path {
-  fill: none; stroke: currentColor; stroke-width: 2.4;
-  stroke-linecap: round; stroke-linejoin: round;
-}
+.ls-tick::after { content: '→'; }
+.ls-tick:hover { background: var(--gold2); border-color: var(--gold2); }
+.ls-tick:active { transform: translateY(1px); }
 .ls-tick.ls-confirmed {
   border-color: var(--green); background: rgba(62, 207, 128, .16); color: var(--green);
-  transform: scale(1.08);
 }
-.ls-tick-tip {
-  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
-  background: var(--glass); border: 1px solid var(--gborder); border-radius: 6px;
-  padding: .25rem .55rem; font-size: .68rem; color: var(--text); white-space: nowrap;
-  opacity: 0; pointer-events: none; transition: opacity .14s ease, transform .14s ease;
-}
-.ls-tick:hover + .ls-tick-tip,
-.ls-tick:focus-visible + .ls-tick-tip {
-  opacity: 1; transform: translateX(-50%) translateY(0);
-}
+.ls-tick.ls-confirmed::after { content: '✓'; }
 .ls-tick:focus-visible, .ls-pill:focus-visible, .ls-strip-btn:focus-visible,
 .ls-topic-item:focus-visible, .ls-topbar-btn:focus-visible, .s07-hint-btn:focus-visible {
   outline: 2px solid var(--gold2); outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .ls-tick, .ls-tick.ls-confirmed, .ls-tick-tip { transition: none; transform: none; }
+  .ls-tick, .ls-tick.ls-confirmed { transition: none; transform: none; }
 }
 
 /* ── Kompakt boyut/seçim pilleri (Sahne #1 tahta boyutu seçimi) ── */
@@ -418,7 +404,7 @@ body.ls-map-open #ls-topics-open { border-color: var(--gold); color: var(--gold2
   padding: .4rem .65rem; border: 1px solid var(--gborder); border-radius: 8px;
   background: transparent; color: var(--muted); font-size: .72rem; font-weight: 600;
   cursor: pointer; text-align: center; transition: all .16s;
-  font-family: inherit; position: relative; min-height: 40px; min-width: 44px;
+  font-family: inherit; position: relative; min-height: 44px; min-width: 44px;
   display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: .1rem;
 }
 .ls-pill:hover { border-color: var(--gold); color: var(--text); }
@@ -436,9 +422,9 @@ body.ls-map-open #ls-topics-open { border-color: var(--gold); color: var(--gold2
 @media (prefers-reduced-motion: reduce) { .ls-strip-dot { transition: none; } }
 
 .ls-strip-btn {
-  flex: 0 0 auto; padding: .55rem 1.1rem; border-radius: 8px; min-height: 44px;
-  border: 1px solid var(--gborder); background: rgba(200, 168, 75, .1); color: var(--muted);
-  font-size: .78rem; font-weight: 700; cursor: pointer; font-family: inherit;
+  flex: 0 0 auto; padding: .55rem 1.1rem; border-radius: 12px; min-height: 44px;
+  border: 1px solid rgba(200, 168, 75, .3); background: rgba(200, 168, 75, .08); color: rgba(232, 228, 222, .62);
+  font-size: .8rem; font-weight: 600; cursor: pointer; font-family: inherit;
   /* v0.19 — kök neden düzeltmesi: `transition: all` daha önce `visibility`yi
      de (bkz. .s05-continue--waiting) kapsıyordu — bu, Sahne #5'in "Devam"
      düğmesi hidden→visible geçişinde `.focus()`'un GERÇEK tarayıcıda
@@ -449,17 +435,20 @@ body.ls-map-open #ls-topics-open { border-color: var(--gold); color: var(--gold2
      sağlandı — görsel davranış (hover/disabled geçişleri) DEĞİŞMEDİ. */
   transition: background-color .18s, border-color .18s, color .18s, opacity .18s, filter .18s;
 }
-.ls-strip-btn:disabled { cursor: default; opacity: .5; }
+.ls-strip-btn:disabled { cursor: default; }
 .ls-strip-btn:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--dark); }
-.ls-strip-btn:not(:disabled):hover { filter: brightness(1.08); }
+.ls-strip-btn:not(:disabled):hover { background: var(--gold2); border-color: var(--gold2); }
+.ls-strip-btn:not(:disabled):active { transform: translateY(1px); }
 /* Ghost varyant — "Bu konuyu tekrar et" / "Başka bir noktayı dene" gibi
    İKİNCİL eylemler için; birincil (altın dolgulu) düğmeyle görsel
    REKABETE girmesin diye şeffaf/nötr kalır, ASLA disabled görünmez. */
-.ls-strip-btn--ghost {
-  background: transparent; border-color: var(--gborder); color: var(--text);
+/* :not(:disabled) — birincil kuralla aynı özgüllükte olsun diye; yoksa
+   ghost düğmeler de altın dolgulu görünüyordu. */
+.ls-strip-btn--ghost:not(:disabled) {
+  background: transparent; border-color: rgba(200, 168, 75, .3); color: var(--text);
 }
-.ls-strip-btn--ghost:hover { border-color: var(--gold); background: rgba(200, 168, 75, .08); }
-@media (prefers-reduced-motion: reduce) { .ls-strip-btn { transition: none; } }
+.ls-strip-btn--ghost:not(:disabled):hover { border-color: var(--gold); background: rgba(200, 168, 75, .08); }
+@media (prefers-reduced-motion: reduce) { .ls-strip-btn { transition: none; transform: none; } }
 
 /* ── Konu sonu satırı (Sahne #1/#2/#3 ORTAK — bkz. scenes/topicEndControls.js) ── */
 .ls-topic-end-summary { flex-basis: 100%; text-align: center; }
@@ -649,10 +638,14 @@ body.ls-map-open #ls-topics-open { border-color: var(--gold); color: var(--gold2
 
 @media (max-width: 480px) {
   .ls-strip-btn { width: 100%; }
+  .ls-tick { min-height: 44px; }
   .ls-pill { min-width: 40px; padding: .35rem .5rem; }
 }
 
 /* İki göz: mevcut anlatım şeridinde kısa açıklama ve tahta alıştırması. */
+/* Başlık + üç satırlık açıklama + "Devam →" varsayılan anlatım yüksekliğine
+   sığmıyordu (alan kayıyordu); Sahne #12 gibi bu sahneye de biraz yer açılır. */
+body:has(.s11-root:not([hidden])) { --narration-h: clamp(156px, 20vh, 170px); }
 .s11-root { align-self: flex-start; }
 .s11-heading { font-size: .72rem; color: var(--gold2); margin-bottom: .25rem; }
 .s11-task { width: 100%; }
@@ -665,14 +658,17 @@ body.ls-map-open #ls-topics-open { border-color: var(--gold); color: var(--gold2
 .s12-heading{font-weight:700}.s12-topics,.s12-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.s12-topics [aria-pressed="true"]{outline:2px solid var(--primary,#9aaf85)}.s12-body{max-height:24vh;overflow:auto}
 
 body:has(.s12-root){--narration-h:clamp(190px,36vh,250px)}
+/* Dar ekranda 44 px bağlantı seçenekleri iki satıra sarar; tahta orada genişlikle
+   sınırlı olduğu için anlatım alanı uzatılabilir. */
+@media (max-width: 480px) { body:has(.s12-root){--narration-h:clamp(190px,41vh,270px)} }
 #ls-scene-host.s12-scene-host{align-self:flex-start;justify-content:flex-start}
 .s12-root{align-self:flex-start;gap:4px}
 .s12-heading{font-size:.78rem;color:var(--gold2)}
 .s12-body{font-size:.78rem;max-height:78px}
 .s12-feedback{margin:0;font-size:.74rem}
-.s12-actions .ls-strip-btn{width:auto;padding:.3rem .7rem;min-height:36px}
+.s12-actions .ls-strip-btn{width:auto;padding:.3rem .9rem;min-height:44px}
 .s12-topics{margin:2px 0;gap:5px}
-.s12-topics .ls-strip-btn{width:auto;min-height:32px;padding:4px 8px;font-size:.73rem;background:transparent;color:var(--text);border:1px solid var(--gborder);box-shadow:none}
+.s12-topics .ls-strip-btn{width:auto;min-height:44px;padding:4px 10px;font-size:.73rem;background:transparent;color:var(--text);border:1px solid rgba(200,168,75,.3);box-shadow:none}
 .s12-topics .ls-strip-btn[aria-pressed="true"]{background:rgba(199,166,74,.14);color:var(--gold2);outline:none;border-color:var(--gold2)}
 .s12-root[hidden]{display:none}
 

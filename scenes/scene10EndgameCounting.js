@@ -60,10 +60,10 @@
  * Teacher Studio Diagnostics bunu bilinen-olmayan concept olarak raporlar
  * (Sahne #8/#9 İLE AYNI bilinçli, gizlenmeyen boşluk).
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-30.ustcubuk';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-31.serit';
 import {
   getEndgameCountingMoment, evaluateRegionTap, regionSignature, CONCEPT,
-} from './endgameCountingPolicy.js?v=2026-10-30.ustcubuk';
+} from './endgameCountingPolicy.js?v=2026-10-31.serit';
 
 const STATE = { INTRO: 'intro', PLAYING: 'playing' };
 
@@ -367,10 +367,9 @@ function buildDom(context) {
     <div class="ls-strip-row ls-strip-fade" id="s10-intro">
       <p class="ls-strip-text">${INTRO_TEXT}</p>
       <span class="ls-tick-wrap">
-        <button type="button" class="ls-tick" id="s10-confirm" aria-label="Bilgiyi onayla">
-          <svg class="ls-tick-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        <button type="button" class="ls-tick" id="s10-confirm">
+          Devam
         </button>
-        <span class="ls-tick-tip" aria-hidden="true">Onayla</span>
       </span>
     </div>
     <div class="ls-strip-row" id="s10-assess" hidden>

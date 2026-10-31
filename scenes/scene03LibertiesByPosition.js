@@ -77,8 +77,8 @@
  *      zaman gerçek hamle üretmez — ayrı bir koruma GEREKMEZ.
  */
 
-import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './boardZones.js?v=2026-10-30.ustcubuk';
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-30.ustcubuk';
+import { classifyBoardZone, EXPECTED_LIBERTY_COUNT_BY_ZONE } from './boardZones.js?v=2026-10-31.serit';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-31.serit';
 
 const STATE = {
   INTRO: 'intro',
@@ -230,10 +230,9 @@ function buildDom(context) {
     <div class="ls-strip-row ls-strip-fade" id="s03-intro">
       <p class="ls-strip-text">${INTRO_TEXT}</p>
       <span class="ls-tick-wrap">
-        <button type="button" class="ls-tick" id="s03-confirm" aria-label="Bilgiyi onayla">
-          <svg class="ls-tick-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        <button type="button" class="ls-tick" id="s03-confirm">
+          Devam
         </button>
-        <span class="ls-tick-tip" aria-hidden="true">Onayla</span>
       </span>
     </div>
     <div class="ls-strip-row" id="s03-play" hidden>

@@ -1,5 +1,5 @@
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-30.ustcubuk';
-import { createCaptureBoard, targetLiberties, evaluateCaptureMove, chooseCaptureReply } from './captureNativePolicy.js?v=2026-10-30.ustcubuk';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-31.serit';
+import { createCaptureBoard, targetLiberties, evaluateCaptureMove, chooseCaptureReply } from './captureNativePolicy.js?v=2026-10-31.serit';
 
 /** Capture-only controller using the existing scene lifecycle and board adapter. */
 export function createCaptureScene({ id, scenario, game = false }) {

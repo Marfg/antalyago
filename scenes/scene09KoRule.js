@@ -74,12 +74,12 @@
  * KASITLI olarak core/conceptMap.js'e eklenmedi — Teacher Studio Diagnostics
  * bunu bilinen-olmayan concept olarak raporlar (bilinçli, gizlenmeyen boşluk).
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-30.ustcubuk';
-import { assessmentTransition } from './assessmentTransition.js?v=2026-10-30.ustcubuk';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-31.serit';
+import { assessmentTransition } from './assessmentTransition.js?v=2026-10-31.serit';
 import {
   getKoRuleMoments, evaluateKoAttempt, isSuccessfulAttempt, reasonLabelTr, MOMENT_KINDS, CONCEPT,
   KO_ATTEMPT_COLOR,
-} from './koRulePolicy.js?v=2026-10-30.ustcubuk';
+} from './koRulePolicy.js?v=2026-10-31.serit';
 
 const STATE = { INTRO: 'intro', PLAYING: 'playing' };
 
@@ -474,10 +474,9 @@ function buildDom(context) {
     <div class="ls-strip-row ls-strip-fade" id="s09-intro">
       <p class="ls-strip-text">${INTRO_TEXT}</p>
       <span class="ls-tick-wrap">
-        <button type="button" class="ls-tick" id="s09-confirm" aria-label="Bilgiyi onayla">
-          <svg class="ls-tick-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        <button type="button" class="ls-tick" id="s09-confirm">
+          Devam
         </button>
-        <span class="ls-tick-tip" aria-hidden="true">Onayla</span>
       </span>
     </div>
     <div class="ls-strip-row" id="s09-assess" hidden>

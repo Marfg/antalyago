@@ -46,12 +46,12 @@
  * SKOR DİLİ YOK (bkz. görev talimatı Bölüm 10): puan/yüzde/başarısızlık
  * ekranı YOK — yalnız "Doğru" / "Bir kez daha düşün" + kısa açıklama.
  */
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-30.ustcubuk';
-import { assessmentTransition } from './assessmentTransition.js?v=2026-10-30.ustcubuk';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-31.serit';
+import { assessmentTransition } from './assessmentTransition.js?v=2026-10-31.serit';
 import {
   getAssessmentSteps, computeChoiceCorrectIndex, computeTapTargets,
   isValidTapAnswer, isValidChoiceAnswer, computeResultAfterMove,
-} from './libertyAssessmentPolicy.js?v=2026-10-30.ustcubuk';
+} from './libertyAssessmentPolicy.js?v=2026-10-31.serit';
 
 const CONCEPT = 'liberty';
 
@@ -401,10 +401,9 @@ function buildDom(context) {
     <div class="ls-strip-row ls-strip-fade" id="s05-intro">
       <p class="ls-strip-text">${INTRO_TEXT}</p>
       <span class="ls-tick-wrap">
-        <button type="button" class="ls-tick" id="s05-confirm" aria-label="Bilgiyi onayla">
-          <svg class="ls-tick-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        <button type="button" class="ls-tick" id="s05-confirm">
+          Devam
         </button>
-        <span class="ls-tick-tip" aria-hidden="true">Onayla</span>
       </span>
     </div>
     <div class="ls-strip-row" id="s05-assess" hidden>

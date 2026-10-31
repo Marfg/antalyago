@@ -220,10 +220,10 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-10-30.ustcubuk';
-import { BoardState } from '../core/boardState.js?v=2026-10-30.ustcubuk';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-30.ustcubuk';
-import { createBoardSound } from './boardSound.js?v=2026-10-30.ustcubuk';
+import { CAM } from '../core/curriculum.js?v=2026-10-31.serit';
+import { BoardState } from '../core/boardState.js?v=2026-10-31.serit';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-31.serit';
+import { createBoardSound } from './boardSound.js?v=2026-10-31.serit';
 
 const CAM_PRESETS = { ...CAM };
 
