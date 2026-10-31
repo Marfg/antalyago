@@ -23,7 +23,7 @@ export const scene08IllegalMoves={
    .illegal-native .in-evidence{color:#7dddc7;font-size:13px}
    .illegal-native .in-concept{color:var(--gold2);font-size:13px}
    .illegal-native .in-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:3px}
-   .illegal-native .ls-strip-btn{width:auto;min-height:36px;padding:6px 12px;font-size:13px}
+   .illegal-native .ls-strip-btn{width:auto;min-height:44px;padding:6px 14px;font-size:13px}
    @media(max-width:480px){body:has(.illegal-native-root){--narration-h:320px}.illegal-native .in-heading{font-size:17px}.illegal-native p{font-size:13px}}
    @media(max-height:520px){body:has(.illegal-native-root){--narration-h:190px}}
   </style><section class="illegal-native" aria-label="Tahta deneyi">

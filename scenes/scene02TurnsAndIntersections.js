@@ -43,15 +43,12 @@ const SUMMARY_TEXT = "Go'da oyuncular sırayla taş yerleştirir.";
 const INFO_STEPS = [
   {
     text: 'Go sıralı bir oyundur. Bir oyuncu iki hamle üst üste oynamaz.',
-    ariaLabel: '1. adımı onayla',
   },
   {
     text: 'Taşlar karelerin içine değil, Çizgilerin Kesiştiği noktalara yerleştirilir.',
-    ariaLabel: '2. adımı onayla',
   },
   {
     text: "Go'da ilk hamleyi her zaman SİYAH taraf yapar. Şimdi sırayla oynayacaksın: önce sen, sonra beyaz karşılık verecek.",
-    ariaLabel: '3. adımı onayla',
   },
 ];
 const TOTAL_PAIRS = 3;
@@ -189,10 +186,9 @@ function buildDom(context) {
         <div class="ls-strip-row ls-strip-fade" id="s02-step-${i}" ${i > 0 ? 'hidden' : ''}>
           <p class="ls-strip-text">${escapeHtml(s.text)}</p>
           <span class="ls-tick-wrap">
-            <button type="button" class="ls-tick" data-confirm="${i}" aria-label="${escapeHtml(s.ariaLabel)}">
-              <svg class="ls-tick-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+            <button type="button" class="ls-tick" data-confirm="${i}">
+              Devam
             </button>
-            <span class="ls-tick-tip" aria-hidden="true">Onayla</span>
           </span>
         </div>
       `).join('')}

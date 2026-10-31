@@ -198,10 +198,9 @@ function buildDom(context) {
     <div class="ls-strip-row ls-strip-fade" id="s04-intro">
       <p class="ls-strip-text">${INTRO_TEXT}</p>
       <span class="ls-tick-wrap">
-        <button type="button" class="ls-tick" id="s04-confirm" aria-label="Bilgiyi onayla">
-          <svg class="ls-tick-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        <button type="button" class="ls-tick" id="s04-confirm">
+          Devam
         </button>
-        <span class="ls-tick-tip" aria-hidden="true">Onayla</span>
       </span>
     </div>
     <div class="ls-strip-row" id="s04-play" hidden>

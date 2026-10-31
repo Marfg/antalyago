@@ -254,3 +254,10 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
    Sabit üst çubuk tuvalin sol üst köşesini örter; tarayıcı testlerinin
    "tahta dışı köşe" noktası bu yüzden sağ üsttedir (G10, G12, G21).
    Test: `npm run test-top-bar`.
+8. **1–12. sahnelerin düğmeleri ders çubuğuyla aynı dilde** — bilgi onayı
+   (`.ls-tick`, `#s01-confirm` vb.) yazılı birincil "Devam →" düğmesidir (ok
+   `::after`, onaylanınca yeşil ✓); erişilebilir adı görünen yazıdır. `.ls-strip-btn`
+   köşesi 12 px; ghost varyantı `:not(:disabled)` ile gerçekten şeffaftır. Tüm
+   anlatım düğmeleri en az 44 px. Sahne #11 ve dar ekranda Sahne #12 anlatım
+   alanı biraz uzatıldı (taşmasın diye). 320×640'ta 96 px'lik alan birçok
+   sahnede hâlâ kayar (önceden de öyleydi). Test: `npm run test-strip-controls`.

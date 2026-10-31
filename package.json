@@ -15,6 +15,7 @@
     "test-board3d": "node tests/verify-board3d.mjs",
     "test-help-drawer": "node tests/verify-help-drawer.mjs",
     "test-top-bar": "node tests/verify-top-bar.mjs",
+    "test-strip-controls": "node tests/verify-strip-controls.mjs",
     "test-learning-release-cache": "node tests/sceneReleaseStaleCache.test.mjs",
     "test-learning-ui": "node tests/learning-ui.test.js && node tests/verify-learning-ui.mjs",
     "test-design-system": "node tests/design-system.test.js && node tests/verify-design-system.mjs",
