@@ -23,9 +23,9 @@
  * seed'indeki İLK beyaz taş" olarak GÜVENLE bulunur — dizilim SIRASINDAN
  * bağımsız.
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-31.serit';
-import { BoardState } from '../core/boardState.js?v=2026-10-31.serit';
-import { getGroup, getLiberties, applyMove } from '../core/ruleEngine.js?v=2026-10-31.serit';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-31.kisa';
+import { BoardState } from '../core/boardState.js?v=2026-10-31.kisa';
+import { getGroup, getLiberties, applyMove } from '../core/ruleEngine.js?v=2026-10-31.kisa';
 
 const LESSON_ID = 'l3';
 const BOARD_SIZE = 9;

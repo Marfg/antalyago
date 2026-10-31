@@ -1,5 +1,5 @@
-import { createCaptureScene } from './captureScene.js?v=2026-10-31.serit';
-import { CAPTURE_SCENARIOS } from './captureNativePolicy.js?v=2026-10-31.serit';
+import { createCaptureScene } from './captureScene.js?v=2026-10-31.kisa';
+import { CAPTURE_SCENARIOS } from './captureNativePolicy.js?v=2026-10-31.kisa';
 
 // Keep the existing entry ID so saved progress and links remain valid.
 export const scene06CaptureBasics = createCaptureScene({ id: 'scene-06-capture-basics', scenario: CAPTURE_SCENARIOS[0] });

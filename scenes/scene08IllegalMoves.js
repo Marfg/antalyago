@@ -1,5 +1,5 @@
-import { STAGES, createBoard, attempt, liberties, coord, key } from './illegalNativePolicy.js?v=2026-10-31.serit';
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-31.serit';
+import { STAGES, createBoard, attempt, liberties, coord, key } from './illegalNativePolicy.js?v=2026-10-31.kisa';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-31.kisa';
 
 let dispose, completed=false;
 export const scene08IllegalMoves={
