@@ -1,4 +1,4 @@
-import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-10-30.ustcubuk';
+import { CONNECTION_SHAPES, CONNECTION_BOARD_SIZE, CONNECTION_OFFSET } from '../scenes/connectionShapesPolicy.js?v=2026-10-31.serit';
 /**
  * core/curriculum.js
  *

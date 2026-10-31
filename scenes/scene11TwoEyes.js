@@ -1,6 +1,6 @@
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-30.ustcubuk';
-import { getTwoEyesMoments, buildTwoEyesBoard, evaluateTwoEyesTap, CONCEPT } from './twoEyesPolicy.js?v=2026-10-30.ustcubuk';
-import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-10-30.ustcubuk';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-31.serit';
+import { getTwoEyesMoments, buildTwoEyesBoard, evaluateTwoEyesTap, CONCEPT } from './twoEyesPolicy.js?v=2026-10-31.serit';
+import { isValidMove, applyMove } from '../core/ruleEngine.js?v=2026-10-31.serit';
 let active = null;
 const points = pairs => pairs.map(([col,row]) => ({row,col}));
 export const scene11TwoEyes = {

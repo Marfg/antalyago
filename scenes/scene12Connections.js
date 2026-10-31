@@ -1,6 +1,6 @@
-import {CONNECTION_SHAPES,CONNECTION_BOARD_SIZE,CONNECTION_OFFSET,orientedShape,buildConnectionBoard,validShapeCompletion,completedShape,bambooPlacement,connectionStatus} from './connectionShapesPolicy.js?v=2026-10-30.ustcubuk';
-import {applyMove,isValidMove} from '../core/ruleEngine.js?v=2026-10-30.ustcubuk';
-import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-30.ustcubuk';
+import {CONNECTION_SHAPES,CONNECTION_BOARD_SIZE,CONNECTION_OFFSET,orientedShape,buildConnectionBoard,validShapeCompletion,completedShape,bambooPlacement,connectionStatus} from './connectionShapesPolicy.js?v=2026-10-31.serit';
+import {applyMove,isValidMove} from '../core/ruleEngine.js?v=2026-10-31.serit';
+import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-31.serit';
 let active=null;
 export const scene12Connections={
 id:'scene-12-connections',version:2,title:'Kesme ve Bağlama',curriculumRef:{lessonId:'l8',concept:'connection'},
