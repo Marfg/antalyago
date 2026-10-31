@@ -32,10 +32,23 @@
 .lb-panel [aria-pressed]::before{content:'';position:absolute;right:31px;top:50%;width:18px;height:18px;margin-top:-9px;border-radius:50%;background:#f4f1ea;z-index:1;transition:transform .2s}
 .lb-panel [aria-pressed=true]::after{background:#2f9e8f}
 .lb-panel [aria-pressed=true]::before{transform:translateX(16px)}
+/* Adım noktaları: görünen daire 28 px, dokunma alanı 44 px yüksek; yer
+   oldukça 44 px geniş (Merdiven'in 9 adımı telefonda tek satıra sığsın diye
+   en çok 30 px'e daralır). */
+.lb-root>:has(>#steps){max-width:100%}
+.lb-root #steps{gap:0;flex-wrap:nowrap;min-width:0;max-width:100%}
+.lb-root #steps button{position:relative;isolation:isolate;flex:0 1 auto;width:44px;min-width:30px;height:44px;min-height:44px;padding:0;border:0;border-radius:0;background:none;color:var(--text);font-size:.72rem;font-variant-numeric:tabular-nums}
+.lb-root #steps button::before{content:'';position:absolute;z-index:-1;left:50%;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;box-sizing:border-box;border-radius:50%;border:1px solid var(--gborder);transition:background-color .2s,border-color .2s}
+.lb-root #steps button:hover::before{border-color:var(--gold)}
+.lb-root #steps button.done::before{border-color:#4c9378;background:rgba(76,147,120,.14)}
+.lb-root #steps button[aria-pressed=true]{color:var(--gold2)}
+.lb-root #steps button[aria-pressed=true]::before{border-color:var(--gold);background:rgba(200,168,75,.15)}
+.lb-root #steps button:focus-visible{outline:none}
+.lb-root #steps button:focus-visible::before{outline:2px solid var(--gold2);outline-offset:2px}
 @media(max-width:600px){
  .lb-prev{width:44px;padding:0!important}
  .lb-prev-text{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
  .lb-bar{gap:6px}
  .lb-bar button{padding:0 12px}
 }
-@media(prefers-reduced-motion:reduce){.lb-bar button,.lb-panel [aria-pressed]::after,.lb-panel [aria-pressed]::before{transition:none}}
+@media(prefers-reduced-motion:reduce){.lb-root #steps button::before,.lb-bar button,.lb-panel [aria-pressed]::after,.lb-panel [aria-pressed]::before{transition:none}}

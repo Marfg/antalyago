@@ -253,14 +253,17 @@ body.ls-map-open #ls-topics-open { border-color: var(--gold); color: var(--gold2
   .ls-topic-item, .ls-map-bar span, .ls-map-note { transition: none; }
 }
 
+/* Üst çubuk: dokunma hedefleri 44 px; "Konular" tamamlanan konu sayısını,
+   ses düğmesi durumunu ikonla gösterir. */
 #ls-topbar {
   position: fixed; top: 0; left: 0; z-index: 20;
-  padding: .7rem 1rem;
+  padding: .7rem 1rem; display: flex; gap: .4rem;
 }
 #ls-topbar a {
   color: var(--text); text-decoration: none;
   background: var(--glass); border: 1px solid var(--gborder); border-radius: 8px;
-  padding: .4rem .8rem; font-size: .8rem; backdrop-filter: blur(10px);
+  padding: 0 .8rem; font-size: .8rem; backdrop-filter: blur(10px);
+  display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box;
 }
 #ls-topbar a:hover { border-color: var(--gold); }
 /* Ses düğmesi sağ üstte — sol üst köşe tahtanın boş alanı olarak kalsın. */
@@ -272,9 +275,22 @@ body.ls-map-open #ls-topics-open { border-color: var(--gold); color: var(--gold2
   color: var(--text); text-decoration: none; font-family: inherit;
   background: var(--glass); border: 1px solid var(--gborder); border-radius: 8px;
   padding: .4rem .8rem; font-size: .8rem; backdrop-filter: blur(10px);
-  cursor: pointer; min-height: 36px;
+  cursor: pointer; min-height: 44px;
+  display: inline-flex; align-items: center; gap: .45rem;
 }
 .ls-topbar-btn:hover { border-color: var(--gold); }
+.ls-topics-count {
+  font-size: .7rem; font-weight: 600; font-variant-numeric: tabular-nums;
+  padding: .1rem .45rem; border-radius: 999px;
+  background: rgba(200,168,75,.14); color: var(--gold2);
+}
+.ls-sound-btn { width: 44px; padding: 0; justify-content: center; }
+.ls-sound-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.ls-sound-btn .ls-sound-body { fill: currentColor; stroke: none; }
+.ls-sound-btn[aria-pressed="true"] { color: var(--gold2); border-color: rgba(200,168,75,.5); }
+.ls-sound-btn[aria-pressed="true"] .ls-sound-off,
+.ls-sound-btn[aria-pressed="false"] .ls-sound-on { display: none; }
+.ls-sound-btn[aria-pressed="false"] { color: rgba(232,228,222,.7); }
 
 /* ── Karşılama (#ls-welcome, bkz. scenes/welcomeIntro.js) — tahtanın
    alt kısmına binen başlık + tek düğme. Kapsayıcı tıklamaları tahtaya

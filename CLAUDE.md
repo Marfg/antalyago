@@ -245,3 +245,12 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
    düğmeleri kökte arar) ve `#ls-narration`'ın `backdrop-filter`'ı yüzünden o
    alanın dışına taşamaz; çubuk bu yüzden alanın dibine itilir.
    Test: `npm run test-help-drawer`.
+7. **Ders sahneleri üst çubuğu ve adım noktaları** — "Konular" düğmesi
+   tamamlanan konu sayısını gösterir (`#ls-topics-count`, ör. 3/17); runtime'a
+   verilen progressAdapter sarmalayıcısı bir konu bitince sayacı günceller. Ses
+   düğmesi ikonludur (erişilebilir adı "Ses", durumu `aria-pressed`). Üst çubuk
+   hedefleri 44 px. Merdiven/Ağ/Snapback adım noktaları 28 px daire, 44 px
+   yüksek dokunma alanı; dar ekranda genişlik en çok 30 px'e iner, satır kırılmaz.
+   Sabit üst çubuk tuvalin sol üst köşesini örter; tarayıcı testlerinin
+   "tahta dışı köşe" noktası bu yüzden sağ üsttedir (G10, G12, G21).
+   Test: `npm run test-top-bar`.

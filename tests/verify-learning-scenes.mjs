@@ -2243,7 +2243,8 @@ addTest('G10) Hedef dışı/gruba kopuk bir noktaya tıklama state/event üretme
     const beforeMove = eventsFor(await getEventLog(s.page), S04_ID).filter(e => e.type === 'scene_move_played').length;
     const beforeLib = eventsFor(await getEventLog(s.page), S04_ID).filter(e => e.type === 'scene_liberties_shown').length;
     // Uzak köşe — çapaya bitişik olması pratik olarak imkansız.
-    await s.page.mouse.click(box.x + box.width * 0.05, box.y + box.height * 0.05);
+    // Sağ üst: sol üst köşe sabit üst çubuğun (#ls-topbar) altında kalır.
+    await s.page.mouse.click(box.x + box.width * 0.95, box.y + box.height * 0.05);
     await s.page.waitForTimeout(150);
     const afterMove = eventsFor(await getEventLog(s.page), S04_ID).filter(e => e.type === 'scene_move_played').length;
     const afterLib = eventsFor(await getEventLog(s.page), S04_ID).filter(e => e.type === 'scene_liberties_shown').length;
@@ -2289,7 +2290,7 @@ addTest('G12) Pointer ghost YALNIZ hover edilen yasal nefes noktasında görün�
     // nokta bazı tarayıcılarda element sınırını kaçırıp olayı hiç
     // tetiklemeyebilir, bu yüzden aynı "güvenli boş köşe" fraksiyonu
     // kullanılır, bkz. G10) — ghost temizlenmeli.
-    await s.page.mouse.move(box.x + box.width * 0.05, box.y + box.height * 0.05);
+    await s.page.mouse.move(box.x + box.width * 0.95, box.y + box.height * 0.05);
     await s.page.waitForTimeout(80);
     const previewFarAway = await getMovePreview(s.page);
     ensure(previewFarAway === null, `board dışına/geçersiz bir noktaya hareket edince ghost temizlenmeli, bulunan: ${JSON.stringify(previewFarAway)}`);
@@ -2526,7 +2527,7 @@ addTest('G21) Sahne #4\'ün tam akışı (intro+panel+yanlış deneme+serbest ş
     await s.page.keyboard.press('Escape');
     await s.page.waitForTimeout(150);
     const box = await s.page.locator('#ls-canvas').boundingBox();
-    await s.page.mouse.click(box.x + box.width * 0.05, box.y + box.height * 0.05); // yanlış deneme
+    await s.page.mouse.click(box.x + box.width * 0.95, box.y + box.height * 0.05); // yanlış deneme
     await s.page.waitForTimeout(100);
     await addMoves(s.page, box, 3);
     await s.page.click('#s04-next');

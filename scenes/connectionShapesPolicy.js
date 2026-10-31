@@ -1,5 +1,5 @@
-import {BoardState} from '../core/boardState.js?v=2026-10-30.yardim';
-import {applyMove,isValidMove,getGroup} from '../core/ruleEngine.js?v=2026-10-30.yardim';
+import {BoardState} from '../core/boardState.js?v=2026-10-30.ustcubuk';
+import {applyMove,isValidMove,getGroup} from '../core/ruleEngine.js?v=2026-10-30.ustcubuk';
 export const CONNECTION_BOARD_SIZE=9;
 export const CONNECTION_OFFSET=1;
 export const CONNECTION_SHAPES=[

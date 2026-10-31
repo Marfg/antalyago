@@ -4,11 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Antalya GO — Öğrenme Sahneleri</title>
-<link rel="stylesheet" href="styles/learning-scenes.css?v=2026-09-20.capture-native1" />
+<link rel="stylesheet" href="styles/learning-scenes.css?v=2026-10-30.ustcubuk" />
 <link rel="stylesheet" href="styles/ladder-lesson.css?v=2026-09-20.capture-native1">
 <link rel="stylesheet" href="styles/net-lesson.css?v=2026-09-20.capture-native1">
 <link rel="stylesheet" href="styles/snapback-lesson.css?v=2026-09-20.capture-native1">
-<link rel="stylesheet" href="styles/lesson-help-drawer.css?v=2026-10-30.yardim">
+<link rel="stylesheet" href="styles/lesson-help-drawer.css?v=2026-10-30.ustcubuk">
 </head>
 <body>
 <!-- v0.9 — Board ve anlatım şeridi TEK bir dikey eksende (#ls-stage):
@@ -61,10 +61,10 @@
 
 <div id="ls-topbar">
   <a href="index.html">← Ana</a>
-  <button type="button" class="ls-topbar-btn" id="ls-topics-open">Konular</button>
+  <button type="button" class="ls-topbar-btn" id="ls-topics-open">Konular<span class="ls-topics-count" id="ls-topics-count"></span></button>
 </div>
 <div id="ls-topbar-end">
-  <button type="button" class="ls-topbar-btn" id="ls-sound-toggle" aria-pressed="false">Ses: Kapalı</button>
+  <button type="button" class="ls-topbar-btn ls-sound-btn" id="ls-sound-toggle" aria-pressed="false" aria-label="Ses" title="Ses kapalı"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ls-sound-body" d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path class="ls-sound-on" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11"/><path class="ls-sound-off" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button>
 </div>
 
 <div id="ls-error" role="alert">
@@ -74,30 +74,30 @@
 </div>
 
 <script type="module">
-import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-10-30.yardim';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-10-30.yardim';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-10-30.yardim';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-10-30.yardim';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-10-30.yardim';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-10-30.yardim';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-10-30.yardim';
-import { scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup } from './scenes/scene06CaptureBasics.js?v=2026-10-30.yardim';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-10-30.yardim';
-import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-10-30.yardim';
-import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-10-30.yardim';
-import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-10-30.yardim';
-import { scene15Snapback } from './scenes/scene15Snapback.js?v=2026-10-30.yardim';
-import { scene14Net } from './scenes/scene14Net.js?v=2026-10-30.yardim';
-import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-10-30.yardim';
-import { scene12Connections } from './scenes/scene12Connections.js?v=2026-10-30.yardim';
-import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-10-30.yardim';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-10-30.yardim';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-10-30.yardim';
-import { EventLog } from './core/eventLog.js?v=2026-10-30.yardim';
-import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-10-30.yardim';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-10-30.yardim';
-import { createWelcomeIntro, shouldShowWelcome, welcomeCopy } from './scenes/welcomeIntro.js?v=2026-10-30.yardim';
-import { groupTopics, topicStates } from './scenes/topicsMap.js?v=2026-10-30.yardim';
+import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-10-30.ustcubuk';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-10-30.ustcubuk';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-10-30.ustcubuk';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-10-30.ustcubuk';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-10-30.ustcubuk';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-10-30.ustcubuk';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-10-30.ustcubuk';
+import { scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup } from './scenes/scene06CaptureBasics.js?v=2026-10-30.ustcubuk';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-10-30.ustcubuk';
+import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-10-30.ustcubuk';
+import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-10-30.ustcubuk';
+import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-10-30.ustcubuk';
+import { scene15Snapback } from './scenes/scene15Snapback.js?v=2026-10-30.ustcubuk';
+import { scene14Net } from './scenes/scene14Net.js?v=2026-10-30.ustcubuk';
+import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-10-30.ustcubuk';
+import { scene12Connections } from './scenes/scene12Connections.js?v=2026-10-30.ustcubuk';
+import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-10-30.ustcubuk';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-10-30.ustcubuk';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-10-30.ustcubuk';
+import { EventLog } from './core/eventLog.js?v=2026-10-30.ustcubuk';
+import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-10-30.ustcubuk';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-10-30.ustcubuk';
+import { createWelcomeIntro, shouldShowWelcome, welcomeCopy } from './scenes/welcomeIntro.js?v=2026-10-30.ustcubuk';
+import { groupTopics, topicStates } from './scenes/topicsMap.js?v=2026-10-30.ustcubuk';
 
 /* ── Sürüm/cache bekçisi ──────────────────────────────────────────────
    GitHub Pages önündeki CDN, .js dosyalarına saatlerce (bkz. görev
@@ -219,7 +219,7 @@ const soundToggle = document.getElementById('ls-sound-toggle');
 function applySound(on) {
   boardAdapter.setSoundEnabled(on);
   soundToggle.setAttribute('aria-pressed', String(on));
-  soundToggle.textContent = on ? 'Ses: Açık' : 'Ses: Kapalı';
+  soundToggle.title = on ? 'Ses açık' : 'Ses kapalı';
 }
 let soundPref = false;
 try { soundPref = localStorage.getItem(SOUND_PREF_KEY) === '1'; } catch {}
@@ -320,7 +320,11 @@ const whiteMoveDelayOverride = whiteMoveDelayParam != null && Number.isFinite(Nu
 
 const runtime = createSceneRuntime({
   registry,
-  progressAdapter: sceneProgressAdapter,
+  // Bir konu tamamlanınca üst çubuktaki "Konular" sayacı da güncellenir.
+  progressAdapter: {
+    setActive: id => sceneProgressAdapter.setActive(id),
+    markCompleted: id => { sceneProgressAdapter.markCompleted(id); updateTopicsCount(); },
+  },
   emitEvent: appendEvent,
   contextExtras: () => ({
     container: sceneHost,
@@ -330,6 +334,15 @@ const runtime = createSceneRuntime({
     ...(whiteMoveDelayOverride != null ? { whiteMoveDelayMs: whiteMoveDelayOverride } : {}),
   }),
 });
+
+/* Üst çubuk: "Konular" düğmesinde tamamlanan konu sayısı (ör. 3/17). */
+const topicsCount = document.getElementById('ls-topics-count');
+function updateTopicsCount() {
+  const { completedSceneIds } = sceneProgressAdapter.load();
+  const done = registry.list().filter(scene => completedSceneIds.includes(scene.id)).length;
+  topicsCount.textContent = `${done}/${registry.size}`;
+}
+updateTopicsCount();
 
 function showErrorState(sceneId, reason) {
   const message = reason === 'UNKNOWN_SCENE'
