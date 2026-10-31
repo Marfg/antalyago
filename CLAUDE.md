@@ -259,5 +259,15 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
    `::after`, onaylanınca yeşil ✓); erişilebilir adı görünen yazıdır. `.ls-strip-btn`
    köşesi 12 px; ghost varyantı `:not(:disabled)` ile gerçekten şeffaftır. Tüm
    anlatım düğmeleri en az 44 px. Sahne #11 ve dar ekranda Sahne #12 anlatım
-   alanı biraz uzatıldı (taşmasın diye). 320×640'ta 96 px'lik alan birçok
-   sahnede hâlâ kayar (önceden de öyleydi). Test: `npm run test-strip-controls`.
+   alanı biraz uzatıldı (taşmasın diye). Test: `npm run test-strip-controls`.
+
+9. **Kısa telefon düzeni** — dar ekranda (≤480 px) tahta genişlikle sınırlıdır;
+   altında kalan dikey pay `--board-room` (`100svh − 94vw − 24px`) ile ölçülür ve
+   anlatım alanı en çok bu kadar uzar (1–10: 150 px'e kadar, #12: 300 px'e kadar,
+   #13 kendi dosyasında `96vw − 32/26px`). Ölçümle bulunan eşik: tahta, bölge
+   yüksekliği ≈ genişliği (Merdiven'de genişlik + 25 px) olana dek küçülmez.
+   Bir sahnenin anlatım yüksekliğini artırırken bu payı aşma; test bunu anlatım
+   96 px'e zorlanmış hâlle karşılaştırarak denetler. 13–15'te `#ls-scene-host`
+   min-height'ı dersin dolgusuna göredir (yoksa alan 1–3 px kayıyordu).
+   Merdiven kısa telefonda ≤16 px kayabilir (eylem çubuğu yapışkan). 320×568'de
+   pay yok; orada eskisi gibi kayar. Test: `npm run test-short-phone`.

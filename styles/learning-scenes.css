@@ -658,9 +658,20 @@ body:has(.s11-root:not([hidden])) { --narration-h: clamp(156px, 20vh, 170px); }
 .s12-heading{font-weight:700}.s12-topics,.s12-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.s12-topics [aria-pressed="true"]{outline:2px solid var(--primary,#9aaf85)}.s12-body{max-height:24vh;overflow:auto}
 
 body:has(.s12-root){--narration-h:clamp(190px,36vh,250px)}
-/* Dar ekranda 44 px bağlantı seçenekleri iki satıra sarar; tahta orada genişlikle
-   sınırlı olduğu için anlatım alanı uzatılabilir. */
-@media (max-width: 480px) { body:has(.s12-root){--narration-h:clamp(190px,41vh,270px)} }
+/* Dar telefonlarda tahta genişlikle sınırlıdır; altında tahtanın kullanmadığı
+   dikey bir pay kalır. --board-room bu paydır: ekran yüksekliğinden tahta
+   bölgesinin genişliği ve bir güvenlik payı düşülür. Anlatım alanı gerektiği
+   kadar, ama en çok bu pay kadar uzar; böylece kısa telefonlarda (320×640,
+   375×667) yazı ve düğmeler kaymadan sığar, tahta boyu değişmez (bkz.
+   tests/verify-short-phone.mjs). svh: tarayıcı çubukları açıkken de geçerli. */
+@media (max-width: 480px) {
+  :root {
+    --board-room: calc(100svh - 94vw - 24px);
+    --narration-h: max(clamp(96px, 15vh, 130px), min(150px, var(--board-room)));
+  }
+  /* 44 px bağlantı seçenekleri iki satıra sarar. */
+  body:has(.s12-root) { --narration-h: max(clamp(190px, 41vh, 270px), min(300px, var(--board-room))); }
+}
 #ls-scene-host.s12-scene-host{align-self:flex-start;justify-content:flex-start}
 .s12-root{align-self:flex-start;gap:4px}
 .s12-heading{font-size:.78rem;color:var(--gold2)}
