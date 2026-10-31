@@ -1,7 +1,7 @@
-import {mountSnapbackLesson} from './snapbackLessonController.js?v=2026-10-31.serit';
-import {createLadderMotionOverlay} from './snapbackMotionOverlay.js?v=2026-10-31.serit';
-import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-31.serit';
-import {mountHelpDrawer} from './lessonHelpDrawer.js?v=2026-10-31.serit';
+import {mountSnapbackLesson} from './snapbackLessonController.js?v=2026-10-31.kisa';
+import {createLadderMotionOverlay} from './snapbackMotionOverlay.js?v=2026-10-31.kisa';
+import {mountTopicEndControls} from './topicEndControls.js?v=2026-10-31.kisa';
+import {mountHelpDrawer} from './lessonHelpDrawer.js?v=2026-10-31.kisa';
 let active=null;
 export const scene15Snapback={
  id:'scene-15-snapback',version:1,title:'Snapback',curriculumRef:{lessonId:'l12',concept:'snapback'},

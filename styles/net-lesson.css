@@ -15,3 +15,7 @@ body:has(.s14-root) #ls-stage{max-width:min(1000px,96vw)}body:has(.s14-root) #ls
 @media(max-width:600px){body:has(.s14-root){--narration-h:clamp(280px,48vh,350px)}.s14-story{font-size:.77rem}.s14-feedback{font-size:.73rem}.s14-row button{padding:5px 8px;font-size:.7rem}.s14-dots button{padding:2px}.s14-terms button{padding:3px 8px;font-size:.65rem}.s14-heading{font-size:.78rem}}
 
 .s14-root{display:flex;flex-direction:column;align-items:center;gap:7px;width:100%}.s14-root[hidden],.s14-motion-overlay[hidden],.s14-badge[hidden]{display:none!important}
+/* Dar telefonda öğeler biraz sıkışır; anlatım alanı kaymaz. */
+@media(max-width:480px){.s14-root{gap:5px}.s14-heading-row{gap:4px 10px}}
+/* #ls-scene-host'un en küçük yüksekliği bu dersin anlatım dolgusuna göre; 1rem varsayılanıyla alan her ekranda 1–3 px kayıyordu. */
+#ls-scene-host.s14-scene-host{min-height:calc(var(--narration-h) - 1.2rem)}

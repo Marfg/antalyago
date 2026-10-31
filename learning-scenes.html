@@ -4,11 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Antalya GO — Öğrenme Sahneleri</title>
-<link rel="stylesheet" href="styles/learning-scenes.css?v=2026-10-31.serit" />
-<link rel="stylesheet" href="styles/ladder-lesson.css?v=2026-09-20.capture-native1">
-<link rel="stylesheet" href="styles/net-lesson.css?v=2026-09-20.capture-native1">
-<link rel="stylesheet" href="styles/snapback-lesson.css?v=2026-09-20.capture-native1">
-<link rel="stylesheet" href="styles/lesson-help-drawer.css?v=2026-10-31.serit">
+<link rel="stylesheet" href="styles/learning-scenes.css?v=2026-10-31.kisa" />
+<link rel="stylesheet" href="styles/ladder-lesson.css?v=2026-10-31.kisa">
+<link rel="stylesheet" href="styles/net-lesson.css?v=2026-10-31.kisa">
+<link rel="stylesheet" href="styles/snapback-lesson.css?v=2026-10-31.kisa">
+<link rel="stylesheet" href="styles/lesson-help-drawer.css?v=2026-10-31.kisa">
 </head>
 <body>
 <!-- v0.9 — Board ve anlatım şeridi TEK bir dikey eksende (#ls-stage):
@@ -74,30 +74,30 @@
 </div>
 
 <script type="module">
-import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-10-31.serit';
-import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-10-31.serit';
-import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-10-31.serit';
-import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-10-31.serit';
-import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-10-31.serit';
-import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-10-31.serit';
-import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-10-31.serit';
-import { scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup } from './scenes/scene06CaptureBasics.js?v=2026-10-31.serit';
-import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-10-31.serit';
-import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-10-31.serit';
-import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-10-31.serit';
-import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-10-31.serit';
-import { scene15Snapback } from './scenes/scene15Snapback.js?v=2026-10-31.serit';
-import { scene14Net } from './scenes/scene14Net.js?v=2026-10-31.serit';
-import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-10-31.serit';
-import { scene12Connections } from './scenes/scene12Connections.js?v=2026-10-31.serit';
-import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-10-31.serit';
-import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-10-31.serit';
-import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-10-31.serit';
-import { EventLog } from './core/eventLog.js?v=2026-10-31.serit';
-import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-10-31.serit';
-import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-10-31.serit';
-import { createWelcomeIntro, shouldShowWelcome, welcomeCopy } from './scenes/welcomeIntro.js?v=2026-10-31.serit';
-import { groupTopics, topicStates } from './scenes/topicsMap.js?v=2026-10-31.serit';
+import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-10-31.kisa';
+import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-10-31.kisa';
+import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-10-31.kisa';
+import { scene02TurnsAndIntersections } from './scenes/scene02TurnsAndIntersections.js?v=2026-10-31.kisa';
+import { scene03LibertiesByPosition } from './scenes/scene03LibertiesByPosition.js?v=2026-10-31.kisa';
+import { scene04GroupLiberties } from './scenes/scene04GroupLiberties.js?v=2026-10-31.kisa';
+import { scene05LibertyAssessment } from './scenes/scene05LibertyAssessment.js?v=2026-10-31.kisa';
+import { scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup } from './scenes/scene06CaptureBasics.js?v=2026-10-31.kisa';
+import { scene07CapturePractice } from './scenes/scene07CapturePractice.js?v=2026-10-31.kisa';
+import { scene08IllegalMoves } from './scenes/scene08IllegalMoves.js?v=2026-10-31.kisa';
+import { scene09KoRule } from './scenes/scene09KoRule.js?v=2026-10-31.kisa';
+import { scene10EndgameCounting } from './scenes/scene10EndgameCounting.js?v=2026-10-31.kisa';
+import { scene15Snapback } from './scenes/scene15Snapback.js?v=2026-10-31.kisa';
+import { scene14Net } from './scenes/scene14Net.js?v=2026-10-31.kisa';
+import { scene13Ladder } from './scenes/scene13Ladder.js?v=2026-10-31.kisa';
+import { scene12Connections } from './scenes/scene12Connections.js?v=2026-10-31.kisa';
+import { scene11TwoEyes } from './scenes/scene11TwoEyes.js?v=2026-10-31.kisa';
+import { createSceneBoardAdapter } from './adapters/sceneBoardAdapter.js?v=2026-10-31.kisa';
+import { sceneProgressAdapter } from './adapters/sceneProgressAdapter.js?v=2026-10-31.kisa';
+import { EventLog } from './core/eventLog.js?v=2026-10-31.kisa';
+import { transitionSceneSwap } from './scenes/sceneTransition.js?v=2026-10-31.kisa';
+import { SCENE_RELEASE } from './core/releaseVersion.js?v=2026-10-31.kisa';
+import { createWelcomeIntro, shouldShowWelcome, welcomeCopy } from './scenes/welcomeIntro.js?v=2026-10-31.kisa';
+import { groupTopics, topicStates } from './scenes/topicsMap.js?v=2026-10-31.kisa';
 
 /* ── Sürüm/cache bekçisi ──────────────────────────────────────────────
    GitHub Pages önündeki CDN, .js dosyalarına saatlerce (bkz. görev

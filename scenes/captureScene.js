@@ -1,5 +1,5 @@
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-31.serit';
-import { createCaptureBoard, targetLiberties, evaluateCaptureMove, chooseCaptureReply } from './captureNativePolicy.js?v=2026-10-31.serit';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-31.kisa';
+import { createCaptureBoard, targetLiberties, evaluateCaptureMove, chooseCaptureReply } from './captureNativePolicy.js?v=2026-10-31.kisa';
 
 /** Capture-only controller using the existing scene lifecycle and board adapter. */
 export function createCaptureScene({ id, scenario, game = false }) {
