@@ -153,4 +153,15 @@ for (const rel of SCAN_FILES) {
   }
 }
 
+// robot.html'in stil ve tema bağlantıları da sürümle yenilenir: ekleri olmazsa
+// tarayıcı yeni sayfayı eski CSS ile açabilir.
+const robotPagePath = path.join(ROOT, 'robot.html');
+const robotPage = fs.readFileSync(robotPagePath, 'utf8');
+const robotPageStamped = robotPage.replace(/((?:href|src)="(?:styles\/[\w-]+\.css|core\/theme\.js))(?:\?v=[^"]*)?"/g, `$1?v=${RELEASE}"`);
+if (robotPageStamped !== robotPage) {
+  fs.writeFileSync(robotPagePath, robotPageStamped);
+  filesActuallyWritten++;
+  console.log('robot.html: stil ve tema bağlantıları damgalandı');
+}
+
 console.log(`\nRELEASE=${RELEASE}  toplam graph edge=${totalGraphEdges}  yazılan dosya=${filesActuallyWritten}`);
