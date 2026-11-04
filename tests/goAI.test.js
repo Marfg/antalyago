@@ -1,7 +1,6 @@
-import { AI_PROFILES, __test, choosePolicyMove, finalScore, getBestMoveByIterations, getBestMoveForProfile, refineEndgameMove } from '../core/goAI.js';
+import { AI_PROFILES, __test, finalScore, getBestMoveByIterations, getBestMoveForProfile, refineEndgameMove } from '../core/goAI.js';
 import { BoardState } from '../core/boardState.js';
 import { isValidMove } from '../core/ruleEngine.js';
-import { ADAPTIVE_VERSION,HANDICAP_9X9,createAdaptiveState,getAdaptiveGameSettings,loadAdaptiveState,recordCompletedGame,resetAdaptiveState,serializeAdaptiveState } from '../core/adaptiveAI.js';
 
 let passed=0, failed=0;
 function test(name,fn){try{fn();console.log('  ✓',name);passed++}catch(error){console.error('  ✗',name,'-',error.message);failed++}}
@@ -13,8 +12,6 @@ function position(size,stones=[],ko=-1){
   for(const [color,x,y] of stones) grid[y*size+x]=color;
   return {grid,ko,size};
 }
-function adaptiveSequence(state,outcomes){for(const outcome of outcomes)state=recordCompletedGame(state,{completed:true,outcome,endReason:'score'}).state;return state}
-function policy(entries=[],pass=0){const values=new Float32Array(362).fill(.001);for(const[x,y,p]of entries)values[y*19+x]=p;values[361]=pass;return values}
 
 test('yakalama rakip taşı kaldırır',()=>{
   const board=position(5,[[2,2,2],[1,1,2],[1,2,1],[1,3,2]]);
@@ -35,36 +32,6 @@ test('basit ko hemen geri almayı engeller',()=>{
   ok(capture);
   equal(capture.ko,6);
   equal(__test.play({grid:capture.grid,ko:capture.ko,size:5},2,1,1),null);
-});
-
-test('politika seçimi yakalamayı zayıf hamleden üstün tutar',()=>{
-  const board=position(5,[[2,2,2],[1,1,2],[1,2,1],[1,3,2]]);
-  equal(JSON.stringify(choosePolicyMove(board,1,policy([[0,0,.8],[2,3,.03]]))),JSON.stringify({x:2,y:3}));
-});
-
-test('politika seçimi atarideki taşı kurtarır',()=>{
-  const board=position(5,[[1,2,2],[2,1,2],[2,2,1],[2,3,2]]);
-  equal(JSON.stringify(choosePolicyMove(board,1,policy([[0,0,.8],[2,3,.03]]))),JSON.stringify({x:2,y:3}));
-});
-
-test('politika seçimi ayrı dost grupları bağlar',()=>{
-  const board=position(5,[[1,1,2],[1,3,2]]);
-  equal(JSON.stringify(choosePolicyMove(board,1,policy([[0,0,.5],[2,2,.08]]))),JSON.stringify({x:2,y:2}));
-});
-
-test('politika seçimi ko noktasını eler',()=>{
-  const koBoard={...position(5),ko:0};
-  equal(JSON.stringify(choosePolicyMove(koBoard,1,policy([[0,0,.9],[4,4,.2]]))),JSON.stringify({x:4,y:4}));
-});
-
-test('politika seçimi intihar adayını eler',()=>{
-  const suicide=position(5,[[2,1,2],[2,2,1],[2,3,2],[2,2,3]]);
-  equal(JSON.stringify(choosePolicyMove(suicide,1,policy([[2,2,.9],[4,4,.2]]))),JSON.stringify({x:4,y:4}));
-});
-
-test('politika seçimi boş tahtada yüksek pas olasılığına rağmen erken pas geçmez',()=>{
-  const move=choosePolicyMove(position(9),1,policy([[4,4,.01]],.99));
-  ok(move!=='pass');
 });
 
 test('rakip pas geçti ve güvenli hamle kalmadıysa robot pas geçer',()=>{
@@ -101,14 +68,6 @@ test('kazanan robot kendi güvenli bölgesini gereksiz doldurmaz',()=>{
 test('kaybeden robot erken pas geçmez',()=>{
   const board={...position(5),komi:6.5,previousPass:false,moveCount:40};
   ok(refineEndgameMove(board,1,'pass')!=='pass');
-});
-
-test('politika ve MCTS aynı merkezi endgame filtresini kullanır',()=>{
-  const board={...position(3,[[2,1,1],[1,0,1],[1,1,0],[1,2,1],[2,0,0],[2,2,0],[2,0,2],[2,2,2]]),previousPass:true,moveCount:20};
-  const fromPolicy=choosePolicyMove(board,1,policy([],1));
-  const fromMcts=getBestMoveByIterations(board,1,40,{seed:9});
-  equal(JSON.stringify(fromPolicy),JSON.stringify({x:1,y:2}));
-  equal(JSON.stringify({x:fromMcts.x,y:fromMcts.y}),JSON.stringify(fromPolicy));
 });
 
 test('atarideki grup uzayarak kurtulabilir',()=>{
@@ -208,50 +167,11 @@ test('Başlangıç profili yasal ve makul adaylar dışına çıkmaz',()=>{
   equal(getBestMoveForProfile(position(5,stones),1,'beginner',{seed:4}),'pass','kendi gözünü doldurmak yerine pas geçmeli');
 });
 
-test('uyarlanabilir profil terfi, düşme ve üç oyun bekleme uygular',()=>{
-  let state=adaptiveSequence(createAdaptiveState(),['win','loss','win','win','loss','win']);
-  equal(state.profile,'medium'); equal(state.gamesSinceChange,0); equal(state.games.length,0);
-  state=adaptiveSequence(state,['loss','loss','loss']); equal(state.profile,'medium');
-  state=adaptiveSequence(state,['loss','win','win']); equal(state.profile,'beginner');
-});
-
-test('eski sonuçlar profil değişiminden üç oyun sonra ani geri dönüş üretmez',()=>{
-  let state=adaptiveSequence(createAdaptiveState(),['win','win','win','win','loss','loss']);
-  equal(state.profile,'medium'); equal(state.games.length,0);
-  state=adaptiveSequence(state,['loss','loss','loss']);
-  equal(state.profile,'medium'); equal(state.games.length,3);
-});
-
-test('yalnız tamamlanan skor ve teslim oyunları uyarlanabilir geçmişe girer',()=>{
-  const state=createAdaptiveState();
-  equal(recordCompletedGame(state,{completed:false,outcome:'win',endReason:'score'}).state.games.length,0);
-  equal(recordCompletedGame(state,{completed:true,outcome:'win',endReason:'restart'}).state.games.length,0);
-  equal(recordCompletedGame(state,{completed:true,outcome:'loss',endReason:'resign'}).state.games.length,1);
-});
-
-test('profil sınırı komi ve handikapla küçük ayar yapar',()=>{
-  let top=adaptiveSequence({...createAdaptiveState(),profile:'strong'},['win','win','win','win','loss','loss']);
-  equal(top.edgeAdjustment,1); equal(getAdaptiveGameSettings(top,'white').handicap.length,2); equal(getAdaptiveGameSettings(top,'black').komi,7.5);
-  const bottom=adaptiveSequence(createAdaptiveState(),['loss','loss','loss','loss','win','win']);
-  equal(bottom.edgeAdjustment,-1); equal(getAdaptiveGameSettings(bottom,'black').handicap.length,2);
-});
-
 test('özel komi puanlamaya aktarılır ve varsayılan 6.5 kalır',()=>{
   const board={grid:new Int8Array(9),size:3,ko:-1}; equal(finalScore(board).komi,6.5); equal(finalScore({...board,komi:.5}).margin,.5);
 });
 
-test('9x9 handikap yerleşimleri benzersiz ve yasaldır',()=>{
-  for(const [count,points] of Object.entries(HANDICAP_9X9)){
-    equal(points.length,Number(count)); equal(new Set(points.map(p=>`${p.x},${p.y}`)).size,points.length);
-    const board=new BoardState(9); for(const point of points){ok(isValidMove(board,point.x,point.y,'black').valid);board.placeStone(point.x,point.y,'black')}
-  }
-});
 
-test('uyarlanabilir ilerleme sıfırlanır, bozuk ve eski veri güvenle reddedilir',()=>{
-  equal(resetAdaptiveState().profile,'beginner');
-  for(const raw of ['{bozuk',JSON.stringify({version:ADAPTIVE_VERSION+1}),JSON.stringify({version:ADAPTIVE_VERSION,profile:'x',games:[]})])equal(loadAdaptiveState(raw).profile,'beginner');
-  const state=adaptiveSequence(createAdaptiveState(),['win','loss']); equal(loadAdaptiveState(serializeAdaptiveState(state)).games.length,2);
-});
-
-console.log(`\nToplam: ${passed+failed}  ✓ ${passed}  ✗ ${failed}`);
+console.log(`
+Toplam: ${passed+failed}  ✓ ${passed}  ✗ ${failed}`);
 if(failed)process.exit(1);

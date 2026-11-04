@@ -90,7 +90,7 @@ const GRAPH_BASENAMES = [
 const SCAN_FILES = [
   'learning-scenes.html',
   'teacher-studio.html',
-  'index.html', 'home/heroBoard.js',
+  'index.html', 'home/heroBoard.js', 'robot.html', 'robot/robotPage.js',
   'core/ruleEngine.js', 'core/curriculum.js', 'ogren-3d.html',
   'scenes/scene01BoardIntro.js',
   'scenes/scene02TurnsAndIntersections.js',

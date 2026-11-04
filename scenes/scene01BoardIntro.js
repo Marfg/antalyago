@@ -31,7 +31,7 @@
  * kimliklerine ASLA bağımlı değildir.
  */
 
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-31.kisa';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-11-05.robot';
 
 const BOARD_SIZES = [9, 13, 19];
 const SIZE_LABELS = { 9: 'Başlangıç', 13: 'Orta', 19: 'Standart' };

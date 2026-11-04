@@ -220,10 +220,10 @@
  * temizlenmişti) → snapshot da null'dır, ZORLA merkez ghost SENTEZLENMEZ.
  */
 
-import { CAM } from '../core/curriculum.js?v=2026-10-31.kisa';
-import { BoardState } from '../core/boardState.js?v=2026-10-31.kisa';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-31.kisa';
-import { createBoardSound } from './boardSound.js?v=2026-10-31.kisa';
+import { CAM } from '../core/curriculum.js?v=2026-11-05.robot';
+import { BoardState } from '../core/boardState.js?v=2026-11-05.robot';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-11-05.robot';
+import { createBoardSound } from './boardSound.js?v=2026-11-05.robot';
 
 const CAM_PRESETS = { ...CAM };
 
@@ -265,9 +265,11 @@ function sizeToCell(n) { return n === 5 ? 80 : n === 9 ? 48 : n === 13 ? 32 : 22
  * @param {{isMobile?: boolean, initialSize?: 9|13|19, board3d?: boolean}} [options]
  *   `board3d` — tahta ve taşları Blender GLB'lerinden Three.js ile çizer
  *   (bkz. board3d.js); yüklenene kadar ve WebGL yoksa 2D çizim sürer.
+ *   `rowLabelsUp` — satır numaraları ekranın altından yukarı artar (Go
+ *   kayıtlarındaki düzen). Ders sahneleri bunu kullanmaz.
  * @returns {object} bkz. dosya başı sözleşme listesi
  */
-export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize = 19, board3d: want3d = false } = {}) {
+export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize = 19, board3d: want3d = false, rowLabelsUp = false } = {}) {
   const ctx = canvas.getContext('2d');
   const woodPat = makeWoodPattern(ctx);
 
@@ -296,6 +298,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
   // "playMove/isLegalMove" ihtiyacı BURADA, core/ruleEngine.js üzerinden
   // karşılanır. Sahne modülü bu nesneye asla doğrudan erişmez.
   let boardSt = new BoardState(SIZE);
+  let dimmedStones = new Set();   // sayımda ölü sayılan taşlar soluk çizilir ("x,z")
   // Görsel taş listesi — [{gx,gz,color,t,removing:false}] (basit giriş
   // animasyonu için `t` 0→1 ilerler; ogren-3d.html'deki particle/ghost
   // sistemleri BİLEREK taşınmadı, yalnız sade bir ölçek-içi geçiş var).
@@ -818,7 +821,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
       const lb = project(pos, Y, HALF + CELL * .72), nl = project(-HALF - CELL * .72, Y, pos);
       const fs = Math.round(9 * lb.scale); if (fs < 6) continue;
       ctx.font = `bold ${fs}px monospace`; ctx.fillStyle = 'rgba(75,36,6,.78)';
-      ctx.fillText(LTRS_ALL[i], lb.sx, lb.sy); ctx.fillText(String(SIZE - i), nl.sx, nl.sy);
+      ctx.fillText(LTRS_ALL[i], lb.sx, lb.sy); ctx.fillText(String(rowLabelsUp ? i + 1 : SIZE - i), nl.sx, nl.sy);
     }
   }
 
@@ -1241,7 +1244,7 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
         continue;
       }
       const scale = reduceMotion ? 1 : easeInOutCubic(Math.min(1, s.t));
-      drawStone(s.gx, s.gz, s.color, scale, undefined);
+      drawStone(s.gx, s.gz, s.color, scale, dimmedStones.has(s.gx + ',' + s.gz) ? 0.42 : undefined);
     }
     if (rejectFx) drawRejectFx(rejectFx);
     if (lastMove) {
@@ -1701,6 +1704,18 @@ export function createSceneBoardAdapter(canvas, { isMobile = false, initialSize 
         }
       }
       return { ok: true, captured: captured.map(c => ({ row: c.y, col: c.x })) };
+    },
+
+    /** Soluk çizilecek taşlar (tam liste). Yalnız görsel; kuralsal duruma dokunmaz. */
+    setDimmedStones(points) {
+      dimmedStones = new Set((points || []).map(p => p.col + ',' + p.row));
+      dirty = true;
+    },
+
+    /** Pas: taş eklemez, yalnız ko yasağını kaldırır (yasak bir hamle sürer). */
+    notePass() {
+      boardSt.koPoint = null;
+      lastMove = null;
     },
 
     /**

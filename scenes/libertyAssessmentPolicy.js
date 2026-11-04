@@ -27,9 +27,9 @@
  *     oynanan hamlenin GERÇEK yakalamayı ürettiğini garanti eder — bkz.
  *     adapters/sceneBoardAdapter.js playMove()).
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-31.kisa';
-import { BoardState } from '../core/boardState.js?v=2026-10-31.kisa';
-import { getGroup, getLiberties, applyMove } from '../core/ruleEngine.js?v=2026-10-31.kisa';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-11-05.robot';
+import { BoardState } from '../core/boardState.js?v=2026-11-05.robot';
+import { getGroup, getLiberties, applyMove } from '../core/ruleEngine.js?v=2026-11-05.robot';
 
 const LESSON_ID = 'l2';
 const BOARD_SIZE = 9;
