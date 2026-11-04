@@ -169,6 +169,13 @@ test('KAÇIŞ YOK: her SCAN_FILES dosyasındaki HER local .js import ya graph (v
   }
 });
 
+test('robot.html stil ve tema bağlantıları güncel sürümü taşır (eski CSS önbellekten gelmesin)', () => {
+  const links = [...read('robot.html').matchAll(/(?:href|src)="((?:styles|core)\/[^"]+)"/g)].map(match => match[1]);
+  assert.equal(links.length, 4, 'robot.html: stil ve tema bağlantıları bulunamadı');
+  const release = JSON.parse(read('scene-release.json')).release;
+  for (const link of links) assert.ok(link.endsWith(`?v=${release}`), `robot.html: ${link} sürümsüz`);
+});
+
 test('learning-scenes.html ve teacher-studio.html FARKLI reload-guard sessionStorage anahtarları kullanıyor (bkz. görev talimatı: "sayfaya özel guard anahtarları birbirini yanlışlıkla engellememeli")', () => {
   const learningGuard = read('learning-scenes.html').match(/RELOAD_GUARD_KEY\s*=\s*'([^']+)'/)?.[1];
   const studioGuard = read('teacher-studio.html').match(/RELOAD_GUARD_KEY\s*=\s*'([^']+)'/)?.[1];

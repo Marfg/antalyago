@@ -5,7 +5,7 @@ body.robot-page {
   --hero-ink: #0b0907;
   --hero-kaya: #e6b877;
   --rb-stage: radial-gradient(circle at 42% 45%, #2a1d12 0, #120d0a 52%, var(--hero-ink) 100%);
-  --rb-top-h: 60px;
+  --rb-top-h: 73px;
   margin: 0;
   height: 100svh;
   overflow: hidden;
@@ -19,34 +19,12 @@ body.robot-page {
   background: var(--page-bg);
 }
 
-.rb-top {
+/* Üst çubuk ana sayfanın ortak başlığıdır; tahta tam ekran kaldığı için burada
+   akıştan çıkar ve yüksekliği --rb-top-h ile ayrılır. */
+body.robot-page .site-header {
   position: fixed;
-  z-index: 3;
   inset: 0 0 auto 0;
-  height: var(--rb-top-h);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 clamp(16px, 3vw, 32px);
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--page-bg) 88%, transparent);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
 }
-
-.rb-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--heading);
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 1.05rem;
-  text-decoration: none;
-}
-
-.rb-brand img { border-radius: 50%; }
 
 .rb-layout {
   display: grid;
@@ -270,7 +248,7 @@ body.robot-page {
 .rb-quiet-link.is-armed { color: var(--accent); }
 
 @media (max-width: 860px) {
-  body.robot-page { --rb-top-h: 52px; overflow: auto; height: auto; }
+  body.robot-page { overflow: auto; height: auto; }
 
   .rb-layout {
     grid-template-columns: 1fr;

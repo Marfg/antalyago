@@ -13,7 +13,6 @@ Repo: `c:\Users\Ekim\antalyago` · Branch: `main` · GitHub: Marfg/antalyago
 Ana sayfalar:
 - `index.html` — giriş / navigasyon
 - `ogren-3d.html` — **3D öğrenme motoru** (aktif geliştirme)
-- `ogren.html` — 2D öğrenme motoru (eski, bakım modu)
 - `problem.html` — tsumego çözme
 - `etud.html` — etüt tahtası
 - `oyna.html` — oyun modu
@@ -220,7 +219,7 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
 1. **Müfredat `ogren-3d.html` içinde sabit kodlu** — formation JSON'ları henüz
    motora bağlanmamış. İleride dinamik yükleme planlanabilir.
 
-2. **`ogren.html` (2D) bakım modunda** — yeni ders içeriği sadece `ogren-3d.html`'e ekleniyor.
+2. **2D öğrenme motoru kaldırıldı** — `ogren.html`, `ogren.js`, `prototype-3d.html` ve `mobile-mockup.html` silindi; hiçbir sayfa bunlara bağlanmıyordu.
 
 3. **19x19 desteği aktif** — l7 adım-1 ile test edildi, motor tüm boyutlarda çalışıyor.
 

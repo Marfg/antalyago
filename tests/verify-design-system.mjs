@@ -76,7 +76,7 @@ async function waitForPage(page) {
 }
 
 async function assertCssOrder(page, cssName) {
-  const order = await page.evaluate(() => Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(link => link.getAttribute('href') || ''));
+  const order = await page.evaluate(() => Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(link => (link.getAttribute('href') || '').split('?')[0]));
   const designIndex = order.indexOf('styles/design-system.css');
   const compatIndex = order.indexOf('styles/theme-compat.css');
   const pageIndex = order.indexOf(cssName);
