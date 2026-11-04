@@ -1,5 +1,5 @@
-import { BoardState } from '../core/boardState.js?v=2026-10-31.kisa';
-import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-10-31.kisa';
+import { BoardState } from '../core/boardState.js?v=2026-11-05.robot';
+import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-11-05.robot';
 
 // LS-owned positions preserving the previous scene's four shapes and both
 // five-stone captures. No runtime dependency on curriculum/page/lesson data.

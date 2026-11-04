@@ -86,7 +86,7 @@ await test('ana sayfa yeni içerik ve hedefleri taşıyor', async () => {
   assertOk(html.includes('href="learning-scenes.html"'), 'öğren CTA yok');
   assertOk(html.includes('robot.html') && html.includes('9&times;9'), 'robot CTA yanlış');
   assertOk(!html.includes('Uyarlanabilir robot'), 'eski robot ifadesi kaldı');
-  assertOk(html.includes('Temel seviye 9&times;9 pratik robotu'), 'yeni robot ifadesi yok');
+  assertOk(html.includes('D&ouml;rt ta&#351;la ba&#351;la'), 'yeni robot ifadesi yok');
 });
 
 await test('saklanan tema sayfalar arasında korunur ve kontrol eşleşir', async () => {

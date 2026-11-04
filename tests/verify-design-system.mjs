@@ -214,27 +214,19 @@ await test('reduced-motion disables transitions', async () => {
   await browserContext.close();
 });
 
-await test('robot thinking/gameover states render', async () => {
+await test('robot panel keeps theme tokens and home typography', async () => {
   const browserContext = await context({ width: 1280, height: 720 });
   const page = await browserContext.newPage();
   await page.addInitScript(() => localStorage.setItem('antalyago-theme', 'dark'));
   await page.goto(BASE + '/robot.html', { waitUntil: 'domcontentloaded' });
   await waitForPage(page);
 
-  await page.evaluate(() => {
-    document.getElementById('think-bar').classList.add('show');
-    const modal = document.getElementById('gameover');
-    modal.classList.add('show');
-    document.getElementById('go-winner').textContent = 'Oyun Bitti';
-    document.getElementById('go-score').textContent = 'Siyah kazandı';
-    document.getElementById('go-komi').textContent = 'Komi: 6.5';
-    document.getElementById('go-territory').textContent = 'Diyalog ve sonuç alanı görünür';
-  });
-
-  await page.locator('#think-bar').waitFor({ state: 'visible' });
-  await page.locator('#gameover').waitFor({ state: 'visible' });
-  assert(await page.locator('#think-bar').isVisible());
-  assert(await page.locator('#gameover').isVisible());
+  const fonts = await page.evaluate(() => ({
+    title: getComputedStyle(document.getElementById('rb-title')).fontFamily,
+    status: getComputedStyle(document.getElementById('rb-status')).fontFamily
+  }));
+  assert.ok(fonts.title.includes('Noto Serif'), fonts.title);
+  assert.ok(fonts.status.includes('Noto Sans'), fonts.status);
 
   await browserContext.close();
 });

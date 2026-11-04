@@ -32,9 +32,9 @@
  *      scenes/libertyAssessmentPolicy.js/capturePolicy.js "getLesson()
  *      throws if not found" deseniyle AYNI disiplin.
  */
-import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-10-31.kisa';
-import { BoardState } from '../core/boardState.js?v=2026-10-31.kisa';
-import { getGroup, getLiberties, applyMove, isValidMove } from '../core/ruleEngine.js?v=2026-10-31.kisa';
+import { CAM, CURRICULUM } from '../core/curriculum.js?v=2026-11-05.robot';
+import { BoardState } from '../core/boardState.js?v=2026-11-05.robot';
+import { getGroup, getLiberties, applyMove, isValidMove } from '../core/ruleEngine.js?v=2026-11-05.robot';
 
 const LESSON_ID = 'l3';
 const BOARD_SIZE = 9;

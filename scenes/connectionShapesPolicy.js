@@ -1,5 +1,5 @@
-import {BoardState} from '../core/boardState.js?v=2026-10-31.kisa';
-import {applyMove,isValidMove,getGroup} from '../core/ruleEngine.js?v=2026-10-31.kisa';
+import {BoardState} from '../core/boardState.js?v=2026-11-05.robot';
+import {applyMove,isValidMove,getGroup} from '../core/ruleEngine.js?v=2026-11-05.robot';
 export const CONNECTION_BOARD_SIZE=9;
 export const CONNECTION_OFFSET=1;
 export const CONNECTION_SHAPES=[

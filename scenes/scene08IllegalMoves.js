@@ -1,5 +1,5 @@
-import { STAGES, createBoard, attempt, liberties, coord, key } from './illegalNativePolicy.js?v=2026-10-31.kisa';
-import { mountTopicEndControls } from './topicEndControls.js?v=2026-10-31.kisa';
+import { STAGES, createBoard, attempt, liberties, coord, key } from './illegalNativePolicy.js?v=2026-11-05.robot';
+import { mountTopicEndControls } from './topicEndControls.js?v=2026-11-05.robot';
 
 let dispose, completed=false;
 export const scene08IllegalMoves={

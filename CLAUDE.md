@@ -14,6 +14,7 @@ Ana sayfalar:
 - `index.html` — giriş / navigasyon
 - `ogren-3d.html` — **3D öğrenme motoru** (aktif geliştirme)
 - `ogren.html` — 2D öğrenme motoru (eski, bakım modu)
+- `robot.html` — 9×9 robotla oyun (`robot/robotPage.js`, bkz. Önemli Kararlar 10)
 - `etud.html` — etüt tahtası
 - `canli.html` — OGS canlı maç entegrasyonu
 
@@ -271,3 +272,22 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
    min-height'ı dersin dolgusuna göredir (yoksa alan 1–3 px kayıyordu).
    Merdiven kısa telefonda ≤16 px kayabilir (eylem çubuğu yapışkan). 320×568'de
    pay yok; orada eskisi gibi kayar. Test: `npm run test-short-phone`.
+
+10. **Robot (`robot.html`)** — sayfa ince kabuktur (`robot/robotPage.js`); kurallar
+   `core/robotGame.js`, basamaklar `core/handicapLadder.js`, ağ girdileri
+   `core/kataFeatures.js`, arama `core/robotSearch.js`, ipuçları `core/hintTools.js`
+   içindedir ve Node'da test edilir (`tests/robotCore.test.js`). Tahta ders
+   sahnelerinin adaptörü + Blender GLB'sidir; satır 0 ekranın altında olduğu için
+   y dönüşümü yalnız `robotPage.js`'teki `toRowCol/toXY` içinde yapılır.
+   - **Güç sabittir:** oyuncu hep siyah, robot hep beyaz; tek ayar yeri
+     `ROBOT_STRENGTH`. Ziyaret cihaza göre artmaz. Hedef 1 kyu–1 dan'dır ama bu
+     insan oyunlarıyla doğrulanmadı; `scripts/ai/calibrate-robot.mjs` yalnız
+     ayarların göreli etkisini ölçer.
+   - **Merdiven:** 4 taş → 3 → 2 → ilk hamle (komi 0,5) → eşit (komi 6,5). Galibiyet
+     bir basamak çıkarır, yenilgi ve teslim basamağı değiştirmez.
+   - **Model:** repodaki `b10c128`; arama kazanma oranına değil sahipliğe dayanır,
+     çünkü kazanma oranı küçük tahtada oynaktır. Tahmini alan ve sayımdaki ölü taş
+     önerisi de sahiplikten gelir. Model yüklenmezse `goAI.js` MCTS'i oynar (zayıf)
+     ve kullanıcıya söylenir; tehlike ipucu motorsuz çalışır.
+   - **Test:** `npm run test-ai`, `npm run test-robot` (sahte worker),
+     `npm run test-robot-engine` (gerçek model, ağ gerekir, test-all dışında).
