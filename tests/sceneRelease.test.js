@@ -70,9 +70,11 @@ const GRAPH_BASENAMES = [
   // Ders denetim çubuğu (Merdiven, Ağ, Snapback) — yardım çekmecesi.
   'lessonHelpDrawer.js',
   'scene11TwoEyes.js', 'twoEyesPolicy.js', 'eyeAnalysis.js', 'scene12Connections.js', 'connectionShapesPolicy.js',
+  'goAI.js', 'robotGame.js', 'handicapLadder.js', 'hintTools.js', 'robotSearch.js',
 ];
 const SCAN_FILES = [
   'learning-scenes.html', 'teacher-studio.html', 'index.html', 'home/heroBoard.js',
+  'robot/robotPage.js', 'core/robotGame.js', 'core/hintTools.js', 'core/robotSearch.js', 'workers/goAI.worker.js',
   'core/ruleEngine.js', 'core/curriculum.js',
   'scenes/scene01BoardIntro.js', 'scenes/scene02TurnsAndIntersections.js',
   'scenes/scene03LibertiesByPosition.js', 'scenes/scene04GroupLiberties.js',
@@ -172,6 +174,9 @@ test('KAÇIŞ YOK: her SCAN_FILES dosyasındaki HER local .js import ya graph (v
 test('robot.html stil ve tema bağlantıları güncel sürümü taşır (eski CSS önbellekten gelmesin)', () => {
   const links = [...read('robot.html').matchAll(/(?:href|src)="((?:styles|core)\/[^"]+)"/g)].map(match => match[1]);
   assert.equal(links.length, 4, 'robot.html: stil ve tema bağlantıları bulunamadı');
+  links.push(read('robot.html').match(/import\('\.\/(robot\/robotPage\.js[^']*)'/)[1]);
+  links.push(read('robot/robotPage.js').match(/new Worker\('\.\/(workers\/robotEngine\.worker\.js[^']*)'/)[1]);
+  for (const match of read('workers/robotEngine.worker.js').matchAll(/import\('\.\.\/(core\/[^']+)'/g)) links.push(match[1]);
   const release = JSON.parse(read('scene-release.json')).release;
   for (const link of links) assert.ok(link.endsWith(`?v=${release}`), `robot.html: ${link} sürümsüz`);
 });

@@ -21,7 +21,7 @@ assert(html.includes('Weiqi'), 'Weiqi korunmam&#305;&#351;');
 assert(html.includes('<em>Go</em>'), 'Go ad&#305; eksik');
 assert(html.includes('<em>Baduk</em>'), 'Baduk ad&#305; eksik');
 assert(html.includes('4.000 y&#305;l'), '4.000 y&#305;ll&#305;k anlat&#305; eksik');
-assert(html.includes('ogren-3d.html'), 'ogren-3d CTA eksik');
+assert(html.includes('learning-scenes.html'), 'ders CTA eksik');
 assert(html.includes('robot.html'), 'robot ba&#287;lant&#305;s&#305; eksik');
 assert(html.includes('property="og:title"'), 'OG title eksik');
 assert(html.includes('property="og:description"'), 'OG description eksik');

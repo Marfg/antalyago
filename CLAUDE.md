@@ -12,7 +12,7 @@ Repo: `c:\Users\Ekim\antalyago` · Branch: `main` · GitHub: Marfg/antalyago
 
 Ana sayfalar:
 - `index.html` — giriş / navigasyon
-- `ogren-3d.html` — **3D öğrenme motoru** (aktif geliştirme)
+- `learning-scenes.html` — **ders sahneleri** (aktif geliştirme)
 - `robot.html` — 9×9 robotla oyun (`robot/robotPage.js`, bkz. Önemli Kararlar 10)
 - `etud.html` — etüt tahtası
 - `canli.html` — OGS canlı maç entegrasyonu
@@ -23,12 +23,12 @@ Ana sayfalar:
 
 | Pencere | Dizin | Görev |
 |---|---|---|
-| **Pencere A** (bu) | `antalyago/` | `ogren-3d.html` motoru, müfredat verisi |
+| **Pencere A** (bu) | `antalyago/` | Ders sahneleri, müfredat verisi |
 | **Pencere B** | `antalyago/formations/` | Formation JSON dosyaları, SGF dosyaları |
 
 **Senkronizasyon kuralı:** Her iki pencere de `git pull` yaparak diğerinin
 değişikliklerini alabilir. Çakışma riskini azaltmak için:
-- Pencere A `ogren-3d.html` içindeki CURRICULUM'u yönetir
+- Pencere A `core/curriculum.js` içindeki CURRICULUM'u yönetir
 - Pencere B `formations/**/*.json` ve `formations/**/*.sgf` dosyalarını yönetir
 
 ---
@@ -57,83 +57,8 @@ formations/
     l15-son-oyun-yose/      adim-1..2.json
 ```
 
-**Not:** Formation JSON'ları şu an doğrudan kullanılmıyor; `ogren-3d.html`
+**Not:** Formation JSON'ları şu an doğrudan kullanılmıyor; `core/curriculum.js`
 içindeki CURRICULUM sabit kodlu. SGF dosyaları referans/kaynak olarak tutuluyor.
-
----
-
-## 3D Motor Mimarisi (`ogren-3d.html`)
-
-### Temel Değişkenler
-
-```js
-let SIZE = 9, CELL = 48, HALF = (SIZE-1)*CELL/2;
-// SIZE: tahta boyutu (9 / 13 / 19)
-// CELL: çizgi aralığı (9→48, 13→32, 19→22)
-// HALF: tahtanın yarı genişliği (dünya koordinatı)
-
-let STONE_R = 20;  // CELL*(20/48) — her boyut değişiminde güncellenir
-const ASPECT_3D = 0.36;  // taşın dikey basıklık oranı
-const BOARD_H = 14;      // tahta kalınlığı
-```
-
-### Kritik Kural: STONE_R Dinamiktir
-
-`STONE_R` artık sabit değil. Her `CELL` değişiminde güncellenmeli:
-```js
-STONE_R = CELL * (20/48);
-// 9x9 → 20.0,  13x13 → 13.3,  19x19 → 9.2
-```
-Bu güncelleme `setBoardSize()` ve `loadStep()` içinde yapılıyor.
-**19x19'da unutulursa taşlar hücreyi doldurur ve üst üste biner.**
-
-### loadStep() Boyut Mantığı
-
-Boyut değişikliği `game.reset()` ÖNCE yapılmalı:
-```js
-if(!step.boardSelector) {
-  const ns = step.size || 9;
-  if(ns !== SIZE) {
-    SIZE=ns; CELL=ns===9?48:ns===13?32:22;
-    HALF=(SIZE-1)*CELL/2; STONE_R=CELL*(20/48);
-  }
-}
-// sonra game.reset() ve seed()
-```
-
-### Zoom Limitleri
-
-Tekerlek ve mobil sıkıştırma ikisi de `HALF`-tabanlı:
-```js
-camDist = Math.max(HALF*0.8, Math.min(HALF*2.8, camDist + delta));
-// 9x9  HALF=192 → 153–538
-// 19x19 HALF=198 → 158–554
-```
-
-### Kamera Ön Ayarları
-
-```js
-const CAM = {
-  overview:  {yaw:.50, pitch:.88,  dist:500},
-  high:      {yaw:.50, pitch:1.15, dist:470},
-  top:       {yaw:.50, pitch:1.45, dist:440},
-  corner_tl: {yaw:.85, pitch:.95,  dist:420},
-  corner_tr: {yaw:.15, pitch:.95,  dist:420},
-  center:    {yaw:.50, pitch:1.08, dist:460},
-  board19:   {yaw:.50, pitch:1.25, dist:520},  // ← 19x19 için
-};
-```
-
-### Marker Sistemi (`drawMarkers`)
-
-SGF'deki TR (üçgen) ve SQ (kare) işaretleri için adım verisine `markers` dizisi:
-```js
-markers: [
-  {x:0, y:0, type:'triangle'},  // TR — göz noktası
-  {x:5, y:5, type:'square'},    // SQ — diğer işaret
-]
-```
-`drawMarkers(step)` fonksiyonu bu noktaları 3D tahta yüzeyine projekte eder.
 
 ---
 
@@ -215,10 +140,10 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
 
 ## Önemli Kararlar
 
-1. **Müfredat `ogren-3d.html` içinde sabit kodlu** — formation JSON'ları henüz
+1. **Müfredat `core/curriculum.js` içinde sabit kodlu** — formation JSON'ları henüz
    motora bağlanmamış. İleride dinamik yükleme planlanabilir.
 
-2. **2D öğrenme motoru kaldırıldı** — `ogren.html`, `ogren.js`, `prototype-3d.html` ve `mobile-mockup.html` silindi; hiçbir sayfa bunlara bağlanmıyordu.
+2. **2D öğrenme motoru kaldırıldı** — `ogren.html`, `ogren.js`, `prototype-3d.html`, `mobile-mockup.html` ve `ogren-3d.html` silindi. Dersler yalnız `learning-scenes.html`'de oynar; Çift Atari, Açılış, Orta Oyun, Son Oyun ve üç değerlendirmenin içeriği `core/curriculum.js`'te durur ama henüz sahnesi yoktur.
 
 3. **19x19 desteği aktif** — l7 adım-1 ile test edildi, motor tüm boyutlarda çalışıyor.
 
@@ -288,5 +213,13 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
      çünkü kazanma oranı küçük tahtada oynaktır. Tahmini alan ve sayımdaki ölü taş
      önerisi de sahiplikten gelir. Model yüklenmezse `goAI.js` MCTS'i oynar (zayıf)
      ve kullanıcıya söylenir; tehlike ipucu motorsuz çalışır.
+   - **Önbellek:** robot sayfasının stil, modül ve worker adreslerinin hepsi `?v=`
+     taşır (`stamp-scene-release.mjs`). Eski sayfayla ortak adresler eksiz kalırsa
+     tarayıcı yeni sayfayı eski dosyayla açar ve kod hiç başlamaz.
+   - **Açılış:** asıl bekleme ilk ağ değerlendirmesindeki gölgelendirici derlemesidir
+     (Iris Xe'de 1,6 sn, sonrakiler 30 ms). `WEBGL_USE_SHAPES_UNIFORMS` ve yükleme
+     sonundaki ısınma bunun için vardır.
+   - **Metin:** panelin başlığı sabittir ("Robotla oyna."); basamağı `LADDER[].lead`
+     cümlesi anlatır, "handikap" ya da "önden" sözcükleri kullanılmaz.
    - **Test:** `npm run test-ai`, `npm run test-robot` (sahte worker),
      `npm run test-robot-engine` (gerçek model, ağ gerekir, test-all dışında).

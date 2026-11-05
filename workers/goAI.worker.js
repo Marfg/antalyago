@@ -8,7 +8,7 @@
  * Giden mesaj: { ok, move } | { ok: false, error }
  */
 
-import { getBestMove, getBestMoveByIterations, getBestMoveForProfile, getAIProfile, finalScore } from '../core/goAI.js';
+import { getBestMove, getBestMoveByIterations, getBestMoveForProfile, getAIProfile, finalScore } from '../core/goAI.js?v=2026-11-05.robot';
 
 self.addEventListener('message', ({ data }) => {
   const { type, boardData, color, timeMs, iterations, seed, profile, gameId, requestId } = data;

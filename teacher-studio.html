@@ -84,10 +84,6 @@
     <div>
       <h1>ANTALYA GO — TEACHER STUDIO <span class="badge">debug / admin prototype</span></h1>
     </div>
-    <div class="links">
-      <a href="ogren-3d.html?teacher=1">Open Teacher Lab</a>
-      <a href="ogren-3d.html?teacher=1&ai=1&aiProvider=mock">Open Teacher Lab + Mock AI</a>
-    </div>
   </header>
   <div class="studio-body">
     <nav class="studio-nav" id="studio-nav">
@@ -356,7 +352,7 @@ function showStudioStaleReleaseUI() {
    genişletildi, yeni bir dashboard YOK. */
 const sceneRegistry = createSceneRegistry([scene01BoardIntro, scene02TurnsAndIntersections, scene03LibertiesByPosition, scene04GroupLiberties, scene05LibertyAssessment, scene06CaptureBasics, scene06CaptureEdge, scene06CaptureGroup, scene07CapturePractice, scene08IllegalMoves, scene09KoRule, scene10EndgameCounting, scene11TwoEyes, scene12Connections, scene13Ladder, scene14Net, scene15Snapback]);
 
-/* ── localStorage erişimi — ogren-3d.html İLE AYNI anahtarlar ──────
+/* ── localStorage erişimi — learning-scenes.html İLE AYNI anahtarlar ──────
    Studio kendi core mantığını YAZMAZ; yalnızca aynı adaptör deseniyle
    (core/ dışı, küçük sarmalayıcı) aynı depoları okur/yazar. */
 const STUDENT_MODEL_KEY = 'go_student_model_v1';

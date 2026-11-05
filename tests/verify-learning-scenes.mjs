@@ -3865,27 +3865,6 @@ addTest('M13) Teacher Studio Sahne #9\'u görür (Curriculum + Diagnostics), con
   } finally { await context.close(); }
 });
 
-addTest('M14) ogren-3d.html Sahne #9 eklenmesinden ETKİLENMEZ — regresyonsuz açılır, canvas render eder', async () => {
-  const context = await (await launchChromium()).newContext();
-  const consoleErrors = [];
-  try {
-    await context.route(`${BASE}/**`, async route => {
-      const url = new URL(route.request().url());
-      const pathname = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
-      const filePath = absPath(pathname || 'ogren-3d.html');
-      try { await route.fulfill({ status: 200, contentType: mime(filePath), body: fs.readFileSync(filePath) }); }
-      catch { await route.abort(); }
-    });
-    const page = await context.newPage();
-    page.on('pageerror', e => consoleErrors.push('pageerror: ' + e.message));
-    page.on('console', m => { if (m.type() === 'error') consoleErrors.push('console: ' + m.text()); });
-    const resp = await page.goto(`${BASE}/ogren-3d.html`, { waitUntil: 'networkidle' });
-    ensure(resp && resp.status() === 200, `ogren-3d.html HTTP ${resp?.status()}`);
-    await page.waitForTimeout(600);
-    ensure(await page.locator('canvas').count() > 0, 'ogren-3d.html canvas render etmiyor');
-    ensure(consoleErrors.length === 0, `ogren-3d.html konsol/pageerror sıfır olmalı: ${JSON.stringify(consoleErrors)}`);
-  } finally { await context.close(); }
-});
 
 /* ══════════════════════════════════════════════════════════════════
    Sahne #10 ("Oyun Sonu ve Sayım") akış yardımcıları
@@ -4424,27 +4403,6 @@ addTest('N19) Teacher Studio Sahne #10\'u görür (Curriculum: düzeltilmiş inf
   } finally { await context.close(); }
 });
 
-addTest('N20) ogren-3d.html Sahne #10 eklenmesinden ETKİLENMEZ — regresyonsuz açılır, canvas render eder, dosya bu görev kapsamında DEĞİŞMEDİ', async () => {
-  const context = await (await launchChromium()).newContext();
-  const consoleErrors = [];
-  try {
-    await context.route(`${BASE}/**`, async route => {
-      const url = new URL(route.request().url());
-      const pathname = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
-      const filePath = absPath(pathname || 'ogren-3d.html');
-      try { await route.fulfill({ status: 200, contentType: mime(filePath), body: fs.readFileSync(filePath) }); }
-      catch { await route.abort(); }
-    });
-    const page = await context.newPage();
-    page.on('pageerror', e => consoleErrors.push('pageerror: ' + e.message));
-    page.on('console', m => { if (m.type() === 'error') consoleErrors.push('console: ' + m.text()); });
-    const resp = await page.goto(`${BASE}/ogren-3d.html`, { waitUntil: 'networkidle' });
-    ensure(resp && resp.status() === 200, `ogren-3d.html HTTP ${resp?.status()}`);
-    await page.waitForTimeout(600);
-    ensure(await page.locator('canvas').count() > 0, 'ogren-3d.html canvas render etmiyor');
-    ensure(consoleErrors.length === 0, `ogren-3d.html konsol/pageerror sıfır olmalı: ${JSON.stringify(consoleErrors)}`);
-  } finally { await context.close(); }
-});
 
 
 for(const [name,viewport] of Object.entries({desktop:VIEWPORTS.desktop,mobile:VIEWPORTS.mobile})) {

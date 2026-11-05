@@ -18,7 +18,7 @@ export const scene13Ladder={
    onStepComplete:(index,count)=>{context.emit('scene_assessment_answered',{assessmentIndex:index,stepIndex:index,concept:'ladder',correct:true,legal:true});if(count===9)context.emit('scene_completion_unlocked',{})},
    onAllComplete(){if(state.end)return;root.hidden=true;motion.hidden=true;badge.hidden=true;context.boardAdapter.setInputEnabled(false);context.boardAdapter.clearLiberties();state.end=mountTopicEndControls(context,{summaryText:'Zorunlu kaçışları, doğru atari yönünü ve merdiven kırıcıyı hamlelerle sınadın. Takibe başlamadan önce bütün rotayı kontrol et.'});
     try{const saved=JSON.parse(localStorage.getItem('go_done_3d')||'[]');if(Array.isArray(saved))localStorage.setItem('go_done_3d',JSON.stringify([...new Set([...saved,'l10'])]))}catch{}
-    const link=state.link=document.createElement('a');link.className='ls-strip-btn';link.href='ogren-3d.html?lesson=l11';link.textContent='Müfredatta devam et: Ağ (Geta)';context.container.append(link);
+    const link=state.link=document.createElement('a');link.className='ls-strip-btn';link.href='learning-scenes.html?scene=scene-14-net';link.textContent='Müfredatta devam et: Ağ (Geta)';context.container.append(link);
    }
   });
  },

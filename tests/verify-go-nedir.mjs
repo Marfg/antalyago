@@ -447,7 +447,7 @@ await test('sayfa yap?s? ve SEO alanlar? korunur', async () => {
   assert(html.includes('<em>Go</em>'), 'Go adı eksik');
   assert(html.includes('<em>Baduk</em>'), 'Baduk adı eksik');
   assert(html.includes('4.000 y&#305;l'), '4.000 yıllık anlatı eksik');
-  assert(html.includes('ogren-3d.html'), 'ogren-3d CTA eksik');
+  assert(html.includes('learning-scenes.html'), 'ders CTA eksik');
   assert(html.includes('robot.html'), 'robot bağlantısı eksik');
   assert(html.includes('property="og:title"'), 'OG title eksik');
   assert(html.includes('property="og:description"'), 'OG description eksik');
@@ -552,11 +552,11 @@ for (const viewport of VIEWPORTS) {
 await test('ana gezinme ve i?i gezinme ba?lant?lar? do?ru', async () => {
   const { context, page } = await openPage({ theme: 'light' });
 
-  assert.equal(await page.getByRole('navigation', { name: 'Ana navigasyon' }).getByRole('link', { name: 'Öğren' }).getAttribute('href'), 'ogren-3d.html');
+  assert.equal(await page.getByRole('navigation', { name: 'Ana navigasyon' }).getByRole('link', { name: 'Öğren' }).getAttribute('href'), 'learning-scenes.html');
   assert.equal(await page.getByRole('navigation', { name: 'Ana navigasyon' }).getByRole('link', { name: 'Robotla Oyna' }).getAttribute('href'), 'robot.html');
   assert.equal(await page.getByRole('navigation', { name: 'Sayfa bölümleri' }).getByRole('link', { name: 'Özet' }).getAttribute('href'), '#giris');
   assert.equal(await page.getByRole('link', { name: 'Temel kuralları keşfet' }).getAttribute('href'), '#uc-temel-kural');
-  assert.equal(await page.getByRole('link', { name: 'İlk derse başla' }).getAttribute('href'), 'ogren-3d.html');
+  assert.equal(await page.getByRole('link', { name: 'İlk derse başla' }).getAttribute('href'), 'learning-scenes.html');
   assert.equal(await page.getByRole('link', { name: 'Önce robotla dene' }).getAttribute('href'), 'robot.html');
   await context.close();
 });

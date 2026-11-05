@@ -6,9 +6,9 @@
  * bu dosya yalnız olayları bağlar ve durumu ekrana yazar.
  */
 import { createSceneBoardAdapter } from '../adapters/sceneBoardAdapter.js?v=2026-11-05.robot';
-import { BLACK, WHITE, createGame, finishCounting, illegalReason, passTurn, playMove, pointOf, positionOf, resign, scoreGame, suggestDead, toggleDead, xyOf } from '../core/robotGame.js';
-import { LADDER_STORAGE_KEY, createLadder, gameSettings, loadLadder, recordResult } from '../core/handicapLadder.js';
-import { dangerHint, moveHint, regionHint, selfAtariWarning, territoryEstimate } from '../core/hintTools.js';
+import { BLACK, WHITE, createGame, finishCounting, illegalReason, passTurn, playMove, pointOf, positionOf, resign, scoreGame, suggestDead, toggleDead, xyOf } from '../core/robotGame.js?v=2026-11-05.robot';
+import { LADDER_STORAGE_KEY, createLadder, gameSettings, loadLadder, recordResult } from '../core/handicapLadder.js?v=2026-11-05.robot';
+import { dangerHint, moveHint, regionHint, selfAtariWarning, territoryEstimate } from '../core/hintTools.js?v=2026-11-05.robot';
 
 const ROBOT_MIN_MS = 900;        // taş bir anda belirmesin, oyuncu kendi hamlesini görsün
 const ENGINE_TIMEOUT_MS = 20000;
@@ -58,7 +58,7 @@ let estimateOn = false;
 let unfinished = false;        // hamle yapıldı mı (yeniden başla onayı için)
 
 /* ── Motor ─────────────────────────────────────────────────────────────── */
-const engine = new Worker('./workers/robotEngine.worker.js');
+const engine = new Worker('./workers/robotEngine.worker.js?v=2026-11-05.robot');
 let engineState = 'loading';   // loading | ready | fallback
 let nextId = 0;
 const pending = new Map();
@@ -75,6 +75,10 @@ function engineFailed(error) {
 }
 engine.addEventListener('error', event => engineFailed(event.message));
 engine.addEventListener('message', ({ data }) => {
+  if (data.type === 'PROGRESS') {
+    if (thinking && engineState === 'loading') setStatus(data.fraction < 1 ? `Robot hazırlanıyor… %${Math.round(data.fraction * 100)}` : 'Robot hazırlanıyor…');
+    return;
+  }
   if (data.type === 'READY') {
     if (data.ok) { engineState = 'ready'; resolveReady(); render(); } else engineFailed(data.error);
     return;
@@ -98,7 +102,7 @@ function ask(type) {
 /* Model yüklenmezse oyun durmasın: tarayıcıdaki MCTS yedeği oynar, daha zayıftır. */
 let fallbackWorker = null;
 function fallbackMove() {
-  fallbackWorker ||= new Worker('./workers/goAI.worker.js', { type: 'module' });
+  fallbackWorker ||= new Worker('./workers/goAI.worker.js?v=2026-11-05.robot', { type: 'module' });
   const position = positionOf(game);
   const last = position.history[position.history.length - 1];
   return new Promise((resolve, reject) => {
@@ -355,10 +359,10 @@ function setStatus(text) { ui.status.textContent = text; }
 function render() {
   const over = game.phase === 'over', counting = game.phase === 'counting';
   if (!over) {
-    ui.title.textContent = counting ? 'Sayım.' : `${settings.title}.`;
+    ui.title.textContent = counting ? 'Sayım.' : 'Robotla oyna.';
     ui.lead.textContent = counting
       ? 'Alanını, yani taşlarını ve çevrelediğin boş noktaları sayıyoruz.'
-      : 'Robotun gücü sabit. Kazandıkça önündeki taşlar azalır.';
+      : settings.lead;
   }
   ui.level.textContent = `Basamak ${settings.index + 1} / ${settings.total}`;
   ui.dots.replaceChildren(...Array.from({ length: settings.total }, (_, i) => {

@@ -62,6 +62,7 @@ async function open(options = {}) {
     }
     window.Worker = FakeWorker;
   }, { engineOk: options.engineOk ?? true, robot: options.robot || 'move', ownership: options.ownership ?? 0, key: LADDER_KEY, ladder: options.ladder ?? null });
+  if (options.block) await ctx.route(options.block, route => route.abort());
   const page = await ctx.newPage();
   await page.goto(`${BASE}/${options.path || 'robot.html?e2e=1'}`, { waitUntil: 'domcontentloaded' });
   if (options.path) return { ctx, page };
@@ -90,7 +91,7 @@ await test('yeni oyuncu dört taşla başlar, ilk hamleyi robot yapar', async ()
   const s = await state(page);
   assert(s.stones === 5 && s.history === 1, 'dört siyah + robot hamlesi bekleniyordu');
   assert(s.komi === 0.5, 'handikapta komi 0,5');
-  assert((await page.textContent('#rb-title')).includes('4 taş'), 'başlık basamağı göstermeli');
+  assert((await page.textContent('#rb-lead')).includes('dört taşın'), 'açıklama basamağı göstermeli');
   assert((await page.textContent('#rb-level')).includes('1 / 5'), 'basamak etiketi');
   await ctx.close();
 });
@@ -196,7 +197,7 @@ await test('galibiyet taş azaltır ve basamak kalıcıdır', async () => {
   await page.waitForFunction(() => window.__robotTest.state().level === 1);
   await myTurn(page);
   assert((await state(page)).stones === 4, 'üç taş + robot hamlesi bekleniyordu');
-  assert((await page.textContent('#rb-title')).includes('3 taş'), 'başlık güncellenmeli');
+  assert((await page.textContent('#rb-lead')).includes('üç taşın'), 'açıklama güncellenmeli');
   await page.reload();
   await page.waitForFunction(() => window.__robotTest?.state().level === 1);
   await ctx.close();
@@ -299,6 +300,13 @@ await test('model yüklenmezse yedek motor oynar ve kullanıcıya söylenir', as
   await page.getByText('robot modeli gerekli').waitFor();
   await page.click('[data-tool="danger"]');
   await page.waitForFunction(() => !/robot modeli/.test(document.getElementById('rb-hint-text').textContent));
+  await ctx.close();
+});
+
+await test('sayfa kodu yüklenemezse sonsuz bekleme yerine kullanıcıya söylenir', async () => {
+  const { ctx, page } = await open({ path: 'robot.html', block: '**/core/hintTools.js*' });
+  await page.getByText('Robot açılamadı').waitFor();
+  assert(await page.locator('#rb-actions').isHidden(), 'çalışmayan düğmeler gizlenmeli');
   await ctx.close();
 });
 

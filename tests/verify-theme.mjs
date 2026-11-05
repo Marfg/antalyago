@@ -5,7 +5,7 @@ import { chromium } from 'playwright-core';
 
 const ROOT = path.resolve('.');
 const BASE = 'http://antalyago.test';
-const PAGES = ['index.html', 'go-nedir.html', 'ogren-3d.html', 'robot.html'];
+const PAGES = ['index.html', 'go-nedir.html', 'robot.html'];
 
 let pass = 0;
 let fail = 0;

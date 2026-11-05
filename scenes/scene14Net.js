@@ -18,7 +18,7 @@ export const scene14Net={
    onStepComplete:(index,count)=>{context.emit('scene_assessment_answered',{assessmentIndex:index,stepIndex:index,concept:'net',correct:true,legal:true});if(count===5)context.emit('scene_completion_unlocked',{})},
    onAllComplete(){if(state.end)return;root.hidden=true;motion.hidden=true;badge.hidden=true;context.boardAdapter.setInputEnabled(false);context.boardAdapter.clearLiberties();state.end=mountTopicEndControls(context,{summaryText:'Küçük ağı, iki taşlı ağı ve kenar ağını kurdun; kaçışları yakalamaya kadar sınadın. Rakip uzayınca yeni dış nefesi kapat.'});
     try{const saved=JSON.parse(localStorage.getItem('go_done_3d')||'[]');if(Array.isArray(saved))localStorage.setItem('go_done_3d',JSON.stringify([...new Set([...saved,'l11'])]))}catch{}
-    const link=state.link=document.createElement('a');link.className='ls-strip-btn';link.href='ogren-3d.html?lesson=l12';link.textContent='Müfredatta devam et: Snapback';context.container.append(link);
+    const link=state.link=document.createElement('a');link.className='ls-strip-btn';link.href='learning-scenes.html?scene=scene-15-snapback';link.textContent='Müfredatta devam et: Snapback';context.container.append(link);
    }
   });
  },

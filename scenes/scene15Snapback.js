@@ -18,7 +18,7 @@ export const scene15Snapback={
    onStepComplete:(index,count)=>{context.emit('scene_assessment_answered',{assessmentIndex:index,stepIndex:index,concept:'snapback',correct:true,legal:true});if(count===4)context.emit('scene_completion_unlocked',{})},
    onAllComplete(){if(state.end)return;root.hidden=true;motion.hidden=true;badge.hidden=true;context.boardAdapter.setInputEnabled(false);context.boardAdapter.clearLiberties();state.end=mountTopicEndControls(context,{summaryText:'Kurban, alma ve geri alma dizisini iki renkle oynadın. Kurbanı alan grubun nefeslerini yeniden say.'});
     try{const saved=JSON.parse(localStorage.getItem('go_done_3d')||'[]');if(Array.isArray(saved))localStorage.setItem('go_done_3d',JSON.stringify([...new Set([...saved,'l12'])]))}catch{}
-    const link=state.link=document.createElement('a');link.className='ls-strip-btn';link.href='ogren-3d.html?lesson=l2_deg';link.textContent='Müfredatta devam et: B2 — Taktik Okuma';context.container.append(link);
+    const link=state.link=document.createElement('a');link.className='ls-strip-btn';link.href='robot.html';link.textContent='9×9 robotla oyna';context.container.append(link);
    }
   });
  },

@@ -5,8 +5,8 @@
  * Saf: tahta ve motor çıktısından metin ve işaret üretir, çizimi sayfa yapar.
  * Tehlike yalnız kurallara bakar, motor gerektirmez; öteki üçü `analysis` ister.
  */
-import { groupAt, playStone } from './goAI.js';
-import { BLACK, xyOf } from './robotGame.js';
+import { groupAt, playStone } from './goAI.js?v=2026-11-05.robot';
+import { BLACK, xyOf } from './robotGame.js?v=2026-11-05.robot';
 
 const OWN_MARK = 0.6;          // tahtada pul gösterilecek güven
 const SETTLED_RATIO = 0.25;    // tahtanın bu kadarı belli değilse "henüz erken"
