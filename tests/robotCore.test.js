@@ -9,7 +9,7 @@ import { BLACK, WHITE, createGame, finishCounting, illegalReason, passTurn, play
 import { LADDER, createLadder, gameSettings, loadLadder, recordResult } from '../core/handicapLadder.js';
 import { NET_CHANNELS, buildInputs, komiWave, readOwnership, readPolicy, readWinrate } from '../core/kataFeatures.js';
 import { ROBOT_STRENGTH, chooseRobotMove, estimateLead, searchPosition } from '../core/robotSearch.js';
-import { dangerHint, moveHint, moveReason, regionHint, regionName, selfAtariWarning, territoryEstimate } from '../core/hintTools.js';
+import { moveHint, moveReason, selfAtariWarning, territoryEstimate } from '../core/hintTools.js';
 
 let passed = 0, failed = 0;
 async function test(name, fn) {
@@ -229,38 +229,9 @@ await test('alan farkı komiyi hesaba katar', () => {
 });
 
 /* ── İpucu araçları ── */
-await test('tehlike ipucu atarideki taşı ve nefesini gösterir', () => {
-  const game = board([
-    'X O . . . . . . .', 'O . . . . . . . .', ...Array(7).fill('. . . . . . . . .')]);
-  // (0,0) siyah: nefesi yok değil; aşağıda tek nefesli kurulur
-  game.grid[pointOf(0, 1)] = 0;
-  const hint = dangerHint(game, BLACK);
-  assert.equal(hint.kind, 'danger');
-  assert.deepEqual(hint.marks, [{ x: 0, y: 1 }]);
-});
-
-await test('tehlike yoksa yakalama fırsatı, o da yoksa sakin ipucu', () => {
-  const chance = board(['O X . . . . . . .', ...Array(8).fill('. . . . . . . . .')]);
-  assert.equal(dangerHint(chance, BLACK).kind, 'chance');
-  assert.equal(dangerHint(createGame(), BLACK).kind, 'calm');
-});
-
-await test('bölge adları Türkçe ve doğrudur', () => {
-  assert.equal(regionName(7, 1, 9), 'sağ üst köşe');
-  assert.equal(regionName(1, 7, 9), 'sol alt köşe');
-  assert.equal(regionName(4, 4, 9), 'merkez');
-  assert.equal(regionName(4, 8, 9), 'alt kenar');
-});
-
 const analysisOf = (...points) => ({
   moves: points.map((point, i) => ({ point, x: point % 9, y: (point / 9) | 0, visits: 5 - i, prior: 0.5 })),
   ownership: new Float32Array(81),
-});
-
-await test('bölge ipucu hamleyi söylemez, çevresini işaretler', () => {
-  const hint = regionHint(createGame(), analysisOf(pointOf(6, 2)));
-  assert.match(hint.text, /sağ üst köşe/);
-  assert.ok(hint.marks.length >= 4);
 });
 
 await test('hamle ipucu nedenini söyler', () => {

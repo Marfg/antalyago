@@ -12,11 +12,11 @@ const VERSION = 1;
 const STAR_POINTS = [{ x: 2, y: 2 }, { x: 6, y: 6 }, { x: 6, y: 2 }, { x: 2, y: 6 }];
 
 export const LADDER = Object.freeze([
-  Object.freeze({ id: 'h4', title: '4 taş önden', stones: 4, komi: 0.5 }),
-  Object.freeze({ id: 'h3', title: '3 taş önden', stones: 3, komi: 0.5 }),
-  Object.freeze({ id: 'h2', title: '2 taş önden', stones: 2, komi: 0.5 }),
-  Object.freeze({ id: 'h1', title: 'İlk hamle senin', stones: 0, komi: 0.5 }),
-  Object.freeze({ id: 'even', title: 'Eşit oyun', stones: 0, komi: 6.5 }),
+  Object.freeze({ id: 'h4', title: 'Dört taşla', lead: 'Tahtada dört taşın hazır. Kazanırsan sonraki oyuna üç taşla başlarsın.', stones: 4, komi: 0.5 }),
+  Object.freeze({ id: 'h3', title: 'Üç taşla', lead: 'Tahtada üç taşın hazır. Kazanırsan sonraki oyuna iki taşla başlarsın.', stones: 3, komi: 0.5 }),
+  Object.freeze({ id: 'h2', title: 'İki taşla', lead: 'Tahtada iki taşın hazır. Kazanırsan sonraki oyunda boş tahtaya ilk taşı sen koyarsın.', stones: 2, komi: 0.5 }),
+  Object.freeze({ id: 'h1', title: 'İlk hamle senin', lead: 'Tahta boş, ilk taşı sen koyuyorsun. Kazanırsan robotla eşit şartlarda oynarsın.', stones: 0, komi: 0.5 }),
+  Object.freeze({ id: 'even', title: 'Eşit oyun', lead: 'Eşit şartlardasın: ilk taş senin, robota 6,5 puan yazılır.', stones: 0, komi: 6.5 }),
 ]);
 
 export function createLadder() {
@@ -42,6 +42,7 @@ export function gameSettings(ladder) {
     stones: STAR_POINTS.slice(0, step.stones).map(p => ({ ...p })),
     komi: step.komi,
     title: step.title,
+    lead: step.lead,
     index: ladder.level,
     total: LADDER.length,
   };

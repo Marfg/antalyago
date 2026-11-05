@@ -268,7 +268,7 @@ body.robot-page .site-header {
   }
 
   .rb-panel h1 { font-size: 1.9rem; }
-  .rb-lead { display: none; }
+  .rb-lead { font-size: 0.92rem; }
   .rb-status { min-height: 0; padding: 9px 12px; font-size: 0.9rem; }
   .rb-quiet { margin-top: 0; padding-top: 0; }
 }

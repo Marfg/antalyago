@@ -1,76 +1,16 @@
 /**
  * core/hintTools.js
  *
- * İpucu havuzu: Tehlike → Bölge → Hamle, yanında Tahmini Alan göstergesi.
+ * İpucu havuzu: Hamle ve Tahmini Alan.
  * Saf: tahta ve motor çıktısından metin ve işaret üretir, çizimi sayfa yapar.
- * Tehlike yalnız kurallara bakar, motor gerektirmez; öteki üçü `analysis` ister.
  */
-import { groupAt, playStone } from './goAI.js';
-import { BLACK, xyOf } from './robotGame.js';
+import { groupAt, playStone } from './goAI.js?v=2026-11-05.robot';
+import { BLACK, xyOf } from './robotGame.js?v=2026-11-05.robot';
 
 const OWN_MARK = 0.6;          // tahtada pul gösterilecek güven
 const SETTLED_RATIO = 0.25;    // tahtanın bu kadarı belli değilse "henüz erken"
 
-function groupsOf(game, color) {
-  const seen = new Set(), groups = [];
-  for (let point = 0; point < game.grid.length; point++) {
-    if (game.grid[point] !== color || seen.has(point)) continue;
-    const info = groupAt(game, point);
-    info.group.forEach(stone => seen.add(stone));
-    groups.push(info);
-  }
-  return groups;
-}
-
-/** Oyuncunun taşları için atari, rakip için yakalama fırsatı. Motorsuz. */
-export function dangerHint(game, color) {
-  const own = groupsOf(game, color).filter(g => g.libs.length === 1);
-  const prey = groupsOf(game, 3 - color).filter(g => g.libs.length === 1);
-  const rescue = own.sort((a, b) => b.group.length - a.group.length)[0];
-  const target = prey.sort((a, b) => b.group.length - a.group.length)[0];
-  if (rescue) {
-    const n = rescue.group.length;
-    return {
-      kind: 'danger',
-      text: `${n === 1 ? 'Bir taşın' : `${n} taşlık grubun`} atari altında: tek nefesi kaldı. Bağlanabilir ya da kaçabilir mi?`,
-      marks: rescue.libs.map(point => xyOf(point, game.size)),
-    };
-  }
-  if (target) {
-    const n = target.group.length;
-    return {
-      kind: 'chance',
-      text: `Robotun ${n === 1 ? 'bir taşı' : `${n} taşı`} atari altında. Son nefesini görebiliyor musun?`,
-      marks: [],
-    };
-  }
-  return { kind: 'calm', text: 'Şu an atari altında taş yok. Sıra alanını büyütmekte.', marks: [] };
-}
-
-export function regionName(x, y, size) {
-  const third = size / 3;
-  const col = x < third ? 'sol' : x >= size - third ? 'sağ' : null;
-  const row = y < third ? 'üst' : y >= size - third ? 'alt' : null;
-  if (col && row) return `${col} ${row} köşe`;
-  if (row) return `${row} kenar`;
-  if (col) return `${col} kenar`;
-  return 'merkez';
-}
-
 const placing = analysis => analysis.moves.filter(move => move.point >= 0);
-
-/** Hamleyi söylemeden en değerli bölgeyi gösterir. */
-export function regionHint(game, analysis) {
-  const top = placing(analysis)[0];
-  if (!top) return { kind: 'region', text: 'Değerli bir hamle kalmamış olabilir; pas geçmeyi düşünebilirsin.', marks: [] };
-  const marks = [];
-  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-    const x = top.x + dx, y = top.y + dy;
-    if (x < 0 || y < 0 || x >= game.size || y >= game.size) continue;
-    if (!game.grid[y * game.size + x]) marks.push({ x, y });
-  }
-  return { kind: 'region', text: `Tahtanın ${regionName(top.x, top.y, game.size)} bölgesine bakabilirsin.`, marks };
-}
 
 /** Hamlenin kısa nedeni. Yalnız kesin olan söylenir, gerisi genel kalır. */
 export function moveReason(game, color, move) {

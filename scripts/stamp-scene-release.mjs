@@ -84,6 +84,8 @@ const GRAPH_BASENAMES = [
   // Ders denetim çubuğu (Merdiven, Ağ, Snapback) — yardım çekmecesi.
   'lessonHelpDrawer.js',
   'scene11TwoEyes.js', 'twoEyesPolicy.js', 'eyeAnalysis.js', 'scene12Connections.js', 'connectionShapesPolicy.js',
+  // Robot sayfası: eski goAI.js önbellekten gelirse tüm sayfa başlamadan durur.
+  'goAI.js', 'robotGame.js', 'handicapLadder.js', 'hintTools.js', 'robotSearch.js',
 ];
 
 /** Import satırı içerebilecek, graph'a dahil dosyalar + HTML entry point'leri. */
@@ -91,7 +93,8 @@ const SCAN_FILES = [
   'learning-scenes.html',
   'teacher-studio.html',
   'index.html', 'home/heroBoard.js', 'robot.html', 'robot/robotPage.js',
-  'core/ruleEngine.js', 'core/curriculum.js', 'ogren-3d.html',
+  'core/robotGame.js', 'core/hintTools.js', 'core/robotSearch.js', 'workers/goAI.worker.js',
+  'core/ruleEngine.js', 'core/curriculum.js',
   'scenes/scene01BoardIntro.js',
   'scenes/scene02TurnsAndIntersections.js',
   'scenes/scene03LibertiesByPosition.js',
@@ -153,15 +156,23 @@ for (const rel of SCAN_FILES) {
   }
 }
 
-// robot.html'in stil ve tema bağlantıları da sürümle yenilenir: ekleri olmazsa
-// tarayıcı yeni sayfayı eski CSS ile açabilir.
-const robotPagePath = path.join(ROOT, 'robot.html');
-const robotPage = fs.readFileSync(robotPagePath, 'utf8');
-const robotPageStamped = robotPage.replace(/((?:href|src)="(?:styles\/[\w-]+\.css|core\/theme\.js))(?:\?v=[^"]*)?"/g, `$1?v=${RELEASE}"`);
-if (robotPageStamped !== robotPage) {
-  fs.writeFileSync(robotPagePath, robotPageStamped);
-  filesActuallyWritten++;
-  console.log('robot.html: stil ve tema bağlantıları damgalandı');
+// Robot sayfasının import satırı olmayan bağlantıları: stil, tema, giriş modülü,
+// worker adresleri ve worker içi dinamik importlar. Ekleri olmazsa tarayıcı yeni
+// sayfayı eski dosyalarla açabilir.
+const ROBOT_LINKS = {
+  'robot.html': /((?:href|src)="(?:styles\/[\w-]+\.css|core\/theme\.js)|import\('\.\/robot\/robotPage\.js)(?:\?v=[^"']*)?(["'])/g,
+  'robot/robotPage.js': /(new Worker\('\.\/workers\/[\w.]+\.js)(?:\?v=[^']*)?(')/g,
+  'workers/robotEngine.worker.js': /(import\('\.\.\/core\/\w+\.js)(?:\?v=[^']*)?(')/g,
+};
+for (const [rel, pattern] of Object.entries(ROBOT_LINKS)) {
+  const filePath = path.join(ROOT, rel);
+  const original = fs.readFileSync(filePath, 'utf8');
+  const updated = original.replace(pattern, `$1?v=${RELEASE}$2`);
+  if (updated !== original) {
+    fs.writeFileSync(filePath, updated);
+    filesActuallyWritten++;
+    console.log(`${rel}: bağlantılar damgalandı`);
+  }
 }
 
 console.log(`\nRELEASE=${RELEASE}  toplam graph edge=${totalGraphEdges}  yazılan dosya=${filesActuallyWritten}`);

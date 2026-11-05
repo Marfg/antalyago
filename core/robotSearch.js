@@ -9,7 +9,7 @@
  *              winrate: sıradaki oyuncu için 0..1,
  *              ownership: Float32Array(n), siyah + }
  */
-import { isOwnEyePoint, playStone } from './goAI.js';
+import { isOwnEyePoint, playStone } from './goAI.js?v=2026-11-05.robot';
 
 /** Robotun sabit gücü. Tek ayar yeri burasıdır; bkz. tests/robotSearch.test.js */
 export const ROBOT_STRENGTH = Object.freeze({

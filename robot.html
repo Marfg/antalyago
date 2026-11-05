@@ -46,9 +46,9 @@
 
     <aside class="rb-panel" id="rb-panel">
       <p class="section-label rb-kicker" id="rb-level">Basamak 1 / 5</p>
-      <h1 id="rb-title">4 taş önden.</h1>
+      <h1 id="rb-title">Robotla oyna.</h1>
       <div class="rb-dots" id="rb-dots" aria-hidden="true"></div>
-      <p class="rb-lead" id="rb-lead">Robotun gücü sabit. Kazandıkça önündeki taşlar azalır.</p>
+      <p class="rb-lead" id="rb-lead">Kazandıkça tahtadaki taşların azalır.</p>
 
       <p class="status-message rb-status" id="rb-status" role="status" aria-live="polite">Robot hazırlanıyor…</p>
 
@@ -63,8 +63,6 @@
       </div>
 
       <div class="rb-tools" id="rb-tools" hidden>
-        <button class="rb-tool" type="button" data-tool="danger"><b>Tehlike</b><span>Atari var mı?</span></button>
-        <button class="rb-tool" type="button" data-tool="region"><b>Bölge</b><span>Nereye bakmalı?</span></button>
         <button class="rb-tool" type="button" data-tool="move"><b>Hamle</b><span>Aday ve nedeni</span></button>
         <button class="rb-tool" type="button" data-tool="estimate" aria-pressed="false"><b>Tahmini alan</b><span>Kim önde?</span></button>
       </div>
@@ -84,7 +82,13 @@
     </aside>
   </main>
 
-  <script type="module">import './robot/robotPage.js?v=2026-11-05.robot';</script>
+  <script type="module">
+    import('./robot/robotPage.js?v=2026-11-05.robot').catch(error => {
+      console.error(error);
+      document.getElementById('rb-status').textContent = 'Robot açılamadı. Sayfayı yenileyip tekrar dene.';
+      document.getElementById('rb-actions').hidden = true;
+    });
+  </script>
   <script type="module" src="core/theme.js?v=2026-11-05.robot"></script>
 </body>
 </html>

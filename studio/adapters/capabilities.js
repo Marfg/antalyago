@@ -19,7 +19,7 @@ export const OUTPUT_CAPABILITIES = Object.freeze({
   lesson3d: {
     phase: 'E',
     supported: false,
-    description: 'StudioDocument → ogren-3d.html LessonEngine step',
+    description: 'StudioDocument → LessonEngine step',
   },
   sgf: {
     phase: 'E',

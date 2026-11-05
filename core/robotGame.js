@@ -8,7 +8,7 @@
  * Sayımda ölü taşlar önce robotun önerisiyle işaretlenir, oyuncu grup grup
  * düzeltir. Puan alan sayımıdır: taş + bölge, beyaza komi.
  */
-import { finalScore, groupAt, playStone } from './goAI.js';
+import { finalScore, groupAt, playStone } from './goAI.js?v=2026-11-05.robot';
 
 export const BOARD_SIZE = 9;
 export const BLACK = 1;
