@@ -229,15 +229,12 @@ await test('Yeniden başla oyun ortasında iki basış ister', async () => {
   await ctx.close();
 });
 
-await test('ipucu araçları: tehlike, bölge, hamle işaret ve metin üretir', async () => {
+await test('ipucu menüsünde yalnız hamle ve tahmini alan var; hamle işaret ve metin üretir', async () => {
   const { ctx, page } = await open();
   await myTurn(page);
   await page.click('#rb-hint');
-  await page.click('[data-tool="danger"]');
-  await page.waitForFunction(() => document.getElementById('rb-hint-text').textContent.length > 0);
-  await page.click('[data-tool="region"]');
-  await page.getByText('merkez bölgesine').waitFor();
-  assert((await page.evaluate(() => window.__robotTest.board().liberties.length)) > 0, 'bölge işaretlenmeli');
+  const tools = await page.locator('[data-tool]').evaluateAll(els => els.map(el => el.dataset.tool));
+  assert(tools.join() === 'move,estimate', `beklenmeyen araçlar: ${tools}`);
   await page.click('[data-tool="move"]');
   await page.getByText('E5').waitFor();
   assert(await page.evaluate(() => Boolean(window.__robotTest.board().preview)), 'hayalet taş gösterilmeli');
@@ -296,10 +293,8 @@ await test('model yüklenmezse yedek motor oynar ve kullanıcıya söylenir', as
   await page.waitForFunction(() => window.__engineCalls.some(c => c.type === 'MOVE_PROFILE'));
   await myTurn(page);
   await page.click('#rb-hint');
-  await page.click('[data-tool="region"]');
+  await page.click('[data-tool="move"]');
   await page.getByText('robot modeli gerekli').waitFor();
-  await page.click('[data-tool="danger"]');
-  await page.waitForFunction(() => !/robot modeli/.test(document.getElementById('rb-hint-text').textContent));
   await ctx.close();
 });
 

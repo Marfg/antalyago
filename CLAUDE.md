@@ -212,7 +212,7 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
    - **Model:** repodaki `b10c128`; arama kazanma oranına değil sahipliğe dayanır,
      çünkü kazanma oranı küçük tahtada oynaktır. Tahmini alan ve sayımdaki ölü taş
      önerisi de sahiplikten gelir. Model yüklenmezse `goAI.js` MCTS'i oynar (zayıf)
-     ve kullanıcıya söylenir; tehlike ipucu motorsuz çalışır.
+     ve kullanıcıya söylenir; bu durumda iki ipucu aracı (Hamle, Tahmini alan) çalışmaz.
    - **Önbellek:** robot sayfasının stil, modül ve worker adreslerinin hepsi `?v=`
      taşır (`stamp-scene-release.mjs`). Eski sayfayla ortak adresler eksiz kalırsa
      tarayıcı yeni sayfayı eski dosyayla açar ve kod hiç başlamaz.

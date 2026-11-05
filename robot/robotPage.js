@@ -8,7 +8,7 @@
 import { createSceneBoardAdapter } from '../adapters/sceneBoardAdapter.js?v=2026-11-05.robot';
 import { BLACK, WHITE, createGame, finishCounting, illegalReason, passTurn, playMove, pointOf, positionOf, resign, scoreGame, suggestDead, toggleDead, xyOf } from '../core/robotGame.js?v=2026-11-05.robot';
 import { LADDER_STORAGE_KEY, createLadder, gameSettings, loadLadder, recordResult } from '../core/handicapLadder.js?v=2026-11-05.robot';
-import { dangerHint, moveHint, regionHint, selfAtariWarning, territoryEstimate } from '../core/hintTools.js?v=2026-11-05.robot';
+import { moveHint, selfAtariWarning, territoryEstimate } from '../core/hintTools.js?v=2026-11-05.robot';
 
 const ROBOT_MIN_MS = 900;        // taş bir anda belirmesin, oyuncu kendi hamlesini görsün
 const ENGINE_TIMEOUT_MS = 20000;
@@ -319,13 +319,12 @@ function showMarks(hint) {
 async function useTool(tool) {
   if (game.phase !== 'play' || thinking || game.toPlay !== BLACK) { setHint('Sıra sende olduğunda ipucu alabilirsin.'); return; }
   if (tool === 'estimate') { toggleEstimate(); return; }
-  if (tool === 'danger') { showMarks(dangerHint(game, BLACK)); return; }
   setHint('Robot konumu inceliyor…');
   const id = gameId, ply = game.history.length;
   const result = await analysis();
   if (id !== gameId || ply !== game.history.length) return;
   if (!result) { setHint('Bu ipucu için robot modeli gerekli; şu an yüklenemedi.'); return; }
-  showMarks(tool === 'region' ? regionHint(game, result) : moveHint(game, result));
+  showMarks(moveHint(game, result));
 }
 
 function toggleEstimate() {
