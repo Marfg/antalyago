@@ -91,8 +91,10 @@ function buildClipSteps(frame, boardSize, boardRect, warnings) {
       warnings.push(`${frame.id}: kind '${kind}' için nokta bulunamadı — place-stone/pulse-move atlandı`);
     } else {
       const placed = withPixel(point, boardSize, boardRect);
-      steps.push({ type: 'place-stone', layer: 'stones', point: { x: placed.x, y: placed.y }, pixel: placed.pixel });
-      steps.push({ type: 'pulse-move', layer: 'stones', point: { x: placed.x, y: placed.y }, pixel: placed.pixel });
+      // M5 bug düzeltmesi zincirinin devamı (scene.color → frame.color →
+      // step.color) — M5'in "siyah/beyaz taşları ayırt et" gereksinimi için.
+      steps.push({ type: 'place-stone', layer: 'stones', point: { x: placed.x, y: placed.y }, pixel: placed.pixel, color: frame.color ?? null });
+      steps.push({ type: 'pulse-move', layer: 'stones', point: { x: placed.x, y: placed.y }, pixel: placed.pixel, color: frame.color ?? null });
     }
     if (kind === 'capture') {
       const captured = stonesWithPixel(frame.focus?.captures, boardSize, boardRect);

@@ -106,6 +106,12 @@ function buildEventScene(event) {
     eventId: event.id,
     nodeId: event.nodeId,
     kind,
+    // M5 BUG DÜZELTMESİ: hamleyi oynayan rengi taşır. Öncesinde scene.focus
+    // yalnız {x,y} idi ve M3/M4 zincirinde taş rengi hiçbir yere ulaşmıyordu
+    // — M5'in "siyah/beyaz taşları ayırt et" gereksinimi bunu zorunlu kıldı
+    // (gerçek bug, bkz. M5 kapanış raporu). Setup sahnesinde yok (tek renk
+    // kavramı yok — draw-initial-stones kendi per-stone rengini taşıyor).
+    color: event.color,
     title: isPass ? 'Pas' : (hasCaptures ? 'Yakalama' : 'Hamle'),
     narration: narrationParts.join(' '),
     focus: isPass ? null : { x: event.move.x, y: event.move.y },
