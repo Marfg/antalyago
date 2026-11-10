@@ -210,8 +210,12 @@ async function readCandidateFiles(rootDir = ROOT) {
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
     const fullPath = path.join(itemsDir, entry.name);
-    const text = stripBom(await fs.readFile(fullPath, 'utf8'));
-    items.push({ fullPath, data: JSON.parse(text) });
+    try {
+      const text = stripBom(await fs.readFile(fullPath, 'utf8'));
+      items.push({ fullPath, data: JSON.parse(text) });
+    } catch (error) {
+      items.push({ fullPath, error });
+    }
   }
   return items;
 }
@@ -222,6 +226,36 @@ async function auditCandidateCatalog({ rootDir = ROOT } = {}) {
   const issues = [];
   const reports = [];
   for (const item of items) {
+    if (item.error) {
+      const relativePath = path.relative(rootDir, item.fullPath);
+      const issue = {
+        severity: 'error',
+        code: 'INVALID_JSON',
+        message: `candidate JSON parse failed: ${item.error.message}`,
+      };
+      issues.push({ ...issue, candidateId: null, path: relativePath });
+      reports.push({
+        candidateId: null,
+        candidateVersion: null,
+        status: null,
+        sourceId: null,
+        locatorType: null,
+        locatorValue: null,
+        catalogSourceFound: false,
+        sourcePageCount: null,
+        reviewRequired: null,
+        canPublish: null,
+        needsRightsReview: null,
+        studioCompatible: null,
+        issueCount: 1,
+        issues: [issue],
+        normalized: null,
+        canPromote: false,
+        parseError: item.error.message,
+        path: relativePath,
+      });
+      continue;
+    }
     const result = validateCandidate(item.data, catalog);
     const normalized = result.normalized;
     const source = normalized?.source?.sourceId ? findCatalogSource(catalog, normalized.source.sourceId) : null;

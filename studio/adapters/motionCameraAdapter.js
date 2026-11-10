@@ -146,6 +146,9 @@ function buildFrame(scene, board, options, warnings) {
     sceneId: scene.id,
     nodeId: scene.nodeId,
     kind: scene.kind,
+    // M5 bug düzeltmesi zincirinin devamı — bkz. motionIntentAdapter.js'teki
+    // scene.color notu. Yalnız pass-through, yeni mantık yok.
+    color: scene.color ?? null,
     camera,
     focus,
     overlays,

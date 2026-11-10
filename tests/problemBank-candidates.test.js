@@ -175,5 +175,17 @@ await test('Studio adapter alanÄ± varsa gÃ¼venli ve opsiyonel kalÄ±r', asy
   ok('proposedStudioDocument' in candidate.studio);
 });
 
+await test('bozuk aday JSON audit çalışmasını düşürmez, INVALID_JSON raporlanır', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ag-bank-candidate-badjson-'));
+  await copyFixtureTree(tempRoot);
+  await fs.writeFile(path.join(tempRoot, 'content/problem-bank/candidates/items/broken.json'), '{ "candidateId": ', 'utf8');
+  const report = await auditCandidateCatalog({ rootDir: tempRoot });
+  const broken = report.items.find(item => item.parseError);
+  ok(broken, 'parseError taşıyan rapor bekleniyordu');
+  equal(broken.canPromote, false);
+  ok(report.issues.some(issue => issue.code === 'INVALID_JSON' && issue.path.endsWith('broken.json')));
+  ok(report.items.some(item => item.candidateId === EXAMPLE_ID), 'geçerli adaylar hâlâ raporlanmalı');
+});
+
 console.log(`\nToplam: ${passed + failed}  âœ“ ${passed}  âœ— ${failed}`);
 if (failed) process.exit(1);
