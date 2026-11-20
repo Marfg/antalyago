@@ -4,6 +4,7 @@
  * İpucu havuzu: Hamle ve Tahmini Alan.
  * Saf: tahta ve motor çıktısından metin ve işaret üretir, çizimi sayfa yapar.
  */
+import { t } from './i18n.js?v=2026-11-05.robot';
 import { groupAt, playStone } from './goAI.js?v=2026-11-05.robot';
 import { BLACK, xyOf } from './robotGame.js?v=2026-11-05.robot';
 
@@ -16,7 +17,7 @@ const placing = analysis => analysis.moves.filter(move => move.point >= 0);
 export function moveReason(game, color, move) {
   const result = playStone(game, color, move.x, move.y);
   if (!result) return 'Bu noktayı düşünebilirsin.';
-  if (result.captured.length) return `Burası ${result.captured.length} taş yakalar.`;
+  if (result.captured.length) return t('Burası {n} taş yakalar.', { n: result.captured.length });
   const after = { ...game, grid: result.grid, ko: result.ko };
   const own = groupAt(after, move.point);
   const neighbours = [move.point - game.size, move.point + game.size, move.x > 0 ? move.point - 1 : -1, move.x < game.size - 1 ? move.point + 1 : -1]
@@ -85,5 +86,5 @@ export function selfAtariWarning(game, color, x, y) {
   const n = own.group.length;
   return n === 1
     ? 'Bu taşın tek nefesi olacak, robot hemen alabilir.'
-    : `Bu ${n} taşlık grubun tek nefesi kalacak, robot hepsini alabilir.`;
+    : t('Bu {n} taşlık grubun tek nefesi kalacak, robot hepsini alabilir.', { n });
 }

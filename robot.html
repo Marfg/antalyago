@@ -3,8 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>(function(){var L=['tr','en','ru'],l='tr';try{var q=new URLSearchParams(location.search).get('lang'),s=localStorage.getItem('antalyago-lang'),b=navigator.languages||[navigator.language];if(L.indexOf(q)>-1)l=q;else if(L.indexOf(s)>-1)l=s;else for(var i=0;i<b.length;i++){var c=String(b[i]||'').slice(0,2).toLowerCase();if(L.indexOf(c)>-1){l=c;break}}}catch(e){}var d=document.documentElement;d.lang=l;if(l!=='tr'){d.classList.add('i18n-pending');setTimeout(function(){d.classList.remove('i18n-pending')},2500)}}())</script>
   <script>(function(){var t="dark";try{var s=localStorage.getItem("antalyago-theme");if(s==="light"||s==="dark")t=s}catch(e){}document.documentElement.dataset.theme=t}())</script>
   <title>Robotla Oyna – AntalyaGo</title>
+  <link rel="alternate" hreflang="tr" href="https://antalyago.net/robot.html">
+  <link rel="alternate" hreflang="en" href="https://antalyago.net/robot.html?lang=en">
+  <link rel="alternate" hreflang="ru" href="https://antalyago.net/robot.html?lang=ru">
+  <link rel="alternate" hreflang="x-default" href="https://antalyago.net/robot.html">
   <meta name="description" content="9×9 tahtada sabit güçlü robota karşı oyna. Dört taşla başla, kazandıkça taşların azalsın.">
   <link rel="icon" type="image/png" href="/assets/images/logo-rozet-96.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,6 +39,7 @@
         <a href="learning-scenes.html">Öğren</a>
         <a href="robot.html" aria-current="page">Robotla Oyna</a>
         <a href="index.html#topluluk">Topluluk</a>
+        <div class="lang-switch" data-lang-switch></div>
         <button class="theme-toggle" data-theme-toggle type="button" aria-pressed="false" aria-label="Gece temasına geç">Gece</button>
       </nav>
     </div>

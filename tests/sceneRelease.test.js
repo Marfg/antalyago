@@ -71,10 +71,12 @@ const GRAPH_BASENAMES = [
   'lessonHelpDrawer.js',
   'scene11TwoEyes.js', 'twoEyesPolicy.js', 'eyeAnalysis.js', 'scene12Connections.js', 'connectionShapesPolicy.js',
   'goAI.js', 'robotGame.js', 'handicapLadder.js', 'hintTools.js', 'robotSearch.js',
+  // Dil katmanı (TR/EN/RU): ana sayfa, robot ve tema betiği aynı örneği paylaşmalı.
+  'i18n.js',
 ];
 const SCAN_FILES = [
   'learning-scenes.html', 'teacher-studio.html', 'index.html', 'home/heroBoard.js',
-  'robot/robotPage.js', 'core/robotGame.js', 'core/hintTools.js', 'core/robotSearch.js', 'workers/goAI.worker.js',
+  'robot/robotPage.js', 'core/robotGame.js', 'core/hintTools.js', 'core/robotSearch.js', 'workers/goAI.worker.js', 'core/theme.js',
   'core/ruleEngine.js', 'core/curriculum.js',
   'scenes/scene01BoardIntro.js', 'scenes/scene02TurnsAndIntersections.js',
   'scenes/scene03LibertiesByPosition.js', 'scenes/scene04GroupLiberties.js',

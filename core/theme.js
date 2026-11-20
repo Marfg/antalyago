@@ -1,4 +1,6 @@
-﻿export const THEME_KEY = 'antalyago-theme';
+﻿import { t } from './i18n.js?v=2026-11-05.robot';
+
+export const THEME_KEY = 'antalyago-theme';
 
 export const isTheme = value => value === 'light' || value === 'dark';
 
@@ -30,11 +32,11 @@ const icons =
   '<svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
 
 function themeText(theme) {
-  return theme === 'dark' ? 'G\u00fcnd\u00fcz' : 'Gece';
+  return theme === 'dark' ? t('G\u00fcnd\u00fcz') : t('Gece');
 }
 
 function themeLabel(theme) {
-  return theme === 'dark' ? 'G\u00fcnd\u00fcz temas\u0131na ge\u00e7' : 'Gece temas\u0131na ge\u00e7';
+  return theme === 'dark' ? t('G\u00fcnd\u00fcz temas\u0131na ge\u00e7') : t('Gece temas\u0131na ge\u00e7');
 }
 
 export function syncControls(theme, root = document) {

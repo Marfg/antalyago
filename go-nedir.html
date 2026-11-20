@@ -3,10 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>(function(){var L=['tr','en','ru'],l='tr';try{var q=new URLSearchParams(location.search).get('lang'),s=localStorage.getItem('antalyago-lang'),b=navigator.languages||[navigator.language];if(L.indexOf(q)>-1)l=q;else if(L.indexOf(s)>-1)l=s;else for(var i=0;i<b.length;i++){var c=String(b[i]||'').slice(0,2).toLowerCase();if(L.indexOf(c)>-1){l=c;break}}}catch(e){}var d=document.documentElement;d.lang=l;if(l!=='tr'){d.classList.add('i18n-pending');setTimeout(function(){d.classList.remove('i18n-pending')},2500)}}())</script>
   <script>(function(){var t="dark";try{var s=localStorage.getItem("antalyago-theme");if(s==="light"||s==="dark")t=s}catch(e){}document.documentElement.dataset.theme=t}())</script>
   <title>Go Nedir? &mdash; AntalyaGo</title>
   <meta name="description" content="Go nedir, amac&#305; nedir ve neden 9&times;9 ile ba&#351;lan&#305;r? AntalyaGo'da kurallar&#305;, ta&#351; yakalamay&#305; ve stratejik derinli&#287;i T&#252;rk&#231;e &#246;&#287;renin." />
   <link rel="canonical" href="https://antalyago.net/go-nedir.html" />
+  <link rel="alternate" hreflang="tr" href="https://antalyago.net/go-nedir.html">
+  <link rel="alternate" hreflang="en" href="https://antalyago.net/go-nedir.html?lang=en">
+  <link rel="alternate" hreflang="ru" href="https://antalyago.net/go-nedir.html?lang=ru">
+  <link rel="alternate" hreflang="x-default" href="https://antalyago.net/go-nedir.html">
   <meta property="og:site_name" content="AntalyaGo" />
   <meta property="og:title" content="Go Nedir? &mdash; AntalyaGo" />
   <meta property="og:description" content="Go'nun kurallar&#305;n&#305;, tarihini ve 9&times;9 ba&#351;lang&#305;c&#305;n&#305; T&#252;rk&#231;e &#246;&#287;renin." />
@@ -44,6 +49,7 @@
         <a href="learning-scenes.html">&#214;&#287;ren</a>
         <a href="robot.html">Robotla Oyna</a>
         <a href="index.html#topluluk">Topluluk</a>
+        <div class="lang-switch" data-lang-switch></div>
         <button class="theme-toggle" data-theme-toggle type="button" aria-pressed="false" aria-label="Gece temas&#305;na ge&#231;">Gece</button>
       </nav>
     </div>
