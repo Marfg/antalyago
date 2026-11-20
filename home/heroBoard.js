@@ -19,6 +19,7 @@
  *
  * Birimler metredir (Blender ile aynı); eksenler Three.js düzeninde (y yukarı).
  */
+import { t as tx } from '../core/i18n.js?v=2026-11-05.robot';
 import { BoardState } from '../core/boardState.js?v=2026-11-05.robot';
 import { isValidMove, applyMove, getGroup, getLiberties } from '../core/ruleEngine.js?v=2026-11-05.robot';
 
@@ -105,13 +106,13 @@ function whiteMove(state, random = Math.random) {
 export function freePlayCaption({ blackTook, whiteTook, firstCapture, danger, chance, caps }) {
   if (firstCapture) {
     return blackTook
-      ? 'İlk taşı sen aldın! Yeni bir oyun için tahtayı temizleyebilir ya da devam edebilirsin.'
-      : 'Beyaz ilk taşı aldı. Tahtayı temizleyip yeniden deneyebilir ya da devam edebilirsin.';
+      ? tx('İlk taşı sen aldın! Yeni bir oyun için tahtayı temizleyebilir ya da devam edebilirsin.')
+      : tx('Beyaz ilk taşı aldı. Tahtayı temizleyip yeniden deneyebilir ya da devam edebilirsin.');
   }
-  if (whiteTook) return `Beyaz ${whiteTook} taş aldı. Sıra sende.`;
-  if (danger) return 'Kırmızı halka: taşlarının tek nefesi kaldı, buna atari denir. Sıra sende.';
-  if (chance) return 'Altın halka: beyazın tek nefesi kaldı. Oraya oynarsan taşı alırsın.';
-  return `Esir: sen ${caps.black}, beyaz ${caps.white}. Sıra sende.`;
+  if (whiteTook) return tx('Beyaz {n} taş aldı. Sıra sende.', { n: whiteTook });
+  if (danger) return tx('Kırmızı halka: taşlarının tek nefesi kaldı, buna atari denir. Sıra sende.');
+  if (chance) return tx('Altın halka: beyazın tek nefesi kaldı. Oraya oynarsan taşı alırsın.');
+  return tx('Esir: sen {b}, beyaz {w}. Sıra sende.', { b: caps.black, w: caps.white });
 }
 
 const LESSON = [
@@ -361,7 +362,7 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
   let mode = 'lesson', phase = 2, busy = false;
   function setBusy(v) { busy = v; stepBtn.disabled = v; altBtn.disabled = v; }
   function say(text) {
-    caption.textContent = text;
+    caption.textContent = tx(text);
     caption.classList.remove('is-new'); void caption.offsetWidth; caption.classList.add('is-new');
   }
   function sync() {
@@ -371,16 +372,16 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
   }
   function showLesson(i) {
     say(LESSON[i].cap);
-    stepBtn.textContent = LESSON[i].btn;
-    altBtn.textContent = i === LESSON.length - 1 ? 'Mini dersi baştan izle' : 'Serbest oyna';
+    stepBtn.textContent = tx(LESSON[i].btn);
+    altBtn.textContent = i === LESSON.length - 1 ? tx('Mini dersi baştan izle') : tx('Serbest oyna');
     dotsEl.hidden = false;
     dots.forEach((d, k) => d.classList.toggle('on', k <= i));
     sync();
   }
   function showFree(text) {
     say(text);
-    stepBtn.textContent = 'Tahtayı temizle';
-    altBtn.textContent = 'Mini dersi baştan izle';
+    stepBtn.textContent = tx('Tahtayı temizle');
+    altBtn.textContent = tx('Mini dersi baştan izle');
     dotsEl.hidden = true;
     sync();
   }
@@ -555,7 +556,7 @@ function init(T, RoomEnvironment, root, model, cfg, lite) {
     const takenBefore = caps.black + caps.white;
     const r = applyMove(state, q.x, q.y, 'black');
     apply('black', q.x, q.y, r);
-    say(r.captured.length ? `${r.captured.length} beyaz taş aldın! Beyaz düşünüyor…` : 'Beyaz düşünüyor…');
+    say(r.captured.length ? tx('{n} beyaz taş aldın! Beyaz düşünüyor…', { n: r.captured.length }) : 'Beyaz düşünüyor…');
     wait(.5, () => updateAtari());
     wait(.8, () => {
       // Testler tahtaya data-hero-seed koyarak beyazın cevaplarını sabitleyebilir.

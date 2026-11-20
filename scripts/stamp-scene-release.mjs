@@ -86,13 +86,15 @@ const GRAPH_BASENAMES = [
   'scene11TwoEyes.js', 'twoEyesPolicy.js', 'eyeAnalysis.js', 'scene12Connections.js', 'connectionShapesPolicy.js',
   // Robot sayfası: eski goAI.js önbellekten gelirse tüm sayfa başlamadan durur.
   'goAI.js', 'robotGame.js', 'handicapLadder.js', 'hintTools.js', 'robotSearch.js',
+  // Dil katmanı (TR/EN/RU): ana sayfa, robot ve tema betiği aynı örneği paylaşmalı.
+  'i18n.js',
 ];
 
 /** Import satırı içerebilecek, graph'a dahil dosyalar + HTML entry point'leri. */
 const SCAN_FILES = [
   'learning-scenes.html',
   'teacher-studio.html',
-  'index.html', 'home/heroBoard.js', 'robot.html', 'robot/robotPage.js',
+  'index.html', 'home/heroBoard.js', 'robot.html', 'robot/robotPage.js', 'core/theme.js',
   'core/robotGame.js', 'core/hintTools.js', 'core/robotSearch.js', 'workers/goAI.worker.js',
   'core/ruleEngine.js', 'core/curriculum.js',
   'scenes/scene01BoardIntro.js',

@@ -636,6 +636,60 @@ textarea {
   display: none;
 }
 
+/* Çeviri uygulanana kadar gövde gizli (sayfa başındaki dil betiği ekler,
+   core/i18n.js kaldırır; betik 2,5 sn sonra kendisi de kaldırır). */
+html.i18n-pending body {
+  visibility: hidden;
+}
+
+/* Dil seçici (core/i18n.js doldurur): TR · EN · RU */
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 3px;
+  margin: 0 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.lang-switch:empty {
+  display: none;
+}
+
+.lang-switch__btn {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.lang-switch__btn:hover {
+  color: var(--heading);
+  background: var(--surface-hover);
+}
+
+.lang-switch__btn[aria-pressed='true'] {
+  color: var(--page-bg);
+  background: var(--primary);
+}
+
+.lang-switch__btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 .nav-toggle {
   display: none;
   margin-left: auto;
@@ -1205,6 +1259,11 @@ textarea {
 
   .site-nav.is-open {
     display: flex;
+  }
+
+  .site-nav .lang-switch {
+    align-self: flex-start;
+    margin: 8px 0 0;
   }
 
   .site-nav .theme-toggle {

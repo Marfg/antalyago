@@ -5,6 +5,7 @@
  * köprü kurar. Kural, handikap, arama ve ipucu kararları core/ içindedir;
  * bu dosya yalnız olayları bağlar ve durumu ekrana yazar.
  */
+import { t, lang, formatNumber } from '../core/i18n.js?v=2026-11-05.robot';
 import { createSceneBoardAdapter } from '../adapters/sceneBoardAdapter.js?v=2026-11-05.robot';
 import { BLACK, WHITE, createGame, finishCounting, illegalReason, passTurn, playMove, pointOf, positionOf, resign, scoreGame, suggestDead, toggleDead, xyOf } from '../core/robotGame.js?v=2026-11-05.robot';
 import { LADDER_STORAGE_KEY, createLadder, gameSettings, loadLadder, recordResult } from '../core/handicapLadder.js?v=2026-11-05.robot';
@@ -30,7 +31,7 @@ const isMobile = window.innerWidth <= 640 || ('ontouchstart' in window && window
 const board = createSceneBoardAdapter($('rb-canvas'), { isMobile, initialSize: 9, board3d: search.get('tahta') !== '2d', rowLabelsUp: true });
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-const fmt = n => String(n).replace('.', ',');
+const fmt = formatNumber;
 const moveName = (x, y) => `${'ABCDEFGHJ'[x]}${9 - y}`;
 /* Tahta adaptöründe satır 0 ekranın altındadır; oyun durumunda y=0 üsttür.
    Dönüşüm yalnız burada yapılır. */
@@ -76,7 +77,7 @@ function engineFailed(error) {
 engine.addEventListener('error', event => engineFailed(event.message));
 engine.addEventListener('message', ({ data }) => {
   if (data.type === 'PROGRESS') {
-    if (thinking && engineState === 'loading') setStatus(data.fraction < 1 ? `Robot hazırlanıyor… %${Math.round(data.fraction * 100)}` : 'Robot hazırlanıyor…');
+    if (thinking && engineState === 'loading') setStatus(data.fraction < 1 ? t('Robot hazırlanıyor… %{p}', { p: Math.round(data.fraction * 100) }) : 'Robot hazırlanıyor…');
     return;
   }
   if (data.type === 'READY') {
@@ -182,7 +183,7 @@ async function robotTurn() {
     const { x, y } = xyOf(point);
     const { captured } = playMove(game, x, y);
     board.playMove({ ...toRowCol({ x, y }), color: 'white', animateCapture: true });
-    setStatus(captured.length ? `Robot ${moveName(x, y)} oynadı, ${captured.length} taş aldı.` : `Robot ${moveName(x, y)} oynadı. Sıra sende.`);
+    setStatus(captured.length ? t('Robot {move} oynadı, {n} taş aldı.', { move: moveName(x, y), n: captured.length }) : t('Robot {move} oynadı. Sıra sende.', { move: moveName(x, y) }));
   }
   render();
   if (estimateOn) refreshEstimate();
@@ -194,7 +195,7 @@ function commitMove(x, y) {
   const { ok, captured } = playMove(game, x, y);
   if (!ok) return;
   board.playMove({ ...toRowCol({ x, y }), color: 'black', animateCapture: true });
-  if (captured.length) setStatus(`${captured.length} taş aldın.`);
+  if (captured.length) setStatus(t('{n} taş aldın.', { n: captured.length }));
   robotTurn();
 }
 
@@ -220,7 +221,7 @@ function onTap(hit) {
   const warning = selfAtariWarning(game, BLACK, x, y);
   if (warning && warned !== point) {
     warned = point;
-    setStatus(`${warning} Yine de oynamak için tekrar dokun.`);
+    setStatus(t(warning) + ' ' + t('Yine de oynamak için tekrar dokun.'));
     return;
   }
   commitMove(x, y);
@@ -265,7 +266,7 @@ function renderCounting() {
     ...score.blackTerritory.map(p => ({ ...toRowCol(p), color: 'black' })),
     ...score.whiteTerritory.map(p => ({ ...toRowCol(p), color: 'white' })),
   ]);
-  showScoreBar(score.black, score.white, `Siyah ${score.black} · Beyaz ${score.white} + ${fmt(score.komi)} komi`);
+  showScoreBar(score.black, score.white, t('Siyah {b} · Beyaz {w} + {k} komi', { b: score.black, w: score.white, k: fmt(score.komi) }));
   render();
 }
 
@@ -281,20 +282,21 @@ function finishGame(result) {
   ladder = record.ladder;
   saveLadder();
   const upcoming = gameSettings(ladder);
-  ui.title.textContent = won ? 'Kazandın.' : 'Robot kazandı.';
+  ui.title.textContent = won ? t('Kazandın.') : t('Robot kazandı.');
   ui.lead.textContent = result.resigned
-    ? 'Teslim oldun. Aynı basamakta yeniden deneyebilirsin.'
-    : `${won ? 'Siyah' : 'Beyaz'} ${fmt(result.margin)} puan farkla kazandı.`;
-  if (record.advanced) setStatus(`Bir basamak çıktın. Sonraki oyun: ${upcoming.title.toLocaleLowerCase('tr')}.`);
+    ? t('Teslim oldun. Aynı basamakta yeniden deneyebilirsin.')
+    : t(won ? 'Siyah {m} puan farkla kazandı.' : 'Beyaz {m} puan farkla kazandı.', { m: fmt(result.margin) });
+  const nextTitle = t(upcoming.title).toLocaleLowerCase(lang);
+  if (record.advanced) setStatus(t('Bir basamak çıktın. Sonraki oyun: {title}.', { title: nextTitle }));
   else if (won) setStatus('En üst basamaktasın: robotla eşit oynuyorsun.');
-  else setStatus(`Bu basamakta kaldın: ${upcoming.title.toLocaleLowerCase('tr')}.`);
+  else setStatus(t('Bu basamakta kaldın: {title}.', { title: nextTitle }));
   render();
 }
 
 /* ── İpuçları ──────────────────────────────────────────────────────────── */
 function setHint(text) {
   ui.hintText.hidden = !text;
-  ui.hintText.textContent = text || '';
+  ui.hintText.textContent = text ? t(text) : '';
 }
 
 function clearMarks() {
@@ -342,28 +344,29 @@ async function refreshEstimate() {
   if (id !== gameId || ply !== game.history.length || !estimateOn || thinking) return;
   if (!result) {
     ui.estimate.hidden = false;
-    ui.estimateText.textContent = 'Tahmini alan için robot modeli gerekli; şu an yüklenemedi.';
+    ui.estimateText.textContent = t('Tahmini alan için robot modeli gerekli; şu an yüklenemedi.');
     return;
   }
   const estimate = territoryEstimate(game, result.ownership);
   board.showRegionMarks(estimate.marks.map(mark => ({ ...toRowCol(mark), color: mark.color })));
-  const leader = estimate.leader === BLACK ? 'Sen öndesin' : 'Robot önde';
-  const note = estimate.early ? 'Henüz erken, kaba bir tahmin.' : `${leader}, yaklaşık ${fmt(Math.abs(estimate.lead).toFixed(1))} puan.`;
-  showScoreBar(estimate.black, estimate.white, `Siyah ≈ ${estimate.black} · Beyaz ≈ ${estimate.white} + ${fmt(estimate.komi)} komi. ${note}`);
+  const lead = fmt(Math.abs(estimate.lead).toFixed(1));
+  const note = estimate.early ? t('Henüz erken, kaba bir tahmin.')
+    : estimate.leader === BLACK ? t('Sen öndesin, yaklaşık {p} puan.', { p: lead }) : t('Robot önde, yaklaşık {p} puan.', { p: lead });
+  showScoreBar(estimate.black, estimate.white, t('Siyah ≈ {b} · Beyaz ≈ {w} + {k} komi.', { b: estimate.black, w: estimate.white, k: fmt(estimate.komi) }) + ' ' + note);
 }
 
 /* ── Çizim ─────────────────────────────────────────────────────────────── */
-function setStatus(text) { ui.status.textContent = text; }
+function setStatus(text) { ui.status.textContent = t(text); }
 
 function render() {
   const over = game.phase === 'over', counting = game.phase === 'counting';
   if (!over) {
-    ui.title.textContent = counting ? 'Sayım.' : 'Robotla oyna.';
+    ui.title.textContent = counting ? t('Sayım.') : t('Robotla oyna.');
     ui.lead.textContent = counting
-      ? 'Alanını, yani taşlarını ve çevrelediğin boş noktaları sayıyoruz.'
-      : settings.lead;
+      ? t('Alanını, yani taşlarını ve çevrelediğin boş noktaları sayıyoruz.')
+      : t(settings.lead);
   }
-  ui.level.textContent = `Basamak ${settings.index + 1} / ${settings.total}`;
+  ui.level.textContent = t('Basamak {i} / {n}', { i: settings.index + 1, n: settings.total });
   ui.dots.replaceChildren(...Array.from({ length: settings.total }, (_, i) => {
     const dot = document.createElement('i');
     if (i <= ladder.level) dot.className = 'is-done';
@@ -394,13 +397,13 @@ function confirmTwice(button, label, armedLabel, action, needed = () => true) {
   button.addEventListener('click', () => {
     if (needed() && Date.now() > until) {
       until = Date.now() + CONFIRM_MS;
-      button.textContent = armedLabel;
+      button.textContent = t(armedLabel);
       button.classList.add('is-armed');
-      setTimeout(() => { button.textContent = label; button.classList.remove('is-armed'); }, CONFIRM_MS);
+      setTimeout(() => { button.textContent = t(label); button.classList.remove('is-armed'); }, CONFIRM_MS);
       return;
     }
     until = 0;
-    button.textContent = label;
+    button.textContent = t(label);
     button.classList.remove('is-armed');
     action();
   });

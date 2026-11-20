@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-i18n-bundle="lessons">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<script>(function(){var L=['tr','en','ru'],l='tr';try{var q=new URLSearchParams(location.search).get('lang'),s=localStorage.getItem('antalyago-lang'),b=navigator.languages||[navigator.language];if(L.indexOf(q)>-1)l=q;else if(L.indexOf(s)>-1)l=s;else for(var i=0;i<b.length;i++){var c=String(b[i]||'').slice(0,2).toLowerCase();if(L.indexOf(c)>-1){l=c;break}}}catch(e){}var d=document.documentElement;d.lang=l;if(l!=='tr'){d.classList.add('i18n-pending');setTimeout(function(){d.classList.remove('i18n-pending')},2500)}}())</script>
 <title>Antalya GO — Öğrenme Sahneleri</title>
 <link rel="stylesheet" href="styles/learning-scenes.css?v=2026-11-05.robot" />
 <link rel="stylesheet" href="styles/ladder-lesson.css?v=2026-11-05.robot">
@@ -64,6 +65,7 @@
   <button type="button" class="ls-topbar-btn" id="ls-topics-open">Konular<span class="ls-topics-count" id="ls-topics-count"></span></button>
 </div>
 <div id="ls-topbar-end">
+  <div class="ls-lang-switch" data-lang-switch></div>
   <button type="button" class="ls-topbar-btn ls-sound-btn" id="ls-sound-toggle" aria-pressed="false" aria-label="Ses" title="Ses kapalı"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ls-sound-body" d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path class="ls-sound-on" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11"/><path class="ls-sound-off" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button>
 </div>
 
@@ -74,6 +76,8 @@
 </div>
 
 <script type="module">
+// Dil katmanı ilk yüklenir: sahneler kurulmadan önce sözlük hazır ve DOM gözlemcisi açık olsun.
+import './core/i18n.js?v=2026-11-05.robot';
 import { createSceneRuntime } from './core/sceneRuntime.js?v=2026-11-05.robot';
 import { createSceneRegistry } from './scenes/sceneRegistry.js?v=2026-11-05.robot';
 import { scene01BoardIntro } from './scenes/scene01BoardIntro.js?v=2026-11-05.robot';

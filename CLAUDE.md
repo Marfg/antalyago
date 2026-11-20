@@ -138,6 +138,31 @@ SGF işaretler: `TR[...]` = üçgen, `SQ[...]` = kare, `CR[...]` = daire
 
 ---
 
+## Çoklu Dil (TR / EN / RU)
+
+- `core/i18n.js` dil katmanıdır. Türkçe metin HTML'de ve JS'te kaynak olarak kalır.
+  `locales/en.js` ve `locales/ru.js` sözlükleri Türkçe cümleyi anahtar olarak kullanır.
+- Dil seçim sırası: `?lang=` > kayıtlı tercih (`antalyago-lang`) > tarayıcı dili > `tr`.
+- Çevrilen sayfalar: `index.html`, `go-nedir.html`, `robot.html` (başlıkta `data-lang-switch`
+  seçicisi + `<head>`'de erken dil betiği + hreflang) ve `learning-scenes.html`.
+- Yeni/değişen site metni: `scripts/i18n/strings.mjs`'e `[tr, en, ru]` satırı ekle, sonra
+  `node scripts/i18n/build-locales.mjs`. `locales/*.js`'i elle düzenleme.
+- **Ders sahneleri kaynak koduna dokunmadan çevrilir.** `learning-scenes.html`
+  `data-i18n-bundle="lessons"` ile `locales/lessons-<dil>.js`'i ister; `i18n.js` bir
+  MutationObserver ile sahnelerin DOM'a yazdığı her metni yakalayıp çevirir. Sahne
+  mantığı ve testler Türkçe metne bağlı kalabilir.
+  - Ders metni değişince: `node scripts/i18n/extract-strings.mjs --catalog`
+    (`scripts/i18n/lesson-catalog.json`: kimlik → Türkçe), sonra eksik kimlikleri
+    `scripts/i18n/lessons/part*.mjs`'e `[en, ru]` olarak ekle ve `build-locales.mjs`'i çalıştır.
+  - Sayı içeren ya da JS'te parça parça birleştirilen cümleler
+    `scripts/i18n/lessons/patterns.mjs`'teki kalıplarla eşleşir (`{0}` herhangi metin,
+    `{0#}` yalnız sayı; yakalanan parça da çevrilir).
+  - Kimliği/`data-*` özniteliği olan alt öğe taşıyan birimin içi yeniden yazılmaz
+    (sahne kodu o öğeye referans tutar); yalnız metin düğümleri çevrilir.
+  - `core/curriculum.js`'ten yalnız sahnelerin kullandığı dersler (l1–l12) kataloğa girer.
+- JS'te dinamik metin: `t('Türkçe {n} metin', { n })`. `tests/i18n.test.js` eksik çeviriyi yakalar.
+- `i18n.js` sürüm damgalı graph'ın parçasıdır (`?v=`); her import aynı URL'yi kullanmalı.
+
 ## Önemli Kararlar
 
 1. **Müfredat `core/curriculum.js` içinde sabit kodlu** — formation JSON'ları henüz
