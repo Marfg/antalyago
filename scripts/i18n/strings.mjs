@@ -318,7 +318,7 @@ export const STRINGS = [
   ['Her taş, komşularının kaderini değiştirir; bu yüzden küçük farklar büyük sonuç üretir.', 'Every stone changes the fate of its neighbours, so small differences produce big results.', 'Каждый камень меняет судьбу соседей, поэтому мелкие различия дают большие последствия.'],
   ['Bağlı taşlar birlikte yaşar; çevrelenen boşluk ise oyunun sonunda puana dönüşür.', 'Connected stones live together, and the empty space they surround turns into points at the end of the game.', 'Соединённые камни живут вместе, а окружённая пустота в конце партии превращается в очки.'],
   ["Go'nun stratejik derinliği", 'The strategic depth of Go', 'Стратегическая глубина го'],
-  ['Sadece "ok fazla olasılık var" demek yeterli değildir.', 'Just saying "there are lots of possibilities" is not enough.', 'Недостаточно просто сказать «вариантов очень много».'],
+  ['Sadece "çok fazla olasılık var" demek yeterli değildir.', 'Just saying "there are lots of possibilities" is not enough.', 'Недостаточно просто сказать «вариантов очень много».'],
   ["Go'nun derinliği, sayıların büyüklüğünden çok etkileşimlerin zincirleme etkisinden gelir. Her taş; bağlantıyı, kesmeyi, etki alanını ve gelecekteki alan payını değiştirir.",
     "Go's depth comes less from the size of the numbers than from the chain reaction of interactions. Every stone changes connections, cuts, influence and the future share of territory.",
     'Глубина го рождается не столько из огромных чисел, сколько из цепной реакции взаимодействий. Каждый камень меняет связи, разрезания, влияние и будущую долю территории.'],

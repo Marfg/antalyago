@@ -16,6 +16,14 @@ assert(html.includes('Go\'nun stratejik derinli&#287;i'), 'stratejik derinlik b&
 assert(html.includes('Neden 9&times;9?'), '9x9 b&#246;l&#252;m&#252; eksik');
 assert(html.includes('9&times;9 ile ilk dersine ba&#351;la.'), 'ilk ders CTA eksik');
 assert(html.includes('Az say&#305;da kural, her ta&#351;la de&#287;i&#351;en say&#305;s&#305;z olas&#305;l&#305;k.'), 'kapak caption eksik');
+assert(html.includes('&quot;&ccedil;ok fazla olas&#305;l&#305;k var&quot;'), 'derinlik başlığında yazım hatası');
+for (const [, svg] of html.matchAll(/<svg viewBox="0 0 360 240"([\s\S]*?)<\/svg>/g)) {
+  const xs = new Set([...svg.matchAll(/d="M(\d+) \d+V/g)].map(m => m[1]));
+  const ys = new Set([...svg.matchAll(/d="M\d+ (\d+)H/g)].map(m => m[1]));
+  for (const [, x, y] of svg.matchAll(/<circle cx="(\d+)" cy="(\d+)"/g)) {
+    assert(xs.has(x) && ys.has(y), `çizimdeki taş kesişimde değil: ${x},${y}`);
+  }
+}
 assert(count('class="rule-card"') === 3, '&#252;&#231; kural kart&#305; olmal&#305;');
 assert(html.includes('Weiqi'), 'Weiqi korunmam&#305;&#351;');
 assert(html.includes('<em>Go</em>'), 'Go ad&#305; eksik');
