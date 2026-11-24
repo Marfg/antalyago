@@ -35,4 +35,6 @@ assert(html.includes('href="learning-scenes.html">&Ouml;&#287;renmeye ba&#351;la
 assert(!html.includes('href="ogren-3d.html"'), 'ana sayfada eski 3D ders bağlantısı kaldı');
 assert(html.includes('9&times;9 robotla oyna') && html.includes('robot.html'), 'robot CTA yanlış');
 
+assert(!html.includes('antalyago.org'), 'alt bilgide eski alan adı (antalyago.org) kaldı');
+
 console.log('  ✓ Ana sayfa içerik koruma testi geçti');
