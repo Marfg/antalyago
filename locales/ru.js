@@ -251,7 +251,7 @@ export default {
   "Her taş, komşularının kaderini değiştirir; bu yüzden küçük farklar büyük sonuç üretir.": "Каждый камень меняет судьбу соседей, поэтому мелкие различия дают большие последствия.",
   "Bağlı taşlar birlikte yaşar; çevrelenen boşluk ise oyunun sonunda puana dönüşür.": "Соединённые камни живут вместе, а окружённая пустота в конце партии превращается в очки.",
   "Go'nun stratejik derinliği": "Стратегическая глубина го",
-  "Sadece \"ok fazla olasılık var\" demek yeterli değildir.": "Недостаточно просто сказать «вариантов очень много».",
+  "Sadece \"çok fazla olasılık var\" demek yeterli değildir.": "Недостаточно просто сказать «вариантов очень много».",
   "Go'nun derinliği, sayıların büyüklüğünden çok etkileşimlerin zincirleme etkisinden gelir. Her taş; bağlantıyı, kesmeyi, etki alanını ve gelecekteki alan payını değiştirir.": "Глубина го рождается не столько из огромных чисел, сколько из цепной реакции взаимодействий. Каждый камень меняет связи, разрезания, влияние и будущую долю территории.",
   "Bağlantı": "Связь",
   "Taşları birlikte yaşatır; zayıf noktaları kapatır ve grubu güvenceye alır.": "Помогает камням жить вместе, закрывает слабые места и защищает группу.",

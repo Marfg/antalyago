@@ -251,7 +251,7 @@ export default {
   "Her taş, komşularının kaderini değiştirir; bu yüzden küçük farklar büyük sonuç üretir.": "Every stone changes the fate of its neighbours, so small differences produce big results.",
   "Bağlı taşlar birlikte yaşar; çevrelenen boşluk ise oyunun sonunda puana dönüşür.": "Connected stones live together, and the empty space they surround turns into points at the end of the game.",
   "Go'nun stratejik derinliği": "The strategic depth of Go",
-  "Sadece \"ok fazla olasılık var\" demek yeterli değildir.": "Just saying \"there are lots of possibilities\" is not enough.",
+  "Sadece \"çok fazla olasılık var\" demek yeterli değildir.": "Just saying \"there are lots of possibilities\" is not enough.",
   "Go'nun derinliği, sayıların büyüklüğünden çok etkileşimlerin zincirleme etkisinden gelir. Her taş; bağlantıyı, kesmeyi, etki alanını ve gelecekteki alan payını değiştirir.": "Go's depth comes less from the size of the numbers than from the chain reaction of interactions. Every stone changes connections, cuts, influence and the future share of territory.",
   "Bağlantı": "Connection",
   "Taşları birlikte yaşatır; zayıf noktaları kapatır ve grubu güvenceye alır.": "Keeps stones alive together, closes weak points and secures the group.",
